@@ -229,6 +229,11 @@ def parseImportedItem [rawItem: record] {
         $pathType = (($localItemPaths | last 1).0 | path type)
     }
 
+    if (($rawItem.app | str upcase) == ".GIT") {
+        echo $"An invalid entry was found. ($rawItem.app) is not a valid app name."
+        exit
+    }
+
     return {
         app: $rawItem.app,
         name: $rawItem.name,
