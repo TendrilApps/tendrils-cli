@@ -149,8 +149,7 @@ def importIncludedItems [] {
 
     if ($env.includeFile | path exists) {
     } else {
-        echo $"($env.includeFile) was not found."
-        exit
+        error make { msg: $"($env.includeFile) was not found." }
     }
 
     let rawImports = (open $env.includeFile).items
@@ -230,8 +229,7 @@ def parseImportedItem [rawItem: record] {
     }
 
     if (($rawItem.app | str upcase) == ".GIT") {
-        echo $"An invalid entry was found. ($rawItem.app) is not a valid app name."
-        exit
+        error make { msg: $"An invalid entry was found. ($rawItem.app) is not a valid app name."}
     }
 
     return {
