@@ -22,13 +22,15 @@ def main [
     let-env includeFile = ($env.userDataFolder + $env.dirSep + "tendrils.json")
     let-env includeFileLocal = ($env.userDataFolder + $env.dirSep + "tendrils-override.json")
 
+    let includedItems = importIncludedItems
+
     if (not $dry) and $reset {
-        resetUserDataFolder
+        resetAppFolders ($includedItems)
 
         if not $spread { return }
     }
 
-    let results = (copyItems (importIncludedItems) $spread $dry)
+    let results = (copyItems ($includedItems) $spread $dry)
 
     $results | each {|result|
         report $result
@@ -278,10 +280,14 @@ def reportGitStatus [] {
     git status
 }
 
-def resetUserDataFolder [] {
-    echo $"Resetting ($env.userDataFolder)"
-    # TODO: Change so that it only deletes the folders by *app*
-    echo "Resetting is not currently supported"
-    # rm $env.userDataFolder -r -f
-    # git checkout $env.userDataFolder
+def resetAppFolder [app: string] {
+    echo $"Resetting ($env.userDataFolder + $env.dirSep + $app)"
+    rm ($env.userDataFolder + $env.dirSep + $app) -r -f
+    git checkout ($env.userDataFolder + $env.dirSep + $app)
+}
+
+def resetAppFolders [includedItems: list] {
+    $includedItems | each {|item|
+        resetAppFolder $item.app
+    }
 }

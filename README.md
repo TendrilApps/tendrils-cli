@@ -90,6 +90,5 @@ nu Tendrils.nu -r
 
 ## `--reset (-r)`
 - Used to [reset the user data folder](#resetting-the-folder)
-    - ~~Any changes in the folder will be overwritten with the folder structure in [git](#version-control)~~
-        - Not currently supported
+    - Any changes in the application foldersk will be overwritten with the folder structure in [git](#version-control)~~
 - Ignored if combined with the [`-d](#dry--d) flag
