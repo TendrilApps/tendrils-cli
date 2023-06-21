@@ -1,10 +1,13 @@
 # General
-- *Tendrils* is a tool for synchronizing and version controlling settings across multiple computers
-- It can also be used to quickly edit a local settings file by bringing it to you rather than navigating to it
+- *Tendrils* is a tool for synchronizing and version controlling small files/folder across multiple computers
+- Main uses include:
+    - Version controlling various configuration files
+    - Version controlling small scripts that otherwise would not have their own repos
+    - Quickly editing configuration files in a common place rather than tracking them down individually
 - A *Tendrils* folder requires a [`tendrils.json`](#tendrilsjson) file
 
 # Gathering
-- Pulls all of the files specified in [`tendrils.json`](#tendrilsjson) to the [[user data folder](#user-data-folder) where it can be compared to the Git index (using `git diff` or any other tool)
+- Pulls all of the files specified in [`tendrils.json`](#tendrilsjson) to the [user data folder](#user-data-folder) where it can be compared to the Git index (using `git diff` or any other tool)
 ```bash
 nu Tendrils.nu # Without arguments
 ```
@@ -90,5 +93,5 @@ nu Tendrils.nu -r
 
 ## `--reset (-r)`
 - Used to [reset the user data folder](#resetting-the-folder)
-    - Any changes in the application foldersk will be overwritten with the folder structure in [git](#version-control)~~
-- Ignored if combined with the [`-d](#dry--d) flag
+    - Any changes in the application folders will be overwritten with the folder structure in [git](#version-control)
+- Ignored if combined with the [`-d`](#dry--d) flag
