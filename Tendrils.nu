@@ -214,11 +214,6 @@ def getOs [] {
     return $nu.os-info.name
 }
 
-def getPathRelToScript [path: string] {
-    # return ("." + $env.dirSep + ($path | path relative-to $env.FILE_PWD))
-    return $path
-}
-
 # Converts the items imported from the schema to
 # a structure used within the script
 def parseImportedItem [rawItem: record] {
@@ -229,7 +224,7 @@ def parseImportedItem [rawItem: record] {
     if (($pathType == "") and (not ($localItemPaths | is-empty))) {
         $pathType = (($localItemPaths | last 1).0 | path type)
     }
-
+    
     if (($rawItem.app | str upcase) == ".GIT") {
         error make { msg: $"An invalid entry was found. ($rawItem.app) is not a valid app name."}
     }
@@ -248,19 +243,10 @@ def report [result: record] {
     mut dispResult = {
         App: $result.includedItem.app,
         Name: $result.includedItem.name,
-        From: "",
-        To: "",
+        From: $result.from,
+        To: $result.to,
         Type: $result.includedItem.pathType,
         Success: ""
-    }
-
-    # Display controlled items as relative links
-    if $result.spread {
-        $dispResult.From =  (getPathRelToScript $result.from)
-        $dispResult.To = $result.to
-    } else {
-        $dispResult.From = $result.from
-        $dispResult.To = (getPathRelToScript $result.to)
     }
 
     # Colour code success values
