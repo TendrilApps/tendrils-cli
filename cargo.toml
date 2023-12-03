@@ -1,0 +1,7 @@
+[package]
+name = "tendrils"
+version = "0.0.1"
+
+[profile.release]
+strip = true
+lto = true
