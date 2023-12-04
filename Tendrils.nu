@@ -17,7 +17,6 @@ def main [
         $env.dirSep = "/"
     }
 
-    let-env tendrilsFolder = $env.FILE_PWD
     let-env userDataFolder = $env.PWD
     let-env includeFile = ($env.userDataFolder + $env.dirSep + "tendrils.json")
     let-env includeFileLocal = ($env.userDataFolder + $env.dirSep + "tendrils-override.json")
