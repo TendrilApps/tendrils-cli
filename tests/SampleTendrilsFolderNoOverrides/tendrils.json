@@ -1,0 +1,9 @@
+[
+    {
+        "app": "MyApp",
+        "name": "settings.json",
+        "parent-dirs-mac": [],
+        "parent-dirs-windows": ["C:\\Users\\<user>\\AppData\\"],
+        "folder-merge": false
+    }
+]

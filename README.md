@@ -28,18 +28,16 @@ nu Tendrils.nu -s
 
 ## Schema
 ```json
-{
-    "items": [
-        {
-            "app": "App Name",
-            "name": "file or folder name",
-            "parent-dirs-mac": ["/Users/<user>/path/to/item/parent/folder"],
-            "parent-dirs-windows": ["C:\\Users\\<user>\\path 1",
-                                    "C:\\Users\\<user>\\path 2"],
-            "folder-merge": false
-        },
-    ]
-}
+[
+    {
+        "app": "App Name",
+        "name": "file or folder name",
+        "parent-dirs-mac": ["/Users/<user>/path/to/item/parent/folder"],
+        "parent-dirs-windows": ["C:\\Users\\<user>\\path 1",
+                                "C:\\Users\\<user>\\path 2"],
+        "folder-merge": false
+    },
+]
 ```
 
 - `app`:
