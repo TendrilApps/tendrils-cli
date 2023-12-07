@@ -22,21 +22,3 @@ impl Tendril {
         self.app.clone() + " - " + &self.name
     }
 }
-
-// let tendril = Tendril {
-//     app: "Obsidian".to_string(),
-//     name: "settings.json".to_string(),
-//     parent_dirs_mac: Vec::from([]),
-//     parent_dirs_windows: Vec::from([]),
-//     folder_merge: false,
-// };
-
-// let tendril2 = Tendril {
-//     app: "Obsidian2".to_string(),
-//     name: "settings.json".to_string(),
-//     parent_dirs_mac: Vec::from([]),
-//     parent_dirs_windows: Vec::from([]),
-//     folder_merge: false,
-// };
-
-// println!("{:?}", tendrils);
