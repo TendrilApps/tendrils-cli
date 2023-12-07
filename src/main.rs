@@ -62,25 +62,25 @@ fn resolve_overrides(global: &Vec<Tendril>, overrides: &Vec<Tendril>) -> Vec<Ten
 }
 
 #[cfg(test)]
-mod tests {
+mod parse_tenrils_tests {
     use super::parse_tendrils;
 
     #[test]
-    fn parse_tendrils_empty_string_returns_error() {
+    fn empty_string_returns_error() {
         let given = "";
 
         assert!(parse_tendrils(&given).is_err());
     }
 
     #[test]
-    fn parse_tendrils_invalid_json_returns_error() {
+    fn invalid_json_returns_error() {
         let given = "I'm not JSON";
 
         assert!(parse_tendrils(&given).is_err());
     }
 
     #[test]
-    fn parse_tendrils_json_missing_field_returns_error() {
+    fn json_missing_field_returns_error() {
         let given = r#"
         [
             {
@@ -95,7 +95,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_tendrils_empty_json_array_returns_empty() {
+    fn empty_json_array_returns_empty() {
         let given = "[]";
         let expected = [].to_vec();
 
@@ -105,7 +105,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_tendrils_single_tendril_in_json_returns_tendril() {
+    fn single_tendril_in_json_returns_tendril() {
         let given = r#"
         [
             {
@@ -122,7 +122,7 @@ mod tests {
             name: "settings.json".to_string(),
             parent_dirs_mac: [].to_vec(),
             parent_dirs_windows: ["C:\\Users\\<user>\\AppData\\".to_string()].to_vec(),
-            folder_merge: false
+            folder_merge: false,
         };
 
         let expected = [tendril1].to_vec();
@@ -133,7 +133,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_tendrils_multiple_tendrils_in_json_returns_tendrils() {
+    fn multiple_tendrils_in_json_returns_tendrils() {
         let given = r#"
         [
             {
@@ -157,7 +157,7 @@ mod tests {
             name: "settings.json".to_string(),
             parent_dirs_mac: [].to_vec(),
             parent_dirs_windows: ["C:\\Users\\<user>\\AppData\\".to_string()].to_vec(),
-            folder_merge: false
+            folder_merge: false,
         };
 
         let tendril2 = super::Tendril {
@@ -165,7 +165,7 @@ mod tests {
             name: "settings2.json".to_string(),
             parent_dirs_mac: ["some/mac/path".to_string()].to_vec(),
             parent_dirs_windows: ["C:\\Users\\<user>\\Documents\\".to_string()].to_vec(),
-            folder_merge: true
+            folder_merge: true,
         };
 
         let expected = [tendril1, tendril2].to_vec();
@@ -176,7 +176,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_tendrils_ignores_extra_json_field_returns_tendril() {
+    fn ignores_extra_json_field_returns_tendril() {
         let given = r#"
         [
             {
@@ -194,7 +194,7 @@ mod tests {
             name: "settings.json".to_string(),
             parent_dirs_mac: [].to_vec(),
             parent_dirs_windows: ["C:\\Users\\<user>\\AppData\\".to_string()].to_vec(),
-            folder_merge: false
+            folder_merge: false,
         };
 
         let expected = [tendril1].to_vec();
