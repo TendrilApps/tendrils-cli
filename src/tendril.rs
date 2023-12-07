@@ -2,7 +2,7 @@ use serde::{ Serialize, Deserialize };
 
 /// Represents a file system object that is controlled
 /// by Tendrils.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Tendril {
     pub app: String,
     pub name: String,
