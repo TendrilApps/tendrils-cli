@@ -71,7 +71,7 @@ fn resolve_overrides(global: &Vec<Tendril>, overrides: &Vec<Tendril>) -> Vec<Ten
 }
 
 #[cfg(test)]
-mod parse_tenrils_tests {
+mod parse_tendrils_tests {
     use super::parse_tendrils;
 
     #[test]
