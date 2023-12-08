@@ -39,7 +39,7 @@ fn get_tendrils_folder(fs: &impl FsProvider) -> Option<PathBuf> {
 }
 
 /// # Arguments
-/// - `json` - Tendril items in JSON format
+/// - `json` - JSON array of Tendrils
 fn parse_tendrils(json: &str) -> Result<Vec<Tendril>, serde_json::Error> {
     serde_json::from_str::<Vec<Tendril>>(&json)
 }
@@ -47,8 +47,8 @@ fn parse_tendrils(json: &str) -> Result<Vec<Tendril>, serde_json::Error> {
 /// Returns a list of all Tendrils after replacing global ones with any
 /// applicable overrides.
 /// # Arguments
-/// - `global` - The set of Tendril items defined in tendrils.json
-/// - `overrides` - The set of Tendril items defined in tendrils-overrides.json
+/// - `global` - The set of Tendrils (typically defined in tendrils.json)
+/// - `overrides` - The set of Tendril overrides (typically defined in tendrils-overrides.json)
 fn resolve_overrides(global: &Vec<Tendril>, overrides: &Vec<Tendril>) -> Vec<Tendril> {
     let mut resolved_tendrils: Vec<Tendril> = Vec::from([]);
 
