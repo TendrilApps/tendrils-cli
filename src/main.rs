@@ -1,17 +1,22 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
+mod file_system;
+use file_system::{FsProvider, FsWrapper};
 mod tendril;
 use tendril::Tendril;
 
 fn main() {
-    let user_data_folder = std::env::current_dir().unwrap();
-    let tendrils_file_path = Path::new(&user_data_folder).join("tendrils.json");
-    let tendril_overrides_file_path = Path::new(&user_data_folder).join("tendrils-overrides.json");
+    let fs_wrapper = FsWrapper {};
 
-    let tendrils_file_contents = std::fs::read_to_string(&tendrils_file_path)
+    let tendrils_folder = get_tendrils_folder(&fs_wrapper)
+        .expect("Could not find a Tendrils folder");
+    let tendrils_file_path = Path::new(&tendrils_folder).join("tendrils.json");
+    let tendril_overrides_file_path = Path::new(&tendrils_folder).join("tendrils-overrides.json");
+
+    let tendrils_file_contents = &fs_wrapper.read_to_string(&tendrils_file_path)
         .expect(format!("Could not read file at: {:?}", &tendrils_file_path).as_str());
 
     let tendril_overrides_file_contents = match tendril_overrides_file_path.exists() {
-        true => Some(std::fs::read_to_string(&tendril_overrides_file_path)
+        true => Some(fs_wrapper.read_to_string(&tendril_overrides_file_path)
             .expect(format!("Could not read file at: {:?}", &tendril_overrides_file_path).as_str())),
         false => None
     };
@@ -27,6 +32,10 @@ fn main() {
     let tendrils = resolve_overrides(&global_tendrils, &local_tendrils);
 
     print!("{:#?}", tendrils);
+}
+
+fn get_tendrils_folder(fs: &impl FsProvider) -> Option<PathBuf> {
+    fs.current_dir().ok()
 }
 
 /// # Arguments
