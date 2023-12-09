@@ -9,29 +9,18 @@ fn main() {
 
     let tendrils_folder = get_tendrils_folder(&fs_wrapper)
         .expect("Could not find a Tendrils folder");
-    let tendrils_file_path = Path::new(&tendrils_folder).join("tendrils.json");
-    let tendril_overrides_file_path = Path::new(&tendrils_folder).join("tendrils-overrides.json");
 
-    let tendrils_file_contents = &fs_wrapper.read_to_string(&tendrils_file_path)
-        .expect(format!("Could not read file at: {:?}", &tendrils_file_path).as_str());
+    let common_tendrils = get_tendrils(&tendrils_folder, &fs_wrapper)
+        .expect("Could not import the tendrils.json file");
 
-    let tendril_overrides_file_contents = match tendril_overrides_file_path.exists() {
-        true => Some(fs_wrapper.read_to_string(&tendril_overrides_file_path)
-            .expect(format!("Could not read file at: {:?}", &tendril_overrides_file_path).as_str())),
-        false => None
-    };
+    let override_tendrils = get_tendril_overrides(&tendrils_folder, &fs_wrapper)
+        .expect("Could not import the tendrils-overrides.json file");
 
-    let global_tendrils = parse_tendrils(&tendrils_file_contents).expect("Could not parse JSON");
-    let local_tendrils = match &tendril_overrides_file_contents {
-        Some(file_content) => parse_tendrils(file_content).expect("Could not parse JSON"),
-        None => [].to_vec()
-    };
+    if override_tendrils.is_empty() { println!("No local overrides were found.") }
 
-    if local_tendrils.is_empty() { println!("No local overrides were found.") }
+    let resolved_tendrils = resolve_overrides(&common_tendrils, &override_tendrils);
 
-    let tendrils = resolve_overrides(&global_tendrils, &local_tendrils);
-
-    print!("{:#?}", tendrils);
+    print!("{:#?}", resolved_tendrils);
 }
 
 fn get_tendrils_folder(fs: &impl FsProvider) -> Option<PathBuf> {
@@ -44,6 +33,26 @@ fn get_tendrils_folder(fs: &impl FsProvider) -> Option<PathBuf> {
     } else {
         None
     }
+}
+
+fn get_tendrils(tendrils_folder: &Path, fs: &impl FsProvider) -> Result<Vec<Tendril>, GetTendrilsError> {
+    let tendrils_file_path = Path::new(&tendrils_folder).join("tendrils.json");
+    let tendrils_file_contents = fs.read_to_string(&tendrils_file_path)?;
+    let tendrils = parse_tendrils(&tendrils_file_contents)?;
+    Ok(tendrils)
+}
+
+fn get_tendril_overrides(tendrils_folder: &Path, fs: &impl FsProvider) -> Result<Vec<Tendril>, GetTendrilsError> {
+    let tendrils_file_path = Path::new(&tendrils_folder).join("tendrils-overrides.json");
+    let tendrils_file_contents: String;
+    if tendrils_file_path.exists() {
+        tendrils_file_contents = fs.read_to_string(&tendrils_file_path)?;
+    } else {
+        return Ok([].to_vec())
+    }
+
+    let tendrils = parse_tendrils(&tendrils_file_contents)?;
+    Ok(tendrils)
 }
 
 /// # Arguments
@@ -76,6 +85,24 @@ fn resolve_overrides(global: &Vec<Tendril>, overrides: &Vec<Tendril>) -> Vec<Ten
     }
 
     resolved_tendrils
+}
+
+#[derive(Debug)]
+enum GetTendrilsError {
+    IoError(std::io::Error),
+    ParseError(serde_json::Error)
+}
+
+impl From<std::io::Error> for GetTendrilsError {
+    fn from(err: std::io::Error) -> Self {
+        GetTendrilsError::IoError(err)
+    }
+}
+
+impl From<serde_json::Error> for GetTendrilsError {
+    fn from(err: serde_json::Error) -> Self {
+        GetTendrilsError::ParseError(err)
+    }
 }
 
 #[cfg(test)]
@@ -142,7 +169,7 @@ mod get_tendrils_folder_tests {
     use super::mocks::FsWrapper;
 
     #[test]
-    fn no_tendrils_json_file_in_current_folder_returns_none() {
+    fn no_tendrils_json_in_current_dir_returns_none() {
         let fs_mock = FsWrapper::new();
         let expected_exists_queries = [PathBuf::from(super::mocks::DEFAULT_CURRENT_DIR)
             .join("tendrils.json")].to_vec();
@@ -153,7 +180,7 @@ mod get_tendrils_folder_tests {
     }
 
     #[test]
-    fn tendrils_json_file_in_current_folder_returns_path() {
+    fn tendrils_json_in_current_dir_returns_current_dir() {
         let mut fs_mock = FsWrapper::new();
         fs_mock.exists_returns = [true].to_vec();
         let expected = PathBuf::from(super::mocks::DEFAULT_CURRENT_DIR);
