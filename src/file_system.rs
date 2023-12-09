@@ -4,6 +4,7 @@ use std::path::{PathBuf, Path};
 /// testing.
 pub trait FsProvider {
     fn current_dir(&self) -> Result<PathBuf, std::io::Error>;
+    fn exists(&self, path: &Path) -> bool;
     fn read_to_string(&self, path: &Path) -> Result<String, std::io::Error>;
 }
 
@@ -12,6 +13,10 @@ pub struct FsWrapper { }
 impl FsProvider for FsWrapper {
     fn current_dir(&self) -> Result<PathBuf, std::io::Error> {
         std::env::current_dir()
+    }
+
+    fn exists(&self, path: &Path) -> bool {
+        path.exists()
     }
 
     fn read_to_string(&self, path: &Path) -> Result<String, std::io::Error> {

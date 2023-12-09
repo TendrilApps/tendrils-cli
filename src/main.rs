@@ -35,7 +35,15 @@ fn main() {
 }
 
 fn get_tendrils_folder(fs: &impl FsProvider) -> Option<PathBuf> {
-    fs.current_dir().ok()
+    let mut path = fs.current_dir().ok()?;
+    path.push("tendrils.json");
+
+    if fs.exists(&path) {
+        path.pop();
+        Some(path)
+    } else {
+        None
+    }
 }
 
 /// # Arguments
@@ -68,6 +76,91 @@ fn resolve_overrides(global: &Vec<Tendril>, overrides: &Vec<Tendril>) -> Vec<Ten
     }
 
     resolved_tendrils
+}
+
+#[cfg(test)]
+mod mocks {
+    use std::{path::{ Path, PathBuf }, cell::RefCell};
+    use super::file_system::FsProvider;
+
+    pub const DEFAULT_CURRENT_DIR: &str = "DefaultCurrentDir";
+    pub const DEFAULT_READ_TO_STRING: &str = "DefaultFileContents";
+
+    pub struct FsWrapper {
+        pub current_dir_return: Result<PathBuf, std::io::Error>,
+        pub exists_returns: Vec<bool>,
+        pub exists_queries: RefCell<Vec<PathBuf>>,
+        pub read_to_string_return: Result<String, std::io::Error>
+    }
+
+    impl FsWrapper {
+        pub fn new() -> FsWrapper {
+            FsWrapper {
+                current_dir_return: Ok(PathBuf::from(DEFAULT_CURRENT_DIR)),
+                exists_returns: [false].to_vec(),
+                exists_queries: RefCell::from([].to_vec()),
+                read_to_string_return: Ok(DEFAULT_READ_TO_STRING.to_owned())
+            }
+        }
+    }
+
+    impl FsProvider for FsWrapper {
+        fn current_dir(&self) -> Result<PathBuf, std::io::Error> {
+            if self.current_dir_return.is_ok() {
+                let value = self.current_dir_return.as_ref().unwrap();
+                Ok(value.to_owned())
+            } else {
+                let errorkind = self.current_dir_return.as_ref().unwrap_err().kind();
+                let err = std::io::Error::from(errorkind);
+                Err(err)
+            }
+        }
+
+        fn exists(&self, path: &Path) -> bool {
+            self.exists_queries.borrow_mut().push(path.to_owned());
+            self.exists_returns[self.exists_queries.borrow().len() - 1]
+        }
+
+        fn read_to_string(&self, _path: &Path) -> Result<String, std::io::Error> {
+            if self.read_to_string_return.is_ok() {
+                let value = self.read_to_string_return.as_ref().unwrap();
+                Ok(value.to_owned())
+            } else {
+                let errorkind = self.read_to_string_return.as_ref().unwrap_err().kind();
+                let err = std::io::Error::from(errorkind);
+                Err(err)
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod get_tendrils_folder_tests {
+    use std::cell::RefCell;
+    use std::path::PathBuf;
+    use super::get_tendrils_folder;
+    use super::mocks::FsWrapper;
+
+    #[test]
+    fn no_tendrils_json_file_in_current_folder_returns_none() {
+        let fs_mock = FsWrapper::new();
+        let expected_exists_queries = [PathBuf::from(super::mocks::DEFAULT_CURRENT_DIR)
+            .join("tendrils.json")].to_vec();
+
+        let actual = get_tendrils_folder(&fs_mock);
+        assert!(actual.is_none());
+        assert_eq!(fs_mock.exists_queries, RefCell::from(expected_exists_queries));
+    }
+
+    #[test]
+    fn tendrils_json_file_in_current_folder_returns_path() {
+        let mut fs_mock = FsWrapper::new();
+        fs_mock.exists_returns = [true].to_vec();
+        let expected = PathBuf::from(super::mocks::DEFAULT_CURRENT_DIR);
+
+        let actual = get_tendrils_folder(&fs_mock);
+        assert_eq!(actual.unwrap(), expected);
+    }
 }
 
 #[cfg(test)]
