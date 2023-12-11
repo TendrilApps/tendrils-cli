@@ -106,6 +106,11 @@ impl From<serde_json::Error> for GetTendrilsError {
 }
 
 #[cfg(test)]
+mod sample_tendrils;
+#[cfg(test)]
+use sample_tendrils::SampleTendrils;
+
+#[cfg(test)]
 mod mocks {
     use std::{path::{ Path, PathBuf }, cell::RefCell};
     use super::file_system::FsProvider;
@@ -193,6 +198,7 @@ mod get_tendrils_folder_tests {
 #[cfg(test)]
 mod parse_tendrils_tests {
     use super::parse_tendrils;
+    use super::SampleTendrils;
 
     #[test]
     fn empty_string_returns_error() {
@@ -210,17 +216,17 @@ mod parse_tendrils_tests {
 
     #[test]
     fn json_missing_field_returns_error() {
-        let given = r#"
-        [
-            {
-                "app": "MyApp",
-                "parent-dirs-mac": [],
-                "parent-dirs-windows": ["C:\\Users\\<user>\\AppData\\"],
-                "folder-merge": false
-            }
-        ]"#;
+        let original_tendril_json = SampleTendrils::new().tendril_1_json;
+        let partial_tendril_json = original_tendril_json
+            .replace(r#""name": "settings.json""#, "");
 
-        assert!(parse_tendrils(&given).is_err());
+        let given = SampleTendrils::build_tendrils_json(
+            &[partial_tendril_json.clone()].to_vec());
+
+        let actual = parse_tendrils(&given);
+
+        assert_ne!(&original_tendril_json, &partial_tendril_json);
+        assert!(actual.is_err());
     }
 
     #[test]
@@ -235,26 +241,11 @@ mod parse_tendrils_tests {
 
     #[test]
     fn single_tendril_in_json_returns_tendril() {
-        let given = r#"
-        [
-            {
-                "app": "MyApp",
-                "name": "settings.json",
-                "parent-dirs-mac": [],
-                "parent-dirs-windows": ["C:\\Users\\<user>\\AppData\\"],
-                "folder-merge": false
-            }
-        ]"#;
+        let samples = SampleTendrils::new();
+        let given = SampleTendrils::build_tendrils_json(
+            &[samples.tendril_1_json].to_vec());
 
-        let tendril1 = super::Tendril {
-            app: "MyApp".to_string(),
-            name: "settings.json".to_string(),
-            parent_dirs_mac: [].to_vec(),
-            parent_dirs_windows: ["C:\\Users\\<user>\\AppData\\".to_string()].to_vec(),
-            folder_merge: false,
-        };
-
-        let expected = [tendril1].to_vec();
+        let expected = [samples.tendril_1].to_vec();
 
         let actual = parse_tendrils(&given).unwrap();
 
@@ -263,41 +254,11 @@ mod parse_tendrils_tests {
 
     #[test]
     fn multiple_tendrils_in_json_returns_tendrils() {
-        let given = r#"
-        [
-            {
-                "app": "MyApp",
-                "name": "settings.json",
-                "parent-dirs-mac": [],
-                "parent-dirs-windows": ["C:\\Users\\<user>\\AppData\\"],
-                "folder-merge": false
-            },
-            {
-                "app": "MyApp2",
-                "name": "settings2.json",
-                "parent-dirs-mac": ["some/mac/path"],
-                "parent-dirs-windows": ["C:\\Users\\<user>\\Documents\\"],
-                "folder-merge": true
-            }
-        ]"#;
+        let samples = SampleTendrils::new();
+        let given = SampleTendrils::build_tendrils_json(
+            &[samples.tendril_1_json, samples.tendril_2_json].to_vec());
 
-        let tendril1 = super::Tendril {
-            app: "MyApp".to_string(),
-            name: "settings.json".to_string(),
-            parent_dirs_mac: [].to_vec(),
-            parent_dirs_windows: ["C:\\Users\\<user>\\AppData\\".to_string()].to_vec(),
-            folder_merge: false,
-        };
-
-        let tendril2 = super::Tendril {
-            app: "MyApp2".to_string(),
-            name: "settings2.json".to_string(),
-            parent_dirs_mac: ["some/mac/path".to_string()].to_vec(),
-            parent_dirs_windows: ["C:\\Users\\<user>\\Documents\\".to_string()].to_vec(),
-            folder_merge: true,
-        };
-
-        let expected = [tendril1, tendril2].to_vec();
+        let expected = [samples.tendril_1, samples.tendril_2].to_vec();
 
         let actual = parse_tendrils(&given).unwrap();
 
@@ -306,29 +267,18 @@ mod parse_tendrils_tests {
 
     #[test]
     fn ignores_extra_json_field_returns_tendril() {
-        let given = r#"
-        [
-            {
-                "some-extra-field": "ABCD",
-                "app": "MyApp",
-                "name": "settings.json",
-                "parent-dirs-mac": [],
-                "parent-dirs-windows": ["C:\\Users\\<user>\\AppData\\"],
-                "folder-merge": false
-            }
-        ]"#;
+        let samples = SampleTendrils::new();
+        let original_tendril_json = SampleTendrils::new().tendril_1_json;
+        let extra_field_tendril_json = original_tendril_json
+            .replace(r#""name": "settings.json","#, r#""name": "settings.json", "extra field": true,"#);
 
-        let tendril1 = super::Tendril {
-            app: "MyApp".to_string(),
-            name: "settings.json".to_string(),
-            parent_dirs_mac: [].to_vec(),
-            parent_dirs_windows: ["C:\\Users\\<user>\\AppData\\".to_string()].to_vec(),
-            folder_merge: false,
-        };
+        let given = SampleTendrils::build_tendrils_json(
+            &[extra_field_tendril_json.clone()].to_vec());
 
-        let expected = [tendril1].to_vec();
+        let expected = [samples.tendril_1].to_vec();
         let actual = parse_tendrils(&given).unwrap();
 
+        assert_ne!(original_tendril_json, extra_field_tendril_json);
         assert_eq!(actual, expected);
     }
 }
