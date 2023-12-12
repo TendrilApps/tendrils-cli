@@ -1,19 +1,16 @@
 use std::path::{Path, PathBuf};
-mod file_system;
-use file_system::{FsProvider, FsWrapper};
 mod tendril;
 use tendril::Tendril;
 
 fn main() {
-    let fs_wrapper = FsWrapper {};
-
-    let tendrils_folder = get_tendrils_folder(&fs_wrapper)
+    let tendrils_folder = get_tendrils_folder(&std::env::current_dir()
+        .expect("Could not get the current directory"))
         .expect("Could not find a Tendrils folder");
 
-    let common_tendrils = get_tendrils(&tendrils_folder, &fs_wrapper)
+    let common_tendrils = get_tendrils(&tendrils_folder)
         .expect("Could not import the tendrils.json file");
 
-    let override_tendrils = get_tendril_overrides(&tendrils_folder, &fs_wrapper)
+    let override_tendrils = get_tendril_overrides(&tendrils_folder)
         .expect("Could not import the tendrils-overrides.json file");
 
     if override_tendrils.is_empty() { println!("No local overrides were found.") }
@@ -23,36 +20,37 @@ fn main() {
     print!("{:#?}", resolved_tendrils);
 }
 
-fn get_tendrils_folder(fs: &impl FsProvider) -> Option<PathBuf> {
-    let mut path = fs.current_dir().ok()?;
-    path.push("tendrils.json");
-
-    if fs.exists(&path) {
-        path.pop();
-        Some(path)
+fn get_tendrils_folder(starting_path: &Path) -> Option<PathBuf> {
+    if is_tendrils_folder(&starting_path) {
+        Some(starting_path.to_owned())
     } else {
         None
     }
 }
 
-fn get_tendrils(tendrils_folder: &Path, fs: &impl FsProvider) -> Result<Vec<Tendril>, GetTendrilsError> {
+fn get_tendrils(tendrils_folder: &Path) -> Result<Vec<Tendril>, GetTendrilsError> {
     let tendrils_file_path = Path::new(&tendrils_folder).join("tendrils.json");
-    let tendrils_file_contents = fs.read_to_string(&tendrils_file_path)?;
+    let tendrils_file_contents = std::fs::read_to_string(&tendrils_file_path)?;
     let tendrils = parse_tendrils(&tendrils_file_contents)?;
     Ok(tendrils)
 }
 
-fn get_tendril_overrides(tendrils_folder: &Path, fs: &impl FsProvider) -> Result<Vec<Tendril>, GetTendrilsError> {
+fn get_tendril_overrides(tendrils_folder: &Path) -> Result<Vec<Tendril>, GetTendrilsError> {
     let tendrils_file_path = Path::new(&tendrils_folder).join("tendrils-overrides.json");
     let tendrils_file_contents: String;
-    if tendrils_file_path.exists() {
-        tendrils_file_contents = fs.read_to_string(&tendrils_file_path)?;
+
+    if tendrils_file_path.is_file() {
+        tendrils_file_contents = std::fs::read_to_string(&tendrils_file_path)?;
     } else {
         return Ok([].to_vec())
     }
 
     let tendrils = parse_tendrils(&tendrils_file_contents)?;
     Ok(tendrils)
+}
+
+fn is_tendrils_folder(dir: &Path) -> bool {
+    dir.join("tendrils.json").is_file()
 }
 
 /// # Arguments
@@ -109,89 +107,123 @@ impl From<serde_json::Error> for GetTendrilsError {
 mod sample_tendrils;
 #[cfg(test)]
 use sample_tendrils::SampleTendrils;
+#[cfg(test)]
+extern crate tempdir;
 
 #[cfg(test)]
-mod mocks {
-    use std::{path::{ Path, PathBuf }, cell::RefCell};
-    use super::file_system::FsProvider;
-
-    pub const DEFAULT_CURRENT_DIR: &str = "DefaultCurrentDir";
-    pub const DEFAULT_READ_TO_STRING: &str = "DefaultFileContents";
-
-    pub struct FsWrapper {
-        pub current_dir_return: Result<PathBuf, std::io::Error>,
-        pub exists_returns: Vec<bool>,
-        pub exists_queries: RefCell<Vec<PathBuf>>,
-        pub read_to_string_return: Result<String, std::io::Error>
+fn get_disposable_folder() -> PathBuf {
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("target")
+        .join("temp-tendrils-folders");
+    
+    if !path.is_dir() {
+        std::fs::create_dir(&path).unwrap();
     }
-
-    impl FsWrapper {
-        pub fn new() -> FsWrapper {
-            FsWrapper {
-                current_dir_return: Ok(PathBuf::from(DEFAULT_CURRENT_DIR)),
-                exists_returns: [false].to_vec(),
-                exists_queries: RefCell::from([].to_vec()),
-                read_to_string_return: Ok(DEFAULT_READ_TO_STRING.to_owned())
-            }
-        }
-    }
-
-    impl FsProvider for FsWrapper {
-        fn current_dir(&self) -> Result<PathBuf, std::io::Error> {
-            if self.current_dir_return.is_ok() {
-                let value = self.current_dir_return.as_ref().unwrap();
-                Ok(value.to_owned())
-            } else {
-                let errorkind = self.current_dir_return.as_ref().unwrap_err().kind();
-                let err = std::io::Error::from(errorkind);
-                Err(err)
-            }
-        }
-
-        fn exists(&self, path: &Path) -> bool {
-            self.exists_queries.borrow_mut().push(path.to_owned());
-            self.exists_returns[self.exists_queries.borrow().len() - 1]
-        }
-
-        fn read_to_string(&self, _path: &Path) -> Result<String, std::io::Error> {
-            if self.read_to_string_return.is_ok() {
-                let value = self.read_to_string_return.as_ref().unwrap();
-                Ok(value.to_owned())
-            } else {
-                let errorkind = self.read_to_string_return.as_ref().unwrap_err().kind();
-                let err = std::io::Error::from(errorkind);
-                Err(err)
-            }
-        }
-    }
+    path
 }
 
 #[cfg(test)]
 mod get_tendrils_folder_tests {
-    use std::cell::RefCell;
-    use std::path::PathBuf;
+    use serial_test::serial;
+    use super::get_disposable_folder;
     use super::get_tendrils_folder;
-    use super::mocks::FsWrapper;
+    use super::tempdir::TempDir;
 
     #[test]
-    fn no_tendrils_json_in_current_dir_returns_none() {
-        let fs_mock = FsWrapper::new();
-        let expected_exists_queries = [PathBuf::from(super::mocks::DEFAULT_CURRENT_DIR)
-            .join("tendrils.json")].to_vec();
+    #[serial] // To avoid flaky tests upon first run (before the disposable folder exists)
+    fn empty_starting_dir_returns_none() {
+        let temp = TempDir::new_in(
+            get_disposable_folder(),
+            "Empty").unwrap();
 
-        let actual = get_tendrils_folder(&fs_mock);
+        let actual = get_tendrils_folder(&temp.path());
+
         assert!(actual.is_none());
-        assert_eq!(fs_mock.exists_queries, RefCell::from(expected_exists_queries));
+    }
+
+    // TODO: Test that not just any file in the folder will trigger a false positive
+
+    #[test]
+    #[serial]
+    fn tendrils_json_dir_in_starting_dir_returns_none() {
+        let temp = TempDir::new_in(
+            get_disposable_folder(),
+            "TendrilsJsonSubdir").unwrap();
+        std::fs::create_dir(temp.path().join("tendrils.json")).unwrap();
+
+        let actual = get_tendrils_folder(&temp.path());
+
+        assert!(actual.is_none());
     }
 
     #[test]
-    fn tendrils_json_in_current_dir_returns_current_dir() {
-        let mut fs_mock = FsWrapper::new();
-        fs_mock.exists_returns = [true].to_vec();
-        let expected = PathBuf::from(super::mocks::DEFAULT_CURRENT_DIR);
+    #[serial]
+    fn tendrils_json_in_starting_dir_returns_current_dir() {
+        let temp = TempDir::new_in(
+            get_disposable_folder(),
+            "EmptyTendrilsJson").unwrap();
+        std::fs::File::create(temp.path().join("tendrils.json")).unwrap();
 
-        let actual = get_tendrils_folder(&fs_mock);
-        assert_eq!(actual.unwrap(), expected);
+        let actual = get_tendrils_folder(&temp.path()).unwrap();
+
+        assert_eq!(actual, temp.path());
+    }
+}
+
+// TODO: Test when tendrils.json is a DIRECTORY
+#[cfg(test)]
+mod get_tendrils_tests {
+    use std::matches;
+    use serial_test::serial;
+    use super::{ get_tendrils, get_disposable_folder };
+    use super::{ GetTendrilsError, SampleTendrils, tempdir::TempDir };
+
+    #[test]
+    #[serial]
+    fn no_tendrils_file_returns_err() {
+        let temp = TempDir::new_in(
+            get_disposable_folder(),
+            "Empty").unwrap();
+
+        let actual  = get_tendrils(&temp.path());
+
+        assert!(matches!(actual.unwrap_err(), GetTendrilsError::IoError(_)));
+    }
+
+    #[test]
+    #[serial]
+    fn invalid_json_returns_err() {
+        let tendrils_folder = TempDir::new_in(
+            get_disposable_folder(),
+            "InvalidTendrilsJson").unwrap();
+        let tendrils_json = &tendrils_folder.path().join("tendrils.json");
+        std::fs::File::create(&tendrils_json).unwrap(); // TODO: Need to hold temp reference to the file here otherwise dropped too soon?
+        let _ = std::fs::write(&tendrils_json, "I'm not JSON");
+
+        let actual = get_tendrils(&tendrils_folder.path());
+
+        assert!(matches!(actual.unwrap_err(), GetTendrilsError::ParseError(_)));
+    }
+
+// TODO: Test when tendrils-overrides.json is a DIRECTORY
+    #[test]
+    #[serial]
+    fn valid_json_returns_tendrils() {
+        let tendrils_folder = TempDir::new_in(
+            get_disposable_folder(),
+            "ValidJson").unwrap();
+        let samples = SampleTendrils::new();
+        let json = SampleTendrils::build_tendrils_json(
+            &[samples.tendril_1_json].to_vec());
+        let tendrils_json = &tendrils_folder.path().join("tendrils.json");
+        std::fs::File::create(&tendrils_json).unwrap(); // TODO: Need to hold temp reference to the file here otherwise dropped too soon?
+        let _ = std::fs::write(&tendrils_json, &json);
+        
+        let expected = [samples.tendril_1].to_vec();
+
+        let actual  = get_tendrils(&tendrils_folder.path()).unwrap();
+
+        assert_eq!(actual, expected);
     }
 }
 
