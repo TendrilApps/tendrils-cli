@@ -1,9 +1,0 @@
-[
-    {
-        "app": "Overriden",
-        "name": "OverridenFile",
-        "parent-dirs-mac": ["overriden/mac/directory"],
-        "parent-dirs-windows": ["overriden\\windows\\directory"],
-        "folder-merge": true
-    }
-]
