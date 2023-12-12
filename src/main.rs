@@ -196,7 +196,7 @@ mod get_tendrils_folder_tests {
 
     #[test]
     #[serial]
-    fn starting_dir_is_tendrils_folder_returns_current_dir() {
+    fn starting_dir_is_tendrils_folder_returns_starting_dir() {
         let temp = TempDir::new_in(
             get_disposable_folder(),
             "EmptyTendrilsJson").unwrap();
@@ -410,6 +410,56 @@ mod parse_tendrils_tests {
         let actual = parse_tendrils(&given).unwrap();
 
         assert_ne!(original_tendril_json, extra_field_tendril_json);
+        assert_eq!(actual, expected);
+    }
+}
+
+#[cfg(test)]
+mod resolve_overrides_tests {
+    use super::resolve_overrides;
+    use super::SampleTendrils;
+
+    #[test]
+    fn empty_overrides_returns_global() {
+        let samples = SampleTendrils::new();
+        let globals = [samples.tendril_1.clone(), samples.tendril_1.clone()].to_vec();
+        let overrides = [].to_vec();
+
+        let actual = resolve_overrides(&globals, &overrides);
+
+        assert_eq!(actual, globals);
+    }
+
+    #[test]
+    fn overrides_not_matching_globals_are_ignored() {
+        let samples = SampleTendrils::new();
+        let globals = [samples.tendril_1.clone()].to_vec();
+        let mut misc_override = samples.tendril_1.clone();
+        misc_override.app = "I don't exist".to_string();
+        misc_override.name = "Me neither".to_string();
+        let overrides = [misc_override].to_vec();
+
+        let actual = resolve_overrides(&globals, &overrides);
+
+        assert_eq!(actual, globals);
+    }
+
+    #[test]
+    fn overrides_matching_globals_override_globals() {
+        let samples = SampleTendrils::new();
+        let globals = [
+            samples.tendril_1.clone(),
+            samples.tendril_2.clone()].to_vec();
+
+        let mut override_tendril = samples.tendril_1.clone();
+        override_tendril.parent_dirs_mac = ["Some/override/path".to_string()].to_vec();
+        override_tendril.parent_dirs_windows = ["Some\\override\\path".to_string()].to_vec();
+        let overrides = [override_tendril.clone()].to_vec();
+        
+        let expected = [override_tendril, samples.tendril_2.clone()].to_vec();
+
+        let actual = resolve_overrides(&globals, &overrides);
+
         assert_eq!(actual, expected);
     }
 }
