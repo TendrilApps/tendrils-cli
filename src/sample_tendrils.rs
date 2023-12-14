@@ -31,7 +31,8 @@ impl SampleTendrils {
             app: "MyApp2".to_string(),
             name: "settings2.json".to_string(),
             parent_dirs_mac: ["some/mac/path".to_string()].to_vec(),
-            parent_dirs_windows: ["C:\\Users\\<user>\\Documents\\".to_string()].to_vec(),
+            parent_dirs_windows: ["C:\\Users\\<user>\\Documents\\".to_string()]
+                .to_vec(),
             folder_merge: true,
         };
 

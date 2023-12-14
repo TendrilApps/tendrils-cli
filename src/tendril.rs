@@ -1,4 +1,4 @@
-use serde::{ Serialize, Deserialize };
+use serde::{Deserialize, Serialize};
 
 /// Represents a file system object that is controlled
 /// by Tendrils.
