@@ -7,7 +7,7 @@ use errors::GetTendrilsError;
 // TODO: Recursively look through all parent folders
 // TODO: If it can't be found in the current path, check in an env variable
 pub fn get_tendrils_folder(starting_path: &Path) -> Option<PathBuf> {
-    if is_tendrils_folder(&starting_path) {
+    if is_tendrils_folder(starting_path) {
         Some(starting_path.to_owned())
     }
     else {
@@ -19,7 +19,7 @@ pub fn get_tendrils(
     tendrils_folder: &Path,
 ) -> Result<Vec<Tendril>, GetTendrilsError> {
     let tendrils_file_path = Path::new(&tendrils_folder).join("tendrils.json");
-    let tendrils_file_contents = std::fs::read_to_string(&tendrils_file_path)?;
+    let tendrils_file_contents = std::fs::read_to_string(tendrils_file_path)?;
     let tendrils = parse_tendrils(&tendrils_file_contents)?;
     Ok(tendrils)
 }
@@ -29,14 +29,13 @@ pub fn get_tendril_overrides(
 ) -> Result<Vec<Tendril>, GetTendrilsError> {
     let tendrils_file_path =
         Path::new(&tendrils_folder).join("tendrils-override.json");
-    let tendrils_file_contents: String;
 
-    if tendrils_file_path.is_file() {
-        tendrils_file_contents = std::fs::read_to_string(&tendrils_file_path)?;
+    let tendrils_file_contents = if tendrils_file_path.is_file() {
+        std::fs::read_to_string(tendrils_file_path)?
     }
     else {
         return Ok([].to_vec());
-    }
+    };
 
     let tendrils = parse_tendrils(&tendrils_file_contents)?;
     Ok(tendrils)
@@ -49,7 +48,7 @@ pub fn is_tendrils_folder(dir: &Path) -> bool {
 /// # Arguments
 /// - `json` - JSON array of Tendrils
 fn parse_tendrils(json: &str) -> Result<Vec<Tendril>, serde_json::Error> {
-    serde_json::from_str::<Vec<Tendril>>(&json)
+    serde_json::from_str::<Vec<Tendril>>(json)
 }
 
 /// Returns a list of all Tendrils after replacing global ones with any
@@ -59,14 +58,17 @@ fn parse_tendrils(json: &str) -> Result<Vec<Tendril>, serde_json::Error> {
 /// - `overrides` - The set of Tendril overrides (typically defined in
 ///   tendrils-overrides.json)
 pub fn resolve_overrides(
-    global: &Vec<Tendril>,
-    overrides: &Vec<Tendril>,
-) -> Vec<Tendril> {
+    global: &Vec<Tendril>,  // TODO: Change to accept &[Tendril]?
+    overrides: &[Tendril],
+) -> Vec<Tendril> {         // TODO: Change to return [&Tendril]?
+    // TODO: Could allocate as array at first, with max length set
+    // to the global length? Should the return value always be the
+    // same as global?
     let mut resolved_tendrils: Vec<Tendril> = Vec::from([]);
 
     for tendril in global {
         let mut last_index: usize = 0;
-        let overrides_iter = overrides.into_iter();
+        let overrides_iter = overrides.iter();
 
         if overrides_iter.enumerate().any(|(i, x)| {
             last_index = i;
