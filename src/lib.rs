@@ -1,6 +1,8 @@
 use std::path::{Path, PathBuf};
 mod tendril;
 use tendril::Tendril;
+mod errors;
+use errors::GetTendrilsError;
 
 // TODO: Recursively look through all parent folders
 // TODO: If it can't be found in the current path, check in an env variable
@@ -78,24 +80,6 @@ pub fn resolve_overrides(
     }
 
     resolved_tendrils
-}
-
-#[derive(Debug)]
-pub enum GetTendrilsError {
-    IoError(std::io::Error),
-    ParseError(serde_json::Error),
-}
-
-impl From<std::io::Error> for GetTendrilsError {
-    fn from(err: std::io::Error) -> Self {
-        GetTendrilsError::IoError(err)
-    }
-}
-
-impl From<serde_json::Error> for GetTendrilsError {
-    fn from(err: serde_json::Error) -> Self {
-        GetTendrilsError::ParseError(err)
-    }
 }
 
 #[cfg(test)]
