@@ -441,11 +441,49 @@ mod resolve_overrides_tests {
     use super::{resolve_overrides, SampleTendrils};
 
     #[test]
-    fn empty_overrides_returns_global() {
+    fn empty_overrides_returns_globals() {
         let samples = SampleTendrils::new();
         let globals =
             [samples.tendril_1.clone(), samples.tendril_1.clone()].to_vec();
         let overrides = [].to_vec();
+
+        let actual = resolve_overrides(&globals, &overrides);
+
+        assert_eq!(actual, globals);
+    }
+
+    #[test]
+    fn empty_globals_returns_empty() {
+        let samples = SampleTendrils::new();
+        let globals = [].to_vec();
+
+        let mut override_tendril = samples.tendril_1.clone();
+        override_tendril.parent_dirs_mac =
+            ["Some/override/path".to_string()].to_vec();
+        override_tendril.parent_dirs_windows =
+            ["Some\\override\\path".to_string()].to_vec();
+        let overrides = [override_tendril.clone()].to_vec();
+
+        let actual = resolve_overrides(&globals, &overrides);
+
+        assert!(actual.is_empty());
+    }
+
+    #[test]
+    fn both_empty_returns_empty() {
+        let globals = [].to_vec();
+        let overrides = [].to_vec();
+
+        let actual = resolve_overrides(&globals, &overrides);
+
+        assert!(actual.is_empty());
+    }
+
+    #[test]
+    fn both_equal_returns_globals() {
+        let samples = SampleTendrils::new();
+        let globals = [samples.tendril_1].to_vec();
+        let overrides = &globals;
 
         let actual = resolve_overrides(&globals, &overrides);
 
