@@ -58,13 +58,10 @@ fn parse_tendrils(json: &str) -> Result<Vec<Tendril>, serde_json::Error> {
 /// - `overrides` - The set of Tendril overrides (typically defined in
 ///   tendrils-overrides.json)
 pub fn resolve_overrides(
-    global: &Vec<Tendril>,  // TODO: Change to accept &[Tendril]?
+    global: &[Tendril],  // TODO: Change to accept &[Tendril]?
     overrides: &[Tendril],
-) -> Vec<Tendril> {         // TODO: Change to return [&Tendril]?
-    // TODO: Could allocate as array at first, with max length set
-    // to the global length? Should the return value always be the
-    // same as global?
-    let mut resolved_tendrils: Vec<Tendril> = Vec::from([]);
+) -> Vec<Tendril> {
+    let mut resolved_tendrils = Vec::with_capacity(global.len());
 
     for tendril in global {
         let mut last_index: usize = 0;
