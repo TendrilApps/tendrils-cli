@@ -248,15 +248,14 @@ mod get_tendrils_tests {
             get_disposable_folder(),
             "ValidJson"
         ).unwrap();
-        let samples = SampleTendrils::new();
         let json = SampleTendrils::build_tendrils_json(
-            &[samples.tendril_1_json].to_vec(),
+            &[SampleTendrils::tendril_1_json()].to_vec(),
         );
         let tendrils_json = &tendrils_folder.path().join("tendrils.json");
         std::fs::File::create(&tendrils_json).unwrap();
         std::fs::write(&tendrils_json, &json).unwrap();
 
-        let expected = [samples.tendril_1].to_vec();
+        let expected = [SampleTendrils::tendril_1()].to_vec();
 
         let actual: Vec<Tendril> =
             get_tendrils(&tendrils_folder.path()).unwrap();
@@ -319,16 +318,15 @@ mod get_tendril_overrides_tests {
             "ValidJson"
         ).unwrap();
 
-        let samples = SampleTendrils::new();
         let json = SampleTendrils::build_tendrils_json(
-            &[samples.tendril_1_json].to_vec(),
+            &[SampleTendrils::tendril_1_json()].to_vec(),
         );
         let tendrils_json =
             &tendrils_folder.path().join("tendrils-override.json");
         std::fs::File::create(&tendrils_json).unwrap();
         std::fs::write(&tendrils_json, &json).unwrap();
 
-        let expected = [samples.tendril_1].to_vec();
+        let expected = [SampleTendrils::tendril_1()].to_vec();
 
         let actual = get_tendril_overrides(&tendrils_folder.path()).unwrap();
 
@@ -356,14 +354,14 @@ mod parse_tendrils_tests {
 
     #[test]
     fn tendril_json_not_in_array_returns_error() {
-        let given = SampleTendrils::new().tendril_1_json;
+        let given = SampleTendrils::tendril_1_json();
 
         assert!(parse_tendrils(&given).is_err());
     }
 
     #[test]
     fn json_missing_field_returns_error() {
-        let original_tendril_json = SampleTendrils::new().tendril_1_json;
+        let original_tendril_json = SampleTendrils::tendril_1_json();
         let partial_tendril_json =
             original_tendril_json.replace(r#""name": "settings.json","#, "");
 
@@ -389,12 +387,11 @@ mod parse_tendrils_tests {
 
     #[test]
     fn single_tendril_in_json_returns_tendril() {
-        let samples = SampleTendrils::new();
         let given = SampleTendrils::build_tendrils_json(
-            &[samples.tendril_1_json].to_vec(),
+            &[SampleTendrils::tendril_1_json()].to_vec(),
         );
 
-        let expected = [samples.tendril_1].to_vec();
+        let expected = [SampleTendrils::tendril_1()].to_vec();
 
         let actual = parse_tendrils(&given).unwrap();
 
@@ -403,12 +400,17 @@ mod parse_tendrils_tests {
 
     #[test]
     fn multiple_tendrils_in_json_returns_tendrils() {
-        let samples = SampleTendrils::new();
         let given = SampleTendrils::build_tendrils_json(
-            &[samples.tendril_1_json, samples.tendril_2_json].to_vec(),
+            &[
+                SampleTendrils::tendril_1_json(),
+                SampleTendrils::tendril_2_json(),
+            ].to_vec()
         );
 
-        let expected = [samples.tendril_1, samples.tendril_2].to_vec();
+        let expected = [
+            SampleTendrils::tendril_1(),
+            SampleTendrils::tendril_2()
+        ].to_vec();
 
         let actual = parse_tendrils(&given).unwrap();
 
@@ -417,8 +419,7 @@ mod parse_tendrils_tests {
 
     #[test]
     fn ignores_extra_json_field_returns_tendril() {
-        let samples = SampleTendrils::new();
-        let original_tendril_json = SampleTendrils::new().tendril_1_json;
+        let original_tendril_json = SampleTendrils::tendril_1_json();
         let extra_field_tendril_json = original_tendril_json.replace(
             r#""name": "settings.json","#,
             r#""name": "settings.json", "extra field": true,"#,
@@ -428,7 +429,7 @@ mod parse_tendrils_tests {
             &[extra_field_tendril_json.clone()].to_vec(),
         );
 
-        let expected = [samples.tendril_1].to_vec();
+        let expected = [SampleTendrils::tendril_1()].to_vec();
         let actual = parse_tendrils(&given).unwrap();
 
         assert_ne!(original_tendril_json, extra_field_tendril_json);
@@ -442,9 +443,10 @@ mod resolve_overrides_tests {
 
     #[test]
     fn empty_overrides_returns_globals() {
-        let samples = SampleTendrils::new();
-        let globals =
-            [samples.tendril_1.clone(), samples.tendril_1.clone()].to_vec();
+        let globals = [
+            SampleTendrils::tendril_1(),
+            SampleTendrils::tendril_1()
+        ].to_vec();
         let overrides = [].to_vec();
 
         let actual = resolve_overrides(&globals, &overrides);
@@ -454,10 +456,9 @@ mod resolve_overrides_tests {
 
     #[test]
     fn empty_globals_returns_empty() {
-        let samples = SampleTendrils::new();
         let globals = [].to_vec();
 
-        let mut override_tendril = samples.tendril_1.clone();
+        let mut override_tendril = SampleTendrils::tendril_1();
         override_tendril.parent_dirs_mac =
             ["Some/override/path".to_string()].to_vec();
         override_tendril.parent_dirs_windows =
@@ -481,8 +482,7 @@ mod resolve_overrides_tests {
 
     #[test]
     fn both_equal_returns_globals() {
-        let samples = SampleTendrils::new();
-        let globals = [samples.tendril_1].to_vec();
+        let globals = [SampleTendrils::tendril_1()].to_vec();
         let overrides = &globals;
 
         let actual = resolve_overrides(&globals, &overrides);
@@ -492,9 +492,8 @@ mod resolve_overrides_tests {
 
     #[test]
     fn overrides_not_matching_globals_are_ignored() {
-        let samples = SampleTendrils::new();
-        let globals = [samples.tendril_1.clone()].to_vec();
-        let mut misc_override = samples.tendril_1.clone();
+        let globals = [SampleTendrils::tendril_1()].to_vec();
+        let mut misc_override = SampleTendrils::tendril_1();
         misc_override.app = "I don't exist".to_string();
         misc_override.name = "Me neither".to_string();
         let overrides = [misc_override].to_vec();
@@ -506,19 +505,19 @@ mod resolve_overrides_tests {
 
     #[test]
     fn overrides_matching_globals_override_globals() {
-        let samples = SampleTendrils::new();
         let globals = [
-            samples.tendril_1.clone(),
-            samples.tendril_2.clone()].to_vec();
+            SampleTendrils::tendril_1(),
+            SampleTendrils::tendril_2(),
+        ].to_vec();
 
-        let mut override_tendril = samples.tendril_1.clone();
+        let mut override_tendril = SampleTendrils::tendril_1();
         override_tendril.parent_dirs_mac =
             ["Some/override/path".to_string()].to_vec();
         override_tendril.parent_dirs_windows =
             ["Some\\override\\path".to_string()].to_vec();
         let overrides = [override_tendril.clone()].to_vec();
 
-        let expected = [override_tendril, samples.tendril_2.clone()].to_vec();
+        let expected = [override_tendril, SampleTendrils::tendril_2()].to_vec();
 
         let actual = resolve_overrides(&globals, &overrides);
 
