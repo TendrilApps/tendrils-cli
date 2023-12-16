@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 mod tendril;
 use tendril::Tendril;
 mod errors;
-use errors::GetTendrilsError;
+use errors::{GetTendrilsError, ResolvePathError};
 
 // TODO: Recursively look through all parent folders
 // TODO: If it can't be found in the current path, check in an env variable
@@ -79,6 +79,22 @@ pub fn resolve_overrides(
     }
 
     resolved_tendrils
+}
+
+fn resolve_path(path: &Path) -> Result<PathBuf, ResolvePathError> {
+    let orig_string = match path.to_str() {
+        Some(v) => v,
+        None => return Err(ResolvePathError::PathParseError)
+    };
+
+    let username = match std::env::consts::OS {
+        "macos" => std::env::var("USER")?,
+        "windows" => unimplemented!(),
+        _ => "<user>".to_string()
+    };
+
+    let resolved = orig_string.replace("<user>", &username);
+    Ok(PathBuf::from(&resolved))
 }
 
 #[cfg(test)]
@@ -467,6 +483,83 @@ mod resolve_overrides_tests {
         let expected = [override_tendril, samples.tendril_2.clone()].to_vec();
 
         let actual = resolve_overrides(&globals, &overrides);
+
+        assert_eq!(actual, expected);
+    }
+}
+
+#[cfg(test)]
+mod resolve_path_tests {
+    use super::{PathBuf, resolve_path};
+
+    #[test]
+    fn empty_path_returns_empty() {
+        let given = PathBuf::from("");
+        let expected = given.clone();
+
+        let actual = resolve_path(&given).unwrap();
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn path_without_variables_returns_given_path() {
+        let given = PathBuf::from("some/generic/path");
+        let expected = given.clone();
+
+        let actual = resolve_path(&given).unwrap();
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn unsupported_var_returns_given_path() {
+        let given = PathBuf::from("some/<unsupported>/path");
+        let expected = given.clone();
+
+        let actual = resolve_path(&given).unwrap();
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn wrong_capitalized_var_returns_given_path() {
+        let given = PathBuf::from("storage/<USER>/my//path");
+        let expected = given.clone();
+
+        let actual = resolve_path(&given).unwrap();
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn user_var_replaces_with_current_username() {
+        let given = PathBuf::from("storage/<user>/my/path");
+        let username = match std::env::consts::OS {
+            "macos" => std::env::var("USER").unwrap(),
+            "windows" => unimplemented!(),
+            _ => unimplemented!()
+        };
+
+        let expected = PathBuf::from(format!("storage/{}/my/path", username));
+
+        let actual = resolve_path(&given).unwrap();
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn multiple_user_var_instances_replaces_all_with_current_username() {
+        let given = PathBuf::from("storage/<user>/my/<user>/path");
+        let username = match std::env::consts::OS {
+            "macos" => std::env::var("USER").unwrap(),
+            "windows" => unimplemented!(),
+            _ => unimplemented!()
+        };
+
+        let expected = PathBuf::from(format!("storage/{}/my/{}/path", username, username));
+
+        let actual = resolve_path(&given).unwrap();
 
         assert_eq!(actual, expected);
     }

@@ -15,3 +15,15 @@ impl From<serde_json::Error> for GetTendrilsError {
         GetTendrilsError::ParseError(err)
     }
 }
+
+#[derive(Debug)]
+pub enum ResolvePathError {
+    EnvVarError(std::env::VarError),
+    PathParseError,
+}
+
+impl From<std::env::VarError> for ResolvePathError {
+    fn from(err: std::env::VarError) -> Self {
+        ResolvePathError::EnvVarError(err)
+    }
+}
