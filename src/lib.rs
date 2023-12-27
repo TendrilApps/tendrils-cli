@@ -1,8 +1,12 @@
 mod errors;
 use errors::{GetTendrilsError, PushPullError, ResolvePathError};
-use std::{path::{Path, PathBuf}, fs::create_dir_all};
+use std::fs::create_dir_all;
+use std::path::{Path, PathBuf};
 mod tendril;
 use tendril::Tendril;
+
+#[cfg(test)]
+mod utests;
 
 fn copy_fso(
     from: &Path,
@@ -217,6 +221,3 @@ fn resolve_path_variables(path: &Path) -> Result<PathBuf, ResolvePathError> {
     let resolved = orig_string.replace("<user>", &username);
     Ok(PathBuf::from(&resolved))
 }
-
-#[cfg(test)]
-mod utests;
