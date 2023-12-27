@@ -21,4 +21,14 @@ impl Tendril {
     pub fn id(&self) -> String {
         self.app.clone() + " - " + &self.name
     }
+
+    pub fn new(app: &str, name: &str) -> Tendril {
+        Tendril {
+            app: app.to_string(),
+            name: name.to_string(),
+            parent_dirs_mac: [].to_vec(),
+            parent_dirs_windows: [].to_vec(),
+            folder_merge: true,
+        }
+    }
 }
