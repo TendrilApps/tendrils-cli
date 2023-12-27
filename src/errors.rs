@@ -17,6 +17,29 @@ impl From<serde_json::Error> for GetTendrilsError {
 }
 
 #[derive(Debug)]
+pub enum PushPullError {
+    InvalidId,
+    IoError(std::io::Error),
+    PathError(ResolvePathError),
+    Recursion,
+    Skipped,
+    TypeMismatch,
+    Unsupported,
+}
+
+impl From<ResolvePathError> for PushPullError {
+    fn from(err: ResolvePathError) -> Self {
+        PushPullError::PathError(err)
+    }
+}
+
+impl From<std::io::Error> for PushPullError {
+    fn from(err: std::io::Error) -> Self {
+        PushPullError::IoError(err)
+    }
+}
+
+#[derive(Debug)]
 pub enum ResolvePathError {
     EnvVarError(std::env::VarError),
     PathParseError,

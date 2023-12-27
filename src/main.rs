@@ -2,6 +2,7 @@ use tendrils::{
     get_tendril_overrides,
     get_tendrils,
     get_tendrils_folder,
+    pull,
     resolve_overrides,
 };
 
@@ -20,8 +21,8 @@ fn main() {
         println!("No local overrides were found.")
     }
 
-    let resolved_tendrils =
+    let _resolved_tendrils =
         resolve_overrides(&common_tendrils, &override_tendrils);
 
-    print!("{:#?}", resolved_tendrils);
+    pull(&tendrils_folder, &[]);
 }
