@@ -1,5 +1,5 @@
 # General
-- *Tendrils* is a tool for synchronizing and version controlling small files/folder across multiple computers
+- *Tendrils* is a tool for synchronizing and version controlling small files/folders across multiple computers
 - Main uses include:
     - Version controlling various configuration files
     - Version controlling small scripts that otherwise would not have their own repos
@@ -7,13 +7,13 @@
 - A *Tendrils* folder requires a [`tendrils.json`](#tendrilsjson) file
 
 # Gathering
-- Pulls all of the files specified in [`tendrils.json`](#tendrilsjson) to the [user data folder](#user-data-folder) where it can be compared to the Git index (using `git diff` or any other tool)
+- Pulls all of the files specified in [`tendrils.json`](#tendrilsjson) to the [Tendrils folder](#tendrils-folder) where it can be compared to the Git index (using `git diff` or any other tool)
 ```bash
 nu Tendrils.nu # Without arguments
 ```
 
 # Spreading
-- Copies all files specified in [`tendrils.json`](#tendrilsjson) from the [user data folder](#user-data-folder) to their respective folder on the computer
+- Copies all files specified in [`tendrils.json`](#tendrilsjson) from the [Tendrils folder](#tendrils-folder) to their respective folder on the computer
 - This ***will*** overwrite any existing files
     - It is recommended to [gather](#gathering) before spreading to check that all settings are merged properly
 - Using the [`--spread (-s)`](#spread--s) flag
@@ -23,7 +23,7 @@ nu Tendrils.nu -s
 
 # `tendrils.json`
 - Specifies all of the files and directories to be controlled
-- Is stored in the [user data folder](#user-data-folder)
+- Is stored in the [Tendrils folder](#tendrils-folder)
     - Must be at the top level of the folder
 
 ## Schema
@@ -42,7 +42,7 @@ nu Tendrils.nu -s
 
 - `app`:
     - The name of the app that the item belongs to
-    - Items in the [user data folder](#user-data-folder) will be grouped in subfolders based on this `app` name 
+    - Items in the [Tendrils folder](#tendrils-folder) will be grouped in subfolders based on this `app` name 
 - `name`:
     - Must match the file or folder name
 - `parent-dirs-<platform>`:
@@ -50,11 +50,11 @@ nu Tendrils.nu -s
     - The following variables will be resolved at runtime:
         - `<user>` - The name of the current user
         - Example: `/Users/<user>/Deskop`
-    - If the list is empty, or if the path is blank, it will be skipped
-    - During a [spread](#spreading) operation, the file/folder in the [user data folder](#user-data-folder) is copied to *all* paths in the list
-    - During a [gather](#gathering) operation, only the *last* item in the list is considered
+    - If the list is empty, it will be skipped
+    - During a [spread](#spreading) operation, the file/folder in the [Tendrils folder](#tendrils-folder) is copied to *all* paths in the list
+    - During a [gather](#gathering) operation, only the *first* item in the list is considered
 - `folder-merge`:
-    - Specifies the merge strategy when folders are copied to or from the [user data folder](#user-data-folder)
+    - Specifies the merge strategy when folders are copied to or from the [Tendrils folder](#tendrils-folder)
     - This setting has no effect on the behaviour for included files - only folders
     - `true` - Add any new files, overwrite any conflicting files, but do not delete any files already in the destination folder
     - `false` - Entirely replace the destination folder with the source folder
@@ -62,15 +62,19 @@ nu Tendrils.nu -s
 ## `tendrils-override.json`
 - Items present in both `tendrils-override.json` and `tendrils.json` will respect the overriden values
     - Items present in `tendrils-override.json` but *not* in `tendrils.json` are ignored
-- Is *not* version controlled
+    - Items are considered "matched" if they share the same [`app`](#schema) and [`name`](#schema) fields
+- Typically should not be version controlled
 - Uses the same [schema](#schema) as [`tendrils.json`](#tendrilsjson)
-- Is stored in the [user data folder](#user-data-folder)
+- Is stored in the [Tendrils folder](#tendrils-folder)
     - Must be at the top level of the folder
 
-# User Data Folder
-- Stores all of the files/folders listed in the [`tendrils.json`](#tendrilsjson) file
+# Tendrils Folder
+- The folder containing the [`tendrils.json`](#tendrilsjson) file, the [`tendrils-override.json`](#tendrils-overridejson), and all of the files/folders controlled by their tendrils
 - Items are grouped into subfolders by their [`app`](#schema) name
-- It is recommended that the [user data folder](#user-data-folder) be under *Git* version control
+
+## Version Control
+- The *Tendrils folder* can be placed under a version control system such as *Git*
+    - In the case of *Git*, the `.git` folder would be at the top level of the *Tendrils folder*
 
 ## Resetting the Folder
 - Using the [`--reset (-r)`](#reset--r) flag
@@ -90,6 +94,6 @@ nu Tendrils.nu -r
 - Used to perform a [spread](#spreading) operation
 
 ## `--reset (-r)`
-- Used to [reset the user data folder](#resetting-the-folder)
+- Used to [reset the Tendrils folder](#resetting-the-folder)
     - Any changes in the application folders will be overwritten with the folder structure in [git](#version-control)
 - Ignored if combined with the [`-d`](#dry--d) flag
