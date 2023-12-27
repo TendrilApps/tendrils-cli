@@ -1,6 +1,6 @@
 # production
 target
-include-override.json
+tests/samples/NoReadAccess/no_read_access*
 
 # misc
 **/.DS_Store
