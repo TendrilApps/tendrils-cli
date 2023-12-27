@@ -58,7 +58,7 @@ fn parse_tendrils(json: &str) -> Result<Vec<Tendril>, serde_json::Error> {
 /// - `overrides` - The set of Tendril overrides (typically defined in
 ///   tendrils-overrides.json)
 pub fn resolve_overrides(
-    global: &[Tendril],  // TODO: Change to accept &[Tendril]?
+    global: &[Tendril],
     overrides: &[Tendril],
 ) -> Vec<Tendril> {
     let mut resolved_tendrils = Vec::with_capacity(global.len());
@@ -114,6 +114,17 @@ fn get_disposable_folder() -> PathBuf {
         std::fs::create_dir(&path).unwrap();
     }
     path
+}
+
+#[cfg(test)]
+fn set_all_platform_paths(tendril: &mut Tendril, paths: &[PathBuf]) {
+    let path_strings:Vec<String> = paths
+        .iter()
+        .map(|x| x.to_str().unwrap().to_string())
+        .collect();
+
+    tendril.parent_dirs_mac = path_strings.clone();
+    tendril.parent_dirs_windows = path_strings;
 }
 
 #[cfg(test)]
@@ -439,7 +450,9 @@ mod parse_tendrils_tests {
 
 #[cfg(test)]
 mod resolve_overrides_tests {
-    use super::{resolve_overrides, SampleTendrils};
+    use std::path::PathBuf;
+
+    use super::{resolve_overrides, SampleTendrils, set_all_platform_paths, Tendril};
 
     #[test]
     fn empty_overrides_returns_globals() {
@@ -459,10 +472,10 @@ mod resolve_overrides_tests {
         let globals = [].to_vec();
 
         let mut override_tendril = SampleTendrils::tendril_1();
-        override_tendril.parent_dirs_mac =
-            ["Some/override/path".to_string()].to_vec();
-        override_tendril.parent_dirs_windows =
-            ["Some\\override\\path".to_string()].to_vec();
+        set_all_platform_paths(
+            &mut override_tendril,
+            &[PathBuf::from("Some").join("override").join("path")]
+        );
         let overrides = [override_tendril.clone()].to_vec();
 
         let actual = resolve_overrides(&globals, &overrides);
@@ -505,16 +518,17 @@ mod resolve_overrides_tests {
 
     #[test]
     fn overrides_matching_globals_override_globals() {
-        let globals = [
+        let globals:Vec<Tendril> = [
             SampleTendrils::tendril_1(),
             SampleTendrils::tendril_2(),
         ].to_vec();
 
-        let mut override_tendril = SampleTendrils::tendril_1();
-        override_tendril.parent_dirs_mac =
-            ["Some/override/path".to_string()].to_vec();
-        override_tendril.parent_dirs_windows =
-            ["Some\\override\\path".to_string()].to_vec();
+        let mut override_tendril = globals[0].clone();
+        set_all_platform_paths(
+            &mut override_tendril,
+            &[PathBuf::from("Some").join("override").join("path")]
+        );
+        override_tendril.folder_merge = !globals[0].folder_merge;
         let overrides = [override_tendril.clone()].to_vec();
 
         let expected = [override_tendril, SampleTendrils::tendril_2()].to_vec();
