@@ -18,6 +18,7 @@ impl From<serde_json::Error> for GetTendrilsError {
 
 #[derive(Debug)]
 pub enum PushPullError {
+    Duplicate,
     InvalidId,
     IoError(std::io::Error),
     PathError(ResolvePathError),

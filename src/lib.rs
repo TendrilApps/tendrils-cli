@@ -123,8 +123,19 @@ pub fn pull<'a>(
     tendrils: &'a [Tendril],
 ) -> Vec<(&'a Tendril, Result<(), PushPullError>)> {
     let mut results = Vec::with_capacity(tendrils.len());
+    let mut ids: Vec<String> = Vec::with_capacity(tendrils.len());
+    
     for tendril in tendrils {
-        let result = pull_tendril(tendrils_folder, tendril);
+        let result;
+        let id = tendril.id();
+
+        if ids.contains(&id) {
+            result = Err(PushPullError::Duplicate);
+        }
+        else {
+            result = pull_tendril(tendrils_folder, tendril);
+        }
+        ids.push(id);
         results.push((tendril, result));
     }
 
