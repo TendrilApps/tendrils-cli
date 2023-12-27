@@ -14,8 +14,6 @@ impl SampleTendrils {
         }
     }
 
-        // TODO: Change to functions that just return a single tendril.
-        // Allows for not instantiating all tendrils each test
     pub fn tendril_1_json() -> String {
         r#"{
             "app": "MyApp",
