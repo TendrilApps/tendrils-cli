@@ -9,18 +9,24 @@ use crate::utests::common::{
     is_empty,
     set_all_platform_paths,
 };
-use crate::utests::sample_tendrils::SampleTendrils;
+use rstest::rstest;
+use serial_test::serial;
 use std::fs::{
     create_dir_all,
     File,
     metadata,
     read_to_string,
+    remove_dir_all,
+    remove_file,
     set_permissions,
     write,
 };
 use std::path::PathBuf;
 use tempdir::TempDir;
 
+// TODO: Create a get_context and a context stuct that sets up
+// the folder and returns references to the parent, source, dest, given tendril, etc
+// Implement drop on the struct so that it can be deleted
 
 #[test]
 fn parent_path_list_is_empty_returns_skipped_error() {
@@ -29,7 +35,7 @@ fn parent_path_list_is_empty_returns_skipped_error() {
         "ShouldBeEmpty"
     ).unwrap().into_path();
 
-    let mut given = SampleTendrils::tendril_1();
+    let mut given = Tendril::new("SomeApp", "misc.txt");
     set_all_platform_paths(
         &mut given,
         &[].to_vec()
@@ -45,10 +51,11 @@ fn parent_path_list_is_empty_returns_skipped_error() {
 fn parent_path_is_empty_string_attempts_copy() {
     let temp_tendrils_folder = TempDir::new_in(
         get_disposable_folder(),
-        "ShouldBeEmpty"
+        "TendrilsFolder"
     ).unwrap().into_path();
 
-    let mut given = SampleTendrils::tendril_1();
+    let mut given =
+        Tendril::new("SomeApp", "SomeNameThatDefinitelyDoesn'tExist.txt");
     set_all_platform_paths(
         &mut given,
         &[PathBuf::from("")].to_vec()
@@ -63,14 +70,21 @@ fn parent_path_is_empty_string_attempts_copy() {
     assert!(is_empty(&temp_tendrils_folder));
 }
 
-#[test]
-fn tendril_app_is_empty_returns_invalid_id_error() {
+#[rstest]
+#[case("")]
+#[case("some/path")]
+#[case("some\\path")]
+#[case(".git")] // TODO: Test that other variations that contain git
+                // are allowed (.gitsomething, git, something.git)
+#[case(".Git")]
+#[case(".GIT")]
+fn tendril_app_is_invalid_returns_invalid_id_error(#[case] app: &str) {
     let temp_tendrils_folder = TempDir::new_in(
         get_disposable_folder(),
-        "ShouldBeEmpty"
+        "TendrilsFolder"
     ).unwrap().into_path();
 
-    let given = Tendril::new("", "misc.txt");
+    let given = Tendril::new(&app, "misc");
 
     let actual = pull_tendril(&temp_tendrils_folder, &given);
 
@@ -78,290 +92,115 @@ fn tendril_app_is_empty_returns_invalid_id_error() {
     assert!(is_empty(&temp_tendrils_folder))
 }
 
-#[test]
-fn tendril_name_is_empty_returns_invalid_id_error() {
+#[rstest]
+#[case("")]
+#[case("some/path")]
+#[case("some\\path")]
+fn tendril_name_is_invalid_returns_invalid_id_error(#[case] name: &str) {
     let temp_tendrils_folder = TempDir::new_in(
         get_disposable_folder(),
-        "ShouldBeEmpty"
+        "TendrilsFolder"
     ).unwrap().into_path();
 
-    let given = Tendril::new("SomeApp", "");
+    let given = Tendril::new("SomeApp", name);
 
     let actual = pull_tendril(&temp_tendrils_folder, &given);
-    
+
     assert!(matches!(actual, Err(PushPullError::InvalidId)));
     assert!(is_empty(&temp_tendrils_folder))
 }
 
-#[test]
-fn tendril_app_is_a_path_returns_invalid_id_error() {
-    let temp_parent_folder = TempDir::new_in(
-        get_disposable_folder(),
-        "ParentFolder"
-    ).unwrap().into_path();
-    let given_tendrils_folder = &temp_parent_folder.join("TendrilsFolder");
-
-    let given1 = Tendril::new("Some/App", "misc.txt");
-    let given2 = Tendril::new("Some\\App", "misc.txt");
-
-    let actual1 = pull_tendril(&given_tendrils_folder, &given1);
-    let actual2 = pull_tendril(&given_tendrils_folder, &given2);
-    
-    assert!(matches!(actual1, Err(PushPullError::InvalidId)));
-    assert!(matches!(actual2, Err(PushPullError::InvalidId)));
-    assert!(is_empty(&temp_parent_folder))
-}
-
-#[test]
-fn tendril_name_is_a_path_returns_invalid_id_error() {
-    let temp_parent_folder = TempDir::new_in(
-        get_disposable_folder(),
-        "ParentFolder"
-    ).unwrap().into_path();
-    let given_tendrils_folder = &temp_parent_folder.join("TendrilsFolder");
-
-    let given1 = Tendril::new("SomeApp", "Nested/misc.txt");
-    let given2 = Tendril::new("SomeApp", "Nested\\misc.txt");
-
-    let actual1 = pull_tendril(&given_tendrils_folder, &given1);
-    let actual2 = pull_tendril(&given_tendrils_folder, &given2);
-    
-    assert!(matches!(actual1, Err(PushPullError::InvalidId)));
-    assert!(matches!(actual2, Err(PushPullError::InvalidId)));
-    assert!(is_empty(&temp_parent_folder))
-}
-
-#[test]
-fn tendril_app_is_dot_git_returns_invalid_id_error() {
-    let temp_parent_folder = TempDir::new_in(
-        get_disposable_folder(),
-        "ParentFolder"
-    ).unwrap().into_path();
-    let given_tendrils_folder = &temp_parent_folder.join("TendrilsFolder");
-
-    let given1 = Tendril::new(".git", "misc.txt");
-    let given2 = Tendril::new(".git", "MiscFolder");
-    let given3 = Tendril::new(".Git", "misc.txt");
-    let given4 = Tendril::new(".Git", "MiscFolder");
-    let given5 = Tendril::new(".GIT", "misc.txt");
-    let given6 = Tendril::new(".GIT", "MiscFolder");
-
-    let actual1 = pull_tendril(&given_tendrils_folder, &given1);
-    let actual2 = pull_tendril(&given_tendrils_folder, &given2);
-    let actual3 = pull_tendril(&given_tendrils_folder, &given3);
-    let actual4 = pull_tendril(&given_tendrils_folder, &given4);
-    let actual5 = pull_tendril(&given_tendrils_folder, &given5);
-    let actual6 = pull_tendril(&given_tendrils_folder, &given6);
-    
-    assert!(matches!(actual1, Err(PushPullError::InvalidId)));
-    assert!(matches!(actual2, Err(PushPullError::InvalidId)));
-    assert!(matches!(actual3, Err(PushPullError::InvalidId)));
-    assert!(matches!(actual4, Err(PushPullError::InvalidId)));
-    assert!(matches!(actual5, Err(PushPullError::InvalidId)));
-    assert!(matches!(actual6, Err(PushPullError::InvalidId)));
-    assert!(is_empty(&temp_parent_folder))
-}
-
-#[test]
-fn tendril_name_has_leading_dot_is_copied_normally() {
+#[rstest]
+#[case("NoDot")]
+#[case("single.dot")]
+#[case("multi.sandwiched.dots")]
+#[case(".LeadingDot")]
+#[case("TrailingDot.")]
+fn tendril_name_is_valid_copies_successfully(#[case] name: &str) {
     let temp_parent_folder = TempDir::new_in(
         get_disposable_folder(),
         "ParentFolder"
     ).unwrap().into_path();
     let given_tendrils_folder = temp_parent_folder.join("TendrilsFolder");
-    let source_file = temp_parent_folder.join(".dotfile");
-    let source_folder = temp_parent_folder.join(".dotfolder");
-    let dest_file = given_tendrils_folder.join("SomeApp").join(".dotfile");
-    let dest_folder = given_tendrils_folder.join("SomeApp").join(".dotfolder");
-    write(source_file, "Source file contents").unwrap();
-    create_dir_all(&source_folder).unwrap();
-
-    let mut given_file_tendril = Tendril::new("SomeApp", ".dotfile");
-    let mut given_folder_tendril = Tendril::new("SomeApp", ".dotfolder");
+    let source_file = temp_parent_folder.join(name);
+    let source_folder = temp_parent_folder.join(name);
+    let source_nested_file = source_folder.join("nested.txt");
+    let dest_file = given_tendrils_folder.join("SomeApp").join(name);
+    let dest_folder = given_tendrils_folder.join("SomeApp").join(name);
+    let dest_nested_file = dest_folder.join("nested.txt");
+    let mut given_file_tendril = Tendril::new("SomeApp", name);
+    let mut given_folder_tendril = Tendril::new("SomeApp", name);
     set_all_platform_paths(&mut given_file_tendril, &[temp_parent_folder.clone()]);
     set_all_platform_paths(&mut given_folder_tendril, &[temp_parent_folder]);
 
+    write(&source_file, "Source file contents").unwrap();
     pull_tendril(&given_tendrils_folder, &given_file_tendril).unwrap();
-    pull_tendril(&given_tendrils_folder, &given_folder_tendril).unwrap();
-
-    let dest_file_contents = read_to_string(dest_file).unwrap();
+    let dest_file_contents = read_to_string(&dest_file).unwrap();
     assert_eq!(dest_file_contents, "Source file contents");
-    assert!(dest_folder.is_dir());
-    assert!(is_empty(&dest_folder));
+    assert_eq!(given_tendrils_folder.join("SomeApp").read_dir().iter().count(), 1);
+    remove_file(source_file).unwrap();
+    remove_dir_all(&given_tendrils_folder).unwrap();
+
+    create_dir_all(&source_folder).unwrap();
+    write(source_nested_file, "Source nested file contents").unwrap();
+    pull_tendril(&given_tendrils_folder, &given_folder_tendril).unwrap();
+    let dest_file_contents = read_to_string(&dest_nested_file).unwrap();
+    assert_eq!(dest_file_contents, "Source nested file contents");
+    assert_eq!(given_tendrils_folder.join("SomeApp").read_dir().iter().count(), 1);
+    assert_eq!(dest_folder.read_dir().iter().count(), 1);
 }
 
-#[test]
-fn tendril_name_has_sandwiched_dot_is_copied_normally() {
+// TODO: Add tests for valid app field?
+
+#[rstest]
+#[case("TendrilsFolder", "SomeApp", "<user>")]
+#[case("TendrilsFolder", "<user>", "misc")]
+#[case("<user>", "SomeApp", "misc")]
+fn supported_var_in_tendrils_folder_or_app_or_name_uses_raw_path(
+    #[case] td_folder: &str,
+    #[case] app: &str,
+    #[case] name: &str
+) {
     let temp_parent_folder = TempDir::new_in(
         get_disposable_folder(),
         "ParentFolder"
     ).unwrap().into_path();
-    let given_tendrils_folder = temp_parent_folder.join("TendrilsFolder");
-    let source_file = temp_parent_folder.join("sandwiched.dot.file");
-    let source_folder = temp_parent_folder.join("sandwiched.dot.folder");
-    let dest_file = given_tendrils_folder.join("SomeApp").join("sandwiched.dot.file");
-    let dest_folder = given_tendrils_folder.join("SomeApp").join("sandwiched.dot.folder");
-    write(source_file, "Source file contents").unwrap();
-    create_dir_all(&source_folder).unwrap();
+    let given_tendrils_folder = temp_parent_folder.join(td_folder);
+    let source = temp_parent_folder.join(name);
+    let dest = given_tendrils_folder.join(app).join(name);
+    File::create(&temp_parent_folder.join(name)).unwrap();
+    write(source, "Source file contents").unwrap();
 
-    let mut given_file_tendril = Tendril::new("SomeApp", "sandwiched.dot.file");
-    let mut given_folder_tendril = Tendril::new("SomeApp", "sandwiched.dot.folder");
-    set_all_platform_paths(&mut given_file_tendril, &[temp_parent_folder.clone()]);
-    set_all_platform_paths(&mut given_folder_tendril, &[temp_parent_folder]);
-
-    pull_tendril(&given_tendrils_folder, &given_file_tendril).unwrap();
-    pull_tendril(&given_tendrils_folder, &given_folder_tendril).unwrap();
-
-    let dest_file_contents = read_to_string(dest_file).unwrap();
-    assert_eq!(dest_file_contents, "Source file contents");
-    assert!(dest_folder.is_dir());
-    assert!(is_empty(&dest_folder));
-}
-
-#[test]
-fn tendril_name_does_not_have_dot_is_copied_normally() {
-    let temp_parent_folder = TempDir::new_in(
-        get_disposable_folder(),
-        "ParentFolder"
-    ).unwrap().into_path();
-    let given_tendrils_folder = temp_parent_folder.join("TendrilsFolder");
-    let source_file = temp_parent_folder.join("no_dot_file");
-    let source_folder = temp_parent_folder.join("no_dot_folder");
-    let dest_file = given_tendrils_folder.join("SomeApp").join("no_dot_file");
-    let dest_folder = given_tendrils_folder.join("SomeApp").join("no_dot_folder");
-    write(source_file, "Source file contents").unwrap();
-    create_dir_all(&source_folder).unwrap();
-
-    let mut given_file_tendril = Tendril::new("SomeApp", "no_dot_file");
-    let mut given_folder_tendril = Tendril::new("SomeApp", "no_dot_folder");
-    set_all_platform_paths(&mut given_file_tendril, &[temp_parent_folder.clone()]);
-    set_all_platform_paths(&mut given_folder_tendril, &[temp_parent_folder]);
-
-    pull_tendril(&given_tendrils_folder, &given_file_tendril).unwrap();
-    pull_tendril(&given_tendrils_folder, &given_folder_tendril).unwrap();
-
-    let dest_file_contents = read_to_string(dest_file).unwrap();
-    assert_eq!(dest_file_contents, "Source file contents");
-    assert!(dest_folder.is_dir());
-    assert!(is_empty(&dest_folder));
-}
-
-#[test]
-fn tendril_name_has_trailing_dot_is_copied_normally() {
-    let temp_parent_folder = TempDir::new_in(
-        get_disposable_folder(),
-        "ParentFolder"
-    ).unwrap().into_path();
-    let given_tendrils_folder = temp_parent_folder.join("TendrilsFolder");
-    let source_file = temp_parent_folder.join("file.");
-    let source_folder = temp_parent_folder.join("folder.");
-    let dest_file = given_tendrils_folder.join("SomeApp").join("file.");
-    let dest_folder = given_tendrils_folder.join("SomeApp").join("folder.");
-    write(source_file, "Source file contents").unwrap();
-    create_dir_all(&source_folder).unwrap();
-
-    let mut given_file_tendril = Tendril::new("SomeApp", "file.");
-    let mut given_folder_tendril = Tendril::new("SomeApp", "folder.");
-    set_all_platform_paths(&mut given_file_tendril, &[temp_parent_folder.clone()]);
-    set_all_platform_paths(&mut given_folder_tendril, &[temp_parent_folder]);
-
-    pull_tendril(&given_tendrils_folder, &given_file_tendril).unwrap();
-    pull_tendril(&given_tendrils_folder, &given_folder_tendril).unwrap();
-
-    let dest_file_contents = read_to_string(dest_file).unwrap();
-    assert_eq!(dest_file_contents, "Source file contents");
-    assert!(dest_folder.is_dir());
-    assert!(is_empty(&dest_folder));
-}
-
-#[test]
-fn var_in_tendrils_folder_uses_raw_path() {
-    let temp_parent_folder = TempDir::new_in(
-        get_disposable_folder(),
-        "ParentFolder"
-    ).unwrap().into_path();
-    let given_tendrils_folder = temp_parent_folder.join("TendrilsFolderWithVar_<user>");
-    File::create(&temp_parent_folder.join("misc.txt")).unwrap();
-
-    let mut given = Tendril::new("SomeApp", "misc.txt");
+    let mut given = Tendril::new(app, name);
     set_all_platform_paths(&mut given, &[temp_parent_folder]);
 
     pull_tendril(&given_tendrils_folder, &given).unwrap();
 
-    assert!(given_tendrils_folder.join("SomeApp").join("misc.txt").exists());
-    assert!(given_tendrils_folder.join("SomeApp").read_dir().unwrap().count() == 1);
-}
-
-#[test]
-fn var_in_tendril_app_uses_raw_path() {
-    let temp_parent_folder = TempDir::new_in(
-        get_disposable_folder(),
-        "ParentFolder"
-    ).unwrap().into_path();
-    let given_tendrils_folder = &temp_parent_folder.join("TendrilsFolder");
-    let file_tendril_source = &temp_parent_folder.join("misc.txt");
-    let folder_tendril_source = &temp_parent_folder.join("SourceFolder");
-    let file_tendril_dest = &given_tendrils_folder.join("<user>").join("misc.txt");
-    let folder_tendril_dest = &given_tendrils_folder.join("<user>").join("SourceFolder");
-    write(&file_tendril_source, "Source file contents").unwrap();
-    create_dir_all(folder_tendril_source).unwrap();
-
-    let mut given_file_tendril = Tendril::new("<user>", "misc.txt");
-    let mut given_folder_tendril = Tendril::new("<user>", "SourceFolder");
-    set_all_platform_paths(&mut given_file_tendril, &[temp_parent_folder.clone()]);
-    set_all_platform_paths(&mut given_folder_tendril, &[temp_parent_folder]);
-
-    pull_tendril(given_tendrils_folder, &given_file_tendril).unwrap();
-    pull_tendril(given_tendrils_folder, &given_folder_tendril).unwrap();
-
-    let dest_file_contents = read_to_string(&file_tendril_dest).unwrap();
+    let dest_file_contents = read_to_string(dest).unwrap();
     assert_eq!(dest_file_contents, "Source file contents");
-    assert!(folder_tendril_dest.exists());
+    assert!(given_tendrils_folder.join(app).read_dir().unwrap().count() == 1);
 }
 
-#[test]
-fn var_in_tendril_name_uses_raw_path() {
-    let temp_parent_folder = TempDir::new_in(
-        get_disposable_folder(),
-        "ParentFolder"
-    ).unwrap().into_path();
-    let given_tendrils_folder = &temp_parent_folder.join("TendrilsFolder");
-    let file_tendril_source = &temp_parent_folder.join("<user>.txt");
-    let folder_tendril_source = &temp_parent_folder.join("<user>");
-    let file_tendril_dest = &given_tendrils_folder.join("SomeApp").join("<user>.txt");
-    let folder_tendril_dest = &given_tendrils_folder.join("SomeApp").join("<user>");
-    write(&file_tendril_source, "Source file contents").unwrap();
-    create_dir_all(folder_tendril_source).unwrap();
-
-    let mut given_file_tendril = Tendril::new("SomeApp", "<user>.txt");
-    let mut given_folder_tendril = Tendril::new("SomeApp", "<user>");
-    set_all_platform_paths(&mut given_file_tendril, &[temp_parent_folder.clone()]);
-    set_all_platform_paths(&mut given_folder_tendril, &[temp_parent_folder]);
-
-    pull_tendril(given_tendrils_folder, &given_file_tendril).unwrap();
-    pull_tendril(given_tendrils_folder, &given_folder_tendril).unwrap();
-
-    let dest_file_contents = read_to_string(&file_tendril_dest).unwrap();
-    assert_eq!(dest_file_contents, "Source file contents");
-    assert!(folder_tendril_dest.exists());
-}
-
-#[test]
-fn unsupported_var_in_parent_path_uses_raw_path() {
+#[rstest]
+#[case("Parent<>Folder")]
+#[case("Parent<unsupported>Folder")]
+#[case("<unsupported>")]
+fn unsupported_var_in_parent_path_uses_raw_path(#[case] parent_name_raw: &str) {
     let temp_grandparent_folder = TempDir::new_in(
         get_disposable_folder(),
         "GrandparentFolder"
     ).unwrap().into_path();
-    let given_tendrils_folder = temp_grandparent_folder.join("TendrilsFolder");
-    let source = temp_grandparent_folder.join("<unsupported>").join("misc.txt");
+    let given_tendrils_folder = 
+        temp_grandparent_folder.join("TendrilsFolder");
+    let source = temp_grandparent_folder.join(parent_name_raw).join("misc.txt");
     let dest = given_tendrils_folder.join("SomeApp").join("misc.txt");
-    create_dir_all(source.parent().unwrap()).unwrap();
+    create_dir_all(temp_grandparent_folder.join(parent_name_raw)).unwrap();
     write(source, "Source file contents").unwrap();
 
     let mut given = Tendril::new("SomeApp", "misc.txt");
     set_all_platform_paths(
         &mut given,
-        &[temp_grandparent_folder.join("<unsupported>")]
+        &[temp_grandparent_folder.join(parent_name_raw)]
     );
 
     pull_tendril(&given_tendrils_folder, &given).unwrap();
@@ -370,20 +209,33 @@ fn unsupported_var_in_parent_path_uses_raw_path() {
     assert_eq!(dest_file_contents, "Source file contents");
 }
 
-#[test]
-fn supported_var_in_parent_path_is_resolved() {
+#[rstest]
+#[case("<user>",                get_username())]
+#[case("<user>LeadingVar",      format!("{}LeadingVar", get_username()))]
+#[case("Sandwiched<user>Var",   format!("Sandwiched{}Var", get_username()))]
+#[case("TrailingVar<user>",     format!("TrailingVar{}", get_username()))]
+#[case("<<user>>",              format!("<{}>", get_username()))]
+#[serial]
+fn supported_var_in_parent_path_is_resolved(
+    #[case] parent_name_raw: &str,
+    #[case] parent_name_resolved: String
+) {
     let temp_grandparent_folder = TempDir::new_in(
         get_disposable_folder(),
         "GrandparentFolder"
     ).unwrap().into_path();
     let given_tendrils_folder = &temp_grandparent_folder.join("TendrilsFolder");
-    let source = &temp_grandparent_folder.join(get_username()).join("misc.txt");
+    let source = 
+        &temp_grandparent_folder.join(parent_name_resolved).join("misc.txt");
     let dest = &given_tendrils_folder.join("SomeApp").join("misc.txt");
     create_dir_all(&source.parent().unwrap()).unwrap();
     write(&source, "Source file contents").unwrap();
 
     let mut given = Tendril::new("SomeApp", "misc.txt");
-    set_all_platform_paths(&mut given, &[temp_grandparent_folder.join("<user>")]);
+    set_all_platform_paths(
+        &mut given,
+        &[temp_grandparent_folder.join(parent_name_raw)]
+    );
 
     pull_tendril(&given_tendrils_folder, &given).unwrap();
 
@@ -816,8 +668,12 @@ fn no_write_access_at_dest_file_returns_io_error_permission_denied() {
     assert_eq!(dest_file_contents, "Don't touch me");
 }
 
-#[test]
-fn folder_merge_false_w_file_tendril_overwrites_dest_file() {
+#[rstest]
+#[case(true)]
+#[case(false)]
+fn file_tendril_overwrites_dest_file_regardless_of_folder_merge(
+    #[case] folder_merge: bool
+) {
     let temp_parent_folder = TempDir::new_in(
         get_disposable_folder(),
         "ParentFolder"
@@ -825,37 +681,12 @@ fn folder_merge_false_w_file_tendril_overwrites_dest_file() {
     let given_tendrils_folder = temp_parent_folder.join("TendrilsFolder");
     let source = &temp_parent_folder.join("misc.txt");
     let dest = &given_tendrils_folder.join("SomeApp").join("misc.txt");
-    File::create(&source).unwrap();
     write(&source, "Source file contents").unwrap();
     create_dir_all(&dest.parent().unwrap()).unwrap();
-    File::create(&dest).unwrap();
+    write(&dest, "Overwrite me!").unwrap();
 
     let mut given = Tendril::new("SomeApp", "misc.txt");
-    given.folder_merge = false;
-    set_all_platform_paths(&mut given, &[temp_parent_folder]);
-
-    pull_tendril(&given_tendrils_folder, &given).unwrap();
-
-    let dest_file_contents = read_to_string(&dest).unwrap();
-    assert_eq!(dest_file_contents, "Source file contents");
-}
-
-#[test]
-fn folder_merge_true_w_file_tendril_overwrites_dest_file() {
-    let temp_parent_folder = TempDir::new_in(
-        get_disposable_folder(),
-        "ParentFolder"
-    ).unwrap().into_path();
-    let given_tendrils_folder = temp_parent_folder.join("TendrilsFolder");
-    let source = &temp_parent_folder.join("misc.txt");
-    let dest = &given_tendrils_folder.join("SomeApp").join("misc.txt");
-    File::create(&source).unwrap();
-    write(&source, "Source file contents").unwrap();
-    create_dir_all(&dest.parent().unwrap()).unwrap();
-    File::create(&dest).unwrap();
-
-    let mut given = Tendril::new("SomeApp", "misc.txt");
-    given.folder_merge = true;
+    given.folder_merge = folder_merge;
     set_all_platform_paths(&mut given, &[temp_parent_folder]);
 
     pull_tendril(&given_tendrils_folder, &given).unwrap();
@@ -1018,7 +849,7 @@ fn file_tendril_source_is_unchanged() {
 
     let dest_contents = read_to_string(dest).unwrap();
     assert_eq!(dest_contents, "Source file contents");
-    
+
     // Check that source is unchanged
     let source_contents = read_to_string(source).unwrap();
     assert_eq!(source_contents, "Source file contents");
@@ -1041,7 +872,7 @@ fn other_tendrils_in_same_app_folder_are_unchanged() {
     set_all_platform_paths(&mut given, &[temp_parent_folder]);
 
     pull_tendril(&given_tendrils_folder, &given).unwrap();
-    
+
     // Check that other tendril is unchanged
     let some_other_tendril_contents = read_to_string(some_other_tendril).unwrap();
     assert_eq!(some_other_tendril_contents, "Another tendril from the same app");
@@ -1078,7 +909,7 @@ fn folder_tendril_copies_all_contents_recursively_and_source_is_unchanged() {
     let dest_nested_contents = read_to_string(dest_nested_file).unwrap();
     assert_eq!(dest_misc_contents, "Misc file contents");
     assert_eq!(dest_nested_contents, "Nested file contents");
-    
+
     // Check that source is unchanged
     let source_misc_contents = read_to_string(source.join("misc.txt")).unwrap();
     let source_nested_contents = read_to_string(nested_folder.join("nested.txt")).unwrap();
@@ -1133,10 +964,12 @@ fn multiple_paths_only_copies_first() {
     write(given_parent_folder_2.join("misc.txt"), "Don't copy me!").unwrap();
 
     let mut tendril = Tendril::new("SomeApp", "misc.txt");
-    set_all_platform_paths(
-        &mut tendril,
-        &[given_parent_folder_1, given_parent_folder_2, PathBuf::from("I_Do_Not_Exist")]
-    );
+    set_all_platform_paths(&mut tendril, &[
+        given_parent_folder_1,
+        given_parent_folder_2.clone(),
+        given_parent_folder_2, // Duplicate
+        PathBuf::from("I_Do_Not_Exist")
+    ]);
 
     pull_tendril(&given_tendrils_folder, &tendril).unwrap();
 
