@@ -9,9 +9,14 @@ pub struct TendrilCliArgs {
 
 #[derive(Subcommand, Debug)]
 pub enum TendrilsSubcommands {
-    // Path {
-    //     new_path: Option<String>,
-    // }
-    /// Copies tendrils to the tendrils folder
-    Pull,
+    /// Gets the Tendrils folder path environment variable
+    /// if it is set
+    Path,
+    /// Copies tendrils to the Tendrils folder
+    Pull {
+        /// Explicitly sets the path to the Tendrils folder for this run,
+        /// and errors if it is not a Tendrils folder
+        #[arg(short, long)]
+        path: Option<String>
+    },
 }
