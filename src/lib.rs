@@ -66,14 +66,25 @@ fn copy_fso(
     }
 }
 
-// TODO: Recursively look through all parent folders
-// TODO: If it can't be found in the current path, check in an env variable
+// TODO: Recursively look through all parent folders before
+// checking environment variable
 pub fn get_tendrils_folder(starting_path: &Path) -> Option<PathBuf> {
     if is_tendrils_folder(starting_path) {
         Some(starting_path.to_owned())
     }
     else {
-        None
+        match std::env::var("TENDRILS_FOLDER") {
+            Ok(v) => {
+                let test_path = PathBuf::from(v);
+                if is_tendrils_folder(&test_path) {
+                    Some(test_path)
+                }
+                else {
+                    None
+                }
+            },
+            _ => None
+        }
     }
 }
 
