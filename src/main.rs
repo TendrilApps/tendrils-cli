@@ -1,3 +1,7 @@
+mod cli;
+use cli::{TendrilsSubcommands, TendrilCliArgs};
+use clap::Parser;
+
 use tendrils::{
     get_tendril_overrides,
     get_tendrils,
@@ -7,6 +11,14 @@ use tendrils::{
 };
 
 fn main() {
+    let args = TendrilCliArgs::parse();
+
+    match args.tendrils_command {
+        TendrilsSubcommands::Pull => push_or_pull(false),
+    };
+}
+
+fn push_or_pull(push: bool) {
     let tendrils_folder = get_tendrils_folder(&std::env::current_dir()
         .expect("Could not get the current directory"))
         .expect("Could not find a Tendrils folder");
@@ -24,5 +36,10 @@ fn main() {
     let _resolved_tendrils =
         resolve_overrides(&common_tendrils, &override_tendrils);
 
-    pull(&tendrils_folder, &[]);
+    if push {
+        unimplemented!();
+    }
+    else {
+        pull(&tendrils_folder, &[]);
+    }
 }
