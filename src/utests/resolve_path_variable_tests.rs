@@ -1,5 +1,6 @@
 use crate::{resolve_path_variables, ResolvePathError};
 use crate::utests::common::get_username;
+use rstest::rstest;
 use std::path::PathBuf;
 
 #[test]
@@ -24,9 +25,19 @@ fn non_utf_8_path_returns_path_parse_error() {
     assert!(matches!(actual, ResolvePathError::PathParseError));
 }
 
-#[test]
-fn empty_path_returns_empty() {
-    let given = PathBuf::from("");
+#[rstest]
+#[case("")]
+#[case("some/generic/path")]
+#[case("some\\generic\\path")]
+#[case("<unsupported>")]
+#[case("some/<unsupported>/path")]
+#[case("some\\<unsupported>\\path")]
+#[case("wrong_format_user")]
+#[case("wrong_format_<user")]
+#[case("wrong_format_user>")]
+#[case("wrong_capitalization_<USER>")]
+fn no_supported_variables_returns_given_path(#[case] given_str: &str) {
+    let given = PathBuf::from(given_str);
     let expected = given.clone();
 
     let actual = resolve_path_variables(&given).unwrap();
@@ -34,90 +45,21 @@ fn empty_path_returns_empty() {
     assert_eq!(actual, expected);
 }
 
-#[test]
-fn path_without_variables_returns_given_path() {
-    let given = PathBuf::from("some/generic/path");
-    let expected = given.clone();
-
-    let actual = resolve_path_variables(&given).unwrap();
-
-    assert_eq!(actual, expected);
-}
-
-#[test]
-fn unsupported_var_returns_given_path() {
-    let given = PathBuf::from("some/<unsupported>/path");
-    let expected = given.clone();
-
-    let actual = resolve_path_variables(&given).unwrap();
-
-    assert_eq!(actual, expected);
-}
-
-#[test]
-fn wrong_capitalized_var_returns_given_path() {
-    let given = PathBuf::from("storage/<USER>/my/path");
-    let expected = given.clone();
-
-    let actual = resolve_path_variables(&given).unwrap();
-
-    assert_eq!(actual, expected);
-}
-
-#[test]
-fn user_var_replaces_with_current_username() {
-    let given = PathBuf::from("storage/<user>/my/path");
-    let username = get_username();
-
-    let expected = PathBuf::from(format!("storage/{}/my/path", username));
-
-    let actual = resolve_path_variables(&given).unwrap();
-
-    assert_eq!(actual, expected);
-}
-
-#[test]
-fn sandwiched_var_returns_replaced_path() {
-    let given = PathBuf::from("Sandwiched<user>Var");
-    let username = get_username();
-
-    let expected = PathBuf::from(format!("Sandwiched{}Var", username));
-
-    let actual = resolve_path_variables(&given).unwrap();
-
-    assert_eq!(actual, expected);
-}
-
-#[test]
-fn leading_var_returns_replaced_path() {
-    let given = PathBuf::from("<user>LeadingVar");
-    let username = get_username();
-
-    let expected = PathBuf::from(format!("{}LeadingVar", username));
-
-    let actual = resolve_path_variables(&given).unwrap();
-
-    assert_eq!(actual, expected);
-}
-
-#[test]
-fn trailing_var_returns_replaced_path() {
-    let given = PathBuf::from("TrailingVar<user>");
-    let username = get_username();
-
-    let expected = PathBuf::from(format!("TrailingVar{}", username));
-
-    let actual = resolve_path_variables(&given).unwrap();
-
-    assert_eq!(actual, expected);
-}
-
-#[test]
-fn multiple_var_instances_replaces_all() {
-    let given = PathBuf::from("storage/<user>/my/<user>/path");
-    let username = get_username();
-
-    let expected = PathBuf::from(format!("storage/{}/my/{}/path", username, username));
+#[rstest]
+#[case("<user>", format!("{}", get_username()))]
+#[case("some/<user>/path", format!("some/{}/path", get_username()))]
+#[case("some\\<user>\\path", format!("some\\{}\\path", get_username()))]
+#[case("sandwiched<user>var", format!("sandwiched{}var", get_username()))]
+#[case("<user>LeadingVar", format!("{}LeadingVar", get_username()))]
+#[case("TrailingVar<user>", format!("TrailingVar{}", get_username()))]
+#[case("nested<<user>>arrows", format!("nested<{}>arrows", get_username()))]
+#[case("<user>/multiple/<user>", format!("{}/multiple/{}", get_username(), get_username()))]
+fn user_var_replaces_with_current_username(
+    #[case] given_str: &str,
+    #[case] expected_str: String
+) {
+    let given = PathBuf::from(given_str);
+    let expected = PathBuf::from(expected_str);
 
     let actual = resolve_path_variables(&given).unwrap();
 
