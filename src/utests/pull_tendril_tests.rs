@@ -132,6 +132,37 @@ fn tendril_name_is_a_path_returns_invalid_id_error() {
 }
 
 #[test]
+fn tendril_app_is_dot_git_returns_invalid_id_error() {
+    let temp_parent_folder = TempDir::new_in(
+        get_disposable_folder(),
+        "ParentFolder"
+    ).unwrap().into_path();
+    let given_tendrils_folder = &temp_parent_folder.join("TendrilsFolder");
+
+    let given1 = Tendril::new(".git", "misc.txt");
+    let given2 = Tendril::new(".git", "MiscFolder");
+    let given3 = Tendril::new(".Git", "misc.txt");
+    let given4 = Tendril::new(".Git", "MiscFolder");
+    let given5 = Tendril::new(".GIT", "misc.txt");
+    let given6 = Tendril::new(".GIT", "MiscFolder");
+
+    let actual1 = pull_tendril(&given_tendrils_folder, &given1);
+    let actual2 = pull_tendril(&given_tendrils_folder, &given2);
+    let actual3 = pull_tendril(&given_tendrils_folder, &given3);
+    let actual4 = pull_tendril(&given_tendrils_folder, &given4);
+    let actual5 = pull_tendril(&given_tendrils_folder, &given5);
+    let actual6 = pull_tendril(&given_tendrils_folder, &given6);
+    
+    assert!(matches!(actual1, Err(PushPullError::InvalidId)));
+    assert!(matches!(actual2, Err(PushPullError::InvalidId)));
+    assert!(matches!(actual3, Err(PushPullError::InvalidId)));
+    assert!(matches!(actual4, Err(PushPullError::InvalidId)));
+    assert!(matches!(actual5, Err(PushPullError::InvalidId)));
+    assert!(matches!(actual6, Err(PushPullError::InvalidId)));
+    assert!(is_empty(&temp_parent_folder))
+}
+
+#[test]
 fn tendril_name_has_leading_dot_is_copied_normally() {
     let temp_parent_folder = TempDir::new_in(
         get_disposable_folder(),

@@ -159,8 +159,9 @@ fn pull_tendril(
 ) -> Result<(), PushPullError> {
     if tendril.app.is_empty()
         || tendril.name.is_empty()
+        || tendril.app.to_lowercase() == ".git"
         || is_path(&tendril.app)
-        || is_path(&tendril.name) {
+        || is_path(&tendril.name){
         return Err(PushPullError::InvalidId);
     }
 
