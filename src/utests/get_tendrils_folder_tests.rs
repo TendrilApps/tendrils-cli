@@ -38,8 +38,8 @@ fn starting_dir_valid_env_var_not_set_returns_starting_dir() {
     let temp = TempDir::new_in(
         get_disposable_folder(),
         "Temp"
-    ).unwrap().into_path();
-    let starting_tendrils_folder = temp.join("StartingTendrilsFolder");
+    ).unwrap();
+    let starting_tendrils_folder = temp.path().join("StartingTendrilsFolder");
     create_dir_all(&starting_tendrils_folder).unwrap();
     File::create(starting_tendrils_folder.join("tendrils.json")).unwrap();
     remove_var(ENV_NAME);
@@ -55,9 +55,9 @@ fn starting_dir_valid_env_var_valid_returns_starting_dir() {
     let temp = TempDir::new_in(
         get_disposable_folder(),
         "Temp"
-    ).unwrap().into_path();
-    let starting_tendrils_folder = temp.join("StartingTendrilsFolder");
-    let env_var_tendrils_folder = temp.join("EnvVarTendrilsFolder");
+    ).unwrap();
+    let starting_tendrils_folder = temp.path().join("StartingTendrilsFolder");
+    let env_var_tendrils_folder = temp.path().join("EnvVarTendrilsFolder");
 
     create_dir_all(&starting_tendrils_folder).unwrap();
     create_dir_all(&env_var_tendrils_folder).unwrap();
@@ -77,9 +77,9 @@ fn starting_dir_invalid_env_var_valid_returns_env_var() {
     let temp = TempDir::new_in(
         get_disposable_folder(),
         "Temp"
-    ).unwrap().into_path();
-    let starting_tendrils_folder = temp.join("I don't exist");
-    let env_var_tendrils_folder = temp.join("EnvVarTendrilsFolder");
+    ).unwrap();
+    let starting_tendrils_folder = temp.path().join("I don't exist");
+    let env_var_tendrils_folder = temp.path().join("EnvVarTendrilsFolder");
 
     create_dir_all(&env_var_tendrils_folder).unwrap();
     File::create(env_var_tendrils_folder.join("tendrils.json")).unwrap();

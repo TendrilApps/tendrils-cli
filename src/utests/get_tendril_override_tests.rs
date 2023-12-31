@@ -4,12 +4,9 @@ use crate::{
 };
 use crate::utests::common::get_disposable_folder;
 use crate::utests::sample_tendrils::SampleTendrils;
-use serial_test::serial;
-use std::matches;
 use tempdir::TempDir;
 
 #[test]
-#[serial]
 fn no_tendrils_json_file_returns_empty() {
     let temp = TempDir::new_in(
         get_disposable_folder(),
@@ -22,7 +19,6 @@ fn no_tendrils_json_file_returns_empty() {
 }
 
 #[test]
-#[serial]
 fn invalid_json_returns_parse_error() {
     let tendrils_folder = TempDir::new_in(
         get_disposable_folder(),
@@ -44,7 +40,6 @@ fn invalid_json_returns_parse_error() {
 }
 
 #[test]
-#[serial]
 fn valid_json_returns_tendrils() {
     let tendrils_folder = TempDir::new_in(
         get_disposable_folder(),

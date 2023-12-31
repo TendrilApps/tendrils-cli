@@ -10,8 +10,8 @@ fn given_empty_list_returns_empty() {
     let temp_parent_folder = TempDir::new_in(
         get_disposable_folder(),
         "ParentFolder"
-    ).unwrap().into_path();
-    let given_tendrils_folder = temp_parent_folder.join("TendrilsFolder");
+    ).unwrap();
+    let given_tendrils_folder = temp_parent_folder.path().join("TendrilsFolder");
 
     let actual = pull(&given_tendrils_folder, &[]);
 
@@ -24,11 +24,11 @@ fn returns_tendril_and_result_for_each_given() {
     let temp_parent_folder = TempDir::new_in(
         get_disposable_folder(),
         "ParentFolder"
-    ).unwrap().into_path();
-    let given_tendrils_folder = temp_parent_folder.join("TendrilsFolder");
-    let source_app1_file = temp_parent_folder.join("misc1.txt");
-    let source_app2_file = temp_parent_folder.join("misc2.txt");
-    let source_app1_folder = temp_parent_folder.join("App1 Folder");
+    ).unwrap();
+    let given_tendrils_folder = temp_parent_folder.path().join("TendrilsFolder");
+    let source_app1_file = temp_parent_folder.path().join("misc1.txt");
+    let source_app2_file = temp_parent_folder.path().join("misc2.txt");
+    let source_app1_folder = temp_parent_folder.path().join("App1 Folder");
     let nested_app1_file = source_app1_folder.join("nested1.txt");
     create_dir_all(source_app1_folder).unwrap();
     write(source_app1_file, "App 1 file contents").unwrap();
@@ -43,7 +43,10 @@ fn returns_tendril_and_result_for_each_given() {
         Tendril::new("App2", "I don't exist"),
     ];
     for t in given[1..].iter_mut() {
-        set_all_platform_paths(t, &[temp_parent_folder.clone()]);
+        set_all_platform_paths(
+            t,
+            &[temp_parent_folder.path().to_path_buf().clone()]
+        );
     }
     let io_not_found_err = std::io::Error::from(std::io::ErrorKind::NotFound);
     let expected: Vec<(&Tendril, Result<(), PushPullError>)> = vec![
@@ -92,21 +95,21 @@ fn duplicate_tendrils_returns_duplicate_error_for_second_occurence_onward() {
     let temp_grandparent_folder = TempDir::new_in(
         get_disposable_folder(),
         "GrandparentFolder"
-    ).unwrap().into_path();
-    let given_tendrils_folder = temp_grandparent_folder.join("TendrilsFolder");
-    let source1 = temp_grandparent_folder.join("Parent1").join("misc.txt");
-    let source2 = temp_grandparent_folder.join("Parent2").join("misc.txt");
-    create_dir_all(temp_grandparent_folder.join("Parent1")).unwrap();
-    create_dir_all(temp_grandparent_folder.join("Parent2")).unwrap();
+    ).unwrap();
+    let given_tendrils_folder = temp_grandparent_folder.path().join("TendrilsFolder");
+    let source1 = temp_grandparent_folder.path().join("Parent1").join("misc.txt");
+    let source2 = temp_grandparent_folder.path().join("Parent2").join("misc.txt");
+    create_dir_all(temp_grandparent_folder.path().join("Parent1")).unwrap();
+    create_dir_all(temp_grandparent_folder.path().join("Parent2")).unwrap();
     write(source1, "Source 1 file contents").unwrap();
     write(source2, "Source 2 file contents").unwrap();
 
     let mut tendril1 = Tendril::new("SomeApp", "misc.txt");
     let mut tendril2 = Tendril::new("SomeApp", "misc.txt");
     let mut tendril3 = Tendril::new("SomeApp", "misc.txt");
-    set_all_platform_paths(&mut tendril1, &[temp_grandparent_folder.join("Parent1")]);
-    set_all_platform_paths(&mut tendril2, &[temp_grandparent_folder.join("Parent2")]);
-    set_all_platform_paths(&mut tendril3, &[temp_grandparent_folder.join("I don't exist")]);
+    set_all_platform_paths(&mut tendril1, &[temp_grandparent_folder.path().join("Parent1")]);
+    set_all_platform_paths(&mut tendril2, &[temp_grandparent_folder.path().join("Parent2")]);
+    set_all_platform_paths(&mut tendril3, &[temp_grandparent_folder.path().join("I don't exist")]);
     let given = [tendril1, tendril2, tendril3];
 
     let actual = pull(&given_tendrils_folder, &given);

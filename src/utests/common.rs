@@ -6,9 +6,7 @@ pub fn get_disposable_folder() -> PathBuf {
         .join("target")
         .join("temp-tendrils-folders");
 
-    if !path.is_dir() {
-        std::fs::create_dir(&path).unwrap();
-    }
+    std::fs::create_dir_all(&path).unwrap();
     path
 }
 
