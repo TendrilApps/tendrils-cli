@@ -115,7 +115,7 @@ pub fn get_tendril_overrides(
 }
 
 fn is_path(x: &str) -> bool {
-    x.contains("/") || x.contains("\\")
+    x.contains('/') || x.contains('\\')
 }
 
 pub fn is_tendrils_folder(dir: &Path) -> bool {
@@ -128,7 +128,6 @@ fn parse_tendrils(json: &str) -> Result<Vec<Tendril>, serde_json::Error> {
     serde_json::from_str::<Vec<Tendril>>(json)
 }
 
-// TODO: Test this function
 pub fn pull<'a>(
     tendrils_folder: &Path,
     tendrils: &'a [Tendril],
@@ -137,15 +136,13 @@ pub fn pull<'a>(
     let mut ids: Vec<String> = Vec::with_capacity(tendrils.len());
     
     for tendril in tendrils {
-        let result;
         let id = tendril.id();
 
-        if ids.contains(&id) {
-            result = Err(PushPullError::Duplicate);
-        }
-        else {
-            result = pull_tendril(tendrils_folder, tendril);
-        }
+        let result = match ids.contains(&id) {
+            true => Err(PushPullError::Duplicate),
+            false => pull_tendril(tendrils_folder, tendril)
+        };
+
         ids.push(id);
         results.push((tendril, result));
     }
