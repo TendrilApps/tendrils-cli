@@ -1,6 +1,8 @@
 # production
 target
-tests/samples/NoReadAccess/no_read_access*
+tests/samples/NoReadAccess/
+tests/samples/SymlinksSource/
+tests/samples/SymlinksDest/
 
 # misc
 **/.DS_Store
