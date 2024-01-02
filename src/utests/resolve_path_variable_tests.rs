@@ -1,4 +1,4 @@
-use crate::{resolve_path_variables, ResolvePathError};
+use crate::resolve_path_variables;
 use crate::utests::common::get_username;
 use rstest::rstest;
 use std::path::PathBuf;
@@ -22,7 +22,7 @@ fn non_utf_8_path_returns_path_parse_error() {
 
     let actual = resolve_path_variables(&given).unwrap_err();
 
-    assert!(matches!(actual, ResolvePathError::PathParseError));
+    assert!(matches!(actual, crate::ResolvePathError::PathParseError));
 }
 
 #[rstest]

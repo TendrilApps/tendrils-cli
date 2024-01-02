@@ -10,6 +10,12 @@ pub fn get_disposable_folder() -> PathBuf {
     path
 }
 
+pub fn get_samples_folder() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("tests")
+        .join("samples")
+}
+
 pub fn get_username() -> String {
     match std::env::consts::OS {
         "macos" => std::env::var("USER").unwrap(),

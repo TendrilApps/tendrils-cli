@@ -5,6 +5,7 @@ use crate::{
     Tendril};
 use crate::utests::common::{
     get_disposable_folder,
+    get_samples_folder,
     get_username,
     is_empty,
     set_all_platform_paths,
@@ -229,6 +230,7 @@ fn tendril_name_is_valid_copies_successfully(#[case] name: String) {
 #[case("TendrilsFolder", "SomeApp", "<user>")]
 #[case("TendrilsFolder", "<user>", "misc")]
 #[case("<user>", "SomeApp", "misc")]
+#[cfg(not(windows))] // These are invalid paths on Windows
 fn supported_var_in_tendrils_folder_or_app_or_name_uses_raw_path(
     #[case] td_folder: &str,
     #[case] app: &str,
@@ -251,6 +253,7 @@ fn supported_var_in_tendrils_folder_or_app_or_name_uses_raw_path(
 #[case("Parent<>Folder")]
 #[case("Parent<unsupported>Folder")]
 #[case("<unsupported>")]
+#[cfg(not(windows))] // These are invalid paths on Windows
 fn unsupported_var_in_parent_path_uses_raw_path(#[case] parent_name_raw: &str) {
     let mut opts = SetupOpts::default();
     opts.parent_dirname = parent_name_raw;
@@ -267,7 +270,6 @@ fn unsupported_var_in_parent_path_uses_raw_path(#[case] parent_name_raw: &str) {
 #[case("<user>LeadingVar",      &format!("{}LeadingVar", get_username()))]
 #[case("Sandwiched<user>Var",   &format!("Sandwiched{}Var", get_username()))]
 #[case("TrailingVar<user>",     &format!("TrailingVar{}", get_username()))]
-#[case("<<user>>",              &format!("<{}>", get_username()))]
 fn supported_var_in_parent_path_is_resolved(
     #[case] parent_name_raw: &str,
     #[case] parent_name_resolved: &str
@@ -284,6 +286,16 @@ fn supported_var_in_parent_path_is_resolved(
     pull_tendril(&setup.tendrils_dir, &setup.tendril).unwrap();
 
     assert_eq!(setup.dest_file_contents(), "Source file contents");
+}
+
+#[rstest]
+#[case("<<user>>", &format!("<{}>", get_username()))]
+#[cfg(not(windows))] // These are invalid paths on Windows
+fn supported_var_in_parent_path_is_resolved_non_windows(
+    #[case] parent_name_raw: &str,
+    #[case] parent_name_resolved: &str
+) {
+    supported_var_in_parent_path_is_resolved(parent_name_raw, parent_name_resolved);
 }
 
 #[test]
@@ -496,97 +508,77 @@ fn resolved_source_path_is_dir_and_dest_is_file_returns_type_mismatch_error() {
 
 #[test]
 fn resolved_source_path_is_symlink_returns_type_mismatch_error() {
-    let mut file_opts = SetupOpts::default();
-    file_opts.source_filename = "symfile";
-    file_opts.make_source_file = false;
-    file_opts.is_folder_tendril = false;
-    let file_setup = Setup::new(&file_opts);
+    let temp_tendrils_folder = TempDir::new_in(
+        get_disposable_folder(),
+        "TendrilsFolder"
+    ).unwrap();
 
-    let mut folder_opts = SetupOpts::default();
-    folder_opts.source_foldername = "symdir";
-    folder_opts.make_source_folder = false;
-    folder_opts.is_folder_tendril = true;
-    let folder_setup = Setup::new(&folder_opts);
+    let given_parent_folder = get_samples_folder()
+        .join("SymlinksSource");
+    let source_file = given_parent_folder.join("symfile.txt");
+    let source_folder = given_parent_folder.join("symdir");
 
-    let source_original_file = file_setup.parent_dir.join("original.txt");
-    let source_original_folder = folder_setup.parent_dir.join("original");
-    write(&source_original_file, "Original file contents").unwrap();
-    create_dir_all(&source_original_folder).unwrap();
-
-    // Create symlinks
-    #[cfg(unix)]
-    use std::os::unix::fs::symlink;
-    #[cfg(unix)]
-    symlink(source_original_file, file_setup.source_file).unwrap();
-    #[cfg(unix)]
-    symlink(source_original_folder, folder_setup.source_folder).unwrap();
-
-    #[cfg(windows)]
-    use std::os::windows::fs::{symlink_dir, symlink_file};
-    #[cfg(windows)]
-    unimplemented!();
+    let mut file_tendril = Tendril::new("SomeApp", "symfile.txt");
+    let mut folder_tendril = Tendril::new("SomeApp", "symdir");
+    set_all_platform_paths(
+        &mut file_tendril,
+        &[source_file.parent().unwrap().to_path_buf()]
+    );
+    set_all_platform_paths(
+        &mut folder_tendril,
+        &[source_folder.parent().unwrap().to_path_buf()]
+    );
 
     let actual_1 = pull_tendril(
-        &file_setup.tendrils_dir,
-        &file_setup.tendril
+        &temp_tendrils_folder.path(),
+        &file_tendril
     ).unwrap_err();
     let actual_2 = pull_tendril(
-        &folder_setup.tendrils_dir,
-        &folder_setup.tendril
+        &temp_tendrils_folder.path(),
+        &folder_tendril
     ).unwrap_err();
 
     assert!(matches!(actual_1, PushPullError::TypeMismatch));
     assert!(matches!(actual_2, PushPullError::TypeMismatch));
-    assert!(is_empty(&file_setup.tendrils_dir));
-    assert!(is_empty(&folder_setup.tendrils_dir));
+    assert!(is_empty(&temp_tendrils_folder.path()));
 }
 
 #[test]
 fn dest_is_symlink_returns_type_mismatch_error() {
-    let mut file_opts = SetupOpts::default();
-    file_opts.source_filename = "symfile";
-    file_opts.is_folder_tendril = false;
-    let file_setup = Setup::new(&file_opts);
+    let temp_source_folder = TempDir::new_in(
+        get_disposable_folder(),
+        "SourceFolder"
+    ).unwrap();
 
-    let mut folder_opts = SetupOpts::default();
-    folder_opts.source_foldername = "symdir";
-    folder_opts.is_folder_tendril = true;
-    let folder_setup = Setup::new(&folder_opts);
+    let given_parent_folder = temp_source_folder.path();
+    let source_file = given_parent_folder
+        .join("symfile.txt");
+    let source_folder = given_parent_folder
+        .join("symdir");
+    let given_tendrils_folder = get_samples_folder().join("SymlinksDest");
+    let dest_file = given_tendrils_folder.join("SomeApp").join("symfile.txt");
+    let dest_folder = given_tendrils_folder.join("SomeApp").join("symdir");
+    write(&source_file, "Source file contents").unwrap();
+    create_dir_all(&source_folder).unwrap();
 
-    let dest_original_file = file_setup.tendrils_dir
-        .join("SomeApp")
-        .join("original.txt");
-    let dest_original_folder = folder_setup.tendrils_dir
-        .join("SomeApp")
-        .join("original");
-    create_dir_all(&dest_original_file.parent().unwrap()).unwrap();
-    write(&dest_original_file, "Original file contents").unwrap();
-    create_dir_all(&dest_original_folder).unwrap();
-
-    // Create symlinks
-    #[cfg(unix)]
-    use std::os::unix::fs::symlink;
-    #[cfg(unix)]
-    symlink(dest_original_file, file_setup.dest_file).unwrap();
-    #[cfg(unix)]
-    symlink(dest_original_folder, folder_setup.dest_folder).unwrap();
-
-    #[cfg(windows)]
-    use std::os::windows::fs::{symlink_dir, symlink_file};
-    #[cfg(windows)]
-    unimplemented!();
+    let mut file_tendril = Tendril::new("SomeApp", "symfile.txt");
+    let mut folder_tendril = Tendril::new("SomeApp", "symdir");
+    set_all_platform_paths(&mut file_tendril, &[given_parent_folder.to_path_buf()]);
+    set_all_platform_paths(&mut folder_tendril, &[given_parent_folder.to_path_buf()]);
 
     let actual_1 = pull_tendril(
-        &file_setup.tendrils_dir,
-        &file_setup.tendril
+        &given_tendrils_folder,
+        &file_tendril
     ).unwrap_err();
     let actual_2 = pull_tendril(
-        &folder_setup.tendrils_dir,
-        &folder_setup.tendril
+        &given_tendrils_folder,
+        &folder_tendril
     ).unwrap_err();
 
     assert!(matches!(actual_1, PushPullError::TypeMismatch));
     assert!(matches!(actual_2, PushPullError::TypeMismatch));
+    assert!(read_to_string(dest_file).unwrap().is_empty());
+    assert!(read_to_string(dest_folder.join("misc.txt")).unwrap().is_empty())
 }
 
 #[test]
