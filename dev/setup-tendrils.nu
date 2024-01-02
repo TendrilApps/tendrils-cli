@@ -42,5 +42,11 @@ if $os == "windows" {
     mklink /D symdir original_folder
     cd ../..
 } else if $os == "macos" {
-    echo "Unimplemented on Mac"
+    cd SymlinksSource
+    ln -s original.txt symfile.txt
+    ln -s original_folder symdir
+    cd ../SymlinksDest/SomeApp
+    ln -s original.txt symfile.txt
+    ln -s original_folder symdir
+    cd ../..
 }
