@@ -6,6 +6,9 @@ use std::path::PathBuf;
 mod writer;
 use writer::{StdOutWriter, Writer};
 
+#[cfg(test)]
+mod bintests;
+
 use tendrils::{
     get_tendril_overrides,
     get_tendrils,
@@ -16,13 +19,13 @@ use tendrils::{
 };
 
 fn main() {
-    let stdout_writer = StdOutWriter {};
-    execute(&stdout_writer);
-}
-
-fn execute(writer: &impl Writer) {
+    let mut stdout_writer = StdOutWriter {};
     let args = TendrilCliArgs::parse();
 
+    execute(args, &mut stdout_writer);
+}
+
+pub fn execute(args: TendrilCliArgs, writer: &mut impl Writer) {
     match args.tendrils_command {
         TendrilsSubcommands::Path => {
             path(writer);
@@ -31,7 +34,7 @@ fn execute(writer: &impl Writer) {
     };
 }
 
-fn path(writer: &impl Writer) {
+fn path(writer: &mut impl Writer) {
     const ENV_NAME: &str = "TENDRILS_FOLDER";
     match std::env::var(ENV_NAME) {
         Ok(v) => println!("{}", v),
@@ -47,7 +50,7 @@ fn path(writer: &impl Writer) {
     } 
 }
 
-fn push_or_pull(push: bool, path: Option<String>, writer: &impl Writer) {
+fn push_or_pull(push: bool, path: Option<String>, writer: &mut impl Writer) {
     let tendrils_folder = match path {
         Some(v) => {
             let test_path = PathBuf::from(v);
