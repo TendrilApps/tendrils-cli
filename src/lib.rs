@@ -6,7 +6,7 @@ mod tendril;
 use tendril::Tendril;
 
 #[cfg(test)]
-mod utests;
+mod libtests;
 
 fn copy_fso(
     from: &Path,

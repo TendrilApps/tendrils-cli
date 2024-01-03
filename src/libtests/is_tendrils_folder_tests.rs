@@ -1,5 +1,5 @@
 use crate::is_tendrils_folder;
-use crate::utests::common::get_disposable_folder;
+use crate::libtests::common::get_disposable_folder;
 use tempdir::TempDir;
 
 #[test]

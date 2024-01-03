@@ -3,8 +3,8 @@ use crate::{
     resolve_overrides, 
     Tendril
 };
-use crate::utests::common::set_all_platform_paths;
-use crate::utests::sample_tendrils::SampleTendrils;
+use crate::libtests::common::set_all_platform_paths;
+use crate::libtests::sample_tendrils::SampleTendrils;
 
 #[test]
 fn empty_overrides_returns_globals() {

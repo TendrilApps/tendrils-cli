@@ -1,5 +1,5 @@
 use crate::resolve_path_variables;
-use crate::utests::common::get_username;
+use crate::libtests::common::get_username;
 use rstest::rstest;
 use std::path::PathBuf;
 

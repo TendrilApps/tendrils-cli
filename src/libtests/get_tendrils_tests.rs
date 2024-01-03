@@ -3,8 +3,8 @@ use crate::{
     GetTendrilsError,
     Tendril,
 };
-use crate::utests::common::get_disposable_folder;
-use crate::utests::sample_tendrils::SampleTendrils;
+use crate::libtests::common::get_disposable_folder;
+use crate::libtests::sample_tendrils::SampleTendrils;
 use tempdir::TempDir;
 
 #[test]

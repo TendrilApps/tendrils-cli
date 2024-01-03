@@ -1,5 +1,5 @@
 use crate::parse_tendrils;
-use crate::utests::sample_tendrils::SampleTendrils;
+use crate::libtests::sample_tendrils::SampleTendrils;
 
 #[test]
 fn empty_string_returns_error() {
