@@ -2,6 +2,7 @@ cd $env.FILE_PWD
 let os = $nu.os-info.name
 if ($os == "windows") and ((is-admin) == false) {
     echo "Aborting: Requires running this script with admin priviledges"
+    echo "Note: Admin priviledges will also be required to uninstall certain sample files"
     exit 1
 }
 
