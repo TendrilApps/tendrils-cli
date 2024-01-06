@@ -1,1 +1,1 @@
-pub mod run_tests;
+mod run_tests;

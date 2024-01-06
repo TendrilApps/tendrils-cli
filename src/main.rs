@@ -26,7 +26,7 @@ fn main() {
     run(args, &mut stdout_writer);
 }
 
-pub fn run(args: TendrilCliArgs, writer: &mut impl Writer) {
+fn run(args: TendrilCliArgs, writer: &mut impl Writer) {
     match args.tendrils_command {
         TendrilsSubcommands::Path => {
             path(writer);
