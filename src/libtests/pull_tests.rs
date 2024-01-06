@@ -1,8 +1,8 @@
 use crate::{pull, PushPullError};
 use crate::tendril::Tendril;
-use crate::libtests::common::{get_disposable_folder, is_empty, set_all_platform_paths};
-use std::fs::{create_dir_all, write};
+use crate::test_utils::{get_disposable_folder, is_empty, set_all_platform_paths};
 use fs_extra::file::read_to_string;
+use std::fs::{create_dir_all, write};
 use tempdir::TempDir;
 
 #[test]

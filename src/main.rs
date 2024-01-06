@@ -3,12 +3,6 @@ mod cli;
 use cli::{TendrilsSubcommands, TendrilCliArgs};
 use std::env::VarError;
 use std::path::PathBuf;
-mod writer;
-use writer::{StdOutWriter, Writer};
-
-#[cfg(test)]
-mod bintests;
-
 use tendrils::{
     get_tendril_overrides,
     get_tendrils,
@@ -17,6 +11,13 @@ use tendrils::{
     pull,
     resolve_overrides,
 };
+mod writer;
+use writer::{StdOutWriter, Writer};
+
+#[cfg(test)]
+mod bintests;
+#[cfg(test)]
+use tendrils::test_utils::get_disposable_folder;
 
 fn main() {
     let mut stdout_writer = StdOutWriter {};
@@ -37,7 +38,7 @@ pub fn execute(args: TendrilCliArgs, writer: &mut impl Writer) {
 fn path(writer: &mut impl Writer) {
     const ENV_NAME: &str = "TENDRILS_FOLDER";
     match std::env::var(ENV_NAME) {
-        Ok(v) => println!("{}", v),
+        Ok(v) => writer.write(&v),
         Err(VarError::NotPresent) => {
             writer.write(&format!("The '{}' environment variable is not set.", ENV_NAME))
         },

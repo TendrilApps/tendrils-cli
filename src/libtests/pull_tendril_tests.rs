@@ -3,7 +3,7 @@ use crate::{
     pull_tendril,
     PushPullError,
     Tendril};
-use crate::libtests::common::{
+use crate::test_utils::{
     get_disposable_folder,
     get_samples_folder,
     get_username,

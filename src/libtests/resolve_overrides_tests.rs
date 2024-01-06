@@ -1,10 +1,10 @@
-use std::path::PathBuf;
 use crate::{
     resolve_overrides, 
     Tendril
 };
-use crate::libtests::common::set_all_platform_paths;
 use crate::libtests::sample_tendrils::SampleTendrils;
+use crate::test_utils::set_all_platform_paths;
+use std::path::PathBuf;
 
 #[test]
 fn empty_overrides_returns_globals() {

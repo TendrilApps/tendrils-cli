@@ -1,5 +1,5 @@
 use crate::{get_tendrils_folder, is_tendrils_folder};
-use crate::libtests::common::get_disposable_folder;
+use crate::test_utils::get_disposable_folder;
 use serial_test::serial;
 use std::fs::{create_dir_all, File};
 use std::env::{remove_var, set_var};
