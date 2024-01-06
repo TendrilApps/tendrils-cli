@@ -38,12 +38,12 @@ fn run(args: TendrilCliArgs, writer: &mut impl Writer) {
 fn path(writer: &mut impl Writer) {
     const ENV_NAME: &str = "TENDRILS_FOLDER";
     match std::env::var(ENV_NAME) {
-        Ok(v) => writer.write(&v),
+        Ok(v) => writer.writeln(&v),
         Err(VarError::NotPresent) => {
-            writer.write(&format!("The '{}' environment variable is not set.", ENV_NAME))
+            writer.writeln(&format!("The '{}' environment variable is not set.", ENV_NAME))
         },
         Err(VarError::NotUnicode(_v)) => {
-            writer.write(&format!(
+            writer.writeln(&format!(
                 "Error: The '{}' environment variable is not valid UTF-8.",
                 ENV_NAME
             ))
@@ -59,7 +59,7 @@ fn push_or_pull(push: bool, path: Option<String>, writer: &mut impl Writer) {
                 test_path
             }
             else {
-                writer.write("Error: The given path is not a Tendrils folder");
+                writer.writeln("Error: The given path is not a Tendrils folder");
                 return;
             }
         }
@@ -77,7 +77,7 @@ fn push_or_pull(push: bool, path: Option<String>, writer: &mut impl Writer) {
         .expect("Error: Could not import the tendrils-overrides.json file");
 
     if override_tendrils.is_empty() {
-        writer.write("No local overrides were found.");
+        writer.writeln("No local overrides were found.");
     }
 
     let _resolved_tendrils =
