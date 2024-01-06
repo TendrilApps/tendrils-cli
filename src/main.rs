@@ -23,10 +23,10 @@ fn main() {
     let mut stdout_writer = StdOutWriter {};
     let args = TendrilCliArgs::parse();
 
-    execute(args, &mut stdout_writer);
+    run(args, &mut stdout_writer);
 }
 
-pub fn execute(args: TendrilCliArgs, writer: &mut impl Writer) {
+pub fn run(args: TendrilCliArgs, writer: &mut impl Writer) {
     match args.tendrils_command {
         TendrilsSubcommands::Path => {
             path(writer);

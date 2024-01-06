@@ -1,4 +1,4 @@
-use crate::{execute, get_disposable_folder, Writer};
+use crate::{run, get_disposable_folder, Writer};
 use crate::cli::{TendrilCliArgs, TendrilsSubcommands};
 use serial_test::serial;
 use tempdir::TempDir;
@@ -35,7 +35,7 @@ fn path_with_env_var_unset_prints_message() {
         "The '{}' environment variable is not set.", TENDRILS_VAR_NAME
     );
 
-    execute(args, &mut writer);
+    run(args, &mut writer);
 
     assert_eq!(writer.output, expected);
 }
@@ -50,7 +50,7 @@ fn path_with_env_var_set_prints_path() {
     std::env::set_var(TENDRILS_VAR_NAME, "SomePath");
     let expected = "SomePath";
 
-    execute(args, &mut writer);
+    run(args, &mut writer);
 
     assert_eq!(writer.output, expected);
 }
@@ -72,5 +72,5 @@ fn push_or_pull_no_path_given_and_no_cd_should_panic() {
         tendrils_command: TendrilsSubcommands::Pull { path: None }
     };
 
-    execute(args, &mut writer);
+    run(args, &mut writer);
 }
