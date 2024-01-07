@@ -132,6 +132,22 @@ fn parse_tendrils(json: &str) -> Result<Vec<Tendril>, serde_json::Error> {
     serde_json::from_str::<Vec<Tendril>>(json)
 }
 
+fn path(writer: &mut impl Writer) {
+    const ENV_NAME: &str = "TENDRILS_FOLDER";
+    match std::env::var(ENV_NAME) {
+        Ok(v) => writer.writeln(&v),
+        Err(std::env::VarError::NotPresent) => {
+            writer.writeln(&format!("The '{}' environment variable is not set.", ENV_NAME))
+        },
+        Err(std::env::VarError::NotUnicode(_v)) => {
+            writer.writeln(&format!(
+                "Error: The '{}' environment variable is not valid UTF-8.",
+                ENV_NAME
+            ))
+        }
+    } 
+}
+
 fn pull<'a>(
     tendrils_folder: &Path,
     tendrils: &'a [Tendril],
@@ -152,22 +168,6 @@ fn pull<'a>(
     }
 
     results
-}
-
-fn path(writer: &mut impl Writer) {
-    const ENV_NAME: &str = "TENDRILS_FOLDER";
-    match std::env::var(ENV_NAME) {
-        Ok(v) => writer.writeln(&v),
-        Err(std::env::VarError::NotPresent) => {
-            writer.writeln(&format!("The '{}' environment variable is not set.", ENV_NAME))
-        },
-        Err(std::env::VarError::NotUnicode(_v)) => {
-            writer.writeln(&format!(
-                "Error: The '{}' environment variable is not valid UTF-8.",
-                ENV_NAME
-            ))
-        }
-    } 
 }
 
 fn pull_tendril(
