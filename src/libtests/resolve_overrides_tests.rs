@@ -3,7 +3,7 @@ use crate::{
     Tendril
 };
 use crate::libtests::sample_tendrils::SampleTendrils;
-use crate::test_utils::set_all_platform_paths;
+use crate::libtests::test_utils::set_all_platform_paths;
 use std::path::PathBuf;
 
 #[test]

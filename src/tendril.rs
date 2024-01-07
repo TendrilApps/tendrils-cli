@@ -22,6 +22,7 @@ impl Tendril {
         self.app.clone() + " - " + &self.name
     }
 
+    #[cfg(test)]
     pub fn new(app: &str, name: &str) -> Tendril {
         Tendril {
             app: app.to_string(),
