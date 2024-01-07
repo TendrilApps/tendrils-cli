@@ -1,5 +1,11 @@
-use std::path::{Path, PathBuf};
 use crate::Tendril;
+use std::fs::{
+    create_dir_all,
+    read_to_string,
+    write,
+};
+use std::path::{Path, PathBuf};
+use tempdir::TempDir;
 
 pub fn get_disposable_folder() -> PathBuf {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -42,4 +48,123 @@ pub fn set_all_platform_paths(tendril: &mut Tendril, paths: &[PathBuf]) {
 
     tendril.parent_dirs_mac = path_strings.clone();
     tendril.parent_dirs_windows = path_strings;
+}
+
+pub struct Setup {
+    pub temp_dir: TempDir, // Must return a reference to keep it in scope
+    pub parent_dir: PathBuf,
+    pub tendrils_dir: PathBuf,
+    pub source_file: PathBuf,
+    pub source_folder: PathBuf,
+    pub dest_file: PathBuf,
+    pub dest_folder: PathBuf,
+    pub dest_nested_file: PathBuf,
+    pub tendril: Tendril,
+}
+
+impl Setup {
+    /// Crate a new temporary test folder setup
+    pub fn new(opts: &SetupOpts) -> Setup {
+        let temp_dir: TempDir;
+        let parent_dir: PathBuf;
+        if opts.parent_dir_is_child_of_temp_dir {
+            temp_dir = TempDir::new_in(
+                get_disposable_folder(),
+                "GrandparentFolder",
+            ).unwrap();
+            parent_dir = temp_dir.path().join(opts.parent_dirname).to_owned();
+            create_dir_all(&parent_dir).unwrap();
+        }
+        else {
+            temp_dir = TempDir::new_in(
+                get_disposable_folder(),
+                opts.parent_dirname,
+            ).unwrap();
+            parent_dir = temp_dir.path().to_owned();
+        }
+        let tendrils_dir = temp_dir.path().join(opts.tendrils_dirname);
+        let source_file = parent_dir.join(opts.source_filename);
+        let source_folder = parent_dir.join(opts.source_foldername);
+        let source_nested_file = source_folder.join("nested.txt");
+        let dest_file = tendrils_dir.join(opts.app).join(opts.source_filename);
+        let dest_folder = tendrils_dir.join(opts.app).join(opts.source_foldername);
+        let dest_nested_file = dest_folder.join("nested.txt");
+        let mut tendril = match opts.is_folder_tendril {
+            false => Tendril::new(opts.app, opts.source_filename),
+            true => Tendril::new(opts.app, opts.source_foldername)
+        };
+        set_all_platform_paths(&mut tendril, &[parent_dir.clone()]);
+
+        if opts.make_source_file {
+            write(&source_file, "Source file contents").unwrap();
+        }
+        if opts.make_source_folder {
+            create_dir_all(&source_folder).unwrap();
+
+            if opts.make_source_nested_file {
+                write(&source_nested_file, "Nested file contents").unwrap();
+            }
+        }
+        if opts.make_tendrils_folder {
+            create_dir_all(&tendrils_dir).unwrap();
+        }
+
+        Setup {
+            temp_dir,
+            parent_dir,
+            tendrils_dir,
+            source_file,
+            source_folder,
+            dest_file,
+            dest_folder,
+            dest_nested_file,
+            tendril,
+        }
+    }
+
+    pub fn dest_file_contents(&self) -> String {
+        read_to_string(&self.dest_file).unwrap()
+    }
+
+    pub fn dest_nested_file_contents(&self) -> String {
+        read_to_string(&self.dest_nested_file).unwrap()
+    }
+
+    pub fn source_file_contents(&self) -> String {
+        read_to_string(&self.source_file).unwrap()
+    }
+}
+
+pub struct SetupOpts<'a> {
+    pub make_source_file: bool,
+    pub make_source_folder: bool,
+    pub make_source_nested_file: bool,
+    pub make_tendrils_folder: bool,
+    /// Sets the tendril to the misc folder, otherwise
+    /// it is set to misc.txt
+    pub is_folder_tendril: bool,
+    pub parent_dir_is_child_of_temp_dir: bool,
+    pub parent_dirname: &'a str,
+    pub app: &'a str,
+    pub source_filename: &'a str,
+    pub source_foldername: &'a str,
+    pub tendrils_dirname: &'a str,
+}
+
+impl<'a> SetupOpts<'a> {
+    pub fn default() -> SetupOpts<'a> {
+        SetupOpts {
+            make_source_file: true,
+            make_source_folder: true,
+            make_source_nested_file: true,
+            make_tendrils_folder: false,
+            is_folder_tendril: false,
+            parent_dir_is_child_of_temp_dir: false,
+            parent_dirname: "ParentFolder",
+            app: "SomeApp",
+            source_filename: "misc.txt",
+            source_foldername: "misc",
+            tendrils_dirname: "TendrilsFolder",
+        }
+    }
 }
