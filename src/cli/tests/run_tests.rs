@@ -58,6 +58,7 @@ fn path_with_env_var_set_prints_path() {
 }
 
 #[test]
+#[cfg(not(windows))]
 fn push_or_pull_no_path_given_and_no_cd_should_panic() {
     let delete_me = TempDir::new_in(
         get_disposable_folder(),
