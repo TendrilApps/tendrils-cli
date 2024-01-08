@@ -4,7 +4,7 @@ use crate::{
     Tendril,
 };
 use crate::libtests::sample_tendrils::SampleTendrils;
-use crate::libtests::test_utils::get_disposable_folder;
+use crate::test_utils::get_disposable_folder;
 use tempdir::TempDir;
 
 #[test]

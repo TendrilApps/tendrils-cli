@@ -1,13 +1,9 @@
-use crate::{
-    run,
-    is_tendrils_folder,
-};
-use crate::cli::{TendrilCliArgs, TendrilsSubcommands};
-use crate::libtests::test_utils::get_disposable_folder;
-use crate::writer::Writer;
+use crate::cli::{run, TendrilCliArgs, TendrilsSubcommands};
+use crate::cli::writer::Writer;
+use crate::is_tendrils_folder;
+use crate::test_utils::get_disposable_folder;
 use serial_test::serial;
 use tempdir::TempDir;
-
 const TENDRILS_VAR_NAME: &str = "TENDRILS_FOLDER";
 
 struct MockWriter {
@@ -118,7 +114,6 @@ fn push_or_pull_given_path_and_cd_are_tendrils_folder_uses_given_path() {
         }
     };
     let expected = "Error: Could not parse the tendrils.json file\n";
-
     run(args, &mut writer);
 
     // TODO: Verify that the correct one was used

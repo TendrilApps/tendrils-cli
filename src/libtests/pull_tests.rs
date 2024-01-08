@@ -1,6 +1,6 @@
 use crate::{pull, PushPullError};
 use crate::tendril::Tendril;
-use crate::libtests::test_utils::{
+use crate::test_utils::{
     get_disposable_folder,
     is_empty,
     set_all_platform_paths
