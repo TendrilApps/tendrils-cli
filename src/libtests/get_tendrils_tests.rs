@@ -8,13 +8,17 @@ use crate::libtests::test_utils::get_disposable_folder;
 use tempdir::TempDir;
 
 #[test]
-fn no_tendrils_json_file_returns_io_error() {
+fn no_tendrils_json_file_returns_io_not_found_error() {
     let temp = TempDir::new_in(get_disposable_folder(), "Empty").unwrap();
 
     let actual = get_tendrils(&temp.path());
 
-    // TODO: Test for proper IoError variation
-    assert!(matches!(actual.unwrap_err(), GetTendrilsError::IoError(_)));
+    match actual {
+        Err(GetTendrilsError::IoError(e)) => {
+            assert_eq!(e.kind(), std::io::ErrorKind::NotFound)
+        },
+        _ => panic!()
+    }
 }
 
 #[test]

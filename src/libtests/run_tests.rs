@@ -62,7 +62,6 @@ fn path_with_env_var_set_prints_path() {
 }
 
 #[test]
-#[should_panic(expected = "Error: Could not get the current directory")]
 fn push_or_pull_no_path_given_and_no_cd_should_panic() {
     let delete_me = TempDir::new_in(
         get_disposable_folder(),
@@ -75,8 +74,11 @@ fn push_or_pull_no_path_given_and_no_cd_should_panic() {
     let args = TendrilCliArgs{
         tendrils_command: TendrilsSubcommands::Pull { path: None }
     };
+    let expected = "Error: Could not get the current directory\n";
 
     run(args, &mut writer);
+
+    assert_eq!(writer.all_output, expected);
 }
 
 #[test]
@@ -96,7 +98,6 @@ fn push_or_pull_given_path_is_not_tendrils_folder_cd_is_prints_message() {
 }
 
 #[test]
-#[should_panic(expected = "Error: Could not import the tendrils.json file")]
 fn push_or_pull_given_path_and_cd_are_tendrils_folder_uses_given_path() {
     let temp_parent_folder = TempDir::new_in(
         get_disposable_folder(),
@@ -116,10 +117,12 @@ fn push_or_pull_given_path_and_cd_are_tendrils_folder_uses_given_path() {
             path: Some(given_folder.to_str().unwrap().to_string()),
         }
     };
+    let expected = "Error: Could not parse the tendrils.json file\n";
 
     run(args, &mut writer);
 
+    // TODO: Verify that the correct one was used
     assert!(is_tendrils_folder(&current_dir));
     assert!(is_tendrils_folder(&given_folder));
-    // TODO: Verify that the correct one was used
+    assert_eq!(writer.all_output, expected);
 }

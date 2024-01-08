@@ -229,17 +229,46 @@ fn push_or_pull(push: bool, path: Option<String>, writer: &mut impl Writer) {
             }
         }
         None => {
-            get_tendrils_folder(&std::env::current_dir()
-                .expect("Error: Could not get the current directory"))
-                .expect("Error: Could not find a Tendrils folder")
-        }           
+            let starting_dir = match std::env::current_dir() {
+                Ok(v) => v,
+                Err(_err) => {
+                    writer.writeln("Error: Could not get the current directory");
+                    return;
+                }
+            };
+            match get_tendrils_folder(&starting_dir) {
+                Some(v) => v,
+                None => {
+                    writer.writeln("Error: Could not find a Tendrils folder");
+                    return;
+                }
+            }
+        }
     };
 
-    let common_tendrils = get_tendrils(&tendrils_folder)
-        .expect("Error: Could not import the tendrils.json file");
+    let common_tendrils = match get_tendrils(&tendrils_folder) {
+        Ok(v) => v,
+        Err(GetTendrilsError::IoError(_e)) => {
+            writer.writeln("Error: Could not read the tendrils.json file");
+            return;
+        },
+        Err(GetTendrilsError::ParseError(_e)) => {
+            writer.writeln("Error: Could not parse the tendrils.json file");
+            return;
+        },
+    };
 
-    let override_tendrils = get_tendril_overrides(&tendrils_folder)
-        .expect("Error: Could not import the tendrils-overrides.json file");
+    let override_tendrils = match get_tendril_overrides(&tendrils_folder) {
+        Ok(v) => v,
+        Err(GetTendrilsError::IoError(_e)) => {
+            writer.writeln("Error: Could not read the tendrils-override.json file");
+            return;
+        },
+        Err(GetTendrilsError::ParseError(_e)) => {
+            writer.writeln("Error: Could not parse the tendrils-override.json file");
+            return;
+        },
+    };
 
     if override_tendrils.is_empty() {
         writer.writeln("No local overrides were found.");
