@@ -1,6 +1,6 @@
 use crate::errors::ResolveTendrilError;
 use crate::{resolve_tendril, ResolvedTendril, Tendril, TendrilMode};
-use crate::test_utils::{set_all_platform_paths, get_username};
+use crate::test_utils::{set_all_platform_paths, get_username_can_panic};
 use rstest::rstest;
 use serial_test::serial;
 use std::path::PathBuf;
@@ -152,15 +152,14 @@ fn duplicate_parent_paths_resolves_all() {
 }
 
 #[test]
-#[serial]
 fn supported_variables_are_resolved_in_all() {
     let mut given = Tendril::new("SomeApp", "misc.txt");
     given.folder_merge = false;
-    let mut expected_parent1 = get_username();
+    let mut expected_parent1 = get_username_can_panic();
     expected_parent1.push('1');
-    let mut expected_parent2 = get_username();
+    let mut expected_parent2 = get_username_can_panic();
     expected_parent2.push('2');
-    let mut expected_parent3 = get_username();
+    let mut expected_parent3 = get_username_can_panic();
     expected_parent3.push('3');
 
     set_all_platform_paths(
@@ -188,6 +187,46 @@ fn supported_variables_are_resolved_in_all() {
             "SomeApp".to_string(),
             "misc.txt".to_string(),
             PathBuf::from(expected_parent3),
+            TendrilMode::FolderOverwrite,
+        ).unwrap()),
+    ];
+
+    let actual = resolve_tendril(given, false);
+
+    assert_eq!(actual, expected);
+}
+
+#[test]
+#[serial("mut-env-var")]
+fn supported_variable_missing_returns_raw_path() {
+    let mut given = Tendril::new("SomeApp", "misc.txt");
+    given.folder_merge = false;
+    set_all_platform_paths(
+        &mut given,
+        &[
+            PathBuf::from("SomeParentPath1".to_string()),
+            PathBuf::from("<mut-testing>".to_string()),
+            PathBuf::from("SomeParentPath3".to_string()),
+        ],
+    );
+    std::env::remove_var("mut-testing");
+    let expected = vec![
+        Ok(ResolvedTendril::new(
+            "SomeApp".to_string(),
+            "misc.txt".to_string(),
+            PathBuf::from("SomeParentPath1"),
+            TendrilMode::FolderOverwrite,
+        ).unwrap()),
+        Ok(ResolvedTendril::new(
+            "SomeApp".to_string(),
+            "misc.txt".to_string(),
+            PathBuf::from("<mut-testing>"),
+            TendrilMode::FolderOverwrite,
+        ).unwrap()),
+        Ok(ResolvedTendril::new(
+            "SomeApp".to_string(),
+            "misc.txt".to_string(),
+            PathBuf::from("SomeParentPath3"),
             TendrilMode::FolderOverwrite,
         ).unwrap()),
     ];

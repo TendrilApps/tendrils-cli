@@ -22,12 +22,16 @@ pub fn get_samples_folder() -> PathBuf {
         .join("samples")
 }
 
-pub fn get_username() -> String {
+pub fn get_username_can_panic() -> String {
     match std::env::consts::OS {
         "macos" => std::env::var("USER").unwrap(),
         "windows" => std::env::var("USERNAME").unwrap(),
         _ => unimplemented!()
     }
+}
+
+pub fn get_mut_testing_var() -> Result<String, std::env::VarError> {
+    std::env::var("mut-testing")
 }
 
 pub fn is_empty(folder: &Path) -> bool {

@@ -19,6 +19,8 @@ use tendril::Tendril;
 mod libtests;
 #[cfg(test)]
 mod test_utils;
+#[cfg(test)]
+use test_utils::get_mut_testing_var;
 
 fn copy_fso(
     from: &Path,
@@ -126,8 +128,12 @@ fn get_tendril_overrides(
     Ok(tendrils)
 }
 
-fn is_path(x: &str) -> bool {
-    x.contains('/') || x.contains('\\')
+fn get_username() -> Result<String, std::env::VarError> {
+    match std::env::consts::OS {
+        "macos" => Ok(std::env::var("USER")?),
+        "windows" => Ok(std::env::var("USERNAME")?),
+        _ => unimplemented!()
+    }
 }
 
 fn is_tendrils_folder(dir: &Path) -> bool {
@@ -236,13 +242,19 @@ fn resolve_path_variables(path: &Path) -> Result<PathBuf, ResolveTendrilError> {
         None => return Err(ResolveTendrilError::PathParseError)
     };
 
-    let username = match std::env::consts::OS {
-        "macos" => std::env::var("USER")?,
-        "windows" => std::env::var("USERNAME")?,
-        _ => "<user>".to_string()
-    };
+    // TODO: Extract var sets as a constant expression?
+    let supported_var_sets: &[(&str, fn() -> Result<String, std::env::VarError>)] = &[
+        ("<user>", get_username),
+        #[cfg(test)]
+        ("<mut-testing>", get_mut_testing_var),
+    ];
 
-    let resolved = orig_string.replace("<user>", &username);
+    let mut resolved: String = orig_string.to_string();
+    for var_set in supported_var_sets {
+        let value = var_set.1().unwrap_or(var_set.0.to_string());
+        resolved = resolved.replace(var_set.0, &value);
+    }
+
     Ok(PathBuf::from(&resolved))
 }
 

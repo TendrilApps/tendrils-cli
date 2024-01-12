@@ -6,7 +6,7 @@ use crate::{
 use crate::test_utils::{
     get_disposable_folder,
     get_samples_folder,
-    get_username,
+    get_username_can_panic,
     is_empty,
     set_all_platform_paths,
     Setup,
@@ -117,10 +117,10 @@ fn unsupported_var_in_parent_path_uses_raw_path(#[case] parent_name_raw: &str) {
 }
 
 #[rstest]
-#[case("<user>",                &get_username())]
-#[case("<user>LeadingVar",      &format!("{}LeadingVar", get_username()))]
-#[case("Sandwiched<user>Var",   &format!("Sandwiched{}Var", get_username()))]
-#[case("TrailingVar<user>",     &format!("TrailingVar{}", get_username()))]
+#[case("<user>",                &get_username_can_panic())]
+#[case("<user>LeadingVar",      &format!("{}LeadingVar", get_username_can_panic()))]
+#[case("Sandwiched<user>Var",   &format!("Sandwiched{}Var", get_username_can_panic()))]
+#[case("TrailingVar<user>",     &format!("TrailingVar{}", get_username_can_panic()))]
 fn supported_var_in_parent_path_is_resolved(
     #[case] parent_name_raw: &str,
     #[case] parent_name_resolved: &str
@@ -174,9 +174,9 @@ fn resolved_source_path_is_given_tendrils_folder_returns_recursion_error() {
     let given_parent_folder = temp_grandparent_folder.path().join("<user>");
     let given_tendrils_folder = temp_grandparent_folder
         .path()
-        .join(get_username())
+        .join(get_username_can_panic())
         .join("TendrilsFolder");
-    create_dir_all(&temp_grandparent_folder.path().join(get_username())).unwrap();
+    create_dir_all(&temp_grandparent_folder.path().join(get_username_can_panic())).unwrap();
 
     let mut given = Tendril::new("SomeApp", "TendrilsFolder");
     set_all_platform_paths(&mut given, &[given_parent_folder]);
@@ -196,13 +196,13 @@ fn resolved_source_path_is_ancestor_to_given_tendrils_folder_returns_recursion_e
     let given_parent_folder = temp_grandparent_folder.path().join("<user>");
     let given_tendrils_folder = temp_grandparent_folder
         .path()
-        .join(get_username())
+        .join(get_username_can_panic())
         .join("Nested1")
         .join("Nested2")
         .join("Nested3")
         .join("TendrilsFolder");
     create_dir_all(
-        &temp_grandparent_folder.path().join(get_username())
+        &temp_grandparent_folder.path().join(get_username_can_panic())
     ).unwrap();
 
     let mut given = Tendril::new("SomeApp", "Nested1");
@@ -223,11 +223,11 @@ fn resolved_source_path_is_sibling_to_given_tendrils_folder_copies_normally() {
     let given_parent_folder = temp_grandparent_folder.path().join("<user>");
     let given_tendrils_folder = temp_grandparent_folder
         .path()
-        .join(get_username())
+        .join(get_username_can_panic())
         .join("TendrilsFolder");
     create_dir_all(&temp_grandparent_folder
         .path()
-        .join(get_username())
+        .join(get_username_can_panic())
         .join("SiblingFolder")
     ).unwrap();
 
@@ -251,7 +251,7 @@ fn resolved_source_path_is_direct_child_of_given_tendrils_folder_returns_recursi
     ).unwrap();
     let given_tendrils_folder = temp_grandparent_folder
         .path()
-        .join(get_username())
+        .join(get_username_can_panic())
         .join("TendrilsFolder");
     let given_parent_folder = temp_grandparent_folder
         .path()
@@ -279,7 +279,7 @@ fn resolved_source_path_is_nested_child_of_given_tendrils_folder_returns_recursi
     ).unwrap();
     let given_tendrils_folder = temp_grandparent_folder
         .path()
-        .join(get_username())
+        .join(get_username_can_panic())
         .join("TendrilsFolder");
     let given_parent_folder = temp_grandparent_folder
         .path()
