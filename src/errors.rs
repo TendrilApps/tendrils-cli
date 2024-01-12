@@ -19,18 +19,17 @@ impl From<serde_json::Error> for GetTendrilsError {
 #[derive(Debug)]
 pub enum PushPullError {
     Duplicate,
-    InvalidId,
     IoError(std::io::Error),
-    PathError(ResolvePathError),
+    ResolveTendrilError(ResolveTendrilError),
     Recursion,
     Skipped,
     TypeMismatch,
     Unsupported,
 }
 
-impl From<ResolvePathError> for PushPullError {
-    fn from(err: ResolvePathError) -> Self {
-        PushPullError::PathError(err)
+impl From<ResolveTendrilError> for PushPullError {
+    fn from(err: ResolveTendrilError) -> Self {
+        PushPullError::ResolveTendrilError(err)
     }
 }
 
@@ -40,14 +39,27 @@ impl From<std::io::Error> for PushPullError {
     }
 }
 
-#[derive(Debug)]
-pub enum ResolvePathError {
+#[derive(Debug, Eq, PartialEq)]
+pub enum InvalidTendrilError {
+    InvalidApp,
+    InvalidName,
+}
+
+#[derive(Debug, Eq, PartialEq)]
+pub enum ResolveTendrilError {
     EnvVarError(std::env::VarError),
+    InvalidTendril(InvalidTendrilError),
     PathParseError,
 }
 
-impl From<std::env::VarError> for ResolvePathError {
+impl From<std::env::VarError> for ResolveTendrilError {
     fn from(err: std::env::VarError) -> Self {
-        ResolvePathError::EnvVarError(err)
+        ResolveTendrilError::EnvVarError(err)
+    }
+}
+
+impl From<InvalidTendrilError> for ResolveTendrilError {
+    fn from(err: InvalidTendrilError) -> Self {
+        ResolveTendrilError::InvalidTendril(err)
     }
 }

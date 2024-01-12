@@ -4,12 +4,12 @@ use rstest::rstest;
 use std::path::PathBuf;
 
 #[test]
-#[cfg(unix)]
-// Could not get an equivalent test working on Windows.
-// Attempted using OsString::from_wide (from std::os::windows::ffi::OsStringExt)
-// with UTF-16 characters but they were successfully converted to UTF-8 for
-// some reason
+#[cfg(not(windows))]
 fn non_utf_8_path_returns_path_parse_error() {
+    // Could not get an equivalent test working on Windows.
+    // Attempted using OsString::from_wide (from std::os::windows::ffi::OsStringExt)
+    // with UTF-16 characters but they were successfully converted to UTF-8 for
+    // some reason
     use std::os::unix::ffi::OsStringExt;
     let non_utf8_chars = vec![
         0xC3, 0x28, 0xA9, 0x29, 0xE2, 0x82, 0xAC, 0xFF, 0xFE, 0xFD, 0xFC,
@@ -22,7 +22,7 @@ fn non_utf_8_path_returns_path_parse_error() {
 
     let actual = resolve_path_variables(&given).unwrap_err();
 
-    assert!(matches!(actual, crate::ResolvePathError::PathParseError));
+    assert!(matches!(actual, crate::ResolveTendrilError::PathParseError));
 }
 
 #[rstest]

@@ -9,3 +9,5 @@ mod pull_tests;
 mod pull_tendril_tests;
 mod resolve_overrides_tests;
 mod resolve_path_variable_tests;
+mod resolve_tendril_tests;
+mod resolved_tendril_tests;

@@ -1,6 +1,15 @@
 pub mod cli;
 mod errors;
-use errors::{GetTendrilsError, PushPullError, ResolvePathError};
+use errors::{
+    GetTendrilsError,
+    PushPullError,
+    ResolveTendrilError,
+};
+mod resolved_tendril;
+use resolved_tendril::{
+    ResolvedTendril,
+    TendrilMode,
+};
 use std::fs::create_dir_all;
 use std::path::{Path, PathBuf};
 mod tendril;
@@ -157,14 +166,6 @@ fn pull_tendril(
     tendrils_folder: &Path,
     tendril: &Tendril,
 ) -> Result<(), PushPullError> {
-    if tendril.app.is_empty()
-        || tendril.name.is_empty()
-        || tendril.app.to_lowercase() == ".git"
-        || is_path(&tendril.app)
-        || is_path(&tendril.name){
-        return Err(PushPullError::InvalidId);
-    }
-
     // TODO: Consider conditional compilation instead
     // of matching on every iteration
     // TODO: Extract this path determination to a separate
@@ -229,10 +230,10 @@ fn resolve_overrides(
     resolved_tendrils
 }
 
-fn resolve_path_variables(path: &Path) -> Result<PathBuf, ResolvePathError> {
+fn resolve_path_variables(path: &Path) -> Result<PathBuf, ResolveTendrilError> {
     let orig_string = match path.to_str() {
         Some(v) => v,
-        None => return Err(ResolvePathError::PathParseError)
+        None => return Err(ResolveTendrilError::PathParseError)
     };
 
     let username = match std::env::consts::OS {
@@ -243,4 +244,34 @@ fn resolve_path_variables(path: &Path) -> Result<PathBuf, ResolvePathError> {
 
     let resolved = orig_string.replace("<user>", &username);
     Ok(PathBuf::from(&resolved))
+}
+
+pub fn resolve_tendril(
+    tendril: Tendril,
+    first_only: bool
+) -> Vec<Result<ResolvedTendril, ResolveTendrilError>> {
+    let mode = match &tendril.folder_merge {
+        true => TendrilMode::FolderMerge,
+        false => TendrilMode::FolderOverwrite,
+    };
+    let raw_paths = match std::env::consts::OS {
+        "macos" => tendril.parent_dirs_mac.clone(),
+        "windows" => tendril.parent_dirs_windows.clone(),
+        _ => return vec![]
+    };
+    let raw_paths = match first_only {
+        true => raw_paths[..1].to_vec(),
+        false => raw_paths
+    };
+
+    raw_paths.iter().map(|p| -> Result<ResolvedTendril, ResolveTendrilError> {
+        let parent = resolve_path_variables(&PathBuf::from(p))?;
+
+        Ok(ResolvedTendril::new(
+            tendril.app.clone(),
+            tendril.name.clone(),
+            parent,
+            mode,
+        )?)
+    }).collect()
 }

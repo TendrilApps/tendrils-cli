@@ -50,38 +50,6 @@ fn parent_path_is_empty_string_attempts_copy() {
 }
 
 #[rstest]
-#[case("")]
-#[case("some/path")]
-#[case("some\\path")]
-#[case(".git")] // TODO: Test that other variations that contain git
-                // are allowed (.gitsomething, git, something.git)
-#[case(".Git")]
-#[case(".GIT")]
-fn tendril_app_is_invalid_returns_invalid_id_error(#[case] app: String) {
-    let mut setup = Setup::new(&SetupOpts::default());
-    setup.tendril.app = app;
-
-    let actual = pull_tendril(&setup.tendrils_dir, &setup.tendril);
-
-    assert!(matches!(actual, Err(PushPullError::InvalidId)));
-    assert!(is_empty(&setup.tendrils_dir))
-}
-
-#[rstest]
-#[case("")]
-#[case("some/path")]
-#[case("some\\path")]
-fn tendril_name_is_invalid_returns_invalid_id_error(#[case] name: String) {
-    let mut setup = Setup::new(&SetupOpts::default());
-    setup.tendril.name = name;
-
-    let actual = pull_tendril(&setup.tendrils_dir, &setup.tendril);
-
-    assert!(matches!(actual, Err(PushPullError::InvalidId)));
-    assert!(is_empty(&setup.tendrils_dir))
-}
-
-#[rstest]
 #[case("NoDot")]
 #[case("single.dot")]
 #[case("multi.sandwiched.dots")]
