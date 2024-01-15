@@ -22,9 +22,7 @@ pub enum PushPullError {
     IoError(std::io::Error),
     ResolveTendrilError(ResolveTendrilError),
     Recursion,
-    Skipped,
     TypeMismatch,
-    Unsupported,
 }
 
 impl From<ResolveTendrilError> for PushPullError {

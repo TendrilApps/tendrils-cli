@@ -1,4 +1,8 @@
 use crate::Tendril;
+use crate::resolved_tendril::{
+    ResolvedTendril,
+    TendrilMode,
+};
 use std::fs::{
     create_dir_all,
     read_to_string,
@@ -63,11 +67,11 @@ pub struct Setup {
     pub dest_file: PathBuf,
     pub dest_folder: PathBuf,
     pub dest_nested_file: PathBuf,
-    pub tendril: Tendril,
+    pub tendril: ResolvedTendril,
 }
 
 impl Setup {
-    /// Crate a new temporary test folder setup
+    /// Create a new temporary test folder setup
     pub fn new(opts: &SetupOpts) -> Setup {
         let temp_dir: TempDir;
         let parent_dir: PathBuf;
@@ -93,11 +97,10 @@ impl Setup {
         let dest_file = tendrils_dir.join(opts.app).join(opts.source_filename);
         let dest_folder = tendrils_dir.join(opts.app).join(opts.source_foldername);
         let dest_nested_file = dest_folder.join("nested.txt");
-        let mut tendril = match opts.is_folder_tendril {
-            false => Tendril::new(opts.app, opts.source_filename),
-            true => Tendril::new(opts.app, opts.source_foldername)
-        };
-        set_all_platform_paths(&mut tendril, &[parent_dir.clone()]);
+        let tendril = match opts.is_folder_tendril {
+            false => ResolvedTendril::new(opts.app.to_string(), opts.source_filename.to_string(), parent_dir.clone(), TendrilMode::FolderOverwrite),
+            true => ResolvedTendril::new(opts.app.to_string(), opts.source_foldername.to_string(), parent_dir.clone(), TendrilMode::FolderOverwrite),
+        }.unwrap();
 
         if opts.make_source_file {
             write(&source_file, "Source file contents").unwrap();

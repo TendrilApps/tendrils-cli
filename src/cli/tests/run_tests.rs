@@ -122,3 +122,9 @@ fn push_or_pull_given_path_and_cd_are_tendrils_folder_uses_given_path() {
     assert!(is_tendrils_folder(&given_folder));
     assert_eq!(writer.all_output, expected);
 }
+
+// TODO: Test uses_correct_platform_paths (see old commits in pull_tendril_tests)
+// TODO: Test multiple_paths_only_copies_first for pull (see old commits in pull_tendril_tests)
+// TODO: Test multiple_paths_first_is_missing_returns_not_found_error (see old commits in pull_tendril_tests)
+// TODO: Test duplicate_tendrils_returns_duplicate_error_for_second_occurence_onward (see old pull_tests)
+// TODO: Test that empty path list returns skipped error (for any action)

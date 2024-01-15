@@ -30,7 +30,7 @@ fn copy_fso(
     let mut to = to;
 
     if from.is_dir() {
-        if !folder_merge {
+        if !folder_merge && to.exists() {
             std::fs::remove_dir_all(to)?;
             create_dir_all(to)?;
         }
@@ -148,11 +148,11 @@ fn parse_tendrils(json: &str) -> Result<Vec<Tendril>, serde_json::Error> {
 
 fn pull<'a>(
     tendrils_folder: &Path,
-    tendrils: &'a [Tendril],
-) -> Vec<(&'a Tendril, Result<(), PushPullError>)> {
+    tendrils: &'a [ResolvedTendril],
+) -> Vec<(&'a ResolvedTendril, Result<(), PushPullError>)> {
     let mut results = Vec::with_capacity(tendrils.len());
     let mut ids: Vec<String> = Vec::with_capacity(tendrils.len());
-    
+
     for tendril in tendrils {
         let id = tendril.id();
 
@@ -170,31 +170,16 @@ fn pull<'a>(
 
 fn pull_tendril(
     tendrils_folder: &Path,
-    tendril: &Tendril,
+    tendril: &ResolvedTendril,
 ) -> Result<(), PushPullError> {
-    // TODO: Consider conditional compilation instead
-    // of matching on every iteration
-    // TODO: Extract this path determination to a separate
-    // function to use with push as well
-    let sources = match std::env::consts::OS {
-        "macos" => &tendril.parent_dirs_mac,
-        "windows" => &tendril.parent_dirs_windows,
-        _ => return Err(PushPullError::Unsupported)
-    };
-
-    if sources.is_empty() {
-        return Err(PushPullError::Skipped);
-    }
-
-    let source= resolve_path_variables(&PathBuf::from(&sources[0]))?
-        .join(&tendril.name);
-    if tendrils_folder == source 
+    let source= tendril.full_path();
+    if tendrils_folder == source
         || tendrils_folder.ancestors().any(|p| p == source)
         || source.ancestors().any(|p| p == tendrils_folder) {
         return Err(PushPullError::Recursion);
     }
 
-    let dest = tendrils_folder.join(&tendril.app).join(&tendril.name);
+    let dest = tendrils_folder.join(tendril.app()).join(tendril.name());
 
     if (source.is_dir() && dest.is_file())
         || (source.is_file() && dest.is_dir())
@@ -203,7 +188,8 @@ fn pull_tendril(
         return Err(PushPullError::TypeMismatch);
     }
 
-    Ok(copy_fso(&source, &dest, tendril.folder_merge)?)
+    let folder_merge = tendril.mode == TendrilMode::FolderMerge;
+    Ok(copy_fso(&source, &dest, folder_merge)?)
 }
 
 /// Returns a list of all Tendrils after replacing global ones with any
@@ -216,7 +202,7 @@ fn resolve_overrides(
     global: &[Tendril],
     overrides: &[Tendril],
 ) -> Vec<Tendril> {
-    let mut resolved_tendrils = Vec::with_capacity(global.len());
+    let mut combined_tendrils = Vec::with_capacity(global.len());
 
     for tendril in global {
         let mut last_index: usize = 0;
@@ -226,14 +212,14 @@ fn resolve_overrides(
             last_index = i;
             x.id() == tendril.id() })
         {
-            resolved_tendrils.push(overrides[last_index].clone());
+            combined_tendrils.push(overrides[last_index].clone());
         }
         else {
-            resolved_tendrils.push(tendril.clone())
+            combined_tendrils.push(tendril.clone())
         }
     }
 
-    resolved_tendrils
+    combined_tendrils
 }
 
 fn resolve_path_variables(path: &Path) -> Result<PathBuf, ResolveTendrilError> {
@@ -266,6 +252,8 @@ pub fn resolve_tendril(
         true => TendrilMode::FolderMerge,
         false => TendrilMode::FolderOverwrite,
     };
+    // TODO: Consider conditional compilation instead
+    // of matching on every iteration
     let raw_paths = match std::env::consts::OS {
         "macos" => tendril.parent_dirs_mac.clone(),
         "windows" => tendril.parent_dirs_windows.clone(),

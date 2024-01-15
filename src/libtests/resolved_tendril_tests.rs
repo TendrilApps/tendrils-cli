@@ -83,3 +83,17 @@ fn full_path_appends_name_to_parent(#[case] name: String, #[case] parent: PathBu
 
     assert_eq!(actual.full_path(), actual.parent.join(actual.name()))
 }
+
+#[rstest]
+#[case("misc.txt")]
+#[case("MiscDir")]
+fn full_path_empty_parent_does_not_prepend_dir_sep_to_name(#[case] name: String) {
+    let actual = ResolvedTendril::new(
+        "SomeApp".to_string(),
+        name.clone(),
+        PathBuf::from(""),
+        TendrilMode::FolderOverwrite,
+    ).unwrap();
+
+    assert_eq!(actual.full_path(), PathBuf::from(name))
+}
