@@ -26,7 +26,7 @@ impl Writer for MockWriter {
 }
 
 #[test]
-#[serial]
+#[serial("mut-env-var-td-folder")]
 fn path_with_env_var_unset_prints_message() {
     let mut writer = MockWriter::new();
     let args = TendrilCliArgs{
@@ -43,7 +43,7 @@ fn path_with_env_var_unset_prints_message() {
 }
 
 #[test]
-#[serial]
+#[serial("mut-env-var-td-folder")]
 fn path_with_env_var_set_prints_path() {
     let mut writer = MockWriter::new();
     let args = TendrilCliArgs{
@@ -58,6 +58,7 @@ fn path_with_env_var_set_prints_path() {
 }
 
 #[test]
+#[serial("cd")]
 #[cfg(not(windows))]
 fn push_or_pull_no_path_given_and_no_cd_should_panic() {
     let delete_me = TempDir::new_in(
@@ -79,6 +80,7 @@ fn push_or_pull_no_path_given_and_no_cd_should_panic() {
 }
 
 #[test]
+#[serial("cd")]
 fn push_or_pull_given_path_is_not_tendrils_folder_cd_is_prints_message() {
     // TODO: Setup current directory as tendrils folder
     let mut writer = MockWriter::new();
@@ -95,6 +97,7 @@ fn push_or_pull_given_path_is_not_tendrils_folder_cd_is_prints_message() {
 }
 
 #[test]
+#[serial("cd")]
 fn push_or_pull_given_path_and_cd_are_tendrils_folder_uses_given_path() {
     let temp_parent_folder = TempDir::new_in(
         get_disposable_folder(),

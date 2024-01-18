@@ -197,7 +197,7 @@ fn supported_variables_are_resolved_in_all() {
 }
 
 #[test]
-#[serial("mut-env-var")]
+#[serial("mut-env-var-testing")]
 fn supported_variable_missing_returns_raw_path() {
     let mut given = Tendril::new("SomeApp", "misc.txt");
     given.folder_merge = false;

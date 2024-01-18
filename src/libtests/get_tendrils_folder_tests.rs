@@ -9,7 +9,7 @@ use tempdir::TempDir;
 const ENV_NAME: &str = "TENDRILS_FOLDER";
 
 #[test]
-#[serial]
+#[serial("mut-env-var-td-folder")]
 fn starting_dir_invalid_env_var_not_set_returns_none() {
     let temp = TempDir::new_in(get_disposable_folder(), "Empty").unwrap();
     remove_var(ENV_NAME);
@@ -20,7 +20,7 @@ fn starting_dir_invalid_env_var_not_set_returns_none() {
 }
 
 #[test]
-#[serial]
+#[serial("mut-env-var-td-folder")]
 fn starting_dir_invalid_env_var_invalid_returns_none() {
     let temp = TempDir::new_in(get_disposable_folder(), "Empty").unwrap();
     let env_value = "I DON'T EXIST";
@@ -33,7 +33,7 @@ fn starting_dir_invalid_env_var_invalid_returns_none() {
 }
 
 #[test]
-#[serial]
+#[serial("mut-env-var-td-folder")]
 fn starting_dir_valid_env_var_not_set_returns_starting_dir() {
     let temp = TempDir::new_in(
         get_disposable_folder(),
@@ -50,7 +50,7 @@ fn starting_dir_valid_env_var_not_set_returns_starting_dir() {
 }
 
 #[test]
-#[serial]
+#[serial("mut-env-var-td-folder")]
 fn starting_dir_valid_env_var_valid_returns_starting_dir() {
     let temp = TempDir::new_in(
         get_disposable_folder(),
@@ -72,7 +72,7 @@ fn starting_dir_valid_env_var_valid_returns_starting_dir() {
 }
 
 #[test]
-#[serial]
+#[serial("mut-env-var-td-folder")]
 fn starting_dir_invalid_env_var_valid_returns_env_var() {
     let temp = TempDir::new_in(
         get_disposable_folder(),

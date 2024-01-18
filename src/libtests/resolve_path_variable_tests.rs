@@ -68,7 +68,7 @@ fn user_var_replaces_with_current_username(
 }
 
 #[test]
-#[serial("mut-env-var")]
+#[serial("mut-env-var-testing")]
 fn supported_variable_missing_returns_raw_path() {
     let given = PathBuf::from("<mut-testing>");
     std::env::remove_var("mut-testing");
@@ -81,7 +81,7 @@ fn supported_variable_missing_returns_raw_path() {
 /// See also `non_utf_8_path_returns_path_parse_error`
 #[test]
 #[cfg(not(windows))]
-#[serial("mut-env-var")]
+#[serial("mut-env-var-testing")]
 fn supported_variable_is_non_unicode_returns_raw_path() {
     let given = PathBuf::from("<mut-testing>");
 
