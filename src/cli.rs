@@ -29,10 +29,15 @@ pub enum TendrilsSubcommands {
     Path,
     /// Copies tendrils to the Tendrils folder
     Pull {
+        /// Prints what the command would do without modifying
+        /// the file system
+        #[arg(short, long)]
+        dry_run: bool,
+
         /// Explicitly sets the path to the Tendrils folder for this run,
         /// and errors if it is not a Tendrils folder
         #[arg(short, long)]
-        path: Option<String>
+        path: Option<String>,
     },
 }
 
@@ -52,7 +57,12 @@ fn path(writer: &mut impl Writer) {
     } 
 }
 
-fn push_or_pull(push: bool, path: Option<String>, writer: &mut impl Writer) {
+fn push_or_pull(
+    push: bool,
+    path: Option<String>,
+    dry_run: bool,
+    writer: &mut impl Writer,
+) {
     let tendrils_folder = match path {
         Some(v) => {
             let test_path = PathBuf::from(v);
@@ -117,7 +127,7 @@ fn push_or_pull(push: bool, path: Option<String>, writer: &mut impl Writer) {
         unimplemented!();
     }
     else {
-        pull(&tendrils_folder, &[]);
+        pull(&tendrils_folder, &[], dry_run);
     }
 }
 
@@ -126,6 +136,8 @@ pub fn run(args: TendrilCliArgs, writer: &mut impl Writer) {
         TendrilsSubcommands::Path => {
             path(writer);
         },
-        TendrilsSubcommands::Pull { path } => push_or_pull(false, path, writer),
+        TendrilsSubcommands::Pull { path, dry_run } => {
+            push_or_pull(false, path, dry_run, writer)
+        },
     };
 }

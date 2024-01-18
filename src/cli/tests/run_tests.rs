@@ -1,7 +1,9 @@
 use crate::cli::{run, TendrilCliArgs, TendrilsSubcommands};
 use crate::cli::writer::Writer;
-use crate::is_tendrils_folder;
-use crate::test_utils::get_disposable_folder;
+use crate::{is_tendrils_folder, parse_tendrils};
+use crate::tendril::Tendril;
+use crate::test_utils::{get_disposable_folder, set_all_platform_paths};
+use rstest::rstest;
 use serial_test::serial;
 use tempdir::TempDir;
 const TENDRILS_VAR_NAME: &str = "TENDRILS_FOLDER";
@@ -57,10 +59,12 @@ fn path_with_env_var_set_prints_path() {
     assert_eq!(writer.all_output, expected);
 }
 
-#[test]
+#[rstest]
+#[case(true)]
+#[case(false)]
 #[serial("cd")]
 #[cfg(not(windows))]
-fn push_or_pull_no_path_given_and_no_cd_should_panic() {
+fn push_or_pull_no_path_given_and_no_cd_prints_message(#[case] dry_run: bool) {
     let delete_me = TempDir::new_in(
         get_disposable_folder(),
         "DeleteMe"
@@ -70,7 +74,10 @@ fn push_or_pull_no_path_given_and_no_cd_should_panic() {
 
     let mut writer = MockWriter::new();
     let args = TendrilCliArgs{
-        tendrils_command: TendrilsSubcommands::Pull { path: None }
+        tendrils_command: TendrilsSubcommands::Pull {
+            path: None,
+            dry_run,
+        }
     };
     let expected = "Error: Could not get the current directory\n";
 
@@ -79,14 +86,20 @@ fn push_or_pull_no_path_given_and_no_cd_should_panic() {
     assert_eq!(writer.all_output, expected);
 }
 
-#[test]
+// TODO: Test no path given and cd is not tendrils folder
+// TODO: Test no path given and cd is tendrils folder
+
+#[rstest]
+#[case(true)]
+#[case(false)]
 #[serial("cd")]
-fn push_or_pull_given_path_is_not_tendrils_folder_cd_is_prints_message() {
+fn push_or_pull_given_path_is_not_tendrils_folder_cd_is_prints_message(#[case] dry_run: bool) {
     // TODO: Setup current directory as tendrils folder
     let mut writer = MockWriter::new();
     let args = TendrilCliArgs{
         tendrils_command: TendrilsSubcommands::Pull {
             path: Some("SomePathThatDoesn'tExist".to_string()),
+            dry_run
         }
     };
     let expected = "Error: The given path is not a Tendrils folder\n";
@@ -96,9 +109,13 @@ fn push_or_pull_given_path_is_not_tendrils_folder_cd_is_prints_message() {
     assert_eq!(writer.all_output, expected);
 }
 
-#[test]
+#[rstest]
+#[case(true)]
+#[case(false)]
 #[serial("cd")]
-fn push_or_pull_given_path_and_cd_are_tendrils_folder_uses_given_path() {
+fn push_or_pull_given_path_and_cd_are_tendrils_folder_uses_given_path(
+    #[case] dry_run: bool
+) {
     let temp_parent_folder = TempDir::new_in(
         get_disposable_folder(),
         "ParentFolder"
@@ -108,22 +125,57 @@ fn push_or_pull_given_path_and_cd_are_tendrils_folder_uses_given_path() {
     let given_folder = temp_parent_folder.path().join("GivenDir");
     std::fs::create_dir_all(&current_dir).unwrap();
     std::fs::create_dir_all(&given_folder).unwrap();
-    std::fs::write(current_dir.join("tendrils.json"), "").unwrap();
+    std::fs::write(current_dir.join("tendrils.json"), "[]").unwrap();
     std::fs::write(given_folder.join("tendrils.json"), "").unwrap();
+    std::env::set_current_dir(&current_dir).unwrap();
+    assert!(parse_tendrils("[]").unwrap().is_empty());
+    assert!(parse_tendrils("").is_err());
 
     let mut writer = MockWriter::new();
     let args = TendrilCliArgs{
         tendrils_command: TendrilsSubcommands::Pull {
             path: Some(given_folder.to_str().unwrap().to_string()),
+            dry_run
         }
     };
     let expected = "Error: Could not parse the tendrils.json file\n";
+
     run(args, &mut writer);
 
-    // TODO: Verify that the correct one was used
     assert!(is_tendrils_folder(&current_dir));
     assert!(is_tendrils_folder(&given_folder));
     assert_eq!(writer.all_output, expected);
+}
+
+#[test]
+fn push_or_pull_dry_run_does_not_modify() {
+    let temp_parent_folder = TempDir::new_in(
+        get_disposable_folder(),
+        "ParentFolder"
+    ).unwrap();
+
+    let mut tendril = Tendril::new("SomeApp", "misc.txt");
+    set_all_platform_paths(&mut tendril, &[temp_parent_folder.path().to_path_buf()]);
+
+    let tendrils_json = serde_json::to_string(&[tendril]).unwrap();
+    let tendrils_folder = temp_parent_folder.path().join("TendrilsFolder");
+    let source = temp_parent_folder.path().join("misc.txt");
+    std::fs::create_dir_all(&tendrils_folder).unwrap();
+    std::fs::write(tendrils_folder.join("tendrils.json"), tendrils_json).unwrap();
+    std::fs::write(&source, "Source file contents").unwrap();
+
+    let mut writer = MockWriter::new();
+    let args = TendrilCliArgs{
+        tendrils_command: TendrilsSubcommands::Pull {
+            path: Some(tendrils_folder.to_str().unwrap().to_string()),
+            dry_run: true,
+        }
+    };
+
+    run(args, &mut writer);
+    assert!(source.exists());
+    assert_eq!(writer.all_output, "No local overrides were found.\n");
+    assert_eq!(tendrils_folder.read_dir().unwrap().into_iter().count(), 1);
 }
 
 // TODO: Test uses_correct_platform_paths (see old commits in pull_tendril_tests)

@@ -25,11 +25,13 @@ use test_utils::get_mut_testing_var;
 fn copy_fso(
     from: &Path,
     to: &Path,
-    folder_merge: bool
-) -> Result<(), std::io::Error> {
+    folder_merge: bool,
+    dry_run: bool,
+) -> Result<(), PushPullError> {
     let mut to = to;
 
     if from.is_dir() {
+        if dry_run { return Err(PushPullError::Skipped); }
         if !folder_merge && to.exists() {
             std::fs::remove_dir_all(to)?;
             create_dir_all(to)?;
@@ -45,38 +47,51 @@ fn copy_fso(
         match fs_extra::dir::copy(from, to, &copy_opts) {
             Ok(_v) => Ok(()),
             Err(e) => match e.kind {
-                // Convert fs_extra::errors to std::io::errors
+                // Convert fs_extra::errors to PushPullErrors
                 fs_extra::error::ErrorKind::Io(e) => {
-                    Err(e)
+                    Err(PushPullError::from(e))
                 },
                 fs_extra::error::ErrorKind::PermissionDenied => {
                     let e = std::io::Error::from(std::io::ErrorKind::PermissionDenied);
-                    Err(e)
+                    Err(PushPullError::from(e))
                 },
-                _ => Err(std::io::Error::from(std::io::ErrorKind::Other))
+                _ => {
+                    let e = std::io::Error::from(std::io::ErrorKind::Other);
+                    Err(PushPullError::from(e))
+                }
             }
         }
     }
     else if from.is_file() {
+        let from_str = match from.to_str() {
+            Some(v) => v,
+            None => {
+                let e = std::io::Error::from(std::io::ErrorKind::InvalidInput);
+                return Err(PushPullError::from(e))
+            }
+        };
+        let to_str = match to.to_str() {
+            Some(v) => v,
+            None => {
+                let e = std::io::Error::from(std::io::ErrorKind::InvalidInput);
+                return Err(PushPullError::from(e))
+            }
+        };
+
+        if dry_run { return Err(PushPullError::Skipped); }
+
         // TODO: Eliminate this unwrap and test how
         // root folders are handled
         create_dir_all(to.parent().unwrap())?;
 
-        let from_str = match from.to_str() {
-            Some(v) => v,
-            None => return Err(std::io::Error::from(std::io::ErrorKind::InvalidInput))
-        };
-        let to_str = match to.to_str() {
-            Some(v) => v,
-            None => return Err(std::io::Error::from(std::io::ErrorKind::InvalidInput))
-        };
         match std::fs::copy(from_str, to_str) {
             Ok(_v) => Ok(()),
-            Err(e) => Err(e)
+            Err(e) => Err(PushPullError::from(e))
         }
     }
     else {
-        return Err(std::io::Error::from(std::io::ErrorKind::NotFound));
+        let e = std::io::Error::from(std::io::ErrorKind::NotFound);
+        return Err(PushPullError::from(e));
     }
 }
 
@@ -149,6 +164,7 @@ fn parse_tendrils(json: &str) -> Result<Vec<Tendril>, serde_json::Error> {
 fn pull<'a>(
     tendrils_folder: &Path,
     tendrils: &'a [ResolvedTendril],
+    dry_run: bool,
 ) -> Vec<(&'a ResolvedTendril, Result<(), PushPullError>)> {
     let mut results = Vec::with_capacity(tendrils.len());
     let mut ids: Vec<String> = Vec::with_capacity(tendrils.len());
@@ -158,7 +174,7 @@ fn pull<'a>(
 
         let result = match ids.contains(&id) {
             true => Err(PushPullError::Duplicate),
-            false => pull_tendril(tendrils_folder, tendril)
+            false => pull_tendril(tendrils_folder, tendril, dry_run)
         };
 
         ids.push(id);
@@ -171,6 +187,7 @@ fn pull<'a>(
 fn pull_tendril(
     tendrils_folder: &Path,
     tendril: &ResolvedTendril,
+    dry_run: bool,
 ) -> Result<(), PushPullError> {
     let source= tendril.full_path();
     if tendrils_folder == source
@@ -189,7 +206,7 @@ fn pull_tendril(
     }
 
     let folder_merge = tendril.mode == TendrilMode::FolderMerge;
-    Ok(copy_fso(&source, &dest, folder_merge)?)
+    Ok(copy_fso(&source, &dest, folder_merge, dry_run)?)
 }
 
 /// Returns a list of all Tendrils after replacing global ones with any

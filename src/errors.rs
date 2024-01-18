@@ -22,6 +22,8 @@ pub enum PushPullError {
     IoError(std::io::Error),
     ResolveTendrilError(ResolveTendrilError),
     Recursion,
+    /// Occurs when a command is executed as a dry-run
+    Skipped,
     TypeMismatch,
 }
 
