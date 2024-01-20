@@ -4,10 +4,13 @@ use crate::{
     get_tendrils,
     get_tendril_overrides,
     is_tendrils_folder,
-    pull,
+    pull_tendril,
     resolve_overrides,
+    resolve_tendril,
 };
-use crate::errors::GetTendrilsError;
+use crate::errors::{GetTendrilsError, PushPullError, ResolveTendrilError};
+use crate::resolved_tendril::ResolvedTendril;
+use crate::tendril::Tendril;
 use std::path::PathBuf;
 pub mod writer;
 use writer::Writer;
@@ -120,14 +123,42 @@ fn push_or_pull(
         writer.writeln("No local overrides were found.");
     }
 
-    let _resolved_tendrils =
+    let combined_tendrils =
         resolve_overrides(&common_tendrils, &override_tendrils);
 
-    if push {
-        unimplemented!();
+    let mut empty_tendrils: Vec<&Tendril> = vec![];
+    let mut unresolved_tendril_pairs: Vec<(&Tendril, ResolveTendrilError)> = vec![];
+    let mut resolved_tendril_pairs: Vec<(&Tendril, ResolvedTendril)> = vec![]; // TODO: Consider combining with above and just using (&Tendril, Result) type
+    let mut action_results: Vec<(&ResolvedTendril, Result<(), PushPullError>)> = vec![]; // TODO: Consider only returning result, no tuple
+    for tendril in combined_tendrils.iter() {
+        let resolve_results = resolve_tendril(tendril.clone(), !push);
+        if resolve_results.is_empty() {
+            empty_tendrils.push(tendril);
+            continue;
+        }
+        for result in resolve_results {
+            match result {
+                Ok(v) => resolved_tendril_pairs.push((tendril, v)),
+                Err(e) => unresolved_tendril_pairs.push((tendril, e)),
+            }
+        }
     }
-    else {
-        pull(&tendrils_folder, &[], dry_run);
+
+    for resolved_pair in resolved_tendril_pairs.iter() {
+        action_results.push((&resolved_pair.1, pull_tendril(&tendrils_folder, &resolved_pair.1, dry_run)));
+    }
+
+    println!("Empty Tendrils:");
+    for tendril in empty_tendrils {
+        println!("{}", tendril.id());
+    }
+    println!("\nUnresolved Tendrils:");
+    for tendril_pair in unresolved_tendril_pairs {
+        println!("{}", tendril_pair.0.id());
+    }
+    println!("\nActionable Tendrils:");
+    for tendril_pair in action_results {
+        println!("{}   |   Result: {:?}", tendril_pair.0.id(), tendril_pair.1);
     }
 }
 

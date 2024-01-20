@@ -262,7 +262,7 @@ fn resolve_path_variables(path: &Path) -> Result<PathBuf, ResolveTendrilError> {
 }
 
 pub fn resolve_tendril(
-    tendril: Tendril,
+    tendril: Tendril, // TODO: Use reference only?
     first_only: bool
 ) -> Vec<Result<ResolvedTendril, ResolveTendrilError>> {
     let mode = match &tendril.folder_merge {
