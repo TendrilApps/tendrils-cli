@@ -61,15 +61,13 @@ fn path(writer: &mut impl Writer) {
 
 fn print_reports(reports: &[TendrilActionReport]) {
     for report in reports {
+        for (i, resolved_path) in report.resolved_paths.iter().enumerate() {
         print!("{}: ", report.orig_tendril.id());
-
-        if report.resolved_paths.is_empty() {
-            println!("Empty");
-        }
-
-        for (i, resolved_result) in report.resolved_paths.iter().enumerate() {
-            match resolved_result {
-                Ok(_) => println!("{:?}", report.action_results[i].as_ref().unwrap()),
+            match resolved_path {
+                Ok(v) => {
+                    print!("{:?}", report.action_results[i].as_ref().unwrap());
+                    println!("   |   {:?}", v);
+                },
                 Err(e) => println!("{:?}", e),
             }
         }
