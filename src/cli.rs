@@ -29,7 +29,8 @@ pub enum TendrilsSubcommands {
     /// Gets the Tendrils folder path environment variable
     /// if it is set
     Path,
-    /// Copies tendrils to the Tendrils folder
+    /// Copies tendrils from their various locations on the machine
+    /// to the Tendrils folder
     Pull {
         /// Prints what the command would do without modifying
         /// the file system
@@ -41,6 +42,19 @@ pub enum TendrilsSubcommands {
         #[arg(short, long)]
         path: Option<String>,
     },
+    /// Copies tendrils from the Tendrils folder to their various
+    /// locations on the machine
+    Push {
+        /// Prints what the command would do without modifying
+        /// the file system
+        #[arg(short, long)]
+        dry_run: bool,
+
+        /// Explicitly sets the path to the Tendrils folder for this run,
+        /// and errors if it is not a Tendrils folder
+        #[arg(short, long)]
+        path: Option<String>,
+    }
 }
 
 fn path(writer: &mut impl Writer) {
@@ -62,7 +76,7 @@ fn path(writer: &mut impl Writer) {
 fn print_reports(reports: &[TendrilActionReport]) {
     for report in reports {
         for (i, resolved_path) in report.resolved_paths.iter().enumerate() {
-        print!("{}: ", report.orig_tendril.id());
+            print!("{}: ", report.orig_tendril.id());
             match resolved_path {
                 Ok(v) => {
                     print!("{:?}", report.action_results[i].as_ref().unwrap());
@@ -74,7 +88,7 @@ fn print_reports(reports: &[TendrilActionReport]) {
     }
 }
 
-fn push_pull_or_link(
+fn tendril_action_subcommand(
     mode: ActionMode,
     path: Option<String>,
     dry_run: bool,
@@ -156,7 +170,10 @@ pub fn run(args: TendrilCliArgs, writer: &mut impl Writer) {
             path(writer);
         },
         TendrilsSubcommands::Pull { path, dry_run } => {
-            push_pull_or_link(ActionMode::Pull, path, dry_run, writer)
+            tendril_action_subcommand(ActionMode::Pull, path, dry_run, writer)
+        },
+        TendrilsSubcommands::Push { path, dry_run } => {
+            tendril_action_subcommand(ActionMode::Push, path, dry_run, writer)
         },
     };
 }

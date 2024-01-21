@@ -99,6 +99,13 @@ fn copy_fso(
     }
 }
 
+fn fso_types_mismatch(source: &Path, dest: &Path) -> bool {
+    (source.is_dir() && dest.is_file())
+        || (source.is_file() && dest.is_dir())
+        || source.is_symlink()
+        || dest.is_symlink()
+}
+
 // TODO: Recursively look through all parent folders before
 // checking environment variable
 fn get_tendrils_folder(starting_path: &Path) -> Option<PathBuf> {
@@ -159,6 +166,15 @@ fn is_tendrils_folder(dir: &Path) -> bool {
     dir.join("tendrils.json").is_file()
 }
 
+fn is_recursive_tendril(
+    tendrils_folder: &Path,
+    tendril_full_path: &Path,
+) -> bool {
+    tendrils_folder == tendril_full_path
+        || tendrils_folder.ancestors().any(|p| p == tendril_full_path)
+        || tendril_full_path.ancestors().any(|p| p == tendrils_folder)
+}
+
 /// # Arguments
 /// - `json` - JSON array of Tendrils
 fn parse_tendrils(json: &str) -> Result<Vec<Tendril>, serde_json::Error> {
@@ -171,18 +187,33 @@ fn pull_tendril(
     dry_run: bool,
 ) -> Result<(), TendrilActionError> {
     let source= tendril.full_path();
-    if tendrils_folder == source
-        || tendrils_folder.ancestors().any(|p| p == source)
-        || source.ancestors().any(|p| p == tendrils_folder) {
+    if is_recursive_tendril(tendrils_folder, &source) {
         return Err(TendrilActionError::Recursion);
     }
 
     let dest = tendrils_folder.join(tendril.app()).join(tendril.name());
 
-    if (source.is_dir() && dest.is_file())
-        || (source.is_file() && dest.is_dir())
-        || source.is_symlink()
-        || dest.is_symlink() {
+    if fso_types_mismatch(&source, &dest) {
+        return Err(TendrilActionError::TypeMismatch);
+    }
+
+    let folder_merge = tendril.mode == TendrilMode::FolderMerge;
+    Ok(copy_fso(&source, &dest, folder_merge, dry_run)?)
+}
+
+fn push_tendril(
+    tendrils_folder: &Path,
+    tendril: &ResolvedTendril,
+    dry_run: bool,
+) -> Result<(), TendrilActionError> {
+    let dest= tendril.full_path();
+    if is_recursive_tendril(tendrils_folder, &dest) {
+        return Err(TendrilActionError::Recursion);
+    }
+
+    let source = tendrils_folder.join(tendril.app()).join(tendril.name());
+
+    if fso_types_mismatch(&dest, &source) {
         return Err(TendrilActionError::TypeMismatch);
     }
 
@@ -298,9 +329,12 @@ pub fn tendril_action<'a>(
                 (Ok(v), ActionMode::Pull) => {
                     action_results.push(Some(pull_tendril(&tendrils_folder, &v, dry_run)));
                 },
-                (Ok(_), _) => {
-                    unimplemented!();
+                (Ok(v), ActionMode::Push) => {
+                    action_results.push(Some(push_tendril(&tendrils_folder, &v, dry_run)))
                 },
+                (Ok(_), ActionMode::Link) => {
+                    unimplemented!();
+                }
                 (Err(_), _) => action_results.push(None),
             }
         }

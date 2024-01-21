@@ -1,3 +1,4 @@
+use crate::action_mode::ActionMode;
 use crate::cli::{run, TendrilCliArgs, TendrilsSubcommands};
 use crate::cli::writer::Writer;
 use crate::{is_tendrils_folder, parse_tendrils};
@@ -64,7 +65,9 @@ fn path_with_env_var_set_prints_path() {
 #[case(false)]
 #[serial("cd")]
 #[cfg(not(windows))]
-fn push_or_pull_no_path_given_and_no_cd_prints_message(#[case] dry_run: bool) {
+fn tendril_action_no_path_given_and_no_cd_prints_message(#[case] dry_run: bool) {
+    // TODO: Test with Push mode
+    unimplemented!();
     let delete_me = TempDir::new_in(
         get_disposable_folder(),
         "DeleteMe"
@@ -90,17 +93,25 @@ fn push_or_pull_no_path_given_and_no_cd_prints_message(#[case] dry_run: bool) {
 // TODO: Test no path given and cd is tendrils folder
 
 #[rstest]
-#[case(true)]
-#[case(false)]
 #[serial("cd")]
-fn push_or_pull_given_path_is_not_tendrils_folder_cd_is_prints_message(#[case] dry_run: bool) {
+fn tendril_action_given_path_is_not_tendrils_folder_cd_is_prints_message(
+    #[values(ActionMode::Pull, ActionMode::Push)]
+    mode: ActionMode,
+
+    #[values(true, false)]
+    dry_run: bool,
+) {
     // TODO: Setup current directory as tendrils folder
     let mut writer = MockWriter::new();
+    let path = Some("SomePathThatDoesn'tExist".to_string());
+    let tendrils_command = match mode {
+        ActionMode::Pull => TendrilsSubcommands::Pull {path, dry_run},
+        ActionMode::Push => TendrilsSubcommands::Push {path, dry_run},
+        _ => unimplemented!(),
+    };
+
     let args = TendrilCliArgs{
-        tendrils_command: TendrilsSubcommands::Pull {
-            path: Some("SomePathThatDoesn'tExist".to_string()),
-            dry_run
-        }
+        tendrils_command,
     };
     let expected = "Error: The given path is not a Tendrils folder\n";
 
@@ -110,11 +121,13 @@ fn push_or_pull_given_path_is_not_tendrils_folder_cd_is_prints_message(#[case] d
 }
 
 #[rstest]
-#[case(true)]
-#[case(false)]
 #[serial("cd")]
-fn push_or_pull_given_path_and_cd_are_tendrils_folder_uses_given_path(
-    #[case] dry_run: bool
+fn tendril_action_given_path_and_cd_are_tendrils_folder_uses_given_path(
+    #[values(ActionMode::Pull, ActionMode::Push)]
+    mode: ActionMode,
+
+    #[values(true, false)]
+    dry_run: bool,
 ) {
     let temp_parent_folder = TempDir::new_in(
         get_disposable_folder(),
@@ -132,23 +145,32 @@ fn push_or_pull_given_path_and_cd_are_tendrils_folder_uses_given_path(
     assert!(parse_tendrils("").is_err());
 
     let mut writer = MockWriter::new();
-    let args = TendrilCliArgs{
-        tendrils_command: TendrilsSubcommands::Pull {
-            path: Some(given_folder.to_str().unwrap().to_string()),
-            dry_run
-        }
+    let path = Some(given_folder.to_str().unwrap().to_string());
+    let tendrils_command = match mode {
+        ActionMode::Pull => TendrilsSubcommands::Pull {path, dry_run},
+        ActionMode::Push => TendrilsSubcommands::Push {path, dry_run},
+        _ => unimplemented!(),
     };
+    let args = TendrilCliArgs{
+        tendrils_command,
+    };
+
     let expected = "Error: Could not parse the tendrils.json file\n";
 
     run(args, &mut writer);
+
+    // To free the TempDir from use
+    std::env::set_current_dir(temp_parent_folder.path().parent().unwrap()).unwrap();
 
     assert!(is_tendrils_folder(&current_dir));
     assert!(is_tendrils_folder(&given_folder));
     assert_eq!(writer.all_output, expected);
 }
 
-#[test]
-fn push_or_pull_dry_run_does_not_modify() {
+#[rstest]
+#[case(ActionMode::Pull)]
+#[case(ActionMode::Push)]
+fn tendril_action_dry_run_does_not_modify(#[case] mode: ActionMode) {
     let temp_parent_folder = TempDir::new_in(
         get_disposable_folder(),
         "ParentFolder"
@@ -165,11 +187,15 @@ fn push_or_pull_dry_run_does_not_modify() {
     std::fs::write(&source, "Source file contents").unwrap();
 
     let mut writer = MockWriter::new();
+    let path = Some(tendrils_folder.to_str().unwrap().to_string());
+    let dry_run = true;
+    let tendrils_command = match mode {
+        ActionMode::Pull => TendrilsSubcommands::Pull {path, dry_run},
+        ActionMode::Push => TendrilsSubcommands::Push {path, dry_run},
+        _ => unimplemented!(),
+    };
     let args = TendrilCliArgs{
-        tendrils_command: TendrilsSubcommands::Pull {
-            path: Some(tendrils_folder.to_str().unwrap().to_string()),
-            dry_run: true,
-        }
+        tendrils_command,
     };
 
     run(args, &mut writer);
