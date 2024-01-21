@@ -28,10 +28,9 @@ fn given_empty_list_returns_empty(
 }
 
 #[rstest]
-fn pull_returns_tendril_and_result_for_each_given(
-    #[values(true, false)]
-    dry_run: bool,
-) {
+#[case(true)]
+#[case(false)]
+fn pull_returns_tendril_and_result_for_each_given(#[case] dry_run: bool) {
     let temp_parent_folder = TempDir::new_in(
         get_disposable_folder(),
         "ParentFolder"
