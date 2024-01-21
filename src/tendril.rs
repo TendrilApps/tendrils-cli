@@ -29,7 +29,7 @@ impl Tendril {
             name: name.to_string(),
             parent_dirs_mac: [].to_vec(),
             parent_dirs_windows: [].to_vec(),
-            folder_merge: true,
+            folder_merge: false,
         }
     }
 }
