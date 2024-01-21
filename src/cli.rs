@@ -8,9 +8,9 @@ use crate::{
     resolve_overrides,
     resolve_tendril,
 };
-use crate::errors::{GetTendrilsError, PushPullError, ResolveTendrilError};
-use crate::resolved_tendril::ResolvedTendril;
-use crate::tendril::Tendril;
+use crate::errors::GetTendrilsError;
+mod tendril_action_report;
+use tendril_action_report::TendrilActionReport;
 use std::path::PathBuf;
 pub mod writer;
 use writer::Writer;
@@ -58,6 +58,23 @@ fn path(writer: &mut impl Writer) {
             ))
         }
     } 
+}
+
+fn print_reports(reports: &[TendrilActionReport]) {
+    for report in reports {
+        print!("{}: ", report.orig_tendril.id());
+
+        if report.resolve_results.is_empty() {
+            println!("Empty");
+        }
+
+        for (i, resolved_result) in report.resolve_results.iter().enumerate() {
+            match resolved_result {
+                Ok(_) => println!("{:?}", report.action_results[i].as_ref().unwrap()),
+                Err(e) => println!("{:?}", e),
+            }
+        }
+    }
 }
 
 fn push_or_pull(
@@ -126,40 +143,27 @@ fn push_or_pull(
     let combined_tendrils =
         resolve_overrides(&common_tendrils, &override_tendrils);
 
-    let mut empty_tendrils: Vec<&Tendril> = vec![];
-    let mut unresolved_tendril_pairs: Vec<(&Tendril, ResolveTendrilError)> = vec![];
-    let mut resolved_tendril_pairs: Vec<(&Tendril, ResolvedTendril)> = vec![]; // TODO: Consider combining with above and just using (&Tendril, Result) type
-    let mut action_results: Vec<(&ResolvedTendril, Result<(), PushPullError>)> = vec![]; // TODO: Consider only returning result, no tuple
+    let mut action_reports: Vec<TendrilActionReport> = vec![];
     for tendril in combined_tendrils.iter() {
         let resolve_results = resolve_tendril(tendril.clone(), !push);
-        if resolve_results.is_empty() {
-            empty_tendrils.push(tendril);
-            continue;
-        }
-        for result in resolve_results {
+        let mut action_results = vec![];
+        for result in resolve_results.iter() {
             match result {
-                Ok(v) => resolved_tendril_pairs.push((tendril, v)),
-                Err(e) => unresolved_tendril_pairs.push((tendril, e)),
+                Ok(v) => {
+                    action_results.push(Some(pull_tendril(&tendrils_folder, &v, dry_run)));
+                }
+                Err(_) => action_results.push(None),
             }
         }
+        let report = TendrilActionReport {
+            orig_tendril: tendril,
+            resolve_results,
+            action_results,
+        };
+        action_reports.push(report);
     }
 
-    for resolved_pair in resolved_tendril_pairs.iter() {
-        action_results.push((&resolved_pair.1, pull_tendril(&tendrils_folder, &resolved_pair.1, dry_run)));
-    }
-
-    println!("Empty Tendrils:");
-    for tendril in empty_tendrils {
-        println!("{}", tendril.id());
-    }
-    println!("\nUnresolved Tendrils:");
-    for tendril_pair in unresolved_tendril_pairs {
-        println!("{}", tendril_pair.0.id());
-    }
-    println!("\nActionable Tendrils:");
-    for tendril_pair in action_results {
-        println!("{}   |   Result: {:?}", tendril_pair.0.id(), tendril_pair.1);
-    }
+    print_reports(&action_reports);
 }
 
 pub fn run(args: TendrilCliArgs, writer: &mut impl Writer) {
