@@ -1,5 +1,5 @@
 use crate::resolved_tendril::TendrilMode;
-use crate::{pull, PushPullError};
+use crate::{pull, TendrilActionError};
 use crate::resolved_tendril::ResolvedTendril;
 use crate::test_utils::{get_disposable_folder, is_empty};
 use fs_extra::file::read_to_string;
@@ -64,13 +64,13 @@ fn returns_tendril_and_result_for_each_given(#[case] dry_run: bool) {
         ).unwrap(),
     ];
     let io_not_found_err = std::io::Error::from(std::io::ErrorKind::NotFound);
-    let expected: Vec<(&ResolvedTendril, Result<(), PushPullError>)> = match dry_run {
+    let expected: Vec<(&ResolvedTendril, Result<(), TendrilActionError>)> = match dry_run {
         true => {
             vec![
-                (&given[0], Err(PushPullError::Skipped)),
-                (&given[1], Err(PushPullError::Skipped)),
-                (&given[2], Err(PushPullError::Skipped)),
-                (&given[3], Err(PushPullError::IoError(io_not_found_err))),
+                (&given[0], Err(TendrilActionError::Skipped)),
+                (&given[1], Err(TendrilActionError::Skipped)),
+                (&given[2], Err(TendrilActionError::Skipped)),
+                (&given[3], Err(TendrilActionError::IoError(io_not_found_err))),
             ]
         },
         false => {
@@ -78,7 +78,7 @@ fn returns_tendril_and_result_for_each_given(#[case] dry_run: bool) {
                 (&given[0], Ok(())),
                 (&given[1], Ok(())),
                 (&given[2], Ok(())),
-                (&given[3], Err(PushPullError::IoError(io_not_found_err))),
+                (&given[3], Err(TendrilActionError::IoError(io_not_found_err))),
             ]
         }
     };
@@ -87,9 +87,9 @@ fn returns_tendril_and_result_for_each_given(#[case] dry_run: bool) {
 
     // Could not get the error matching working in a loop - manually checking instead
     if dry_run {
-        assert!(matches!(actual[0].1, Err(PushPullError::Skipped)));
-        assert!(matches!(actual[1].1, Err(PushPullError::Skipped)));
-        assert!(matches!(actual[2].1, Err(PushPullError::Skipped)));
+        assert!(matches!(actual[0].1, Err(TendrilActionError::Skipped)));
+        assert!(matches!(actual[1].1, Err(TendrilActionError::Skipped)));
+        assert!(matches!(actual[2].1, Err(TendrilActionError::Skipped)));
         assert!(!dest_app1_file.exists());
         assert!(!dest_app2_file.exists());
         assert!(!dest_app1_nested.exists());
@@ -110,7 +110,7 @@ fn returns_tendril_and_result_for_each_given(#[case] dry_run: bool) {
         assert_eq!(dest_app1_nested_file_contents, "Nested 1 file contents");
     }
     match &actual[3].1 {
-        Err(PushPullError::IoError(e)) => {
+        Err(TendrilActionError::IoError(e)) => {
             assert_eq!(e.kind(), std::io::ErrorKind::NotFound)
         },
         _ => panic!()

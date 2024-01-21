@@ -17,7 +17,7 @@ impl From<serde_json::Error> for GetTendrilsError {
 }
 
 #[derive(Debug)]
-pub enum PushPullError {
+pub enum TendrilActionError {
     Duplicate,
     IoError(std::io::Error),
     ResolveTendrilError(ResolveTendrilError),
@@ -27,15 +27,15 @@ pub enum PushPullError {
     TypeMismatch,
 }
 
-impl From<ResolveTendrilError> for PushPullError {
+impl From<ResolveTendrilError> for TendrilActionError {
     fn from(err: ResolveTendrilError) -> Self {
-        PushPullError::ResolveTendrilError(err)
+        TendrilActionError::ResolveTendrilError(err)
     }
 }
 
-impl From<std::io::Error> for PushPullError {
+impl From<std::io::Error> for TendrilActionError {
     fn from(err: std::io::Error) -> Self {
-        PushPullError::IoError(err)
+        TendrilActionError::IoError(err)
     }
 }
 

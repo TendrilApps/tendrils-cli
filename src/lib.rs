@@ -2,7 +2,7 @@ pub mod cli;
 mod errors;
 use errors::{
     GetTendrilsError,
-    PushPullError,
+    TendrilActionError,
     ResolveTendrilError,
 };
 mod resolved_tendril;
@@ -27,11 +27,11 @@ fn copy_fso(
     to: &Path,
     folder_merge: bool,
     dry_run: bool,
-) -> Result<(), PushPullError> {
+) -> Result<(), TendrilActionError> {
     let mut to = to;
 
     if from.is_dir() {
-        if dry_run { return Err(PushPullError::Skipped); }
+        if dry_run { return Err(TendrilActionError::Skipped); }
         if !folder_merge && to.exists() {
             std::fs::remove_dir_all(to)?;
             create_dir_all(to)?;
@@ -49,15 +49,15 @@ fn copy_fso(
             Err(e) => match e.kind {
                 // Convert fs_extra::errors to PushPullErrors
                 fs_extra::error::ErrorKind::Io(e) => {
-                    Err(PushPullError::from(e))
+                    Err(TendrilActionError::from(e))
                 },
                 fs_extra::error::ErrorKind::PermissionDenied => {
                     let e = std::io::Error::from(std::io::ErrorKind::PermissionDenied);
-                    Err(PushPullError::from(e))
+                    Err(TendrilActionError::from(e))
                 },
                 _ => {
                     let e = std::io::Error::from(std::io::ErrorKind::Other);
-                    Err(PushPullError::from(e))
+                    Err(TendrilActionError::from(e))
                 }
             }
         }
@@ -67,18 +67,18 @@ fn copy_fso(
             Some(v) => v,
             None => {
                 let e = std::io::Error::from(std::io::ErrorKind::InvalidInput);
-                return Err(PushPullError::from(e))
+                return Err(TendrilActionError::from(e))
             }
         };
         let to_str = match to.to_str() {
             Some(v) => v,
             None => {
                 let e = std::io::Error::from(std::io::ErrorKind::InvalidInput);
-                return Err(PushPullError::from(e))
+                return Err(TendrilActionError::from(e))
             }
         };
 
-        if dry_run { return Err(PushPullError::Skipped); }
+        if dry_run { return Err(TendrilActionError::Skipped); }
 
         // TODO: Eliminate this unwrap and test how
         // root folders are handled
@@ -86,12 +86,12 @@ fn copy_fso(
 
         match std::fs::copy(from_str, to_str) {
             Ok(_v) => Ok(()),
-            Err(e) => Err(PushPullError::from(e))
+            Err(e) => Err(TendrilActionError::from(e))
         }
     }
     else {
         let e = std::io::Error::from(std::io::ErrorKind::NotFound);
-        return Err(PushPullError::from(e));
+        return Err(TendrilActionError::from(e));
     }
 }
 
@@ -165,7 +165,7 @@ fn pull<'a>(
     tendrils_folder: &Path,
     tendrils: &'a [ResolvedTendril],
     dry_run: bool,
-) -> Vec<(&'a ResolvedTendril, Result<(), PushPullError>)> {
+) -> Vec<(&'a ResolvedTendril, Result<(), TendrilActionError>)> {
     let mut results = Vec::with_capacity(tendrils.len());
     let mut ids: Vec<String> = Vec::with_capacity(tendrils.len());
 
@@ -173,7 +173,7 @@ fn pull<'a>(
         let id = tendril.id();
 
         let result = match ids.contains(&id) {
-            true => Err(PushPullError::Duplicate),
+            true => Err(TendrilActionError::Duplicate),
             false => pull_tendril(tendrils_folder, tendril, dry_run)
         };
 
@@ -188,12 +188,12 @@ fn pull_tendril(
     tendrils_folder: &Path,
     tendril: &ResolvedTendril,
     dry_run: bool,
-) -> Result<(), PushPullError> {
+) -> Result<(), TendrilActionError> {
     let source= tendril.full_path();
     if tendrils_folder == source
         || tendrils_folder.ancestors().any(|p| p == source)
         || source.ancestors().any(|p| p == tendrils_folder) {
-        return Err(PushPullError::Recursion);
+        return Err(TendrilActionError::Recursion);
     }
 
     let dest = tendrils_folder.join(tendril.app()).join(tendril.name());
@@ -202,7 +202,7 @@ fn pull_tendril(
         || (source.is_file() && dest.is_dir())
         || source.is_symlink()
         || dest.is_symlink() {
-        return Err(PushPullError::TypeMismatch);
+        return Err(TendrilActionError::TypeMismatch);
     }
 
     let folder_merge = tendril.mode == TendrilMode::FolderMerge;

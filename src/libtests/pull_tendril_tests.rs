@@ -1,7 +1,7 @@
 use crate::{
     is_tendrils_folder,
     pull_tendril,
-    PushPullError,
+    TendrilActionError,
 };
 use crate::resolved_tendril::{ResolvedTendril, TendrilMode};
 use crate::test_utils::{
@@ -83,8 +83,8 @@ fn tendril_exists_at_source_path_in_dry_run_returns_skipped_error_does_not_modif
         true,
     );
 
-    assert!(matches!(file_actual, Err(PushPullError::Skipped)));
-    assert!(matches!(folder_actual, Err(PushPullError::Skipped)));
+    assert!(matches!(file_actual, Err(TendrilActionError::Skipped)));
+    assert!(matches!(folder_actual, Err(TendrilActionError::Skipped)));
     assert_eq!(file_setup.dest_file_contents(), "Dest file contents");
     assert_eq!(file_setup.tendrils_dir.join("SomeApp").read_dir().iter().count(), 1);
     assert_eq!(folder_setup.dest_nested_file_contents(), "Dest nested file contents");
@@ -146,7 +146,7 @@ fn source_doesnt_exist_returns_io_error_not_found(#[case] dry_run: bool) {
         dry_run
     ).unwrap_err();
     match actual {
-        PushPullError::IoError(e) => assert_eq!(e.kind(), std::io::ErrorKind::NotFound),
+        TendrilActionError::IoError(e) => assert_eq!(e.kind(), std::io::ErrorKind::NotFound),
         _ => panic!(),
     }
     assert!(is_empty(&setup.tendrils_dir));
@@ -175,7 +175,7 @@ fn source_is_given_tendrils_folder_returns_recursion_error(#[case] dry_run: bool
 
     let actual = pull_tendril(&given_tendrils_folder, &given, dry_run);
 
-    assert!(matches!(actual, Err(PushPullError::Recursion)));
+    assert!(matches!(actual, Err(TendrilActionError::Recursion)));
     assert!(is_empty(&given_tendrils_folder));
 }
 
@@ -206,7 +206,7 @@ fn source_is_ancestor_to_given_tendrils_folder_returns_recursion_error(#[case] d
 
     let actual = pull_tendril(&given_tendrils_folder, &given, dry_run);
 
-    assert!(matches!(actual, Err(PushPullError::Recursion)));
+    assert!(matches!(actual, Err(TendrilActionError::Recursion)));
     assert!(is_empty(&given_tendrils_folder));
 }
 
@@ -262,7 +262,7 @@ fn source_is_direct_child_of_given_tendrils_folder_returns_recursion_error(#[cas
 
     let actual = pull_tendril(&given_tendrils_folder, &given, dry_run);
 
-    assert!(matches!(actual, Err(PushPullError::Recursion)));
+    assert!(matches!(actual, Err(TendrilActionError::Recursion)));
     assert_eq!(read_to_string(source).unwrap(), "Source file contents");
     assert!(given_tendrils_folder.read_dir().unwrap().into_iter().count() == 1);
 }
@@ -294,7 +294,7 @@ fn source_is_nested_child_of_given_tendrils_folder_returns_recursion_error(#[cas
 
     let actual = pull_tendril(&given_tendrils_folder, &given, dry_run);
 
-    assert!(matches!(actual, Err(PushPullError::Recursion)));
+    assert!(matches!(actual, Err(TendrilActionError::Recursion)));
     assert_eq!(read_to_string(source).unwrap(), "Source file contents");
     assert!(given_tendrils_folder.read_dir().unwrap().into_iter().count() == 1);
 }
@@ -330,7 +330,7 @@ fn source_is_file_and_dest_is_dir_returns_type_mismatch_error(#[case] dry_run: b
     ).unwrap_err();
 
     assert_eq!(setup.source_file_contents(), "Source file contents");
-    assert!(matches!(actual, PushPullError::TypeMismatch));
+    assert!(matches!(actual, TendrilActionError::TypeMismatch));
     assert!(setup.source_file.is_file());
     assert!(setup.dest_file.is_dir());
     assert!(is_empty(&setup.dest_file));
@@ -355,7 +355,7 @@ fn source_is_dir_and_dest_is_file_returns_type_mismatch_error(#[case] dry_run: b
 
     let dest_file_contents = read_to_string(&setup.dest_folder).unwrap();
     assert_eq!(dest_file_contents, "I'm not a folder!");
-    assert!(matches!(actual, PushPullError::TypeMismatch));
+    assert!(matches!(actual, TendrilActionError::TypeMismatch));
     assert!(setup.source_folder.is_dir());
     assert!(setup.dest_folder.is_file());
     assert_eq!(setup.source_folder.read_dir().iter().count(), 1);
@@ -398,8 +398,8 @@ fn source_is_symlink_returns_type_mismatch_error(#[case] dry_run: bool) {
         dry_run,
     ).unwrap_err();
 
-    assert!(matches!(actual_1, PushPullError::TypeMismatch));
-    assert!(matches!(actual_2, PushPullError::TypeMismatch));
+    assert!(matches!(actual_1, TendrilActionError::TypeMismatch));
+    assert!(matches!(actual_2, TendrilActionError::TypeMismatch));
     assert!(is_empty(&temp_tendrils_folder.path()));
 }
 
@@ -447,8 +447,8 @@ fn dest_is_symlink_returns_type_mismatch_error(#[case] dry_run: bool) {
         dry_run,
     ).unwrap_err();
 
-    assert!(matches!(actual_1, PushPullError::TypeMismatch));
-    assert!(matches!(actual_2, PushPullError::TypeMismatch));
+    assert!(matches!(actual_1, TendrilActionError::TypeMismatch));
+    assert!(matches!(actual_2, TendrilActionError::TypeMismatch));
     assert!(read_to_string(dest_file).unwrap().is_empty());
     assert!(read_to_string(dest_folder.join("misc.txt")).unwrap().is_empty())
 }
@@ -481,7 +481,7 @@ fn no_read_access_from_source_file_returns_io_error_permission_denied() {
     let actual = pull_tendril(&temp_tendrils_folder.path(), &given, false);
 
     match actual {
-        Err(PushPullError::IoError(e)) => {
+        Err(TendrilActionError::IoError(e)) => {
             assert_eq!(e.kind(), std::io::ErrorKind::PermissionDenied)
         },
         _ => panic!()
@@ -516,7 +516,7 @@ fn no_read_access_from_source_folder_returns_io_error_permission_denied() {
     let actual = pull_tendril(&temp_tendrils_folder.path(), &given, false);
 
     match actual {
-        Err(PushPullError::IoError(e)) => {
+        Err(TendrilActionError::IoError(e)) => {
             assert_eq!(e.kind(), std::io::ErrorKind::PermissionDenied)
         },
         _ => panic!()
@@ -538,7 +538,7 @@ fn no_write_access_at_dest_file_returns_io_error_permission_denied() {
     let actual = pull_tendril(&setup.tendrils_dir, &setup.tendril, false);
 
     match actual {
-        Err(PushPullError::IoError(e)) => {
+        Err(TendrilActionError::IoError(e)) => {
             assert_eq!(e.kind(), std::io::ErrorKind::PermissionDenied)
         },
         _ => panic!()
@@ -688,7 +688,7 @@ fn tendrils_folder_doesnt_exist_creates_folder_and_subfolders_first_except_if_dr
     let setup = Setup::new(&opts);
 
     let actual = pull_tendril(&setup.tendrils_dir, &setup.tendril, true);
-    assert!(matches!(actual, Err(PushPullError::Skipped)));
+    assert!(matches!(actual, Err(TendrilActionError::Skipped)));
     assert!(!setup.tendrils_dir.exists());
 
     pull_tendril(&setup.tendrils_dir, &setup.tendril, false).unwrap();
