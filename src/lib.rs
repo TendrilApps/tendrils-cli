@@ -277,7 +277,14 @@ pub fn resolve_tendril(
         _ => return vec![]
     };
     let raw_paths = match first_only {
-        true => raw_paths[..1].to_vec(),
+        true => {
+            if !raw_paths.is_empty() {
+                raw_paths[..1].to_vec()
+            }
+            else {
+                raw_paths
+            }
+        }
         false => raw_paths
     };
 

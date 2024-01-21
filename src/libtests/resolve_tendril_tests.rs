@@ -5,13 +5,15 @@ use rstest::rstest;
 use serial_test::serial;
 use std::path::PathBuf;
 
-#[test]
-fn empty_parent_list_returns_empty() {
+#[rstest]
+#[case(true)]
+#[case(false)]
+fn empty_parent_list_returns_empty(#[case] first_only: bool) {
     let mut given = Tendril::new("SomeApp", "misc.txt");
 
     set_all_platform_paths(&mut given, &[]);
 
-    let actual = resolve_tendril(given, false);
+    let actual = resolve_tendril(given, first_only);
 
     assert_eq!(actual, vec![]);
 }
