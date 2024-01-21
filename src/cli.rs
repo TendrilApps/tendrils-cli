@@ -8,7 +8,7 @@ use crate::{
     resolve_overrides,
     resolve_tendril,
 };
-use crate::errors::GetTendrilsError;
+use crate::errors::{GetTendrilsError, ResolveTendrilError};
 mod tendril_action_report;
 use tendril_action_report::TendrilActionReport;
 use std::path::PathBuf;
@@ -64,11 +64,11 @@ fn print_reports(reports: &[TendrilActionReport]) {
     for report in reports {
         print!("{}: ", report.orig_tendril.id());
 
-        if report.resolve_results.is_empty() {
+        if report.resolved_paths.is_empty() {
             println!("Empty");
         }
 
-        for (i, resolved_result) in report.resolve_results.iter().enumerate() {
+        for (i, resolved_result) in report.resolved_paths.iter().enumerate() {
             match resolved_result {
                 Ok(_) => println!("{:?}", report.action_results[i].as_ref().unwrap()),
                 Err(e) => println!("{:?}", e),
@@ -157,9 +157,15 @@ fn push_or_pull(
         }
         let report = TendrilActionReport {
             orig_tendril: tendril,
-            resolve_results,
+            resolved_paths: resolve_results.into_iter().map(|r| {
+                match r {
+                    Ok(v) => Ok(v.full_path()),
+                    Err(e) => Err(e),
+                }
+            }).collect(),
             action_results,
         };
+
         action_reports.push(report);
     }
 
