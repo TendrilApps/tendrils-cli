@@ -4,13 +4,12 @@ use crate::{
     get_tendrils,
     get_tendril_overrides,
     is_tendrils_folder,
-    pull_tendril,
     resolve_overrides,
-    resolve_tendril,
+    tendril_action,
 };
-use crate::errors::{GetTendrilsError, ResolveTendrilError};
-mod tendril_action_report;
-use tendril_action_report::TendrilActionReport;
+use crate::action_mode::ActionMode;
+use crate::errors::GetTendrilsError;
+use crate::tendril_action_report::TendrilActionReport;
 use std::path::PathBuf;
 pub mod writer;
 use writer::Writer;
@@ -77,8 +76,8 @@ fn print_reports(reports: &[TendrilActionReport]) {
     }
 }
 
-fn push_or_pull(
-    push: bool,
+fn push_pull_or_link(
+    mode: ActionMode,
     path: Option<String>,
     dry_run: bool,
     writer: &mut impl Writer,
@@ -143,31 +142,12 @@ fn push_or_pull(
     let combined_tendrils =
         resolve_overrides(&common_tendrils, &override_tendrils);
 
-    let mut action_reports: Vec<TendrilActionReport> = vec![];
-    for tendril in combined_tendrils.iter() {
-        let resolve_results = resolve_tendril(tendril.clone(), !push);
-        let mut action_results = vec![];
-        for result in resolve_results.iter() {
-            match result {
-                Ok(v) => {
-                    action_results.push(Some(pull_tendril(&tendrils_folder, &v, dry_run)));
-                }
-                Err(_) => action_results.push(None),
-            }
-        }
-        let report = TendrilActionReport {
-            orig_tendril: tendril,
-            resolved_paths: resolve_results.into_iter().map(|r| {
-                match r {
-                    Ok(v) => Ok(v.full_path()),
-                    Err(e) => Err(e),
-                }
-            }).collect(),
-            action_results,
-        };
-
-        action_reports.push(report);
-    }
+    let action_reports = tendril_action(
+        mode,
+        &tendrils_folder,
+        &combined_tendrils,
+        dry_run
+    );
 
     print_reports(&action_reports);
 }
@@ -178,7 +158,7 @@ pub fn run(args: TendrilCliArgs, writer: &mut impl Writer) {
             path(writer);
         },
         TendrilsSubcommands::Pull { path, dry_run } => {
-            push_or_pull(false, path, dry_run, writer)
+            push_pull_or_link(ActionMode::Pull, path, dry_run, writer)
         },
     };
 }

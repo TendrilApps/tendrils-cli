@@ -45,10 +45,6 @@ impl ResolvedTendril {
         &self.name
     }
 
-    pub fn id(&self) -> String {
-        self.app.clone() + " - " + &self.name
-    }
-
     pub fn full_path(&self) -> PathBuf {
        self.parent.join(&self.name)
     }

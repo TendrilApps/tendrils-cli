@@ -1,3 +1,5 @@
+mod action_mode;
+use action_mode::ActionMode;
 pub mod cli;
 mod errors;
 use errors::{
@@ -14,6 +16,8 @@ use std::fs::create_dir_all;
 use std::path::{Path, PathBuf};
 mod tendril;
 use tendril::Tendril;
+mod tendril_action_report;
+use tendril_action_report::TendrilActionReport;
 
 #[cfg(test)]
 mod libtests;
@@ -161,29 +165,6 @@ fn parse_tendrils(json: &str) -> Result<Vec<Tendril>, serde_json::Error> {
     serde_json::from_str::<Vec<Tendril>>(json)
 }
 
-fn pull<'a>(
-    tendrils_folder: &Path,
-    tendrils: &'a [ResolvedTendril],
-    dry_run: bool,
-) -> Vec<(&'a ResolvedTendril, Result<(), TendrilActionError>)> {
-    let mut results = Vec::with_capacity(tendrils.len());
-    let mut ids: Vec<String> = Vec::with_capacity(tendrils.len());
-
-    for tendril in tendrils {
-        let id = tendril.id();
-
-        let result = match ids.contains(&id) {
-            true => Err(TendrilActionError::Duplicate),
-            false => pull_tendril(tendrils_folder, tendril, dry_run)
-        };
-
-        ids.push(id);
-        results.push((tendril, result));
-    }
-
-    results
-}
-
 fn pull_tendril(
     tendrils_folder: &Path,
     tendril: &ResolvedTendril,
@@ -261,7 +242,7 @@ fn resolve_path_variables(path: &Path) -> Result<PathBuf, ResolveTendrilError> {
     Ok(PathBuf::from(&resolved))
 }
 
-pub fn resolve_tendril(
+fn resolve_tendril(
     tendril: Tendril, // TODO: Use reference only?
     first_only: bool
 ) -> Vec<Result<ResolvedTendril, ResolveTendrilError>> {
@@ -298,4 +279,42 @@ pub fn resolve_tendril(
             mode,
         )?)
     }).collect()
+}
+
+pub fn tendril_action<'a>(
+    mode: ActionMode,
+    tendrils_folder: &Path,
+    tendrils: &'a [Tendril],
+    dry_run: bool,
+) -> Vec<TendrilActionReport<'a>> {
+    let mut action_reports: Vec<TendrilActionReport> = vec![];
+    let first_only = mode == ActionMode::Pull;
+
+    for tendril in tendrils.iter() {
+        let resolve_results = resolve_tendril(tendril.clone(), first_only);
+        let mut action_results = vec![];
+        for result in resolve_results.iter() {
+            match (result, mode) {
+                (Ok(v), ActionMode::Pull) => {
+                    action_results.push(Some(pull_tendril(&tendrils_folder, &v, dry_run)));
+                },
+                (Ok(_), _) => {
+                    unimplemented!();
+                },
+                (Err(_), _) => action_results.push(None),
+            }
+        }
+        let report = TendrilActionReport {
+            orig_tendril: tendril,
+            resolved_paths: resolve_results.into_iter().map(|r| {
+                match r {
+                    Ok(v) => Ok(v.full_path()),
+                    Err(e) => Err(e),
+                }
+            }).collect(),
+            action_results,
+        };
+        action_reports.push(report);
+    }
+    action_reports
 }
