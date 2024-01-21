@@ -5,7 +5,7 @@ mod get_tendrils_tests;
 mod get_tendril_overrides_tests;
 mod is_tendrils_folder_tests;
 mod parse_tendrils_tests;
-mod pull_tests;
+mod tendril_action_tests;
 mod pull_tendril_tests;
 mod resolve_overrides_tests;
 mod resolve_path_variable_tests;
