@@ -27,7 +27,6 @@ fn invalid_json_returns_parse_error() {
 
     let tendrils_override_json =
         &tendrils_folder.path().join("tendrils-override.json");
-    std::fs::File::create(&tendrils_override_json).unwrap();
     std::fs::write(&tendrils_override_json, "I'm not JSON").unwrap();
 
     let actual = get_tendril_overrides(&tendrils_folder.path());
@@ -51,7 +50,6 @@ fn valid_json_returns_tendrils() {
     );
     let tendrils_json =
         &tendrils_folder.path().join("tendrils-override.json");
-    std::fs::File::create(&tendrils_json).unwrap();
     std::fs::write(&tendrils_json, &json).unwrap();
 
     let expected = [SampleTendrils::tendril_1()].to_vec();

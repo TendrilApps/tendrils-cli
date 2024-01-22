@@ -54,8 +54,7 @@ fn valid_json_returns_tendrils() {
 
     let expected = [SampleTendrils::tendril_1()].to_vec();
 
-    let actual: Vec<Tendril> =
-        get_tendrils(&tendrils_folder.path()).unwrap();
+    let actual: Vec<Tendril> = get_tendrils(&tendrils_folder.path()).unwrap();
 
     assert_eq!(actual, expected);
 }
