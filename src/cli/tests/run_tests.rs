@@ -19,9 +19,17 @@ impl MockWriter {
             all_output: "".to_string(),
         }
     }
+
+    fn all_output_lines(&self) -> Vec<String> {
+        self.all_output.lines().map( |x| String::from(x) ).collect()
+    }
 }
 
 impl Writer for MockWriter {
+    fn write(&mut self, text: &str) {
+        self.all_output.push_str(text);
+    }
+
     fn writeln(&mut self, text: &str) {
         self.all_output.push_str(text);
         self.all_output.push('\n');
@@ -200,7 +208,7 @@ fn tendril_action_dry_run_does_not_modify(#[case] mode: ActionMode) {
 
     run(args, &mut writer);
     assert!(source.exists());
-    assert_eq!(writer.all_output, "No local overrides were found.\n");
+    assert_eq!(writer.all_output_lines()[0], "No local overrides were found.");
     assert_eq!(tendrils_folder.read_dir().unwrap().into_iter().count(), 1);
 }
 

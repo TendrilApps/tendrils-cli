@@ -73,14 +73,14 @@ fn path(writer: &mut impl Writer) {
     } 
 }
 
-fn print_reports(reports: &[TendrilActionReport]) {
+fn print_reports(reports: &[TendrilActionReport], writer: &mut impl Writer) {
     for report in reports {
         for (i, resolved_path) in report.resolved_paths.iter().enumerate() {
-            print!("{}: ", report.orig_tendril.id());
+            writer.write(&format!("{}: ", report.orig_tendril.id()));
             match resolved_path {
                 Ok(v) => {
-                    print!("{:?}", report.action_results[i].as_ref().unwrap());
-                    println!("   |   {:?}", v);
+                    writer.write(&format!("{:?}", report.action_results[i].as_ref().unwrap()));
+                    writer.writeln(&format!("   |   {:?}", v));
                 },
                 Err(e) => println!("{:?}", e),
             }
@@ -161,7 +161,7 @@ fn tendril_action_subcommand(
         dry_run
     );
 
-    print_reports(&action_reports);
+    print_reports(&action_reports, writer);
 }
 
 pub fn run(args: TendrilCliArgs, writer: &mut impl Writer) {
