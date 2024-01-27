@@ -12,7 +12,7 @@ use resolved_tendril::{
     ResolvedTendril,
     TendrilMode,
 };
-use std::fs::create_dir_all;
+use std::fs::{create_dir_all, remove_file};
 use std::path::{Path, PathBuf};
 mod tendril;
 use tendril::Tendril;
@@ -175,6 +175,28 @@ fn is_recursive_tendril(
         || tendril_full_path.ancestors().any(|p| p == tendrils_folder)
 }
 
+fn link_tendril(
+    tendrils_folder: &Path,
+    tendril: &ResolvedTendril,
+    dry_run: bool,
+) -> Result<(), TendrilActionError> {
+    let dest= tendril.full_path();
+    if tendril.mode != TendrilMode::Link {
+        return Err(TendrilActionError::ModeMismatch);
+    }
+    else if is_recursive_tendril(tendrils_folder, &dest) {
+        return Err(TendrilActionError::Recursion);
+    }
+
+    let target = tendrils_folder.join(tendril.app()).join(tendril.name());
+
+    if dest.exists() && !dest.is_symlink() {
+        return Err(TendrilActionError::TypeMismatch);
+    }
+
+    Ok(symlink(&dest, &target, dry_run)?)
+}
+
 /// # Arguments
 /// - `json` - JSON array of Tendrils
 fn parse_tendrils(json: &str) -> Result<Vec<Tendril>, serde_json::Error> {
@@ -187,7 +209,10 @@ fn pull_tendril(
     dry_run: bool,
 ) -> Result<(), TendrilActionError> {
     let source= tendril.full_path();
-    if is_recursive_tendril(tendrils_folder, &source) {
+    if tendril.mode == TendrilMode::Link {
+        return Err(TendrilActionError::ModeMismatch);
+    }
+    else if is_recursive_tendril(tendrils_folder, &source) {
         return Err(TendrilActionError::Recursion);
     }
 
@@ -277,9 +302,10 @@ fn resolve_tendril(
     tendril: Tendril, // TODO: Use reference only?
     first_only: bool
 ) -> Vec<Result<ResolvedTendril, ResolveTendrilError>> {
-    let mode = match &tendril.folder_merge {
-        true => TendrilMode::FolderMerge,
-        false => TendrilMode::FolderOverwrite,
+    let mode = match (&tendril.folder_merge, &tendril.link) {
+        (true, false) => TendrilMode::FolderMerge,
+        (false, false) => TendrilMode::FolderOverwrite,
+        (_, true) => TendrilMode::Link,
     };
     // TODO: Consider conditional compilation instead
     // of matching on every iteration
@@ -312,6 +338,60 @@ fn resolve_tendril(
     }).collect()
 }
 
+fn symlink(create_at: &Path, target: &Path, dry_run: bool) -> Result<(), TendrilActionError> {
+    // TODO: Eliminate this unwrap and test with root folders
+    if !create_at.parent().unwrap().exists() {
+        let io_err = std::io::Error::from(std::io::ErrorKind::NotFound);
+        Err(TendrilActionError::IoError(io_err))
+    }
+    else if target.is_symlink()
+        || (create_at.exists() && !create_at.is_symlink()) {
+        Err(TendrilActionError::TypeMismatch)
+    }
+    else if target.exists() {
+        #[cfg(windows)]
+        return Ok(symlink_win(create_at, target, dry_run)?);
+        #[cfg(unix)]
+        return Ok(return symlink_unix(create_at, target, dry_run)?);
+    }
+    else {
+        let io_err = std::io::Error::from(std::io::ErrorKind::NotFound);
+        Err(TendrilActionError::IoError(io_err))
+    }
+}
+
+#[cfg(unix)]
+fn symlink_unix(create_at: &Path, target: &Path, dry_run: bool) -> Result<(), TendrilActionError> {
+    unimplemented!();
+}
+
+#[cfg(windows)]
+fn symlink_win(create_at: &Path, target: &Path, dry_run: bool) -> Result<(), TendrilActionError> {
+    use std::os::windows::fs::{symlink_dir, symlink_file};
+    // TODO: Pattern match instead
+    if target.is_dir() {
+        if dry_run {
+            return Err(TendrilActionError::Skipped);
+        }
+        else if create_at.exists() {
+            remove_file(create_at)?;
+        }
+        Ok(symlink_dir(target, create_at)?)
+    }
+    else if target.is_file() {
+        if dry_run {
+            return Err(TendrilActionError::Skipped);
+        }
+        else if create_at.exists() {
+            remove_file(create_at)?;
+        }
+        Ok(symlink_file(target, create_at)?)
+    }
+    else {
+        Err(TendrilActionError::TypeMismatch)
+    }
+}
+
 pub fn tendril_action<'a>(
     mode: ActionMode,
     tendrils_folder: &Path,
@@ -330,11 +410,11 @@ pub fn tendril_action<'a>(
                     action_results.push(Some(pull_tendril(&tendrils_folder, &v, dry_run)));
                 },
                 (Ok(v), ActionMode::Push) => {
-                    action_results.push(Some(push_tendril(&tendrils_folder, &v, dry_run)))
+                    action_results.push(Some(push_tendril(&tendrils_folder, &v, dry_run)));
                 },
-                (Ok(_), ActionMode::Link) => {
-                    unimplemented!();
-                }
+                (Ok(v), ActionMode::Link) => {
+                    action_results.push(Some(link_tendril(&tendrils_folder, &v, dry_run)));
+                },
                 (Err(_), _) => action_results.push(None),
             }
         }

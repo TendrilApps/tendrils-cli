@@ -20,6 +20,9 @@ impl From<serde_json::Error> for GetTendrilsError {
 pub enum TendrilActionError {
     Duplicate,
     IoError(std::io::Error),
+    /// Occurs when a tendril action does not match its
+    /// mode (such as trying to pull a link tendril)
+    ModeMismatch,
     ResolveTendrilError(ResolveTendrilError),
     Recursion,
     /// Occurs when a command is executed as a dry-run

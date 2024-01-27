@@ -246,6 +246,7 @@ fn resolves_paths_for_current_platform() {
         parent_dirs_mac: ["MacParent".to_string()].to_vec(),
         parent_dirs_windows: ["WinParent".to_string()].to_vec(),
         folder_merge: false,
+        link: false,
     };
 
     let expected_parent = match std::env::consts::OS {
@@ -259,6 +260,35 @@ fn resolves_paths_for_current_platform() {
             "misc.txt".to_string(),
             expected_parent,
             TendrilMode::FolderOverwrite
+        ).unwrap()),
+    ];
+
+    let actual = resolve_tendril(given, true);
+
+    assert_eq!(actual, expected);
+}
+
+#[rstest]
+#[case(true, false, TendrilMode::FolderMerge)]
+#[case(false, false, TendrilMode::FolderOverwrite)]
+#[case(true, true, TendrilMode::Link)]
+#[case(false, true, TendrilMode::Link)]
+fn resolves_tendril_mode_properly(
+    #[case] folder_merge: bool,
+    #[case] link: bool,
+    #[case] expected_mode: TendrilMode,
+) {
+    let mut given = Tendril::new("SomeApp", "misc.txt");
+    given.folder_merge = folder_merge;
+    given.link = link;
+    set_all_platform_paths(&mut given, &[PathBuf::from("SomeParentPath")]);
+
+    let expected = vec![
+        Ok(ResolvedTendril::new(
+            "SomeApp".to_string(),
+            "misc.txt".to_string(),
+            PathBuf::from("SomeParentPath"),
+            expected_mode,
         ).unwrap()),
     ];
 

@@ -67,12 +67,14 @@ fn multiple_tendrils_in_json_returns_tendrils() {
         &[
             SampleTendrils::tendril_1_json(),
             SampleTendrils::tendril_2_json(),
+            SampleTendrils::tendril_3_json(),
         ].to_vec()
     );
 
     let expected = [
         SampleTendrils::tendril_1(),
-        SampleTendrils::tendril_2()
+        SampleTendrils::tendril_2(),
+        SampleTendrils::tendril_3(),
     ].to_vec();
 
     let actual = parse_tendrils(&given).unwrap();

@@ -97,3 +97,7 @@ nu Tendrils.nu -r
 - Used to [reset the Tendrils folder](#resetting-the-folder)
     - Any changes in the application folders will be overwritten with the folder structure in [git](#version-control)
 - Ignored if combined with the [`-d`](#dry--d) flag
+
+# Developer Notes
+- Running tests on Windows may require running in an elevated process due to Windows preventing the creation of symlinks without admin rights
+    - Running the terminal as administrator will allow these tests to pass

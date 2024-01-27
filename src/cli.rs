@@ -29,6 +29,7 @@ pub enum TendrilsSubcommands {
     /// Gets the Tendrils folder path environment variable
     /// if it is set
     Path,
+
     /// Copies tendrils from their various locations on the machine
     /// to the Tendrils folder
     Pull {
@@ -42,6 +43,7 @@ pub enum TendrilsSubcommands {
         #[arg(short, long)]
         path: Option<String>,
     },
+
     /// Copies tendrils from the Tendrils folder to their various
     /// locations on the machine
     Push {
@@ -54,7 +56,21 @@ pub enum TendrilsSubcommands {
         /// and errors if it is not a Tendrils folder
         #[arg(short, long)]
         path: Option<String>,
-    }
+    },
+
+    /// Creates symlinks at the various locations on the machine
+    /// to the tendrils in the Tendrils folder
+    Link {
+        /// Prints what the command would do without modifying
+        /// the file system
+        #[arg(short, long)]
+        dry_run: bool,
+
+        /// Explicitly sets the path to the Tendrils folder for this run,
+        /// and errors if it is not a Tendrils folder
+        #[arg(short, long)]
+        path: Option<String>,
+    },
 }
 
 fn path(writer: &mut impl Writer) {
@@ -174,6 +190,9 @@ pub fn run(args: TendrilCliArgs, writer: &mut impl Writer) {
         },
         TendrilsSubcommands::Push { path, dry_run } => {
             tendril_action_subcommand(ActionMode::Push, path, dry_run, writer)
+        },
+        TendrilsSubcommands::Link { path, dry_run } => {
+            tendril_action_subcommand(ActionMode::Link, path, dry_run, writer)
         },
     };
 }

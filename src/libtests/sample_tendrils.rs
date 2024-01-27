@@ -10,6 +10,7 @@ impl SampleTendrils {
             parent_dirs_mac: [].to_vec(),
             parent_dirs_windows: ["C:\\Users\\<user>\\AppData\\".to_string()].to_vec(),
             folder_merge: false,
+            link: false,
         }
     }
 
@@ -19,7 +20,8 @@ impl SampleTendrils {
             "name": "settings.json",
             "parent-dirs-mac": [],
             "parent-dirs-windows": ["C:\\Users\\<user>\\AppData\\"],
-            "folder-merge": false
+            "folder-merge": false,
+            "link": false
         }"#.to_string()
     }
 
@@ -31,6 +33,7 @@ impl SampleTendrils {
             parent_dirs_windows: ["C:\\Users\\<user>\\Documents\\".to_string()]
                 .to_vec(),
             folder_merge: true,
+            link: false,
         }
     }
 
@@ -40,7 +43,31 @@ impl SampleTendrils {
             "name": "settings2.json",
             "parent-dirs-mac": ["some/mac/path"],
             "parent-dirs-windows": ["C:\\Users\\<user>\\Documents\\"],
-            "folder-merge": true
+            "folder-merge": true,
+            "link": false
+        }"#.to_string()
+    }
+
+    pub fn tendril_3() -> Tendril {
+        Tendril {
+            app: "MyApp".to_string(),
+            name: "linkme.txt".to_string(),
+            parent_dirs_mac: ["some/mac/path".to_string()].to_vec(),
+            parent_dirs_windows: ["C:\\Users\\<user>".to_string()]
+                .to_vec(),
+            folder_merge: false,
+            link: true,
+        }
+    }
+
+    pub fn tendril_3_json() -> String {
+        r#"{
+            "app": "MyApp",
+            "name": "linkme.txt",
+            "parent-dirs-mac": ["some/mac/path"],
+            "parent-dirs-windows": ["C:\\Users\\<user>"],
+            "folder-merge": false,
+            "link": true
         }"#.to_string()
     }
 

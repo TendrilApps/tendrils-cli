@@ -58,5 +58,5 @@ impl ResolvedTendril {
 pub enum TendrilMode {
     FolderMerge,
     FolderOverwrite,
-    // Symlink,
+    Link,
 }
