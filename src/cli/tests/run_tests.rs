@@ -71,13 +71,15 @@ fn path_with_env_var_set_prints_path() {
 }
 
 #[rstest]
-#[case(true)]
-#[case(false)]
 #[serial("cd")]
 #[cfg(not(windows))]
-fn tendril_action_no_path_given_and_no_cd_prints_message(#[case] dry_run: bool) {
-    // TODO: Test with Push + Link modes
-    unimplemented!();
+fn tendril_action_no_path_given_and_no_cd_prints_message(
+    #[values(ActionMode::Pull, ActionMode::Push, ActionMode::Link)]
+    mode: ActionMode,
+
+    #[values(true, false)]
+    dry_run: bool,
+) {
     let delete_me = TempDir::new_in(
         get_disposable_folder(),
         "DeleteMe"
@@ -86,11 +88,14 @@ fn tendril_action_no_path_given_and_no_cd_prints_message(#[case] dry_run: bool) 
     std::fs::remove_dir_all(delete_me.path()).unwrap();
 
     let mut writer = MockWriter::new();
+    let tendrils_command = match mode {
+        ActionMode::Pull => TendrilsSubcommands::Pull {path: None, dry_run},
+        ActionMode::Push => TendrilsSubcommands::Push {path: None, dry_run},
+        ActionMode::Link => TendrilsSubcommands::Link {path: None, dry_run},
+    };
+
     let args = TendrilCliArgs{
-        tendrils_command: TendrilsSubcommands::Pull {
-            path: None,
-            dry_run,
-        }
+        tendrils_command,
     };
     let expected = "Error: Could not get the current directory\n";
 

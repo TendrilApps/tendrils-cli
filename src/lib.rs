@@ -350,9 +350,9 @@ fn symlink(create_at: &Path, target: &Path, dry_run: bool) -> Result<(), Tendril
     }
     else if target.exists() {
         #[cfg(windows)]
-        return Ok(symlink_win(create_at, target, dry_run)?);
+        return symlink_win(create_at, target, dry_run);
         #[cfg(unix)]
-        return Ok(return symlink_unix(create_at, target, dry_run)?);
+        return symlink_unix(create_at, target, dry_run);
     }
     else {
         let io_err = std::io::Error::from(std::io::ErrorKind::NotFound);
@@ -362,7 +362,15 @@ fn symlink(create_at: &Path, target: &Path, dry_run: bool) -> Result<(), Tendril
 
 #[cfg(unix)]
 fn symlink_unix(create_at: &Path, target: &Path, dry_run: bool) -> Result<(), TendrilActionError> {
-    unimplemented!();
+    if dry_run {
+        Err(TendrilActionError::Skipped)
+    }
+    else {
+        if create_at.exists() {
+            remove_file(create_at)?;
+        }
+        Ok(std::os::unix::fs::symlink(target, create_at)?)
+    }
 }
 
 #[cfg(windows)]
