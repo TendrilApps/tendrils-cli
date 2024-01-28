@@ -232,6 +232,9 @@ fn push_tendril(
     dry_run: bool,
 ) -> Result<(), TendrilActionError> {
     let dest= tendril.full_path();
+    if tendril.mode == TendrilMode::Link {
+        return Err(TendrilActionError::ModeMismatch);
+    }
     if is_recursive_tendril(tendrils_folder, &dest) {
         return Err(TendrilActionError::Recursion);
     }

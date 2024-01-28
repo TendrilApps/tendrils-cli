@@ -762,12 +762,14 @@ fn folder_tendril_copies_all_contents_recursively_and_source_is_unchanged() {
     assert_eq!(source_nested_contents, "Nested file contents");
 }
 
-#[test]
-fn given_link_mode_tendril_returns_mode_mismatch_error() {
+#[rstest]
+#[case(true)]
+#[case(false)]
+fn given_link_mode_tendril_returns_mode_mismatch_error(#[case] dry_run: bool) {
     let mut setup = Setup::new(&SetupOpts::default());
     setup.tendril.mode = TendrilMode::Link;
 
-    let actual = pull_tendril(&setup.tendrils_dir, &setup.tendril, false);
+    let actual = pull_tendril(&setup.tendrils_dir, &setup.tendril, dry_run);
 
     assert!(matches!(actual, Err(TendrilActionError::ModeMismatch)));
     assert_eq!(setup.source_file_contents(), "Source file contents");
