@@ -44,7 +44,7 @@ impl From<std::io::Error> for TendrilActionError {
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum InvalidTendrilError {
-    InvalidApp,
+    InvalidGroup,
     InvalidName,
 }
 

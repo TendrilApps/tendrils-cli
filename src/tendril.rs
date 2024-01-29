@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 /// by Tendrils.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Tendril {
-    pub app: String,
+    pub group: String,
     pub name: String,
 
     #[serde(rename = "parent-dirs-mac")]
@@ -21,13 +21,13 @@ pub struct Tendril {
 
 impl Tendril {
     pub fn id(&self) -> String {
-        self.app.clone() + " - " + &self.name
+        self.group.clone() + " - " + &self.name
     }
 
     #[cfg(test)]
-    pub fn new(app: &str, name: &str) -> Tendril {
+    pub fn new(group: &str, name: &str) -> Tendril {
         Tendril {
-            app: app.to_string(),
+            group: group.to_string(),
             name: name.to_string(),
             parent_dirs_mac: [].to_vec(),
             parent_dirs_windows: [].to_vec(),

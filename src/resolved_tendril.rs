@@ -7,7 +7,7 @@ use std::path::PathBuf;
 /// exists or is valid.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ResolvedTendril {
-    app: String,
+    group: String,
     name: String,
     pub parent: PathBuf,
     pub mode: TendrilMode,
@@ -15,30 +15,30 @@ pub struct ResolvedTendril {
 
 impl ResolvedTendril {
     pub fn new(
-        app: String,
+        group: String,
         name: String,
         parent: PathBuf,
         mode: TendrilMode,
     ) -> Result<ResolvedTendril, InvalidTendrilError> {
-        if app.is_empty()
-            || app.to_lowercase() == ".git"
-            || ResolvedTendril::is_path(&app) {
-            return Err(InvalidTendrilError::InvalidApp);
+        if group.is_empty()
+            || group.to_lowercase() == ".git"
+            || ResolvedTendril::is_path(&group) {
+            return Err(InvalidTendrilError::InvalidGroup);
         }
         if name.is_empty() || ResolvedTendril::is_path(&name) {
             return Err(InvalidTendrilError::InvalidName);
         }
 
         Ok(ResolvedTendril {
-            app,
+            group,
             name,
             parent,
             mode,
         })
     }
 
-    pub fn app(&self) -> &str {
-        &self.app
+    pub fn group(&self) -> &str {
+        &self.group
     }
 
     pub fn name(&self) -> &str {

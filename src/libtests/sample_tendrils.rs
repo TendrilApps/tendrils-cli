@@ -5,7 +5,7 @@ pub struct SampleTendrils {}
 impl SampleTendrils {
     pub fn tendril_1() -> Tendril {
             Tendril {
-            app: "MyApp".to_string(),
+            group: "MyApp".to_string(),
             name: "settings.json".to_string(),
             parent_dirs_mac: [].to_vec(),
             parent_dirs_windows: ["C:\\Users\\<user>\\AppData\\".to_string()].to_vec(),
@@ -16,7 +16,7 @@ impl SampleTendrils {
 
     pub fn tendril_1_json() -> String {
         r#"{
-            "app": "MyApp",
+            "group": "MyApp",
             "name": "settings.json",
             "parent-dirs-mac": [],
             "parent-dirs-windows": ["C:\\Users\\<user>\\AppData\\"],
@@ -27,7 +27,7 @@ impl SampleTendrils {
 
     pub fn tendril_2() -> Tendril {
         Tendril {
-            app: "MyApp2".to_string(),
+            group: "MyApp2".to_string(),
             name: "settings2.json".to_string(),
             parent_dirs_mac: ["some/mac/path".to_string()].to_vec(),
             parent_dirs_windows: ["C:\\Users\\<user>\\Documents\\".to_string()]
@@ -39,7 +39,7 @@ impl SampleTendrils {
 
     pub fn tendril_2_json() -> String {
         r#"{
-            "app": "MyApp2",
+            "group": "MyApp2",
             "name": "settings2.json",
             "parent-dirs-mac": ["some/mac/path"],
             "parent-dirs-windows": ["C:\\Users\\<user>\\Documents\\"],
@@ -50,7 +50,7 @@ impl SampleTendrils {
 
     pub fn tendril_3() -> Tendril {
         Tendril {
-            app: "MyApp".to_string(),
+            group: "MyApp".to_string(),
             name: "linkme.txt".to_string(),
             parent_dirs_mac: ["some/mac/path".to_string()].to_vec(),
             parent_dirs_windows: ["C:\\Users\\<user>".to_string()]
@@ -62,7 +62,7 @@ impl SampleTendrils {
 
     pub fn tendril_3_json() -> String {
         r#"{
-            "app": "MyApp",
+            "group": "MyApp",
             "name": "linkme.txt",
             "parent-dirs-mac": ["some/mac/path"],
             "parent-dirs-windows": ["C:\\Users\\<user>"],

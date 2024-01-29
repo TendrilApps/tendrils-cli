@@ -59,7 +59,7 @@ fn both_equal_returns_globals() {
 fn overrides_not_matching_globals_are_ignored() {
     let globals = [SampleTendrils::tendril_1()].to_vec();
     let mut misc_override = SampleTendrils::tendril_1();
-    misc_override.app = "I don't exist".to_string();
+    misc_override.group = "I don't exist".to_string();
     misc_override.name = "Me neither".to_string();
     let overrides = [misc_override].to_vec();
 

@@ -188,7 +188,7 @@ fn link_tendril(
         return Err(TendrilActionError::Recursion);
     }
 
-    let target = tendrils_folder.join(tendril.app()).join(tendril.name());
+    let target = tendrils_folder.join(tendril.group()).join(tendril.name());
 
     if dest.exists() && !dest.is_symlink() {
         return Err(TendrilActionError::TypeMismatch);
@@ -216,7 +216,7 @@ fn pull_tendril(
         return Err(TendrilActionError::Recursion);
     }
 
-    let dest = tendrils_folder.join(tendril.app()).join(tendril.name());
+    let dest = tendrils_folder.join(tendril.group()).join(tendril.name());
 
     if fso_types_mismatch(&source, &dest) {
         return Err(TendrilActionError::TypeMismatch);
@@ -239,7 +239,7 @@ fn push_tendril(
         return Err(TendrilActionError::Recursion);
     }
 
-    let source = tendrils_folder.join(tendril.app()).join(tendril.name());
+    let source = tendrils_folder.join(tendril.group()).join(tendril.name());
 
     if fso_types_mismatch(&dest, &source) {
         return Err(TendrilActionError::TypeMismatch);
@@ -333,7 +333,7 @@ fn resolve_tendril(
         let parent = resolve_path_variables(&PathBuf::from(p))?;
 
         Ok(ResolvedTendril::new(
-            tendril.app.clone(),
+            tendril.group.clone(),
             tendril.name.clone(),
             parent,
             mode,

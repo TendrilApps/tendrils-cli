@@ -22,10 +22,10 @@ fn empty_parent_list_returns_empty(#[case] first_only: bool) {
 #[case("", "misc.txt")]
 #[case("SomeApp", "")]
 fn invalid_tendril_returns_invalid_tendril(
-    #[case] app: &str,
+    #[case] group: &str,
     #[case] name: &str,
 ) {
-    let mut given = Tendril::new(app, name);
+    let mut given = Tendril::new(group, name);
     set_all_platform_paths(
         &mut given,
         &[
@@ -47,10 +47,10 @@ fn invalid_tendril_returns_invalid_tendril(
 #[case("", "misc.txt")]
 #[case("SomeApp", "")]
 fn invalid_tendril_and_empty_parent_list_returns_empty(
-    #[case] app: &str,
+    #[case] group: &str,
     #[case] name: &str,
 ) {
-    let mut given = Tendril::new(app, name);
+    let mut given = Tendril::new(group, name);
     set_all_platform_paths(&mut given, &[]);
 
     let actual = resolve_tendril(given, false);
@@ -241,7 +241,7 @@ fn supported_variable_missing_returns_raw_path() {
 #[test]
 fn resolves_paths_for_current_platform() {
     let given = Tendril {
-        app: "SomeApp".to_string(),
+        group: "SomeApp".to_string(),
         name: "misc.txt".to_string(),
         parent_dirs_mac: ["MacParent".to_string()].to_vec(),
         parent_dirs_windows: ["WinParent".to_string()].to_vec(),

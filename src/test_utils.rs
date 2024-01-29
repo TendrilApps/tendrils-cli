@@ -94,12 +94,12 @@ impl Setup {
         let source_file = parent_dir.join(opts.source_filename);
         let source_folder = parent_dir.join(opts.source_foldername);
         let source_nested_file = source_folder.join("nested.txt");
-        let dest_file = tendrils_dir.join(opts.app).join(opts.source_filename);
-        let dest_folder = tendrils_dir.join(opts.app).join(opts.source_foldername);
+        let dest_file = tendrils_dir.join(opts.group).join(opts.source_filename);
+        let dest_folder = tendrils_dir.join(opts.group).join(opts.source_foldername);
         let dest_nested_file = dest_folder.join("nested.txt");
         let tendril = match opts.is_folder_tendril {
-            false => ResolvedTendril::new(opts.app.to_string(), opts.source_filename.to_string(), parent_dir.clone(), TendrilMode::FolderOverwrite),
-            true => ResolvedTendril::new(opts.app.to_string(), opts.source_foldername.to_string(), parent_dir.clone(), TendrilMode::FolderOverwrite),
+            false => ResolvedTendril::new(opts.group.to_string(), opts.source_filename.to_string(), parent_dir.clone(), TendrilMode::FolderOverwrite),
+            true => ResolvedTendril::new(opts.group.to_string(), opts.source_foldername.to_string(), parent_dir.clone(), TendrilMode::FolderOverwrite),
         }.unwrap();
 
         if opts.make_source_file {
@@ -152,7 +152,7 @@ pub struct SetupOpts<'a> {
     pub is_folder_tendril: bool,
     pub parent_dir_is_child_of_temp_dir: bool,
     pub parent_dirname: &'a str,
-    pub app: &'a str,
+    pub group: &'a str,
     pub source_filename: &'a str,
     pub source_foldername: &'a str,
     pub tendrils_dirname: &'a str,
@@ -168,7 +168,7 @@ impl<'a> SetupOpts<'a> {
             is_folder_tendril: false,
             parent_dir_is_child_of_temp_dir: false,
             parent_dirname: "ParentFolder",
-            app: "SomeApp",
+            group: "SomeApp",
             source_filename: "misc.txt",
             source_foldername: "misc",
             tendrils_dirname: "TendrilsFolder",

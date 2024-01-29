@@ -10,15 +10,15 @@ use std::path::PathBuf;
 #[case(".git")]
 #[case(".Git")]
 #[case(".GIT")]
-fn app_is_invalid_returns_invalid_app_error(#[case] app: String) {
+fn group_is_invalid_returns_invalid_group_error(#[case] group: String) {
     let actual = ResolvedTendril::new(
-        app,
+        group,
         "misc.txt".to_string(),
         PathBuf::from("SomePath"),
         TendrilMode::FolderOverwrite,
     ).unwrap_err();
 
-    assert!(matches!(actual, InvalidTendrilError::InvalidApp));
+    assert!(matches!(actual, InvalidTendrilError::InvalidGroup));
 }
 
 #[rstest]
@@ -42,9 +42,9 @@ fn name_is_invalid_returns_invalid_name_error(#[case] name: String) {
 #[case("multi.sandwiched.dots")]
 #[case(".LeadingDot")]
 #[case("TrailingDot.")]
-fn app_is_valid_returns_ok(#[case] app: String) {
+fn group_is_valid_returns_ok(#[case] group: String) {
     ResolvedTendril::new(
-        app,
+        group,
         "misc.txt".to_string(),
         PathBuf::from("SomePath"),
         TendrilMode::FolderOverwrite,

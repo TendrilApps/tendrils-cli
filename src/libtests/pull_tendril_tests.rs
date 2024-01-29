@@ -98,15 +98,15 @@ fn tendril_exists_at_source_path_in_dry_run_returns_skipped_error_does_not_modif
 #[case("TendrilsFolder", "<user>", "misc")]
 #[case("<user>", "SomeApp", "misc")]
 #[cfg(not(windows))] // These are invalid paths on Windows
-fn supported_var_in_tendrils_folder_or_app_or_name_uses_raw_path(
+fn supported_var_in_tendrils_folder_or_group_or_name_uses_raw_path(
     #[case] td_folder: &str,
-    #[case] app: &str,
+    #[case] group: &str,
     #[case] name: &str
 ) {
     // TODO: This now should use raw paths (will be a Unix only test)
     let mut opts = SetupOpts::default();
     opts.tendrils_dirname = td_folder;
-    opts.app = app;
+    opts.group = group;
     opts.source_filename = name;
     opts.make_source_folder = false;
     let setup = Setup::new(&opts);
@@ -114,7 +114,7 @@ fn supported_var_in_tendrils_folder_or_app_or_name_uses_raw_path(
     pull_tendril(&setup.tendrils_dir, &setup.tendril, false).unwrap();
 
     assert_eq!(setup.dest_file_contents(), "Source file contents");
-    assert!(setup.tendrils_dir.join(app).read_dir().unwrap().count() == 1);
+    assert!(setup.tendrils_dir.join(group).read_dir().unwrap().count() == 1);
 }
 
 #[rstest]
@@ -706,7 +706,7 @@ fn file_tendril_source_is_unchanged() {
 }
 
 #[test]
-fn other_tendrils_in_same_app_folder_are_unchanged() {
+fn other_tendrils_in_same_group_folder_are_unchanged() {
     let setup = Setup::new(&SetupOpts::default());
     let some_other_tendril= &setup.tendrils_dir.join("SomeApp").join("other.txt");
     create_dir_all(setup.tendrils_dir.join("SomeApp")).unwrap();

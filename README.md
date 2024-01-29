@@ -30,7 +30,7 @@ nu Tendrils.nu -s
 ```json
 [
     {
-        "app": "App Name",
+        "group": "Group/app Name",
         "name": "file or folder name",
         "parent-dirs-mac": ["/Users/<user>/path/to/item/parent/folder"],
         "parent-dirs-windows": ["C:\\Users\\<user>\\path 1",
@@ -40,9 +40,9 @@ nu Tendrils.nu -s
 ]
 ```
 
-- `app`:
-    - The name of the app that the item belongs to
-    - Items in the [Tendrils folder](#tendrils-folder) will be grouped in subfolders based on this `app` name 
+- `group`:
+    - The name of the group/app that the item belongs to
+    - Items in the [Tendrils folder](#tendrils-folder) will be grouped in subfolders based on this `group` name 
 - `name`:
     - Must match the file or folder name
 - `parent-dirs-<platform>`:
@@ -62,7 +62,7 @@ nu Tendrils.nu -s
 ## `tendrils-override.json`
 - Items present in both `tendrils-override.json` and `tendrils.json` will respect the overriden values
     - Items present in `tendrils-override.json` but *not* in `tendrils.json` are ignored
-    - Items are considered "matched" if they share the same [`app`](#schema) and [`name`](#schema) fields
+    - Items are considered "matched" if they share the same [`group`](#schema) and [`name`](#schema) fields
 - Typically should not be version controlled
 - Uses the same [schema](#schema) as [`tendrils.json`](#tendrilsjson)
 - Is stored in the [Tendrils folder](#tendrils-folder)
@@ -70,7 +70,7 @@ nu Tendrils.nu -s
 
 # Tendrils Folder
 - The folder containing the [`tendrils.json`](#tendrilsjson) file, the [`tendrils-override.json`](#tendrils-overridejson), and all of the files/folders controlled by their tendrils
-- Items are grouped into subfolders by their [`app`](#schema) name
+- Items are grouped into subfolders by their [`group`](#schema) name
 
 ## Version Control
 - The *Tendrils folder* can be placed under a version control system such as *Git*
