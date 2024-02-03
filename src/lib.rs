@@ -415,7 +415,8 @@ fn symlink_win(create_at: &Path, target: &Path, dry_run: bool) -> Result<(), Ten
         Ok(symlink_file(target, create_at)?)
     }
     else {
-        Err(TendrilActionError::TypeMismatch)
+        let io_err = std::io::Error::from(std::io::ErrorKind::NotFound);
+        Err(TendrilActionError::IoError(io_err))
     }
 }
 

@@ -38,12 +38,11 @@ pub enum TendrilsSubcommands {
         #[arg(short, long)]
         dry_run: bool,
 
-        /// Ignores most type mismatches and forces the operation
+        /// Ignores type mismatches and forces the operation
         #[arg(short, long)]
         force: bool,
 
-        /// Explicitly sets the path to the Tendrils folder for this run,
-        /// and errors if it is not a Tendrils folder
+        /// Explicitly sets the path to the Tendrils folder
         #[arg(short, long)]
         path: Option<String>,
     },
@@ -56,12 +55,11 @@ pub enum TendrilsSubcommands {
         #[arg(short, long)]
         dry_run: bool,
 
-        /// Ignores most type mismatches and forces the operation
+        /// Ignores type mismatches and forces the operation
         #[arg(short, long)]
         force: bool,
 
-        /// Explicitly sets the path to the Tendrils folder for this run,
-        /// and errors if it is not a Tendrils folder
+        /// Explicitly sets the path to the Tendrils folder
         #[arg(short, long)]
         path: Option<String>,
     },
@@ -74,12 +72,11 @@ pub enum TendrilsSubcommands {
         #[arg(short, long)]
         dry_run: bool,
 
-        /// Ignores most type mismatches and forces the operation
+        /// Ignores type mismatches and forces the operation
         #[arg(short, long)]
         force: bool,
 
-        /// Explicitly sets the path to the Tendrils folder for this run,
-        /// and errors if it is not a Tendrils folder
+        /// Explicitly sets the path to the Tendrils folder
         #[arg(short, long)]
         path: Option<String>,
     },
