@@ -6,9 +6,13 @@ use std::fs::{create_dir_all, read_to_string, write};
 use tempdir::TempDir;
 
 #[rstest]
-#[case(true)]
-#[case(false)]
-fn given_link_mode_tendril_returns_mode_mismatch_error(#[case] dry_run: bool) {
+fn given_link_mode_tendril_returns_mode_mismatch_error(
+    #[values(true, false)]
+    dry_run: bool,
+
+    #[values(true, false)]
+    force: bool,
+) {
     let temp_parent_folder = TempDir::new_in(
         get_disposable_folder(),
         "ParentFolder"
@@ -26,7 +30,7 @@ fn given_link_mode_tendril_returns_mode_mismatch_error(#[case] dry_run: bool) {
         TendrilMode::Link,
     ).unwrap();
 
-    let actual = push_tendril(&tendrils_folder, &given_tendril, dry_run);
+    let actual = push_tendril(&tendrils_folder, &given_tendril, dry_run, force);
 
     let source_file_contents = read_to_string(&source).unwrap();
     let dest_file_contents = read_to_string(&dest).unwrap();

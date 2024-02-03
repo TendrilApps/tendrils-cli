@@ -10,10 +10,14 @@ use tempdir::TempDir;
 
 #[rstest]
 fn given_empty_list_returns_empty(
-    #[values(true, false)]
-    dry_run: bool,
     #[values(ActionMode::Push, ActionMode::Pull, ActionMode::Link)]
     mode: ActionMode,
+
+    #[values(true, false)]
+    dry_run: bool,
+
+    #[values(true, false)]
+    force: bool,
 ) {
     let temp_parent_folder = TempDir::new_in(
         get_disposable_folder(),
@@ -21,7 +25,13 @@ fn given_empty_list_returns_empty(
     ).unwrap();
     let given_tendrils_folder = temp_parent_folder.path().join("TendrilsFolder");
 
-    let actual = tendril_action(mode, &given_tendrils_folder, &[], dry_run);
+    let actual = tendril_action(
+        mode,
+        &given_tendrils_folder,
+        &[],
+        dry_run,
+        force,
+    );
 
     assert!(actual.is_empty());
     assert!(is_empty(&given_tendrils_folder))
@@ -30,7 +40,12 @@ fn given_empty_list_returns_empty(
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn pull_returns_tendril_and_result_for_each_given(#[case] dry_run: bool) {
+fn pull_returns_tendril_and_result_for_each_given(
+    #[case] dry_run: bool,
+
+    #[values(true, false)]
+    force: bool,
+) {
     let temp_parent_folder = TempDir::new_in(
         get_disposable_folder(),
         "ParentFolder"
@@ -114,7 +129,13 @@ fn pull_returns_tendril_and_result_for_each_given(#[case] dry_run: bool) {
         }
     };
 
-    let actual = tendril_action(ActionMode::Pull, &given_tendrils_folder, &given, dry_run);
+    let actual = tendril_action(
+        ActionMode::Pull,
+        &given_tendrils_folder,
+        &given,
+        dry_run,
+        force,
+    );
 
     for (i, actual_report) in actual.iter().enumerate() {
         assert_eq!(actual_report.orig_tendril, expected[i].orig_tendril);

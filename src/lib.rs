@@ -12,7 +12,7 @@ use resolved_tendril::{
     ResolvedTendril,
     TendrilMode,
 };
-use std::fs::{create_dir_all, remove_file};
+use std::fs::{create_dir_all, remove_dir_all, remove_file};
 use std::path::{Path, PathBuf};
 mod tendril;
 use tendril::Tendril;
@@ -36,10 +36,14 @@ fn copy_fso(
 
     if from.is_dir() {
         if dry_run { return Err(TendrilActionError::Skipped); }
-        if !folder_merge && to.exists() {
+        if !folder_merge && to.is_dir() {
             std::fs::remove_dir_all(to)?;
             create_dir_all(to)?;
         }
+        else if to.is_file() {
+            remove_file(&to)?;
+        }
+
         // TODO: Eliminate this unwrap and test how
         // root folders are handled
         to = to.parent().unwrap();
@@ -87,6 +91,13 @@ fn copy_fso(
         // TODO: Eliminate this unwrap and test how
         // root folders are handled
         create_dir_all(to.parent().unwrap())?;
+
+        if to.is_dir() {
+            remove_dir_all(&to)?;
+        }
+        else if to.is_symlink() {
+            remove_file(&to)?;
+        }
 
         match std::fs::copy(from_str, to_str) {
             Ok(_v) => Ok(()),
@@ -179,6 +190,7 @@ fn link_tendril(
     tendrils_folder: &Path,
     tendril: &ResolvedTendril,
     dry_run: bool,
+    force: bool,
 ) -> Result<(), TendrilActionError> {
     let dest= tendril.full_path();
     if tendril.mode != TendrilMode::Link {
@@ -190,11 +202,11 @@ fn link_tendril(
 
     let target = tendrils_folder.join(tendril.group()).join(tendril.name());
 
-    if dest.exists() && !dest.is_symlink() {
+    if !force && dest.exists() && !dest.is_symlink() {
         return Err(TendrilActionError::TypeMismatch);
     }
 
-    Ok(symlink(&dest, &target, dry_run)?)
+    Ok(symlink(&dest, &target, dry_run, force)?)
 }
 
 /// # Arguments
@@ -207,6 +219,7 @@ fn pull_tendril(
     tendrils_folder: &Path,
     tendril: &ResolvedTendril,
     dry_run: bool,
+    force: bool,
 ) -> Result<(), TendrilActionError> {
     let source= tendril.full_path();
     if tendril.mode == TendrilMode::Link {
@@ -218,7 +231,7 @@ fn pull_tendril(
 
     let dest = tendrils_folder.join(tendril.group()).join(tendril.name());
 
-    if fso_types_mismatch(&source, &dest) {
+    if !force && fso_types_mismatch(&source, &dest){
         return Err(TendrilActionError::TypeMismatch);
     }
 
@@ -230,6 +243,7 @@ fn push_tendril(
     tendrils_folder: &Path,
     tendril: &ResolvedTendril,
     dry_run: bool,
+    force: bool,
 ) -> Result<(), TendrilActionError> {
     let dest= tendril.full_path();
     if tendril.mode == TendrilMode::Link {
@@ -241,7 +255,7 @@ fn push_tendril(
 
     let source = tendrils_folder.join(tendril.group()).join(tendril.name());
 
-    if fso_types_mismatch(&dest, &source) {
+    if !force && fso_types_mismatch(&dest, &source) {
         return Err(TendrilActionError::TypeMismatch);
     }
 
@@ -341,14 +355,13 @@ fn resolve_tendril(
     }).collect()
 }
 
-fn symlink(create_at: &Path, target: &Path, dry_run: bool) -> Result<(), TendrilActionError> {
+fn symlink(create_at: &Path, target: &Path, dry_run: bool, force: bool) -> Result<(), TendrilActionError> {
     // TODO: Eliminate this unwrap and test with root folders
     if !create_at.parent().unwrap().exists() {
         let io_err = std::io::Error::from(std::io::ErrorKind::NotFound);
         Err(TendrilActionError::IoError(io_err))
     }
-    else if target.is_symlink()
-        || (create_at.exists() && !create_at.is_symlink()) {
+    else if !force && target.is_symlink() {
         Err(TendrilActionError::TypeMismatch)
     }
     else if target.exists() {
@@ -369,8 +382,11 @@ fn symlink_unix(create_at: &Path, target: &Path, dry_run: bool) -> Result<(), Te
         Err(TendrilActionError::Skipped)
     }
     else {
-        if create_at.exists() {
+        if create_at.is_file() {
             remove_file(create_at)?;
+        }
+        if create_at.is_dir() {
+            remove_dir_all(create_at)?;
         }
         Ok(std::os::unix::fs::symlink(target, create_at)?)
     }
@@ -385,7 +401,7 @@ fn symlink_win(create_at: &Path, target: &Path, dry_run: bool) -> Result<(), Ten
             return Err(TendrilActionError::Skipped);
         }
         else if create_at.exists() {
-            remove_file(create_at)?;
+            remove_dir_all(create_at)?;
         }
         Ok(symlink_dir(target, create_at)?)
     }
@@ -408,6 +424,7 @@ pub fn tendril_action<'a>(
     tendrils_folder: &Path,
     tendrils: &'a [Tendril],
     dry_run: bool,
+    force: bool,
 ) -> Vec<TendrilActionReport<'a>> {
     let mut action_reports: Vec<TendrilActionReport> = vec![];
     let first_only = mode == ActionMode::Pull;
@@ -418,13 +435,13 @@ pub fn tendril_action<'a>(
         for result in resolve_results.iter() {
             match (result, mode) {
                 (Ok(v), ActionMode::Pull) => {
-                    action_results.push(Some(pull_tendril(&tendrils_folder, &v, dry_run)));
+                    action_results.push(Some(pull_tendril(&tendrils_folder, &v, dry_run, force)));
                 },
                 (Ok(v), ActionMode::Push) => {
-                    action_results.push(Some(push_tendril(&tendrils_folder, &v, dry_run)));
+                    action_results.push(Some(push_tendril(&tendrils_folder, &v, dry_run, force)));
                 },
                 (Ok(v), ActionMode::Link) => {
-                    action_results.push(Some(link_tendril(&tendrils_folder, &v, dry_run)));
+                    action_results.push(Some(link_tendril(&tendrils_folder, &v, dry_run, force)));
                 },
                 (Err(_), _) => action_results.push(None),
             }

@@ -79,6 +79,9 @@ fn tendril_action_no_path_given_and_no_cd_prints_message(
 
     #[values(true, false)]
     dry_run: bool,
+
+    #[values(true, false)]
+    force: bool,
 ) {
     let delete_me = TempDir::new_in(
         get_disposable_folder(),
@@ -89,9 +92,9 @@ fn tendril_action_no_path_given_and_no_cd_prints_message(
 
     let mut writer = MockWriter::new();
     let tendrils_command = match mode {
-        ActionMode::Pull => TendrilsSubcommands::Pull {path: None, dry_run},
-        ActionMode::Push => TendrilsSubcommands::Push {path: None, dry_run},
-        ActionMode::Link => TendrilsSubcommands::Link {path: None, dry_run},
+        ActionMode::Pull => TendrilsSubcommands::Pull {path: None, dry_run, force},
+        ActionMode::Push => TendrilsSubcommands::Push {path: None, dry_run, force},
+        ActionMode::Link => TendrilsSubcommands::Link {path: None, dry_run, force},
     };
 
     let args = TendrilCliArgs{
@@ -115,6 +118,9 @@ fn tendril_action_given_path_is_not_tendrils_folder_cd_is_prints_message(
 
     #[values(true, false)]
     dry_run: bool,
+
+    #[values(true, false)]
+    force: bool,
 ) {
     let temp_parent_folder = TempDir::new_in(
         get_disposable_folder(),
@@ -131,9 +137,9 @@ fn tendril_action_given_path_is_not_tendrils_folder_cd_is_prints_message(
     let mut writer = MockWriter::new();
     let path = Some(given_folder.to_str().unwrap().to_string());
     let tendrils_command = match mode {
-        ActionMode::Pull => TendrilsSubcommands::Pull {path, dry_run},
-        ActionMode::Push => TendrilsSubcommands::Push {path, dry_run},
-        ActionMode::Link => TendrilsSubcommands::Link {path, dry_run},
+        ActionMode::Pull => TendrilsSubcommands::Pull {path, dry_run, force},
+        ActionMode::Push => TendrilsSubcommands::Push {path, dry_run, force},
+        ActionMode::Link => TendrilsSubcommands::Link {path, dry_run, force},
     };
 
     let args = TendrilCliArgs{
@@ -159,6 +165,9 @@ fn tendril_action_given_path_and_cd_are_tendrils_folder_uses_given_path(
 
     #[values(true, false)]
     dry_run: bool,
+
+    #[values(true, false)]
+    force: bool,
 ) {
     let temp_parent_folder = TempDir::new_in(
         get_disposable_folder(),
@@ -178,9 +187,9 @@ fn tendril_action_given_path_and_cd_are_tendrils_folder_uses_given_path(
     let mut writer = MockWriter::new();
     let path = Some(given_folder.to_str().unwrap().to_string());
     let tendrils_command = match mode {
-        ActionMode::Pull => TendrilsSubcommands::Pull {path, dry_run},
-        ActionMode::Push => TendrilsSubcommands::Push {path, dry_run},
-        ActionMode::Link => TendrilsSubcommands::Link {path, dry_run},
+        ActionMode::Pull => TendrilsSubcommands::Pull {path, dry_run, force},
+        ActionMode::Push => TendrilsSubcommands::Push {path, dry_run, force},
+        ActionMode::Link => TendrilsSubcommands::Link {path, dry_run, force},
     };
     let args = TendrilCliArgs{
         tendrils_command,
@@ -202,7 +211,12 @@ fn tendril_action_given_path_and_cd_are_tendrils_folder_uses_given_path(
 #[case(ActionMode::Pull)]
 #[case(ActionMode::Push)]
 #[case(ActionMode::Link)]
-fn tendril_action_dry_run_does_not_modify(#[case] mode: ActionMode) {
+fn tendril_action_dry_run_does_not_modify(
+    #[case] mode: ActionMode,
+
+    #[values(true, false)]
+    force: bool,
+) {
     let temp_parent_folder = TempDir::new_in(
         get_disposable_folder(),
         "ParentFolder"
@@ -223,7 +237,7 @@ fn tendril_action_dry_run_does_not_modify(#[case] mode: ActionMode) {
     write(&td_file, "Controlled file contents").unwrap();
     write(&target_file, "Orig target file contents").unwrap();
     if mode == ActionMode::Link {
-        symlink(&local_file, &target_file, false).unwrap();
+        symlink(&local_file, &target_file, false, false).unwrap();
     }
     else {
         write(&local_file, "Local file contents").unwrap();
@@ -233,9 +247,9 @@ fn tendril_action_dry_run_does_not_modify(#[case] mode: ActionMode) {
     let path = Some(tendrils_folder.to_str().unwrap().to_string());
     let dry_run = true;
     let tendrils_command = match mode {
-        ActionMode::Pull => TendrilsSubcommands::Pull {path, dry_run},
-        ActionMode::Push => TendrilsSubcommands::Push {path, dry_run},
-        ActionMode::Link => TendrilsSubcommands::Link {path, dry_run},
+        ActionMode::Pull => TendrilsSubcommands::Pull {path, dry_run, force},
+        ActionMode::Push => TendrilsSubcommands::Push {path, dry_run, force},
+        ActionMode::Link => TendrilsSubcommands::Link {path, dry_run, force},
     };
     let args = TendrilCliArgs{
         tendrils_command,

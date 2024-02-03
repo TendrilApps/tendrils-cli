@@ -38,6 +38,10 @@ pub enum TendrilsSubcommands {
         #[arg(short, long)]
         dry_run: bool,
 
+        /// Ignores most type mismatches and forces the operation
+        #[arg(short, long)]
+        force: bool,
+
         /// Explicitly sets the path to the Tendrils folder for this run,
         /// and errors if it is not a Tendrils folder
         #[arg(short, long)]
@@ -52,6 +56,10 @@ pub enum TendrilsSubcommands {
         #[arg(short, long)]
         dry_run: bool,
 
+        /// Ignores most type mismatches and forces the operation
+        #[arg(short, long)]
+        force: bool,
+
         /// Explicitly sets the path to the Tendrils folder for this run,
         /// and errors if it is not a Tendrils folder
         #[arg(short, long)]
@@ -65,6 +73,10 @@ pub enum TendrilsSubcommands {
         /// the file system
         #[arg(short, long)]
         dry_run: bool,
+
+        /// Ignores most type mismatches and forces the operation
+        #[arg(short, long)]
+        force: bool,
 
         /// Explicitly sets the path to the Tendrils folder for this run,
         /// and errors if it is not a Tendrils folder
@@ -108,6 +120,7 @@ fn tendril_action_subcommand(
     mode: ActionMode,
     path: Option<String>,
     dry_run: bool,
+    force: bool,
     writer: &mut impl Writer,
 ) {
     let tendrils_folder = match path {
@@ -174,7 +187,8 @@ fn tendril_action_subcommand(
         mode,
         &tendrils_folder,
         &combined_tendrils,
-        dry_run
+        dry_run,
+        force,
     );
 
     print_reports(&action_reports, writer);
@@ -185,14 +199,14 @@ pub fn run(args: TendrilCliArgs, writer: &mut impl Writer) {
         TendrilsSubcommands::Path => {
             path(writer);
         },
-        TendrilsSubcommands::Pull { path, dry_run } => {
-            tendril_action_subcommand(ActionMode::Pull, path, dry_run, writer)
+        TendrilsSubcommands::Pull { path, dry_run, force } => {
+            tendril_action_subcommand(ActionMode::Pull, path, dry_run, force, writer)
         },
-        TendrilsSubcommands::Push { path, dry_run } => {
-            tendril_action_subcommand(ActionMode::Push, path, dry_run, writer)
+        TendrilsSubcommands::Push { path, dry_run , force} => {
+            tendril_action_subcommand(ActionMode::Push, path, dry_run, force, writer)
         },
-        TendrilsSubcommands::Link { path, dry_run } => {
-            tendril_action_subcommand(ActionMode::Link, path, dry_run, writer)
+        TendrilsSubcommands::Link { path, dry_run, force } => {
+            tendril_action_subcommand(ActionMode::Link, path, dry_run, force, writer)
         },
     };
 }
