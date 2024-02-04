@@ -1,9 +1,9 @@
 mod sample_tendrils;
 
-mod get_tendrils_folder_tests;
+mod get_tendrils_dir_tests;
 mod get_tendrils_tests;
 mod get_tendril_overrides_tests;
-mod is_tendrils_folder_tests;
+mod is_tendrils_dir_tests;
 mod link_tendril_tests;
 mod parse_tendrils_tests;
 mod pull_tendril_tests;
