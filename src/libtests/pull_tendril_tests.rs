@@ -491,12 +491,11 @@ fn source_is_dir_and_dest_is_file_returns_type_mismatch_error_unless_forced(
 
 #[rstest]
 #[case(true)]
-// #[case(false)]
+#[case(false)]
 fn source_is_symlink_returns_type_mismatch_error_unless_forced_then_copies_symlink_target(
     #[case] dry_run: bool,
 
-    // #[values(true, false)]
-    #[values(false)]
+    #[values(true, false)]
     force: bool,
 ) {
     let temp_source_folder = TempDir::new_in(
