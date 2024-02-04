@@ -15,7 +15,7 @@ fn group_is_invalid_returns_invalid_group_error(#[case] group: String) {
         group,
         "misc.txt".to_string(),
         PathBuf::from("SomePath"),
-        TendrilMode::FolderOverwrite,
+        TendrilMode::DirOverwrite,
     ).unwrap_err();
 
     assert!(matches!(actual, InvalidTendrilError::InvalidGroup));
@@ -30,7 +30,7 @@ fn name_is_invalid_returns_invalid_name_error(#[case] name: String) {
         "SomeApp".to_string(),
         name,
         PathBuf::from("SomePath"),
-        TendrilMode::FolderOverwrite,
+        TendrilMode::DirOverwrite,
     ).unwrap_err();
 
     assert!(matches!(actual, InvalidTendrilError::InvalidName));
@@ -47,7 +47,7 @@ fn group_is_valid_returns_ok(#[case] group: String) {
         group,
         "misc.txt".to_string(),
         PathBuf::from("SomePath"),
-        TendrilMode::FolderOverwrite,
+        TendrilMode::DirOverwrite,
     ).unwrap();
 }
 
@@ -65,7 +65,7 @@ fn name_is_valid_returns_ok(#[case] name: String) {
         "SomeApp".to_string(),
         name,
         PathBuf::from("SomePath"),
-        TendrilMode::FolderOverwrite,
+        TendrilMode::DirOverwrite,
     ).unwrap();
 }
 
@@ -78,7 +78,7 @@ fn full_path_appends_name_to_parent(#[case] name: String, #[case] parent: PathBu
         "SomeApp".to_string(),
         name,
         parent,
-        TendrilMode::FolderOverwrite,
+        TendrilMode::DirOverwrite,
     ).unwrap();
 
     assert_eq!(actual.full_path(), actual.parent.join(actual.name()))
@@ -92,7 +92,7 @@ fn full_path_empty_parent_does_not_prepend_dir_sep_to_name(#[case] name: String)
         "SomeApp".to_string(),
         name.clone(),
         PathBuf::from(""),
-        TendrilMode::FolderOverwrite,
+        TendrilMode::DirOverwrite,
     ).unwrap();
 
     assert_eq!(actual.full_path(), PathBuf::from(name))

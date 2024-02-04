@@ -2,7 +2,7 @@ use crate::{tendril_action, TendrilActionError};
 use crate::action_mode::ActionMode;
 use crate::tendril::Tendril;
 use crate::tendril_action_report::TendrilActionReport;
-use crate::test_utils::{get_disposable_folder, is_empty, set_all_platform_paths};
+use crate::test_utils::{get_disposable_dir, is_empty, set_all_platform_paths};
 use fs_extra::file::read_to_string;
 use rstest::rstest;
 use std::fs::{create_dir_all, write};
@@ -19,22 +19,22 @@ fn given_empty_list_returns_empty(
     #[values(true, false)]
     force: bool,
 ) {
-    let temp_parent_folder = TempDir::new_in(
-        get_disposable_folder(),
-        "ParentFolder"
+    let temp_parent_dir = TempDir::new_in(
+        get_disposable_dir(),
+        "ParentDir"
     ).unwrap();
-    let given_tendrils_folder = temp_parent_folder.path().join("TendrilsFolder");
+    let given_td_dir = temp_parent_dir.path().join("TendrilsDir");
 
     let actual = tendril_action(
         mode,
-        &given_tendrils_folder,
+        &given_td_dir,
         &[],
         dry_run,
         force,
     );
 
     assert!(actual.is_empty());
-    assert!(is_empty(&given_tendrils_folder))
+    assert!(is_empty(&given_td_dir))
 }
 
 #[rstest]
@@ -46,20 +46,20 @@ fn pull_returns_tendril_and_result_for_each_given(
     #[values(true, false)]
     force: bool,
 ) {
-    let temp_parent_folder = TempDir::new_in(
-        get_disposable_folder(),
-        "ParentFolder"
+    let temp_parent_dir = TempDir::new_in(
+        get_disposable_dir(),
+        "ParentDir"
     ).unwrap();
-    let given_tendrils_folder = temp_parent_folder.path().join("TendrilsFolder");
-    let given_parent_folder = temp_parent_folder.path().to_path_buf();
-    let source_app1_file = given_parent_folder.join("misc1.txt");
-    let source_app2_file = given_parent_folder.join("misc2.txt");
-    let source_app1_folder = given_parent_folder.join("App1 Folder");
-    let nested_app1_file = source_app1_folder.join("nested1.txt");
-    let dest_app1_file = given_tendrils_folder.join("App1").join("misc1.txt");
-    let dest_app2_file = given_tendrils_folder.join("App2").join("misc2.txt");
-    let dest_app1_nested= given_tendrils_folder.join("App1").join("App1 Folder").join("nested1.txt");
-    create_dir_all(&source_app1_folder).unwrap();
+    let given_td_dir = temp_parent_dir.path().join("TendrilsDir");
+    let given_parent_dir = temp_parent_dir.path().to_path_buf();
+    let source_app1_file = given_parent_dir.join("misc1.txt");
+    let source_app2_file = given_parent_dir.join("misc2.txt");
+    let source_app1_dir = given_parent_dir.join("App1 Dir");
+    let nested_app1_file = source_app1_dir.join("nested1.txt");
+    let dest_app1_file = given_td_dir.join("App1").join("misc1.txt");
+    let dest_app2_file = given_td_dir.join("App2").join("misc2.txt");
+    let dest_app1_nested= given_td_dir.join("App1").join("App1 Dir").join("nested1.txt");
+    create_dir_all(&source_app1_dir).unwrap();
     write(&source_app1_file, "App 1 file contents").unwrap();
     write(&source_app2_file, "App 2 file contents").unwrap();
     write(&nested_app1_file, "Nested 1 file contents").unwrap();
@@ -67,14 +67,14 @@ fn pull_returns_tendril_and_result_for_each_given(
     let mut given = [
         Tendril::new("App1", "misc1.txt"),
         Tendril::new("App2", "misc2.txt"),
-        Tendril::new("App1", "App1 Folder"),
+        Tendril::new("App1", "App1 Dir"),
         Tendril::new("App2", "I don't exist"),
     ];
 
-    set_all_platform_paths(&mut given[0], &[given_parent_folder.clone()]);
-    set_all_platform_paths(&mut given[1], &[given_parent_folder.clone()]);
-    set_all_platform_paths(&mut given[2], &[given_parent_folder.clone()]);
-    set_all_platform_paths(&mut given[3], &[given_parent_folder.clone()]);
+    set_all_platform_paths(&mut given[0], &[given_parent_dir.clone()]);
+    set_all_platform_paths(&mut given[1], &[given_parent_dir.clone()]);
+    set_all_platform_paths(&mut given[2], &[given_parent_dir.clone()]);
+    set_all_platform_paths(&mut given[3], &[given_parent_dir.clone()]);
 
     let io_not_found_err = std::io::Error::from(std::io::ErrorKind::NotFound);
     let expected: Vec<TendrilActionReport> = match dry_run {
@@ -92,12 +92,12 @@ fn pull_returns_tendril_and_result_for_each_given(
                 },
                 TendrilActionReport {
                     orig_tendril: &given[2],
-                    resolved_paths: vec![Ok(source_app1_folder)],
+                    resolved_paths: vec![Ok(source_app1_dir)],
                     action_results: vec![Some(Err(TendrilActionError::Skipped))],
                 },
                 TendrilActionReport {
                     orig_tendril: &given[3],
-                    resolved_paths: vec![Ok(given_parent_folder.join("I don't exist"))],
+                    resolved_paths: vec![Ok(given_parent_dir.join("I don't exist"))],
                     action_results: vec![Some(Err(TendrilActionError::IoError(io_not_found_err)))],
                 },
             ]
@@ -116,13 +116,13 @@ fn pull_returns_tendril_and_result_for_each_given(
                 },
                 TendrilActionReport {
                     orig_tendril: &given[2],
-                    resolved_paths: vec![Ok(source_app1_folder)],
+                    resolved_paths: vec![Ok(source_app1_dir)],
                     // action_results: vec![Some(Ok(()))],
                     action_results: vec![Some(Err(TendrilActionError::Skipped))],
                 },
                 TendrilActionReport {
                     orig_tendril: &given[3],
-                    resolved_paths: vec![Ok(given_parent_folder.join("I don't exist"))],
+                    resolved_paths: vec![Ok(given_parent_dir.join("I don't exist"))],
                     action_results: vec![Some(Err(TendrilActionError::IoError(io_not_found_err)))],
                 },
             ]
@@ -131,7 +131,7 @@ fn pull_returns_tendril_and_result_for_each_given(
 
     let actual = tendril_action(
         ActionMode::Pull,
-        &given_tendrils_folder,
+        &given_td_dir,
         &given,
         dry_run,
         force,

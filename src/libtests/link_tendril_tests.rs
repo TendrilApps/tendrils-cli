@@ -1,7 +1,7 @@
 use crate::{link_tendril, symlink};
 use crate::errors::TendrilActionError;
 use crate::resolved_tendril::{ResolvedTendril, TendrilMode};
-use crate::test_utils::{get_disposable_folder, is_empty};
+use crate::test_utils::{get_disposable_dir, is_empty};
 use rstest::rstest;
 use std::path::PathBuf;
 use std::fs::{create_dir_all, read_to_string, write};
@@ -9,7 +9,7 @@ use tempdir::TempDir;
 
 #[rstest]
 fn given_tendril_is_not_link_mode_returns_mode_mismatch_error(
-    #[values(TendrilMode::FolderMerge, TendrilMode::FolderOverwrite)]
+    #[values(TendrilMode::DirMerge, TendrilMode::DirOverwrite)]
     mode: TendrilMode,
 
     #[values(true, false)]
@@ -18,21 +18,21 @@ fn given_tendril_is_not_link_mode_returns_mode_mismatch_error(
     #[values(true, false)]
     force: bool,
 ) {
-    let temp_parent_folder = TempDir::new_in(
-        get_disposable_folder(),
-        "ParentFolder"
+    let temp_parent_dir = TempDir::new_in(
+        get_disposable_dir(),
+        "ParentDir"
     ).unwrap();
-    let tendrils_folder = temp_parent_folder.path().join("TendrilsFolder");
+    let td_dir = temp_parent_dir.path().join("TendrilsDir");
 
     let given_tendril = ResolvedTendril::new(
         "SomeApp".to_string(),
         "misc.txt".to_string(),
-        temp_parent_folder.path().to_path_buf(),
+        temp_parent_dir.path().to_path_buf(),
         mode,
     ).unwrap();
 
     let actual = link_tendril(
-        &tendrils_folder,
+        &td_dir,
         &given_tendril,
         dry_run,
         force,
@@ -50,13 +50,13 @@ fn dest_parent_doesnt_exist_returns_io_error_not_found(
     #[values(true, false)]
     force: bool,
 ) {
-    let temp_parent_folder = TempDir::new_in(
-        get_disposable_folder(),
-        "ParentFolder"
+    let temp_parent_dir = TempDir::new_in(
+        get_disposable_dir(),
+        "ParentDir"
     ).unwrap();
-    let tendrils_folder = temp_parent_folder.path().join("TendrilsFolder");
-    let target = tendrils_folder.join("SomeApp").join("misc.txt");
-    create_dir_all(tendrils_folder.join("SomeApp")).unwrap();
+    let td_dir = temp_parent_dir.path().join("TendrilsDir");
+    let target = td_dir.join("SomeApp").join("misc.txt");
+    create_dir_all(td_dir.join("SomeApp")).unwrap();
     write(&target, "Target file contents").unwrap();
 
     let given_tendril = ResolvedTendril::new(
@@ -67,7 +67,7 @@ fn dest_parent_doesnt_exist_returns_io_error_not_found(
     ).unwrap();
 
     let actual = link_tendril(
-        &tendrils_folder,
+        &td_dir,
         &given_tendril,
         dry_run,
         force,
@@ -79,7 +79,7 @@ fn dest_parent_doesnt_exist_returns_io_error_not_found(
     }
     let target_file_contents = read_to_string(target).unwrap();
     assert_eq!(target_file_contents, "Target file contents");
-    assert_eq!(temp_parent_folder.path().read_dir().iter().count(), 1);
+    assert_eq!(temp_parent_dir.path().read_dir().iter().count(), 1);
 }
 
 #[rstest]
@@ -91,22 +91,22 @@ fn target_doesnt_exist_returns_io_error_not_found(
     #[values(true, false)]
     force: bool,
 ) {
-    let temp_parent_folder = TempDir::new_in(
-        get_disposable_folder(),
-        "ParentFolder"
+    let temp_parent_dir = TempDir::new_in(
+        get_disposable_dir(),
+        "ParentDir"
     ).unwrap();
-    let tendrils_folder = temp_parent_folder.path().join("TendrilsFolder");
-    let dest = temp_parent_folder.path().join("misc.txt");
+    let td_dir = temp_parent_dir.path().join("TendrilsDir");
+    let dest = temp_parent_dir.path().join("misc.txt");
 
     let given_tendril = ResolvedTendril::new(
         "SomeApp".to_string(),
         "misc.txt".to_string(),
-        temp_parent_folder.path().to_path_buf(),
+        temp_parent_dir.path().to_path_buf(),
         TendrilMode::Link,
     ).unwrap();
 
     let actual = link_tendril(
-        &tendrils_folder,
+        &td_dir,
         &given_tendril,
         dry_run,
         force,
@@ -117,7 +117,7 @@ fn target_doesnt_exist_returns_io_error_not_found(
         _ => panic!("Actual error: {:?}", actual),
     }
     assert!(!dest.exists());
-    assert!(is_empty(temp_parent_folder.path()));
+    assert!(is_empty(temp_parent_dir.path()));
 }
 
 #[rstest]
@@ -129,46 +129,46 @@ fn dest_exists_and_is_not_symlink_returns_type_mismatch_error_unless_forced(
     #[values(true, false)]
     force: bool,
 ) {
-    let temp_parent_folder = TempDir::new_in(
-        get_disposable_folder(),
-        "ParentFolder"
+    let temp_parent_dir = TempDir::new_in(
+        get_disposable_dir(),
+        "ParentDir"
     ).unwrap();
-    let tendrils_folder = temp_parent_folder.path().join("TendrilsFolder");
-    let dest_file = temp_parent_folder.path().join("misc.txt");
-    let dest_folder = temp_parent_folder.path().join("misc");
-    let dest_nested = dest_folder.join("nested.txt");
-    let target_file = tendrils_folder.join("SomeApp").join("misc.txt");
-    let target_folder = tendrils_folder.join("SomeApp").join("misc");
-    let target_nested = target_folder.join("nested.txt");
+    let td_dir = temp_parent_dir.path().join("TendrilsDir");
+    let dest_file = temp_parent_dir.path().join("misc.txt");
+    let dest_dir = temp_parent_dir.path().join("misc");
+    let dest_nested_file = dest_dir.join("nested.txt");
+    let target_file = td_dir.join("SomeApp").join("misc.txt");
+    let target_dir = td_dir.join("SomeApp").join("misc");
+    let target_nested = target_dir.join("nested.txt");
     write(&dest_file, "Dest file contents").unwrap();
-    create_dir_all(&dest_folder).unwrap();
-    create_dir_all(&target_folder).unwrap();
+    create_dir_all(&dest_dir).unwrap();
+    create_dir_all(&target_dir).unwrap();
     write(&target_file, "Target file contents").unwrap();
-    write(&dest_nested, "Dest nested file contents").unwrap();
+    write(&dest_nested_file, "Dest nested file contents").unwrap();
     write(&target_nested, "Target nested file contents").unwrap();
 
     let given_file_tendril = ResolvedTendril::new(
         "SomeApp".to_string(),
         "misc.txt".to_string(),
-        temp_parent_folder.path().to_path_buf(),
+        temp_parent_dir.path().to_path_buf(),
         TendrilMode::Link,
     ).unwrap();
-    let given_folder_tendril = ResolvedTendril::new(
+    let given_dir_tendril = ResolvedTendril::new(
         "SomeApp".to_string(),
         "misc".to_string(),
-        temp_parent_folder.path().to_path_buf(),
+        temp_parent_dir.path().to_path_buf(),
         TendrilMode::Link,
     ).unwrap();
 
     let file_actual = link_tendril(
-        &tendrils_folder,
+        &td_dir,
         &given_file_tendril,
         dry_run,
         force,
     );
-    let folder_actual = link_tendril(
-        &tendrils_folder,
-        &given_folder_tendril,
+    let dir_actual = link_tendril(
+        &td_dir,
+        &given_dir_tendril,
         dry_run,
         force,
     );
@@ -176,29 +176,29 @@ fn dest_exists_and_is_not_symlink_returns_type_mismatch_error_unless_forced(
     match (dry_run, force) {
         (_, false) => {
             assert!(matches!(file_actual, Err(TendrilActionError::TypeMismatch)));
-            assert!(matches!(folder_actual, Err(TendrilActionError::TypeMismatch)));
+            assert!(matches!(dir_actual, Err(TendrilActionError::TypeMismatch)));
         },
         (false, true) => {
             assert!(matches!(file_actual, Ok(())));
-            assert!(matches!(folder_actual, Ok(())));
+            assert!(matches!(dir_actual, Ok(())));
         },
         (true, true) => {
             assert!(matches!(file_actual, Err(TendrilActionError::Skipped)));
-            assert!(matches!(folder_actual, Err(TendrilActionError::Skipped)));
+            assert!(matches!(dir_actual, Err(TendrilActionError::Skipped)));
         },
     }
 
     let dest_file_contents = read_to_string(&dest_file).unwrap();
-    let dest_nested_contents = read_to_string(&dest_nested).unwrap();
+    let dest_nested_contents = read_to_string(&dest_nested_file).unwrap();
     if force && !dry_run {
         assert!(dest_file.is_symlink());
-        assert!(dest_folder.is_symlink());
+        assert!(dest_dir.is_symlink());
         assert_eq!(dest_file_contents, "Target file contents");
         assert_eq!(dest_nested_contents, "Target nested file contents");
     }
     else {
         assert!(!dest_file.is_symlink());
-        assert!(!dest_folder.is_symlink());
+        assert!(!dest_dir.is_symlink());
         assert_eq!(dest_file_contents, "Dest file contents");
         assert_eq!(dest_nested_contents, "Dest nested file contents");
     }
@@ -213,14 +213,14 @@ fn target_is_symlink_returns_type_mismatch_error_unless_forced(
     #[values(true, false)]
     force: bool,
 ) {
-    let temp_parent_folder = TempDir::new_in(
-        get_disposable_folder(),
-        "ParentFolder"
+    let temp_parent_dir = TempDir::new_in(
+        get_disposable_dir(),
+        "ParentDir"
     ).unwrap();
-    let tendrils_folder = temp_parent_folder.path().join("TendrilsFolder");
-    let dest = temp_parent_folder.path().join("misc.txt");
-    let target = tendrils_folder.join("SomeApp").join("misc.txt");
-    let final_target = temp_parent_folder.path().join("original.txt");
+    let td_dir = temp_parent_dir.path().join("TendrilsDir");
+    let dest = temp_parent_dir.path().join("misc.txt");
+    let target = td_dir.join("SomeApp").join("misc.txt");
+    let final_target = temp_parent_dir.path().join("original.txt");
     create_dir_all(target.parent().unwrap()).unwrap();
     write(&final_target, "Orig file contents").unwrap();
     symlink(&target, &final_target, false, false).unwrap();
@@ -229,12 +229,12 @@ fn target_is_symlink_returns_type_mismatch_error_unless_forced(
     let given_tendril = ResolvedTendril::new(
         "SomeApp".to_string(),
         "misc.txt".to_string(),
-        temp_parent_folder.path().to_path_buf(),
+        temp_parent_dir.path().to_path_buf(),
         TendrilMode::Link,
     ).unwrap();
 
     let file_actual = link_tendril(
-        &tendrils_folder,
+        &td_dir,
         &given_tendril,
         dry_run,
         force,
@@ -255,7 +255,7 @@ fn target_is_symlink_returns_type_mismatch_error_unless_forced(
     let nested_target_file_contents = read_to_string(final_target).unwrap();
     assert_eq!(nested_target_file_contents, "Orig file contents");
     assert!(target.is_symlink());
-    assert_eq!(tendrils_folder.read_dir().iter().count(), 1);
+    assert_eq!(td_dir.read_dir().iter().count(), 1);
     if force && !dry_run {
         let dest_file_contents = read_to_string(dest).unwrap();
         assert_eq!(dest_file_contents, "Orig file contents");
@@ -269,29 +269,29 @@ fn target_is_symlink_returns_type_mismatch_error_unless_forced(
 #[case(true)]
 #[case(false)]
 fn dest_doesnt_exist_but_parent_does_symlink_is_created(#[case] force: bool) {
-    let temp_parent_folder = TempDir::new_in(
-        get_disposable_folder(),
-        "ParentFolder"
+    let temp_parent_dir = TempDir::new_in(
+        get_disposable_dir(),
+        "ParentDir"
     ).unwrap();
-    let tendrils_folder = temp_parent_folder.path().join("TendrilsFolder");
+    let td_dir = temp_parent_dir.path().join("TendrilsDir");
     let given_tendril = ResolvedTendril::new(
         "SomeApp".to_string(),
         "misc.txt".to_string(),
-        temp_parent_folder.path().to_path_buf(),
+        temp_parent_dir.path().to_path_buf(),
         TendrilMode::Link,
     ).unwrap();
-    let orig_target_file = temp_parent_folder.path().join("SomeRandomPath").join("some_orig_target.txt");
-    let new_target_file = tendrils_folder.join("SomeApp").join("misc.txt");
+    let orig_target_file = temp_parent_dir.path().join("SomeRandomPath").join("some_orig_target.txt");
+    let new_target_file = td_dir.join("SomeApp").join("misc.txt");
     create_dir_all(orig_target_file.parent().unwrap()).unwrap();
     create_dir_all(new_target_file.parent().unwrap()).unwrap();
     write(&orig_target_file, "Orig target file contents").unwrap();
     write(&new_target_file, "New target file contents").unwrap();
-    let dest = temp_parent_folder.path().join("misc.txt");
+    let dest = temp_parent_dir.path().join("misc.txt");
     assert!(!dest.exists());
     // TODO: Test with symdir
 
     link_tendril(
-        &tendrils_folder,
+        &td_dir,
         &given_tendril,
         false,
         force,
@@ -310,29 +310,29 @@ fn dest_doesnt_exist_but_parent_does_symlink_is_created(#[case] force: bool) {
 fn dest_doesnt_exist_but_parent_does_symlink_not_created_in_dry_run(
     #[case] force: bool
 ) {
-    let temp_parent_folder = TempDir::new_in(
-        get_disposable_folder(),
-        "ParentFolder"
+    let temp_parent_dir = TempDir::new_in(
+        get_disposable_dir(),
+        "ParentDir"
     ).unwrap();
-    let tendrils_folder = temp_parent_folder.path().join("TendrilsFolder");
+    let td_dir = temp_parent_dir.path().join("TendrilsDir");
     let given_tendril = ResolvedTendril::new(
         "SomeApp".to_string(),
         "misc.txt".to_string(),
-        temp_parent_folder.path().to_path_buf(),
+        temp_parent_dir.path().to_path_buf(),
         TendrilMode::Link,
     ).unwrap();
-    let orig_target_file = temp_parent_folder.path().join("SomeRandomPath").join("some_orig_target.txt");
-    let new_target_file = tendrils_folder.join("SomeApp").join("misc.txt");
+    let orig_target_file = temp_parent_dir.path().join("SomeRandomPath").join("some_orig_target.txt");
+    let new_target_file = td_dir.join("SomeApp").join("misc.txt");
     create_dir_all(orig_target_file.parent().unwrap()).unwrap();
     create_dir_all(new_target_file.parent().unwrap()).unwrap();
     write(&orig_target_file, "Orig target file contents").unwrap();
     write(&new_target_file, "New target file contents").unwrap();
-    let dest = temp_parent_folder.path().join("misc.txt");
+    let dest = temp_parent_dir.path().join("misc.txt");
     assert!(!dest.exists());
     // TODO: Test with symdir
 
     let actual = link_tendril(
-        &tendrils_folder,
+        &td_dir,
         &given_tendril,
         true,
         force,
@@ -350,29 +350,29 @@ fn dest_doesnt_exist_but_parent_does_symlink_not_created_in_dry_run(
 #[case(true)]
 #[case(false)]
 fn existing_symlinks_at_dest_are_overwritten(#[case] force: bool) {
-    let temp_parent_folder = TempDir::new_in(
-        get_disposable_folder(),
-        "ParentFolder"
+    let temp_parent_dir = TempDir::new_in(
+        get_disposable_dir(),
+        "ParentDir"
     ).unwrap();
-    let tendrils_folder = temp_parent_folder.path().join("TendrilsFolder");
+    let td_dir = temp_parent_dir.path().join("TendrilsDir");
     let given_tendril = ResolvedTendril::new(
         "SomeApp".to_string(),
         "misc.txt".to_string(),
-        temp_parent_folder.path().to_path_buf(),
+        temp_parent_dir.path().to_path_buf(),
         TendrilMode::Link,
     ).unwrap();
-    let orig_target_file = temp_parent_folder.path().join("SomeRandomPath").join("some_orig_target.txt");
-    let new_target_file = tendrils_folder.join("SomeApp").join("misc.txt");
+    let orig_target_file = temp_parent_dir.path().join("SomeRandomPath").join("some_orig_target.txt");
+    let new_target_file = td_dir.join("SomeApp").join("misc.txt");
     create_dir_all(orig_target_file.parent().unwrap()).unwrap();
     create_dir_all(new_target_file.parent().unwrap()).unwrap();
     write(&orig_target_file, "Orig target file contents").unwrap();
     write(&new_target_file, "New target file contents").unwrap();
-    let dest = temp_parent_folder.path().join("misc.txt");
+    let dest = temp_parent_dir.path().join("misc.txt");
     symlink(&dest, &orig_target_file, false, false).unwrap();
     // TODO: Test with symdir
 
     link_tendril(
-        &tendrils_folder,
+        &td_dir,
         &given_tendril,
         false,
         force,
@@ -389,29 +389,29 @@ fn existing_symlinks_at_dest_are_overwritten(#[case] force: bool) {
 #[case(true)]
 #[case(false)]
 fn existing_symlinks_at_dest_are_unmodified_in_dry_run(#[case] force: bool) {
-    let temp_parent_folder = TempDir::new_in(
-        get_disposable_folder(),
-        "ParentFolder"
+    let temp_parent_dir = TempDir::new_in(
+        get_disposable_dir(),
+        "ParentDir"
     ).unwrap();
-    let tendrils_folder = temp_parent_folder.path().join("TendrilsFolder");
+    let td_dir = temp_parent_dir.path().join("TendrilsDir");
     let given_tendril = ResolvedTendril::new(
         "SomeApp".to_string(),
         "misc.txt".to_string(),
-        temp_parent_folder.path().to_path_buf(),
+        temp_parent_dir.path().to_path_buf(),
         TendrilMode::Link,
     ).unwrap();
-    let orig_target_file = temp_parent_folder.path().join("SomeRandomPath").join("some_orig_target.txt");
-    let new_target_file = tendrils_folder.join("SomeApp").join("misc.txt");
+    let orig_target_file = temp_parent_dir.path().join("SomeRandomPath").join("some_orig_target.txt");
+    let new_target_file = td_dir.join("SomeApp").join("misc.txt");
     create_dir_all(orig_target_file.parent().unwrap()).unwrap();
     create_dir_all(new_target_file.parent().unwrap()).unwrap();
     write(&orig_target_file, "Orig target file contents").unwrap();
     write(&new_target_file, "New target file contents").unwrap();
-    let dest = temp_parent_folder.path().join("misc.txt");
+    let dest = temp_parent_dir.path().join("misc.txt");
     symlink(&dest, &orig_target_file, false, false).unwrap();
     // TODO: Test with symdir
 
     let actual = link_tendril(
-        &tendrils_folder,
+        &td_dir,
         &given_tendril,
         true,
         force,

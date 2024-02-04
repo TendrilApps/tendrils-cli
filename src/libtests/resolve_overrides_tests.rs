@@ -80,7 +80,7 @@ fn overrides_matching_globals_override_globals() {
         &mut override_tendril,
         &[PathBuf::from("Some").join("override").join("path")]
     );
-    override_tendril.folder_merge = !globals[0].folder_merge;
+    override_tendril.dir_merge = !globals[0].dir_merge;
     override_tendril.link = true;
     let overrides = [override_tendril.clone()].to_vec();
 

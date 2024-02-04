@@ -1,9 +1,9 @@
 use crate::action_mode::ActionMode;
 use crate::cli::{run, TendrilCliArgs, TendrilsSubcommands};
 use crate::cli::writer::Writer;
-use crate::{is_tendrils_folder, parse_tendrils, symlink};
+use crate::{is_tendrils_dir, parse_tendrils, symlink};
 use crate::tendril::Tendril;
-use crate::test_utils::{get_disposable_folder, set_all_platform_paths};
+use crate::test_utils::{get_disposable_dir, set_all_platform_paths};
 use rstest::rstest;
 use serial_test::serial;
 use std::fs::{create_dir_all, read_to_string, write};
@@ -84,7 +84,7 @@ fn tendril_action_no_path_given_and_no_cd_prints_message(
     force: bool,
 ) {
     let delete_me = TempDir::new_in(
-        get_disposable_folder(),
+        get_disposable_dir(),
         "DeleteMe"
     ).unwrap();
     std::env::set_current_dir(delete_me.path()).unwrap();
@@ -112,7 +112,7 @@ fn tendril_action_no_path_given_and_no_cd_prints_message(
 
 #[rstest]
 #[serial("cd")]
-fn tendril_action_given_path_is_not_tendrils_folder_cd_is_prints_message(
+fn tendril_action_given_path_is_not_tendrils_dir_but_cd_is_should_print_message(
     #[values(ActionMode::Pull, ActionMode::Push, ActionMode::Link)]
     mode: ActionMode,
 
@@ -122,20 +122,20 @@ fn tendril_action_given_path_is_not_tendrils_folder_cd_is_prints_message(
     #[values(true, false)]
     force: bool,
 ) {
-    let temp_parent_folder = TempDir::new_in(
-        get_disposable_folder(),
-        "ParentFolder"
+    let temp_parent_dir = TempDir::new_in(
+        get_disposable_dir(),
+        "ParentDir"
     ).unwrap();
 
-    let current_dir = temp_parent_folder.path().join("CurrentDir");
-    let given_folder = PathBuf::from("SomePathThatDoesn'tExist");
+    let current_dir = temp_parent_dir.path().join("CurrentDir");
+    let given_dir = PathBuf::from("SomePathThatDoesn'tExist");
     create_dir_all(&current_dir).unwrap();
     write(&current_dir.join("tendrils.json"), "[]").unwrap();
     std::env::set_current_dir(&current_dir).unwrap();
 
     // TODO: Setup current directory as tendrils folder
     let mut writer = MockWriter::new();
-    let path = Some(given_folder.to_str().unwrap().to_string());
+    let path = Some(given_dir.to_str().unwrap().to_string());
     let tendrils_command = match mode {
         ActionMode::Pull => TendrilsSubcommands::Pull {path, dry_run, force},
         ActionMode::Push => TendrilsSubcommands::Push {path, dry_run, force},
@@ -150,16 +150,16 @@ fn tendril_action_given_path_is_not_tendrils_folder_cd_is_prints_message(
     run(args, &mut writer);
 
     // To free the TempDir from use
-    std::env::set_current_dir(temp_parent_folder.path().parent().unwrap()).unwrap();
+    std::env::set_current_dir(temp_parent_dir.path().parent().unwrap()).unwrap();
 
-    assert!(is_tendrils_folder(&current_dir));
-    assert!(!is_tendrils_folder(&given_folder));
+    assert!(is_tendrils_dir(&current_dir));
+    assert!(!is_tendrils_dir(&given_dir));
     assert_eq!(writer.all_output, expected);
 }
 
 #[rstest]
 #[serial("cd")]
-fn tendril_action_given_path_and_cd_are_tendrils_folder_uses_given_path(
+fn tendril_action_given_path_and_cd_are_both_tendrils_dirs_uses_given_path(
     #[values(ActionMode::Pull, ActionMode::Push, ActionMode::Link)]
     mode: ActionMode,
 
@@ -169,23 +169,23 @@ fn tendril_action_given_path_and_cd_are_tendrils_folder_uses_given_path(
     #[values(true, false)]
     force: bool,
 ) {
-    let temp_parent_folder = TempDir::new_in(
-        get_disposable_folder(),
-        "ParentFolder"
+    let temp_parent_dir = TempDir::new_in(
+        get_disposable_dir(),
+        "ParentDir"
     ).unwrap();
 
-    let current_dir = temp_parent_folder.path().join("CurrentDir");
-    let given_folder = temp_parent_folder.path().join("GivenDir");
+    let current_dir = temp_parent_dir.path().join("CurrentDir");
+    let given_dir = temp_parent_dir.path().join("GivenDir");
     create_dir_all(&current_dir).unwrap();
-    create_dir_all(&given_folder).unwrap();
+    create_dir_all(&given_dir).unwrap();
     write(current_dir.join("tendrils.json"), "[]").unwrap();
-    write(given_folder.join("tendrils.json"), "").unwrap();
+    write(given_dir.join("tendrils.json"), "").unwrap();
     assert!(parse_tendrils("[]").unwrap().is_empty());
     assert!(parse_tendrils("").is_err());
     std::env::set_current_dir(&current_dir).unwrap();
 
     let mut writer = MockWriter::new();
-    let path = Some(given_folder.to_str().unwrap().to_string());
+    let path = Some(given_dir.to_str().unwrap().to_string());
     let tendrils_command = match mode {
         ActionMode::Pull => TendrilsSubcommands::Pull {path, dry_run, force},
         ActionMode::Push => TendrilsSubcommands::Push {path, dry_run, force},
@@ -200,10 +200,10 @@ fn tendril_action_given_path_and_cd_are_tendrils_folder_uses_given_path(
     run(args, &mut writer);
 
     // To free the TempDir from use
-    std::env::set_current_dir(temp_parent_folder.path().parent().unwrap()).unwrap();
+    std::env::set_current_dir(temp_parent_dir.path().parent().unwrap()).unwrap();
 
-    assert!(is_tendrils_folder(&current_dir));
-    assert!(is_tendrils_folder(&given_folder));
+    assert!(is_tendrils_dir(&current_dir));
+    assert!(is_tendrils_dir(&given_dir));
     assert_eq!(writer.all_output, expected);
 }
 
@@ -217,23 +217,23 @@ fn tendril_action_dry_run_does_not_modify(
     #[values(true, false)]
     force: bool,
 ) {
-    let temp_parent_folder = TempDir::new_in(
-        get_disposable_folder(),
-        "ParentFolder"
+    let temp_parent_dir = TempDir::new_in(
+        get_disposable_dir(),
+        "ParentDir"
     ).unwrap();
 
     let mut tendril = Tendril::new("SomeApp", "misc.txt");
     tendril.link = mode == ActionMode::Link;
 
-    set_all_platform_paths(&mut tendril, &[temp_parent_folder.path().to_path_buf()]);
+    set_all_platform_paths(&mut tendril, &[temp_parent_dir.path().to_path_buf()]);
 
     let tendrils_json = serde_json::to_string(&[tendril]).unwrap();
-    let tendrils_folder = temp_parent_folder.path().join("TendrilsFolder");
-    let local_file = temp_parent_folder.path().join("misc.txt");
-    let td_file = tendrils_folder.join("SomeApp").join("misc.txt");
-    let target_file = temp_parent_folder.path().join("target.txt");
+    let tendrils_dir = temp_parent_dir.path().join("TendrilsDir");
+    let local_file = temp_parent_dir.path().join("misc.txt");
+    let td_file = tendrils_dir.join("SomeApp").join("misc.txt");
+    let target_file = temp_parent_dir.path().join("target.txt");
     create_dir_all(&td_file.parent().unwrap()).unwrap();
-    write(tendrils_folder.join("tendrils.json"), tendrils_json).unwrap();
+    write(tendrils_dir.join("tendrils.json"), tendrils_json).unwrap();
     write(&td_file, "Controlled file contents").unwrap();
     write(&target_file, "Orig target file contents").unwrap();
     if mode == ActionMode::Link {
@@ -244,7 +244,7 @@ fn tendril_action_dry_run_does_not_modify(
     }
 
     let mut writer = MockWriter::new();
-    let path = Some(tendrils_folder.to_str().unwrap().to_string());
+    let path = Some(tendrils_dir.to_str().unwrap().to_string());
     let dry_run = true;
     let tendrils_command = match mode {
         ActionMode::Pull => TendrilsSubcommands::Pull {path, dry_run, force},
@@ -268,7 +268,7 @@ fn tendril_action_dry_run_does_not_modify(
     assert_eq!(td_file_contents, "Controlled file contents");
     assert_eq!(writer.all_output_lines()[0], "No local overrides were found.");
     assert!(writer.all_output_lines()[1].contains("Err(Skipped)"));
-    assert_eq!(tendrils_folder.read_dir().unwrap().into_iter().count(), 2);
+    assert_eq!(tendrils_dir.read_dir().unwrap().into_iter().count(), 2);
 }
 
 // TODO: Test uses_correct_platform_paths (see old commits in pull_tendril_tests)

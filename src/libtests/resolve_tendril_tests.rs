@@ -61,7 +61,7 @@ fn invalid_tendril_and_empty_parent_list_returns_empty(
 #[test]
 fn first_only_true_resolves_first_of_multiple_parent_paths() {
     let mut given = Tendril::new("SomeApp", "misc.txt");
-    given.folder_merge = false;
+    given.dir_merge = false;
     set_all_platform_paths(
         &mut given,
         &[PathBuf::from("FirstParent"),
@@ -72,7 +72,7 @@ fn first_only_true_resolves_first_of_multiple_parent_paths() {
             "SomeApp".to_string(),
             "misc.txt".to_string(),
             PathBuf::from("FirstParent"),
-            TendrilMode::FolderOverwrite,
+            TendrilMode::DirOverwrite,
         ).unwrap()),
     ];
 
@@ -84,7 +84,7 @@ fn first_only_true_resolves_first_of_multiple_parent_paths() {
 #[test]
 fn resolves_all_of_multiple_parent_paths() {
     let mut given = Tendril::new("SomeApp", "misc.txt");
-    given.folder_merge = false;
+    given.dir_merge = false;
 
     set_all_platform_paths(
         &mut given,
@@ -96,19 +96,19 @@ fn resolves_all_of_multiple_parent_paths() {
             "SomeApp".to_string(),
             "misc.txt".to_string(),
             PathBuf::from("FirstParent"),
-            TendrilMode::FolderOverwrite,
+            TendrilMode::DirOverwrite,
         ).unwrap()),
         Ok(ResolvedTendril::new(
             "SomeApp".to_string(),
             "misc.txt".to_string(),
             PathBuf::from("SecondParent"),
-            TendrilMode::FolderOverwrite,
+            TendrilMode::DirOverwrite,
         ).unwrap()),
         Ok(ResolvedTendril::new(
             "SomeApp".to_string(),
             "misc.txt".to_string(),
             PathBuf::from("ThirdParent"),
-            TendrilMode::FolderOverwrite,
+            TendrilMode::DirOverwrite,
         ).unwrap()),
     ];
 
@@ -120,7 +120,7 @@ fn resolves_all_of_multiple_parent_paths() {
 #[test]
 fn duplicate_parent_paths_resolves_all() {
     let mut given = Tendril::new("SomeApp", "misc.txt");
-    given.folder_merge = false;
+    given.dir_merge = false;
 
     set_all_platform_paths(
         &mut given,
@@ -132,19 +132,19 @@ fn duplicate_parent_paths_resolves_all() {
             "SomeApp".to_string(),
             "misc.txt".to_string(),
             PathBuf::from("Parent"),
-            TendrilMode::FolderOverwrite,
+            TendrilMode::DirOverwrite,
         ).unwrap()),
         Ok(ResolvedTendril::new(
             "SomeApp".to_string(),
             "misc.txt".to_string(),
             PathBuf::from("Parent"),
-            TendrilMode::FolderOverwrite,
+            TendrilMode::DirOverwrite,
         ).unwrap()),
         Ok(ResolvedTendril::new(
             "SomeApp".to_string(),
             "misc.txt".to_string(),
             PathBuf::from("Parent"),
-            TendrilMode::FolderOverwrite,
+            TendrilMode::DirOverwrite,
         ).unwrap()),
     ];
 
@@ -156,7 +156,7 @@ fn duplicate_parent_paths_resolves_all() {
 #[test]
 fn supported_variables_are_resolved_in_all() {
     let mut given = Tendril::new("SomeApp", "misc.txt");
-    given.folder_merge = false;
+    given.dir_merge = false;
     let mut expected_parent1 = get_username_can_panic();
     expected_parent1.push('1');
     let mut expected_parent2 = get_username_can_panic();
@@ -177,19 +177,19 @@ fn supported_variables_are_resolved_in_all() {
             "SomeApp".to_string(),
             "misc.txt".to_string(),
             PathBuf::from(expected_parent1),
-            TendrilMode::FolderOverwrite,
+            TendrilMode::DirOverwrite,
         ).unwrap()),
         Ok(ResolvedTendril::new(
             "SomeApp".to_string(),
             "misc.txt".to_string(),
             PathBuf::from(expected_parent2),
-            TendrilMode::FolderOverwrite,
+            TendrilMode::DirOverwrite,
         ).unwrap()),
         Ok(ResolvedTendril::new(
             "SomeApp".to_string(),
             "misc.txt".to_string(),
             PathBuf::from(expected_parent3),
-            TendrilMode::FolderOverwrite,
+            TendrilMode::DirOverwrite,
         ).unwrap()),
     ];
 
@@ -202,7 +202,7 @@ fn supported_variables_are_resolved_in_all() {
 #[serial("mut-env-var-testing")]
 fn supported_variable_missing_returns_raw_path() {
     let mut given = Tendril::new("SomeApp", "misc.txt");
-    given.folder_merge = false;
+    given.dir_merge = false;
     set_all_platform_paths(
         &mut given,
         &[
@@ -217,19 +217,19 @@ fn supported_variable_missing_returns_raw_path() {
             "SomeApp".to_string(),
             "misc.txt".to_string(),
             PathBuf::from("SomeParentPath1"),
-            TendrilMode::FolderOverwrite,
+            TendrilMode::DirOverwrite,
         ).unwrap()),
         Ok(ResolvedTendril::new(
             "SomeApp".to_string(),
             "misc.txt".to_string(),
             PathBuf::from("<mut-testing>"),
-            TendrilMode::FolderOverwrite,
+            TendrilMode::DirOverwrite,
         ).unwrap()),
         Ok(ResolvedTendril::new(
             "SomeApp".to_string(),
             "misc.txt".to_string(),
             PathBuf::from("SomeParentPath3"),
-            TendrilMode::FolderOverwrite,
+            TendrilMode::DirOverwrite,
         ).unwrap()),
     ];
 
@@ -245,7 +245,7 @@ fn resolves_paths_for_current_platform() {
         name: "misc.txt".to_string(),
         parent_dirs_mac: ["MacParent".to_string()].to_vec(),
         parent_dirs_windows: ["WinParent".to_string()].to_vec(),
-        folder_merge: false,
+        dir_merge: false,
         link: false,
     };
 
@@ -259,7 +259,7 @@ fn resolves_paths_for_current_platform() {
             "SomeApp".to_string(),
             "misc.txt".to_string(),
             expected_parent,
-            TendrilMode::FolderOverwrite
+            TendrilMode::DirOverwrite
         ).unwrap()),
     ];
 
@@ -269,17 +269,17 @@ fn resolves_paths_for_current_platform() {
 }
 
 #[rstest]
-#[case(true, false, TendrilMode::FolderMerge)]
-#[case(false, false, TendrilMode::FolderOverwrite)]
+#[case(true, false, TendrilMode::DirMerge)]
+#[case(false, false, TendrilMode::DirOverwrite)]
 #[case(true, true, TendrilMode::Link)]
 #[case(false, true, TendrilMode::Link)]
 fn resolves_tendril_mode_properly(
-    #[case] folder_merge: bool,
+    #[case] dir_merge: bool,
     #[case] link: bool,
     #[case] expected_mode: TendrilMode,
 ) {
     let mut given = Tendril::new("SomeApp", "misc.txt");
-    given.folder_merge = folder_merge;
+    given.dir_merge = dir_merge;
     given.link = link;
     set_all_platform_paths(&mut given, &[PathBuf::from("SomeParentPath")]);
 

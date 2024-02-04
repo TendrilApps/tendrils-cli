@@ -56,7 +56,7 @@ impl ResolvedTendril {
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum TendrilMode {
-    FolderMerge,
-    FolderOverwrite,
+    DirMerge,
+    DirOverwrite,
     Link,
 }

@@ -14,7 +14,7 @@ pub struct Tendril {
     pub parent_dirs_windows: Vec<String>,
 
     #[serde(rename = "folder-merge")]
-    pub folder_merge: bool,
+    pub dir_merge: bool,
 
     pub link: bool,
 }
@@ -31,7 +31,7 @@ impl Tendril {
             name: name.to_string(),
             parent_dirs_mac: [].to_vec(),
             parent_dirs_windows: [].to_vec(),
-            folder_merge: false,
+            dir_merge: false,
             link: false,
         }
     }

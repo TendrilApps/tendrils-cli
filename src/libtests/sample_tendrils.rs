@@ -9,7 +9,7 @@ impl SampleTendrils {
             name: "settings.json".to_string(),
             parent_dirs_mac: [].to_vec(),
             parent_dirs_windows: ["C:\\Users\\<user>\\AppData\\".to_string()].to_vec(),
-            folder_merge: false,
+            dir_merge: false,
             link: false,
         }
     }
@@ -32,7 +32,7 @@ impl SampleTendrils {
             parent_dirs_mac: ["some/mac/path".to_string()].to_vec(),
             parent_dirs_windows: ["C:\\Users\\<user>\\Documents\\".to_string()]
                 .to_vec(),
-            folder_merge: true,
+            dir_merge: true,
             link: false,
         }
     }
@@ -55,7 +55,7 @@ impl SampleTendrils {
             parent_dirs_mac: ["some/mac/path".to_string()].to_vec(),
             parent_dirs_windows: ["C:\\Users\\<user>".to_string()]
                 .to_vec(),
-            folder_merge: false,
+            dir_merge: false,
             link: true,
         }
     }

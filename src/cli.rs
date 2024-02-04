@@ -1,9 +1,9 @@
 use clap::{Parser, Subcommand};
 use crate::{
-    get_tendrils_folder,
+    get_tendrils_dir,
     get_tendrils,
     get_tendril_overrides,
-    is_tendrils_folder,
+    is_tendrils_dir,
     resolve_overrides,
     tendril_action,
 };
@@ -120,10 +120,10 @@ fn tendril_action_subcommand(
     force: bool,
     writer: &mut impl Writer,
 ) {
-    let tendrils_folder = match path {
+    let td_dir = match path {
         Some(v) => {
             let test_path = PathBuf::from(v);
-            if is_tendrils_folder(&test_path) {
+            if is_tendrils_dir(&test_path) {
                 test_path
             }
             else {
@@ -139,7 +139,7 @@ fn tendril_action_subcommand(
                     return;
                 }
             };
-            match get_tendrils_folder(&starting_dir) {
+            match get_tendrils_dir(&starting_dir) {
                 Some(v) => v,
                 None => {
                     writer.writeln("Error: Could not find a Tendrils folder");
@@ -149,7 +149,7 @@ fn tendril_action_subcommand(
         }
     };
 
-    let common_tendrils = match get_tendrils(&tendrils_folder) {
+    let common_tendrils = match get_tendrils(&td_dir) {
         Ok(v) => v,
         Err(GetTendrilsError::IoError(_e)) => {
             writer.writeln("Error: Could not read the tendrils.json file");
@@ -161,7 +161,7 @@ fn tendril_action_subcommand(
         },
     };
 
-    let override_tendrils = match get_tendril_overrides(&tendrils_folder) {
+    let override_tendrils = match get_tendril_overrides(&td_dir) {
         Ok(v) => v,
         Err(GetTendrilsError::IoError(_e)) => {
             writer.writeln("Error: Could not read the tendrils-override.json file");
@@ -182,7 +182,7 @@ fn tendril_action_subcommand(
 
     let action_reports = tendril_action(
         mode,
-        &tendrils_folder,
+        &td_dir,
         &combined_tendrils,
         dry_run,
         force,

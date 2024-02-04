@@ -11,16 +11,16 @@ use std::fs::{
 use std::path::{Path, PathBuf};
 use tempdir::TempDir;
 
-pub fn get_disposable_folder() -> PathBuf {
+pub fn get_disposable_dir() -> PathBuf {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("target")
-        .join("temp-tendrils-folders");
+        .join("tempdirs");
 
     std::fs::create_dir_all(&path).unwrap();
     path
 }
 
-pub fn get_samples_folder() -> PathBuf {
+pub fn get_samples_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("tests")
         .join("samples")
@@ -38,12 +38,12 @@ pub fn get_mut_testing_var() -> Result<String, std::env::VarError> {
     std::env::var("mut-testing")
 }
 
-pub fn is_empty(folder: &Path) -> bool {
-    if folder.exists() {
-        if !folder.is_dir() {
+pub fn is_empty(dir: &Path) -> bool {
+    if dir.exists() {
+        if !dir.is_dir() {
             panic!("Expected a folder")
         }
-        return folder.read_dir().unwrap().count() == 0
+        return dir.read_dir().unwrap().count() == 0
     }
     true
 }
@@ -62,11 +62,11 @@ pub struct Setup {
     pub temp_dir: TempDir, // Must return a reference to keep it in scope
     pub parent_dir: PathBuf,
     pub tendrils_dir: PathBuf,
-    pub source_file: PathBuf,
-    pub source_folder: PathBuf,
-    pub dest_file: PathBuf,
-    pub dest_folder: PathBuf,
-    pub dest_nested_file: PathBuf,
+    pub local_file: PathBuf,
+    pub local_dir: PathBuf,
+    pub ctrl_file: PathBuf,
+    pub ctrl_dir: PathBuf,
+    pub ctrl_nested_file: PathBuf,
     pub tendril: ResolvedTendril,
 }
 
@@ -77,42 +77,42 @@ impl Setup {
         let parent_dir: PathBuf;
         if opts.parent_dir_is_child_of_temp_dir {
             temp_dir = TempDir::new_in(
-                get_disposable_folder(),
-                "GrandparentFolder",
+                get_disposable_dir(),
+                "GrandparentDir",
             ).unwrap();
             parent_dir = temp_dir.path().join(opts.parent_dirname).to_owned();
             create_dir_all(&parent_dir).unwrap();
         }
         else {
             temp_dir = TempDir::new_in(
-                get_disposable_folder(),
+                get_disposable_dir(),
                 opts.parent_dirname,
             ).unwrap();
             parent_dir = temp_dir.path().to_owned();
         }
         let tendrils_dir = temp_dir.path().join(opts.tendrils_dirname);
-        let source_file = parent_dir.join(opts.source_filename);
-        let source_folder = parent_dir.join(opts.source_foldername);
-        let source_nested_file = source_folder.join("nested.txt");
-        let dest_file = tendrils_dir.join(opts.group).join(opts.source_filename);
-        let dest_folder = tendrils_dir.join(opts.group).join(opts.source_foldername);
-        let dest_nested_file = dest_folder.join("nested.txt");
-        let tendril = match opts.is_folder_tendril {
-            false => ResolvedTendril::new(opts.group.to_string(), opts.source_filename.to_string(), parent_dir.clone(), TendrilMode::FolderOverwrite),
-            true => ResolvedTendril::new(opts.group.to_string(), opts.source_foldername.to_string(), parent_dir.clone(), TendrilMode::FolderOverwrite),
+        let local_file = parent_dir.join(opts.local_filename);
+        let local_dir = parent_dir.join(opts.local_dirname);
+        let local_nested_file = local_dir.join("nested.txt");
+        let ctrl_file = tendrils_dir.join(opts.group).join(opts.local_filename);
+        let ctrl_dir = tendrils_dir.join(opts.group).join(opts.local_dirname);
+        let ctrl_nested_file = ctrl_dir.join("nested.txt");
+        let tendril = match opts.is_dir_tendril {
+            false => ResolvedTendril::new(opts.group.to_string(), opts.local_filename.to_string(), parent_dir.clone(), TendrilMode::DirOverwrite),
+            true => ResolvedTendril::new(opts.group.to_string(), opts.local_dirname.to_string(), parent_dir.clone(), TendrilMode::DirOverwrite),
         }.unwrap();
 
-        if opts.make_source_file {
-            write(&source_file, "Source file contents").unwrap();
+        if opts.make_local_file {
+            write(&local_file, "Source file contents").unwrap();
         }
-        if opts.make_source_folder {
-            create_dir_all(&source_folder).unwrap();
+        if opts.make_local_dir {
+            create_dir_all(&local_dir).unwrap();
 
-            if opts.make_source_nested_file {
-                write(&source_nested_file, "Nested file contents").unwrap();
+            if opts.make_local_nested_file {
+                write(&local_nested_file, "Nested file contents").unwrap();
             }
         }
-        if opts.make_tendrils_folder {
+        if opts.make_tendrils_dir {
             create_dir_all(&tendrils_dir).unwrap();
         }
 
@@ -120,58 +120,58 @@ impl Setup {
             temp_dir,
             parent_dir,
             tendrils_dir,
-            source_file,
-            source_folder,
-            dest_file,
-            dest_folder,
-            dest_nested_file,
+            local_file,
+            local_dir,
+            ctrl_file,
+            ctrl_dir,
+            ctrl_nested_file,
             tendril,
         }
     }
 
-    pub fn dest_file_contents(&self) -> String {
-        read_to_string(&self.dest_file).unwrap()
+    pub fn ctrl_file_contents(&self) -> String {
+        read_to_string(&self.ctrl_file).unwrap()
     }
 
-    pub fn dest_nested_file_contents(&self) -> String {
-        read_to_string(&self.dest_nested_file).unwrap()
+    pub fn ctrl_nested_file_contents(&self) -> String {
+        read_to_string(&self.ctrl_nested_file).unwrap()
     }
 
-    pub fn source_file_contents(&self) -> String {
-        read_to_string(&self.source_file).unwrap()
+    pub fn local_file_contents(&self) -> String {
+        read_to_string(&self.local_file).unwrap()
     }
 }
 
 pub struct SetupOpts<'a> {
-    pub make_source_file: bool,
-    pub make_source_folder: bool,
-    pub make_source_nested_file: bool,
-    pub make_tendrils_folder: bool,
+    pub make_tendrils_dir: bool,
+    pub make_local_file: bool,
+    pub make_local_dir: bool,
+    pub make_local_nested_file: bool,
     /// Sets the tendril to the misc folder, otherwise
     /// it is set to misc.txt
-    pub is_folder_tendril: bool,
+    pub is_dir_tendril: bool,
     pub parent_dir_is_child_of_temp_dir: bool,
     pub parent_dirname: &'a str,
     pub group: &'a str,
-    pub source_filename: &'a str,
-    pub source_foldername: &'a str,
+    pub local_filename: &'a str,
+    pub local_dirname: &'a str,
     pub tendrils_dirname: &'a str,
 }
 
 impl<'a> SetupOpts<'a> {
     pub fn default() -> SetupOpts<'a> {
         SetupOpts {
-            make_source_file: true,
-            make_source_folder: true,
-            make_source_nested_file: true,
-            make_tendrils_folder: false,
-            is_folder_tendril: false,
+            make_tendrils_dir: false,
+            make_local_file: true,
+            make_local_dir: true,
+            make_local_nested_file: true,
+            is_dir_tendril: false,
             parent_dir_is_child_of_temp_dir: false,
-            parent_dirname: "ParentFolder",
+            parent_dirname: "ParentDir",
             group: "SomeApp",
-            source_filename: "misc.txt",
-            source_foldername: "misc",
-            tendrils_dirname: "TendrilsFolder",
+            local_filename: "misc.txt",
+            local_dirname: "misc",
+            tendrils_dirname: "TendrilsDir",
         }
     }
 }
