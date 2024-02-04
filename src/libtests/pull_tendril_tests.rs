@@ -11,7 +11,6 @@ use crate::test_utils::{
     get_username_can_panic,
     is_empty,
     Setup,
-    SetupOpts,
 };
 use rstest::rstest;
 use std::fs::{
@@ -35,34 +34,41 @@ fn tendril_exists_at_source_path_copies_successfully(
 
     #[values(true, false)]
     force: bool,
+
+    #[values(true, false)]
+    as_dir: bool,
 ) {
-    let mut opts = SetupOpts::default();
-    opts.local_filename = &name;
-    opts.local_dirname = &name;
-    opts.make_local_dir = false;
-    let file_setup = Setup::new(&opts);
-    opts.is_dir_tendril = true;
-    opts.make_local_file = false;
-    opts.make_local_dir = true;
-    let dir_setup = Setup::new(&opts);
+    let mut setup = Setup::new();
+    setup.local_file = setup.parent_dir.join(&name);
+    setup.local_dir = setup.parent_dir.join(&name);
+    setup.local_nested_file = setup.local_dir.join("nested.txt");
+    setup.ctrl_file = setup.group_dir.join(&name);
+    setup.ctrl_dir = setup.group_dir.join(&name);
+    setup.ctrl_nested_file = setup.ctrl_dir.join("nested.txt");
+    if as_dir {
+        setup.make_local_dir();
+        setup.make_local_nested_file();
+    }
+    else {
+        setup.make_local_file();
+    }
 
-    pull_tendril(
-        &file_setup.tendrils_dir,
-        &file_setup.tendril,
-        false,
-        force,
-    ).unwrap();
-    pull_tendril(
-        &dir_setup.tendrils_dir,
-        &dir_setup.tendril,
-        false,
-        force,
+    let tendril = ResolvedTendril::new(
+        "SomeApp".to_string(),
+        name.clone(),
+        setup.parent_dir.clone(),
+        TendrilMode::DirOverwrite,
     ).unwrap();
 
-    assert_eq!(file_setup.ctrl_file_contents(), "Source file contents");
-    assert_eq!(file_setup.tendrils_dir.join("SomeApp").read_dir().iter().count(), 1);
-    assert_eq!(dir_setup.ctrl_nested_file_contents(), "Nested file contents");
-    assert_eq!(dir_setup.tendrils_dir.join("SomeApp").read_dir().iter().count(), 1);
+    pull_tendril(&setup.td_dir, &tendril, false, force).unwrap();
+
+    if as_dir {
+        assert_eq!(setup.ctrl_nested_file_contents(), "Local nested file contents");
+    }
+    else {
+        assert_eq!(setup.ctrl_file_contents(), "Local file contents");
+    }
+    assert_eq!(setup.group_dir.read_dir().iter().count(), 1);
 }
 
 #[rstest]
@@ -72,45 +78,41 @@ fn tendril_exists_at_source_path_in_dry_run_returns_skipped_error_does_not_modif
     #[case] force: bool,
 ) {
     // TODO: Test for symlink setup
-    let mut opts = SetupOpts::default();
-    opts.make_local_dir = false;
-    let file_setup = Setup::new(&opts);
-    opts.is_dir_tendril = true;
-    opts.make_local_file = false;
-    opts.make_local_dir = true;
-    let dir_setup = Setup::new(&opts);
-    create_dir_all(&file_setup.ctrl_file.parent().unwrap()).unwrap();
-    create_dir_all(&dir_setup.ctrl_dir).unwrap();
-    write(&file_setup.ctrl_file, "Dest file contents").unwrap();
-    write(&dir_setup.ctrl_nested_file, "Dest nested file contents").unwrap();
+    let setup = Setup::new();
+    setup.make_local_file();
+    setup.make_local_nested_file();
+    setup.make_ctrl_file();
+    setup.make_ctrl_nested_file();
 
-    let file_actual = pull_tendril(
-        &file_setup.tendrils_dir,
-        &file_setup.tendril,
-        true,
-        force,
-    );
-    let dir_actual = pull_tendril(
-        &dir_setup.tendrils_dir,
-        &dir_setup.tendril,
-        true,
-        force,
-    );
+    let file_tendril = ResolvedTendril::new(
+        "SomeApp".to_string(),
+        "misc.txt".to_string(),
+        setup.parent_dir.clone(),
+        TendrilMode::DirOverwrite,
+    ).unwrap();
+
+    let dir_tendril = ResolvedTendril::new(
+        "SomeApp".to_string(),
+        "misc".to_string(),
+        setup.parent_dir.clone(),
+        TendrilMode::DirOverwrite,
+    ).unwrap();
+
+    let file_actual = pull_tendril(&setup.td_dir, &file_tendril, true, force);
+    let dir_actual = pull_tendril(&setup.td_dir, &dir_tendril, true, force);
 
     assert!(matches!(file_actual, Err(TendrilActionError::Skipped)));
     assert!(matches!(dir_actual, Err(TendrilActionError::Skipped)));
-    assert_eq!(file_setup.ctrl_file_contents(), "Dest file contents");
-    assert_eq!(file_setup.tendrils_dir.join("SomeApp").read_dir().iter().count(), 1);
-    assert_eq!(dir_setup.ctrl_nested_file_contents(), "Dest nested file contents");
-    assert_eq!(dir_setup.tendrils_dir.join("SomeApp").read_dir().iter().count(), 1);
+    assert_eq!(setup.ctrl_file_contents(), "Controlled file contents");
+    assert_eq!(setup.ctrl_nested_file_contents(), "Controlled nested file contents");
 }
 
 // TODO: Test when path is invalid and a copy is attempted (with both a folder AND a file)
 
 #[rstest]
 #[case("TendrilsDir", "SomeApp", "<user>")]
-#[case("TendrilsDir", "<user>", "misc")]
-#[case("<user>", "SomeApp", "misc")]
+#[case("TendrilsDir", "<user>", "misc.txt")]
+#[case("<user>", "SomeApp", "misc.txt")]
 #[cfg(not(windows))] // These are invalid paths on Windows
 fn supported_var_in_td_dir_or_group_or_name_uses_raw_path(
     #[case] td_dir: &str,
@@ -118,20 +120,36 @@ fn supported_var_in_td_dir_or_group_or_name_uses_raw_path(
     #[case] name: &str,
 
     #[values(true, false)]
+    dry_run: bool,
+
+    #[values(true, false)]
     force: bool,
 ) {
-    // TODO: This now should use raw paths (will be a Unix only test)
-    let mut opts = SetupOpts::default();
-    opts.tendrils_dirname = td_dir;
-    opts.group = group;
-    opts.local_filename = name;
-    opts.make_local_dir = false;
-    let setup = Setup::new(&opts);
+    let mut setup = Setup::new();
+    setup.td_dir = setup.temp_dir.path().join(td_dir);
+    setup.group_dir = setup.td_dir.join(group);
+    setup.local_file = setup.parent_dir.join(name);
+    setup.ctrl_file = setup.group_dir.join(name);
+    setup.make_local_file();
+    setup.make_ctrl_file();
 
-    pull_tendril(&setup.tendrils_dir, &setup.tendril, false, force).unwrap();
+    let tendril = ResolvedTendril::new(
+        group.to_string(),
+        name.to_string(),
+        setup.parent_dir.clone(),
+        TendrilMode::DirOverwrite,
+    ).unwrap();
 
-    assert_eq!(setup.ctrl_file_contents(), "Source file contents");
-    assert!(setup.tendrils_dir.join(group).read_dir().unwrap().count() == 1);
+    let actual = pull_tendril(&setup.td_dir, &tendril, dry_run, force);
+
+    if dry_run {
+        assert!(matches!(actual, Err(TendrilActionError::Skipped)));
+        assert_eq!(setup.ctrl_file_contents(), "Controlled file contents");
+    }
+    else {
+        assert!(matches!(actual, Ok(())));
+        assert_eq!(setup.ctrl_file_contents(), "Local file contents");
+    }
 }
 
 #[rstest]
@@ -143,16 +161,35 @@ fn unsupported_var_in_parent_path_uses_raw_path(
     #[case] parent_name_raw: &str,
 
     #[values(true, false)]
+    dry_run: bool,
+
+    #[values(true, false)]
     force: bool,
 ) {
-    let mut opts = SetupOpts::default();
-    opts.parent_dirname = parent_name_raw;
-    opts.make_local_dir = false;
-    let setup = Setup::new(&opts);
+    let mut setup = Setup::new();
+    setup.parent_dir = setup.temp_dir.path().join(parent_name_raw);
+    setup.local_file = setup.parent_dir.join("misc.txt");
+    create_dir_all(&setup.parent_dir).unwrap();
+    setup.make_local_file();
+    setup.make_ctrl_file();
 
-    pull_tendril(&setup.tendrils_dir, &setup.tendril, false, force).unwrap();
+    let tendril = ResolvedTendril::new(
+        "SomeApp".to_string(),
+        "misc.txt".to_string(),
+        setup.parent_dir.clone(),
+        TendrilMode::DirOverwrite,
+    ).unwrap();
 
-    assert_eq!(setup.ctrl_file_contents(), "Source file contents");
+    let actual = pull_tendril(&setup.td_dir, &tendril, dry_run, force);
+
+    if dry_run {
+        assert!(matches!(actual, Err(TendrilActionError::Skipped)));
+        assert_eq!(setup.ctrl_file_contents(), "Controlled file contents");
+    }
+    else {
+        assert!(matches!(actual, Ok(())));
+        assert_eq!(setup.ctrl_file_contents(), "Local file contents");
+    }
 }
 
 #[rstest]
@@ -164,20 +201,22 @@ fn source_doesnt_exist_returns_io_error_not_found(
     #[values(true, false)]
     force: bool,
 ) {
-    let mut setup = Setup::new(&SetupOpts::default());
-    setup.tendril.parent = PathBuf::from("SomePathThatDoesNotExist");
+    let setup = Setup::new();
 
-    let actual = pull_tendril(
-        &setup.tendrils_dir,
-        &setup.tendril,
-        dry_run,
-        force,
-    ).unwrap_err();
+    let tendril = ResolvedTendril::new(
+        "SomeApp".to_string(),
+        "misc.txt".to_string(),
+        PathBuf::from("SomePathThatDoesNotExist"),
+        TendrilMode::DirOverwrite,
+    ).unwrap();
+
+    let actual = pull_tendril(&setup.td_dir, &tendril, dry_run, force);
+
     match actual {
-        TendrilActionError::IoError(e) => assert_eq!(e.kind(), std::io::ErrorKind::NotFound),
+        Err(TendrilActionError::IoError(e)) => assert_eq!(e.kind(), std::io::ErrorKind::NotFound),
         _ => panic!(),
     }
-    assert!(is_empty(&setup.tendrils_dir));
+    assert!(is_empty(&setup.td_dir));
 }
 
 #[rstest]
@@ -189,6 +228,7 @@ fn source_is_given_td_dir_returns_recursion_error(
     #[values(true, false)]
     force: bool,
 ) {
+    // TODO: Change to setup
     let temp_parent_dir = TempDir::new_in(
         get_disposable_dir(),
         "ParentDir"
@@ -352,7 +392,7 @@ fn source_is_nested_child_of_given_td_dir_returns_recursion_error(
     create_dir_all(&source.parent().unwrap()).unwrap();
     write(&source, "Source file contents").unwrap();
 
-    let given = ResolvedTendril::new(
+    let tendril = ResolvedTendril::new(
         "SomeApp".to_string(),
         "misc.txt".to_string(),
         given_parent_dir,
@@ -361,7 +401,7 @@ fn source_is_nested_child_of_given_td_dir_returns_recursion_error(
 
     let actual = pull_tendril(
         &given_td_dir,
-        &given,
+        &tendril,
         dry_run,
         force,
     );
@@ -375,13 +415,19 @@ fn source_is_nested_child_of_given_td_dir_returns_recursion_error(
 #[case(true)]
 #[case(false)]
 fn source_is_another_td_dir_still_copies(#[case] force: bool) {
-    let mut opts = SetupOpts::default();
-    opts.is_dir_tendril = true;
-    let setup = Setup::new(&opts);
+    let setup = Setup::new();
+    setup.make_local_nested_file();
     write(&setup.local_dir.join("tendrils.json"), "").unwrap();
     assert!(is_tendrils_dir(&setup.local_dir));
 
-    pull_tendril(&setup.tendrils_dir, &setup.tendril, false, force).unwrap();
+    let tendril = ResolvedTendril::new(
+        "SomeApp".to_string(),
+        "misc".to_string(),
+        setup.parent_dir,
+        TendrilMode::DirOverwrite,
+    ).unwrap();
+
+    pull_tendril(&setup.td_dir, &tendril, false, force).unwrap();
 
     assert!(setup.ctrl_dir.join("tendrils.json").exists());
     assert!(setup.ctrl_nested_file.exists());
@@ -400,18 +446,18 @@ fn source_is_file_and_dest_is_dir_returns_type_mismatch_error_unless_forced(
     #[values(true, false)]
     force: bool,
 ) {
-    let mut opts = SetupOpts::default();
-    opts.is_dir_tendril = false;
-    let mut setup = Setup::new(&opts);
-    setup.tendril.mode = mode;
+    let setup = Setup::new();
+    setup.make_local_file();
     create_dir_all(&setup.ctrl_file).unwrap();
 
-    let actual = pull_tendril(
-        &setup.tendrils_dir,
-        &setup.tendril,
-        dry_run,
-        force,
-    );
+    let tendril = ResolvedTendril::new(
+        "SomeApp".to_string(),
+        "misc.txt".to_string(),
+        setup.parent_dir.clone(),
+        mode,
+    ).unwrap();
+
+    let actual = pull_tendril(&setup.td_dir, &tendril, dry_run, force);
 
     match (dry_run, force) {
         (_, false) => {
@@ -426,11 +472,11 @@ fn source_is_file_and_dest_is_dir_returns_type_mismatch_error_unless_forced(
     }
 
     if force && !dry_run {
-        assert_eq!(setup.local_file_contents(), "Source file contents");
-        assert_eq!(setup.ctrl_file_contents(), "Source file contents");
+        assert_eq!(setup.local_file_contents(), "Local file contents");
+        assert_eq!(setup.ctrl_file_contents(), "Local file contents");
     }
     else {
-        assert_eq!(setup.local_file_contents(), "Source file contents");
+        assert_eq!(setup.local_file_contents(), "Local file contents");
         assert!(setup.ctrl_file.is_dir());
         assert!(is_empty(&setup.ctrl_file));
     }
@@ -448,19 +494,19 @@ fn source_is_dir_and_dest_is_file_returns_type_mismatch_error_unless_forced(
     #[values(true, false)]
     force: bool,
 ) {
-    let mut opts = SetupOpts::default();
-    opts.is_dir_tendril = true;
-    let mut setup = Setup::new(&opts);
-    setup.tendril.mode = mode;
-    create_dir_all(&setup.ctrl_dir.parent().unwrap()).unwrap();
+    let setup = Setup::new();
+    setup.make_local_nested_file();
+    setup.make_group_dir();
     write(&setup.ctrl_dir, "I'm a file!").unwrap();
 
-    let actual = pull_tendril(
-        &setup.tendrils_dir,
-        &setup.tendril,
-        dry_run,
-        force,
-    );
+    let tendril = ResolvedTendril::new(
+        "SomeApp".to_string(),
+        "misc".to_string(),
+        setup.parent_dir.clone(),
+        mode,
+    ).unwrap();
+
+    let actual = pull_tendril(&setup.td_dir, &tendril, dry_run, force);
 
     match (dry_run, force) {
         (_, false) => {
@@ -476,16 +522,15 @@ fn source_is_dir_and_dest_is_file_returns_type_mismatch_error_unless_forced(
 
     assert!(setup.local_dir.is_dir());
     if force && !dry_run {
-        assert_eq!(&setup.ctrl_nested_file_contents(), "Nested file contents");
+        assert_eq!(&setup.ctrl_nested_file_contents(), "Local nested file contents");
         assert_eq!(setup.local_dir.read_dir().iter().count(), 1);
         assert_eq!(setup.ctrl_dir.read_dir().iter().count(), 1);
     }
     else {
-        let dest_dir_contents = read_to_string(&setup.ctrl_dir).unwrap();
-        assert_eq!(dest_dir_contents, "I'm a file!");
-        assert!(setup.ctrl_dir.is_file());
+        let ctrl_dir_contents = read_to_string(&setup.ctrl_dir).unwrap();
+        assert_eq!(ctrl_dir_contents, "I'm a file!");
         assert_eq!(setup.local_dir.read_dir().iter().count(), 1);
-        assert_eq!(setup.tendrils_dir.read_dir().iter().count(), 1);
+        assert_eq!(setup.td_dir.read_dir().iter().count(), 1);
     }
 }
 
@@ -751,21 +796,23 @@ fn no_read_access_from_source_dir_returns_io_error_permission_denied(
 fn no_write_access_at_dest_file_returns_io_error_permission_denied(
     #[case] force: bool,
 ) {
-    let setup = Setup::new(&SetupOpts::default());
-    create_dir_all(&setup.ctrl_file.parent().unwrap()).unwrap();
-    write(&setup.ctrl_file, "Don't touch me").unwrap();
+    let setup = Setup::new();
+    setup.make_local_file();
+    setup.make_ctrl_file();
 
     // Set file read-only
     let mut perms = metadata(&setup.ctrl_file).unwrap().permissions();
     perms.set_readonly(true);
     set_permissions(&setup.ctrl_file, perms).unwrap();
 
-    let actual = pull_tendril(
-        &setup.tendrils_dir,
-        &setup.tendril,
-        false,
-        force,
-    );
+    let tendril = ResolvedTendril::new(
+        "SomeApp".to_string(),
+        "misc.txt".to_string(),
+        setup.parent_dir.clone(),
+        TendrilMode::DirOverwrite,
+    ).unwrap();
+
+    let actual = pull_tendril(&setup.td_dir, &tendril, false, force);
 
     match actual {
         Err(TendrilActionError::IoError(e)) => {
@@ -773,7 +820,7 @@ fn no_write_access_at_dest_file_returns_io_error_permission_denied(
         },
         _ => panic!()
     }
-    assert_eq!(setup.ctrl_file_contents(), "Don't touch me");
+    assert_eq!(setup.ctrl_file_contents(), "Controlled file contents");
 }
 
 // TODO: No write access at dest_dir?
@@ -787,14 +834,20 @@ fn file_tendril_overwrites_dest_file_regardless_of_dir_merge_mode(
     #[values(true, false)]
     force: bool,
 ) {
-    let mut setup = Setup::new(&SetupOpts::default());
-    create_dir_all(&setup.ctrl_file.parent().unwrap()).unwrap();
-    write(&setup.ctrl_file, "Overwrite me!").unwrap();
-    setup.tendril.mode = mode;
+    let setup = Setup::new();
+    setup.make_local_file();
+    setup.make_ctrl_file();
 
-    pull_tendril(&setup.tendrils_dir, &setup.tendril, false, force).unwrap();
+    let tendril = ResolvedTendril::new(
+        "SomeApp".to_string(),
+        "misc.txt".to_string(),
+        setup.parent_dir.clone(),
+        mode,
+    ).unwrap();
 
-    assert_eq!(setup.ctrl_file_contents(), "Source file contents");
+    pull_tendril(&setup.td_dir, &tendril, false, force).unwrap();
+
+    assert_eq!(setup.ctrl_file_contents(), "Local file contents");
 }
 
 #[rstest]
@@ -926,51 +979,97 @@ fn dir_merge_true_w_dir_tendril_merges_w_dest_dir_recursively(
 #[case(true)]
 #[case(false)]
 fn td_dir_doesnt_exist_creates_dir_and_subdirs_first_except_if_dry_run(
-    #[case] force: bool,
+    #[case] dry_run: bool,
+
+    #[values(true, false)]
+    force: bool,
 ) {
-    let mut opts = SetupOpts::default();
-    opts.make_tendrils_dir = false;
-    let setup = Setup::new(&opts);
+    let setup = Setup::new();
+    setup.make_local_file();
 
-    let actual = pull_tendril(&setup.tendrils_dir, &setup.tendril, true, force);
-    assert!(matches!(actual, Err(TendrilActionError::Skipped)));
-    assert!(!setup.tendrils_dir.exists());
+    let tendril = ResolvedTendril::new(
+        "SomeApp".to_string(),
+        "misc.txt".to_string(),
+        setup.parent_dir.clone(),
+        TendrilMode::DirOverwrite,
+    ).unwrap();
 
-    pull_tendril(&setup.tendrils_dir, &setup.tendril, false, force).unwrap();
-    assert_eq!(setup.ctrl_file_contents(), "Source file contents");
+    let actual = pull_tendril(&setup.td_dir, &tendril, dry_run, force);
+
+    if dry_run {
+        assert!(matches!(actual, Err(TendrilActionError::Skipped)));
+        assert!(!setup.td_dir.exists());
+    }
+    else {
+        assert!(matches!(actual, Ok(())));
+        assert_eq!(setup.ctrl_file_contents(), "Local file contents");
+    }
 }
 
 #[rstest]
 #[case(true)]
 #[case(false)]
 fn file_tendril_source_is_unchanged(
-    #[case]
+    #[case] dry_run: bool,
+
+    #[values(true, false)]
     force: bool,
 ) {
-    let setup = Setup::new(&SetupOpts::default());
+    let setup = Setup::new();
+    setup.make_local_file();
 
-    pull_tendril(&setup.tendrils_dir, &setup.tendril, false, force).unwrap();
+    let tendril = ResolvedTendril::new(
+        "SomeApp".to_string(),
+        "misc.txt".to_string(),
+        setup.parent_dir.clone(),
+        TendrilMode::DirOverwrite,
+    ).unwrap();
 
-    assert_eq!(setup.local_file_contents(), "Source file contents");
-    assert_eq!(setup.ctrl_file_contents(), "Source file contents");
+    let actual = pull_tendril(&setup.td_dir, &tendril, dry_run, force);
+
+    assert_eq!(setup.local_file_contents(), "Local file contents");
+    if dry_run {
+        assert!(matches!(actual, Err(TendrilActionError::Skipped)));
+    }
+    else {
+        assert!(matches!(actual, Ok(())));
+    }
 }
 
 #[rstest]
 #[case(true)]
 #[case(false)]
 fn other_tendrils_in_same_group_dir_are_unchanged(
-    #[case] force: bool,
-) {
-    let setup = Setup::new(&SetupOpts::default());
-    let some_other_tendril= &setup.tendrils_dir.join("SomeApp").join("other.txt");
-    create_dir_all(setup.tendrils_dir.join("SomeApp")).unwrap();
-    write(some_other_tendril, "Another tendril from the same app").unwrap();
+    #[case] dry_run: bool,
 
-    pull_tendril(&setup.tendrils_dir, &setup.tendril, false, force).unwrap();
+    #[values(true, false)]
+    force: bool,
+) {
+    let setup = Setup::new();
+    setup.make_local_file();
+    let some_other_ctrl_file= &setup.group_dir.join("other.txt");
+    setup.make_group_dir();
+    write(some_other_ctrl_file, "Another tendril from the same group").unwrap();
+
+    let tendril = ResolvedTendril::new(
+        "SomeApp".to_string(),
+        "misc.txt".to_string(),
+        setup.parent_dir,
+        TendrilMode::DirOverwrite,
+    ).unwrap();
+
+    let actual = pull_tendril(&setup.td_dir, &tendril, dry_run, force);
+
+    if dry_run {
+        assert!(matches!(actual, Err(TendrilActionError::Skipped)));
+    }
+    else {
+        assert!(matches!(actual, Ok(())));
+    }
 
     // Check that other tendril is unchanged
-    let some_other_tendril_contents = read_to_string(some_other_tendril).unwrap();
-    assert_eq!(some_other_tendril_contents, "Another tendril from the same app");
+    let some_other_ctrl_file_contents = read_to_string(some_other_ctrl_file).unwrap();
+    assert_eq!(some_other_ctrl_file_contents, "Another tendril from the same group");
 }
 
 #[rstest]
@@ -1023,23 +1122,25 @@ fn dir_tendril_copies_all_contents_recursively_and_source_is_unchanged(
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn given_link_mode_tendril_returns_mode_mismatch_error(
+fn link_mode_tendril_returns_mode_mismatch_error(
     #[case] dry_run: bool,
 
     #[values(true, false)]
     force: bool,
 ) {
-    let mut setup = Setup::new(&SetupOpts::default());
-    setup.tendril.mode = TendrilMode::Link;
+    let setup = Setup::new();
+    setup.make_local_file();
 
-    let actual = pull_tendril(
-        &setup.tendrils_dir,
-        &setup.tendril,
-        dry_run,
-        force,
-    );
+    let tendril = ResolvedTendril::new(
+        "SomeApp".to_string(),
+        "misc.txt".to_string(),
+        setup.parent_dir.clone(),
+        TendrilMode::Link,
+    ).unwrap();
+
+    let actual = pull_tendril(&setup.td_dir, &tendril, dry_run, force);
 
     assert!(matches!(actual, Err(TendrilActionError::ModeMismatch)));
-    assert_eq!(setup.local_file_contents(), "Source file contents");
-    assert!(is_empty(&setup.tendrils_dir));
+    assert_eq!(&setup.local_file_contents(), "Local file contents");
+    assert!(is_empty(&setup.td_dir));
 }
