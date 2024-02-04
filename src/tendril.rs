@@ -13,7 +13,7 @@ pub struct Tendril {
     #[serde(rename = "parent-dirs-windows")]
     pub parent_dirs_windows: Vec<String>,
 
-    #[serde(rename = "folder-merge")]
+    #[serde(rename = "dir-merge")]
     pub dir_merge: bool,
 
     pub link: bool,

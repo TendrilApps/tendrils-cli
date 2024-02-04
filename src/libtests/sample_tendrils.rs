@@ -20,7 +20,7 @@ impl SampleTendrils {
             "name": "settings.json",
             "parent-dirs-mac": [],
             "parent-dirs-windows": ["C:\\Users\\<user>\\AppData\\"],
-            "folder-merge": false,
+            "dir-merge": false,
             "link": false
         }"#.to_string()
     }
@@ -43,7 +43,7 @@ impl SampleTendrils {
             "name": "settings2.json",
             "parent-dirs-mac": ["some/mac/path"],
             "parent-dirs-windows": ["C:\\Users\\<user>\\Documents\\"],
-            "folder-merge": true,
+            "dir-merge": true,
             "link": false
         }"#.to_string()
     }
@@ -66,7 +66,7 @@ impl SampleTendrils {
             "name": "linkme.txt",
             "parent-dirs-mac": ["some/mac/path"],
             "parent-dirs-windows": ["C:\\Users\\<user>"],
-            "folder-merge": false,
+            "dir-merge": false,
             "link": true
         }"#.to_string()
     }

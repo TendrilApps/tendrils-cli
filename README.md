@@ -35,7 +35,7 @@ nu Tendrils.nu -s
         "parent-dirs-mac": ["/Users/<user>/path/to/item/parent/folder"],
         "parent-dirs-windows": ["C:\\Users\\<user>\\path 1",
                                 "C:\\Users\\<user>\\path 2"],
-        "folder-merge": false
+        "dir-merge": false
     },
 ]
 ```
@@ -53,7 +53,7 @@ nu Tendrils.nu -s
     - If the list is empty, it will be skipped
     - During a [spread](#spreading) operation, the file/folder in the [Tendrils folder](#tendrils-folder) is copied to *all* paths in the list
     - During a [gather](#gathering) operation, only the *first* item in the list is considered
-- `folder-merge`:
+- `dir-merge`:
     - Specifies the merge strategy when folders are copied to or from the [Tendrils folder](#tendrils-folder)
     - This setting has no effect on the behaviour for included files - only folders
     - `true` - Add any new files, overwrite any conflicting files, but do not delete any files already in the destination folder
