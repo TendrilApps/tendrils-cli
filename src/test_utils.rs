@@ -1,4 +1,5 @@
-use crate::Tendril;
+use crate::resolved_tendril::ResolvedTendril;
+use crate::{Tendril, TendrilMode};
 use std::fs::{
     create_dir_all,
     read_to_string,
@@ -88,7 +89,7 @@ impl Setup {
         let ctrl_nested_file = ctrl_dir.join("nested.txt");
         let target_file = parent_dir.join("target.txt");
         let target_dir = parent_dir.join("target");
-        let target_nested_file = local_dir.join("target.txt");
+        let target_nested_file = target_dir.join("nested.txt");
 
         Setup {
             temp_dir,
@@ -106,9 +107,23 @@ impl Setup {
             target_nested_file,
         }
     }
+    
+    pub fn resolved_file_tendril(&self) -> ResolvedTendril {
+        ResolvedTendril::new(
+            "SomeApp".to_string(),
+            "misc.txt".to_string(),
+            self.parent_dir.clone(),
+            TendrilMode::DirOverwrite,
+        ).unwrap()
+    }
 
-    pub fn make_tendrils_dir(&self) {
-        create_dir_all(&self.td_dir).unwrap();
+    pub fn resolved_dir_tendril(&self) -> ResolvedTendril {
+        ResolvedTendril::new(
+            "SomeApp".to_string(),
+            "misc".to_string(),
+            self.parent_dir.clone(),
+            TendrilMode::DirOverwrite,
+        ).unwrap()
     }
 
     pub fn make_group_dir(&self) {
@@ -147,7 +162,7 @@ impl Setup {
     }
 
     pub fn make_target_dir(&self) {
-        create_dir_all(&self.local_dir).unwrap();
+        create_dir_all(&self.target_dir).unwrap();
     }
 
     pub fn make_target_nested_file(&self) {
@@ -165,5 +180,9 @@ impl Setup {
 
     pub fn local_file_contents(&self) -> String {
         read_to_string(&self.local_file).unwrap()
+    }
+
+    pub fn local_nested_file_contents(&self) -> String {
+        read_to_string(&self.local_nested_file).unwrap()
     }
 }
