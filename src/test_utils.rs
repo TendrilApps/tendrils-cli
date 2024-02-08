@@ -126,6 +126,10 @@ impl Setup {
         ).unwrap()
     }
 
+    pub fn make_parent_dir(&self) {
+        create_dir_all(&self.parent_dir).unwrap();
+    }
+
     pub fn make_group_dir(&self) {
         create_dir_all(&self.group_dir).unwrap();
     }
