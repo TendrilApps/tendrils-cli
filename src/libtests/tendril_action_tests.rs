@@ -117,8 +117,7 @@ fn pull_returns_tendril_and_result_for_each_given(
                 TendrilActionReport {
                     orig_tendril: &given[2],
                     resolved_paths: vec![Ok(source_app1_dir)],
-                    // action_results: vec![Some(Ok(()))],
-                    action_results: vec![Some(Err(TendrilActionError::Skipped))],
+                    action_results: vec![Some(Ok(()))],
                 },
                 TendrilActionReport {
                     orig_tendril: &given[3],

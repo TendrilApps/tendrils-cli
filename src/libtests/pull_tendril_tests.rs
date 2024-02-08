@@ -28,7 +28,7 @@ use tempdir::TempDir;
 #[case("multi.sandwiched.dots")]
 #[case(".LeadingDot")]
 #[case("TrailingDot.")]
-fn tendril_exists_at_source_path_copies_successfully(
+fn local_exists_copies_successfully(
     #[case] name: String,
 
     #[values(true, false)]
@@ -73,7 +73,7 @@ fn tendril_exists_at_source_path_copies_successfully(
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn tendril_exists_at_source_path_in_dry_run_returns_skipped_error_does_not_modify_dest(
+fn local_exists_dry_run_returns_skipped_error_does_not_modify_controlled(
     #[case] force: bool,
 ) {
     // TODO: Test for symlink setup
@@ -176,7 +176,7 @@ fn unsupported_var_in_parent_path_uses_raw_path(
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn source_doesnt_exist_returns_io_error_not_found(
+fn local_doesnt_exist_returns_io_error_not_found(
     #[case] dry_run: bool,
 
     #[values(true, false)]
@@ -203,7 +203,7 @@ fn source_doesnt_exist_returns_io_error_not_found(
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn source_is_given_td_dir_returns_recursion_error(
+fn local_is_given_td_dir_returns_recursion_error(
     #[case] dry_run: bool,
 
     #[values(true, false)]
@@ -227,7 +227,7 @@ fn source_is_given_td_dir_returns_recursion_error(
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn source_is_ancestor_to_given_td_dir_returns_recursion_error(
+fn local_is_ancestor_to_given_td_dir_returns_recursion_error(
     #[case] dry_run: bool,
 
     #[values(true, false)]
@@ -256,7 +256,7 @@ fn source_is_ancestor_to_given_td_dir_returns_recursion_error(
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn source_is_sibling_to_given_td_dir_copies_normally(
+fn local_is_sibling_to_given_td_dir_copies_normally(
     #[case] force: bool,
 ) {
     let setup = Setup::new();
@@ -275,7 +275,7 @@ fn source_is_sibling_to_given_td_dir_copies_normally(
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn source_is_direct_child_of_given_td_dir_returns_recursion_error(
+fn local_is_direct_child_of_given_td_dir_returns_recursion_error(
     #[case] dry_run: bool,
 
     #[values(true, false)]
@@ -312,7 +312,7 @@ fn source_is_direct_child_of_given_td_dir_returns_recursion_error(
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn source_is_nested_child_of_given_td_dir_returns_recursion_error(
+fn local_is_nested_child_of_given_td_dir_returns_recursion_error(
     #[case] dry_run: bool,
 
     #[values(true, false)]
@@ -349,7 +349,7 @@ fn source_is_nested_child_of_given_td_dir_returns_recursion_error(
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn source_is_another_td_dir_still_copies(#[case] force: bool) {
+fn local_is_another_td_dir_still_copies(#[case] force: bool) {
     let setup = Setup::new();
     setup.make_local_nested_file();
     write(&setup.local_dir.join("tendrils.json"), "").unwrap();
@@ -367,7 +367,7 @@ fn source_is_another_td_dir_still_copies(#[case] force: bool) {
 #[rstest]
 #[case(TendrilMode::DirMerge)]
 #[case(TendrilMode::DirOverwrite)]
-fn source_is_file_and_dest_is_dir_returns_type_mismatch_error_unless_forced(
+fn local_is_file_and_ctrl_is_dir_returns_type_mismatch_error_unless_forced(
     #[case] mode: TendrilMode,
 
     #[values(true, false)]
@@ -411,7 +411,7 @@ fn source_is_file_and_dest_is_dir_returns_type_mismatch_error_unless_forced(
 #[rstest]
 #[case(TendrilMode::DirMerge)]
 #[case(TendrilMode::DirOverwrite)]
-fn source_is_dir_and_dest_is_file_returns_type_mismatch_error_unless_forced(
+fn local_is_dir_and_ctrl_is_file_returns_type_mismatch_error_unless_forced(
     #[case] mode: TendrilMode,
 
     #[values(true, false)]
@@ -459,7 +459,7 @@ fn source_is_dir_and_dest_is_file_returns_type_mismatch_error_unless_forced(
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn source_is_symlink_returns_type_mismatch_error_unless_forced_then_copies_symlink_target_contents_keeps_source_name(
+fn local_is_symlink_returns_type_mismatch_error_unless_forced_then_copies_symlink_target_contents_keeps_source_name(
     #[case] dry_run: bool,
 
     #[values(true, false)]
@@ -523,7 +523,7 @@ fn source_is_symlink_returns_type_mismatch_error_unless_forced_then_copies_symli
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn dest_is_symlink_returns_type_mismatch_error_unless_forced(
+fn ctrl_is_symlink_returns_type_mismatch_error_unless_forced(
     #[case] dry_run: bool,
 
     #[values(true, false)]
@@ -586,7 +586,7 @@ fn dest_is_symlink_returns_type_mismatch_error_unless_forced(
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn no_read_access_from_source_file_returns_io_error_permission_denied(
+fn no_read_access_from_local_file_returns_io_error_permission_denied(
     #[case] force: bool,
 ) {
     let temp_td_dir = TempDir::new_in(
@@ -624,7 +624,7 @@ fn no_read_access_from_source_file_returns_io_error_permission_denied(
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn no_read_access_from_source_dir_returns_io_error_permission_denied(
+fn no_read_access_from_local_dir_returns_io_error_permission_denied(
     #[case] force: bool,
 ) {
     let temp_td_dir = TempDir::new_in(
@@ -661,7 +661,7 @@ fn no_read_access_from_source_dir_returns_io_error_permission_denied(
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn no_write_access_at_dest_file_returns_io_error_permission_denied(
+fn no_write_access_at_ctrl_file_returns_io_error_permission_denied(
     #[case] force: bool,
 ) {
     let setup = Setup::new();
@@ -691,7 +691,7 @@ fn no_write_access_at_dest_file_returns_io_error_permission_denied(
 #[rstest]
 #[case(TendrilMode::DirMerge)]
 #[case(TendrilMode::DirOverwrite)]
-fn file_tendril_overwrites_dest_file_regardless_of_dir_merge_mode(
+fn file_tendril_overwrites_ctrl_file_regardless_of_dir_merge_mode(
     #[case] mode: TendrilMode,
     
     #[values(true, false)]
@@ -712,7 +712,7 @@ fn file_tendril_overwrites_dest_file_regardless_of_dir_merge_mode(
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn dir_overwrite_w_dir_tendril_replaces_dest_dir_recursively(
+fn dir_overwrite_w_dir_tendril_replaces_ctrl_dir_recursively(
     #[case] force: bool,
 ) {
     let setup = Setup::new();
@@ -742,7 +742,7 @@ fn dir_overwrite_w_dir_tendril_replaces_dest_dir_recursively(
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn dir_merge_w_dir_tendril_merges_w_dest_dir_recursively(
+fn dir_merge_w_dir_tendril_merges_w_ctrl_dir_recursively(
     #[case] force: bool,
 ) {
     let setup = Setup::new();
@@ -799,7 +799,7 @@ fn td_dir_doesnt_exist_creates_dir_and_subdirs_first_except_if_dry_run(
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn file_tendril_source_is_unchanged(
+fn local_file_is_unchanged(
     #[case] dry_run: bool,
 
     #[values(true, false)]
@@ -824,7 +824,7 @@ fn file_tendril_source_is_unchanged(
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn dir_tendril_source_is_unchanged(
+fn local_dir_is_unchanged(
     #[case] dry_run: bool,
 
     #[values(true, false)]
