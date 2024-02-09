@@ -241,7 +241,7 @@ fn tendril_action_dry_run_does_not_modify(
     }
     assert_eq!(setup.ctrl_file_contents(), "Controlled file contents");
     assert_eq!(writer.all_output_lines()[0], "No local overrides were found.");
-    assert!(writer.all_output_lines()[1].contains("Err(Skipped)"));
+    assert!(writer.all_output_lines()[4].contains("Err(Skipped)"));
     assert_eq!(setup.td_dir.read_dir().unwrap().into_iter().count(), 2);
 }
 

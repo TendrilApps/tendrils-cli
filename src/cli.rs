@@ -11,6 +11,8 @@ use crate::action_mode::ActionMode;
 use crate::errors::GetTendrilsError;
 use crate::tendril_action_report::TendrilActionReport;
 use std::path::PathBuf;
+pub mod td_table;
+use td_table::TdTable;
 pub mod writer;
 use writer::Writer;
 
@@ -99,18 +101,36 @@ fn path(writer: &mut impl Writer) {
 }
 
 fn print_reports(reports: &[TendrilActionReport], writer: &mut impl Writer) {
+    let mut tbl = TdTable::new();
+    tbl.push_row(&[
+        "Group".to_string(),
+        "Name".to_string(),
+        "Path".to_string(),
+        "Report".to_string(),
+    ]);
+
     for report in reports {
         for (i, resolved_path) in report.resolved_paths.iter().enumerate() {
-            writer.write(&format!("{}: ", report.orig_tendril.id()));
-            match resolved_path {
-                Ok(v) => {
-                    writer.write(&format!("{:?}", report.action_results[i].as_ref().unwrap()));
-                    writer.writeln(&format!("   |   {:?}", v));
+            let printed_result: String;
+            let printed_path = match resolved_path {
+                Ok(p) => {
+                    printed_result = format!("{:?}", report.action_results[i].as_ref().unwrap());
+                    p.to_string_lossy().to_string()
                 },
-                Err(e) => println!("{:?}", e),
-            }
+                Err(e) => {
+                    printed_result = "".to_string();
+                    format!("{:?}", e)
+                }
+            };
+            tbl.push_row(&[
+                report.orig_tendril.group.clone(),
+                report.orig_tendril.name.clone(),
+                printed_path,
+                printed_result,
+            ]);
         }
     }
+    writer.writeln(&tbl.build())
 }
 
 fn tendril_action_subcommand(
