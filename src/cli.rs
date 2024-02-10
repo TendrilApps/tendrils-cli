@@ -130,7 +130,7 @@ fn print_reports(reports: &[TendrilActionReport], writer: &mut impl Writer) {
             ]);
         }
     }
-    writer.writeln(&tbl.build())
+    writer.writeln(&tbl.draw())
 }
 
 fn tendril_action_subcommand(
