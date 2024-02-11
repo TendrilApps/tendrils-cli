@@ -102,32 +102,52 @@ fn path(writer: &mut impl Writer) {
 
 fn print_reports(reports: &[TendrilActionReport], writer: &mut impl Writer) {
     let mut tbl = TdTable::new();
-    tbl.push_row(&[
+    tbl.set_header(&[
         "Group".to_string(),
         "Name".to_string(),
         "Path".to_string(),
         "Report".to_string(),
     ]);
 
+    let mut row = 1;
     for report in reports {
         for (i, resolved_path) in report.resolved_paths.iter().enumerate() {
             let printed_result: String;
+            let result_color: &str;
             let printed_path = match resolved_path {
                 Ok(p) => {
-                    printed_result = format!("{:?}", report.action_results[i].as_ref().unwrap());
+                    let result = report.action_results[i]
+                        .as_ref()
+                        .expect("Expected a result to accompany the resolved path");
+                    match result {
+                        Ok(_) => result_color = inline_colorization::color_bright_green,
+                        _ => result_color = inline_colorization::color_bright_red,
+                    }
+                    printed_result = format!("{:?}", result);
                     p.to_string_lossy().to_string()
                 },
                 Err(e) => {
+                    result_color = inline_colorization::color_reset;
                     printed_result = "".to_string();
                     format!("{:?}", e)
                 }
             };
+
+            tbl.set_cell_style(
+                result_color,
+                inline_colorization::color_reset,
+                row,
+                3
+            );
+
             tbl.push_row(&[
                 report.orig_tendril.group.clone(),
                 report.orig_tendril.name.clone(),
                 printed_path,
                 printed_result,
             ]);
+
+            row += 1;
         }
     }
     writer.writeln(&tbl.draw())
