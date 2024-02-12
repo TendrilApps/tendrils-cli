@@ -1,8 +1,5 @@
 use clap::Parser;
-use tendrils::cli::{
-    run,
-    TendrilCliArgs,
-};
+use tendrils::cli::{run, TendrilCliArgs};
 use tendrils::cli::writer::StdOutWriter;
 
 fn main() {

@@ -7,10 +7,10 @@ pub struct StdOutWriter {}
 
 impl Writer for StdOutWriter{
     fn write(&mut self, text: &str) {
-        print!("{}", text);
+        print!("{text}");
     }
 
     fn writeln(&mut self, text: &str) {
-        println!("{}", text);
+        println!("{text}");
     }
 }
