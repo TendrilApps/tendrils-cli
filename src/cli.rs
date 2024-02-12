@@ -1,4 +1,5 @@
 use clap::{Parser, Subcommand};
+use inline_colorization::{color_bright_green, color_bright_red, color_reset};
 use crate::{
     get_tendrils_dir,
     get_tendrils,
@@ -8,7 +9,7 @@ use crate::{
     tendril_action,
 };
 use crate::action_mode::ActionMode;
-use crate::errors::GetTendrilsError;
+use crate::errors::{GetTendrilsError, ResolveTendrilError, TendrilActionError};
 use crate::tendril_action_report::TendrilActionReport;
 use std::path::PathBuf;
 pub mod td_table;
@@ -87,17 +88,65 @@ pub enum TendrilsSubcommands {
 fn path(writer: &mut impl Writer) {
     const ENV_NAME: &str = "TENDRILS_FOLDER";
     match std::env::var(ENV_NAME) {
-        Ok(v) => writer.writeln(&v),
+        Ok(v) => {
+            let styled_text = ansi_hyperlink(&v, &v);
+            writer.writeln(&styled_text);
+        },
         Err(std::env::VarError::NotPresent) => {
-            writer.writeln(&format!("The '{}' environment variable is not set.", ENV_NAME))
+            writer.writeln(&format!(
+                "The '{ENV_NAME}' environment variable is not set."
+            ))
         },
         Err(std::env::VarError::NotUnicode(_v)) => {
             writer.writeln(&format!(
-                "Error: The '{}' environment variable is not valid UTF-8.",
-                ENV_NAME
+                "Error: The '{ENV_NAME}' environment variable is not valid UTF-8."
             ))
         }
     } 
+}
+
+// Note: For ansi styling to render properly with 'tabled' tables,
+// its 'ansi' feature must be enabled
+fn ansi_style(text: &str, ansi_prefix: String, ansi_suffix: &str) -> String {
+    ansi_prefix + text + ansi_suffix
+}
+
+/// Creates a hyperlink string with ANSI escape codes to
+/// render as a hyperlink in a terminal that supports it
+// Note: For ansi hyperlinks to render properly with 'tabled' tables,
+// its 'ansi' feature must be enabled
+fn ansi_hyperlink(url: &str, display: &str) -> String {
+    format!("\x1b]8;;{url}\x1b\\{display}\x1b]8;;\x1b\\")
+}
+
+fn ansi_styled_resolved_path(
+    path: &Result<PathBuf, ResolveTendrilError>
+) -> String {
+    match path {
+        Ok(p) => {
+            let raw_path_text = p.to_string_lossy().to_string();
+            return ansi_hyperlink(&raw_path_text, &raw_path_text)
+        },
+        Err(e) => {
+            return ansi_style(
+                &format!("{:?}", e),
+                color_bright_red.to_owned(),
+                color_reset
+            );
+        }
+    };
+}
+
+fn ansi_styled_result(result: &Option<Result<(), TendrilActionError>>) -> String {
+    return match result {
+        Some(Ok(_)) => {
+            ansi_style("Ok", color_bright_green.to_owned(), color_reset)
+        },
+        Some(Err(e)) => {
+            ansi_style(&format!("{:?}", e), color_bright_red.to_owned(), color_reset)
+        },
+        None => "".to_string()
+    }
 }
 
 fn print_reports(reports: &[TendrilActionReport], writer: &mut impl Writer) {
@@ -109,45 +158,17 @@ fn print_reports(reports: &[TendrilActionReport], writer: &mut impl Writer) {
         "Report".to_string(),
     ]);
 
-    let mut row = 1;
     for report in reports {
         for (i, resolved_path) in report.resolved_paths.iter().enumerate() {
-            let printed_result: String;
-            let result_color: &str;
-            let printed_path = match resolved_path {
-                Ok(p) => {
-                    let result = report.action_results[i]
-                        .as_ref()
-                        .expect("Expected a result to accompany the resolved path");
-                    match result {
-                        Ok(_) => result_color = inline_colorization::color_bright_green,
-                        _ => result_color = inline_colorization::color_bright_red,
-                    }
-                    printed_result = format!("{:?}", result);
-                    p.to_string_lossy().to_string()
-                },
-                Err(e) => {
-                    result_color = inline_colorization::color_reset;
-                    printed_result = "".to_string();
-                    format!("{:?}", e)
-                }
-            };
-
-            tbl.set_cell_style(
-                result_color,
-                inline_colorization::color_reset,
-                row,
-                3
-            );
+            let styled_path = ansi_styled_resolved_path(resolved_path);
+            let styled_result = ansi_styled_result(&report.action_results[i]);
 
             tbl.push_row(&[
                 report.orig_tendril.group.clone(),
                 report.orig_tendril.name.clone(),
-                printed_path,
-                printed_result,
+                styled_path,
+                styled_result,
             ]);
-
-            row += 1;
         }
     }
     writer.writeln(&tbl.draw())

@@ -61,7 +61,9 @@ fn path_with_env_var_set_prints_path() {
         tendrils_command: TendrilsSubcommands::Path
     };
     std::env::set_var(TENDRILS_VAR_NAME, "SomePath");
-    let expected = "SomePath\n";
+
+    // Formatted as hyperlink
+    let expected = "\u{1b}]8;;SomePath\u{1b}\\SomePath\u{1b}]8;;\u{1b}\\\n";
 
     run(args, &mut writer);
 
@@ -241,7 +243,7 @@ fn tendril_action_dry_run_does_not_modify(
     }
     assert_eq!(setup.ctrl_file_contents(), "Controlled file contents");
     assert_eq!(writer.all_output_lines()[0], "No local overrides were found.");
-    assert!(writer.all_output_lines()[4].contains("Err(Skipped)"));
+    assert!(writer.all_output_lines()[4].contains("Skipped"));
     assert_eq!(setup.td_dir.read_dir().unwrap().into_iter().count(), 2);
 }
 
