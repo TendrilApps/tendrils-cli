@@ -5,7 +5,8 @@ use inline_colorization::{
     style_underline,
     style_reset,
 };
-use tabled::settings::Style;
+use tabled::settings::object::Columns;
+use tabled::settings::{Modify, Style, Width};
 use tabled::builder::Builder;
 
 pub struct TdTable {
@@ -40,6 +41,7 @@ impl TdTable {
         let overall_style = Style::modern_rounded();
         let tbl = self.builder.build()
             .with(overall_style)
+            .with(Modify::new(Columns::single(2)).with(Width::wrap(50)))
             .to_owned();
 
         tbl.to_string()
