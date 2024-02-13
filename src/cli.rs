@@ -9,7 +9,12 @@ use crate::{
     tendril_action,
 };
 use crate::action_mode::ActionMode;
-use crate::errors::{GetTendrilsError, ResolveTendrilError, TendrilActionError};
+use crate::enums::{
+    GetTendrilsError,
+    ResolveTendrilError,
+    TendrilActionError,
+    TendrilActionSuccess,
+};
 use crate::tendril_action_report::TendrilActionReport;
 use std::path::PathBuf;
 pub mod td_table;
@@ -137,13 +142,21 @@ fn ansi_styled_resolved_path(
     };
 }
 
-fn ansi_styled_result(result: &Option<Result<(), TendrilActionError>>) -> String {
+fn ansi_styled_result(result: &Option<Result<TendrilActionSuccess, TendrilActionError>>) -> String {
     return match result {
-        Some(Ok(_)) => {
-            ansi_style("Ok", color_bright_green.to_owned(), color_reset)
+        Some(Ok(r)) => {
+            ansi_style(
+                &format!("{:?}", r),
+                color_bright_green.to_owned(),
+                color_reset
+            )
         },
         Some(Err(e)) => {
-            ansi_style(&format!("{:?}", e), color_bright_red.to_owned(), color_reset)
+            ansi_style(
+                &format!("{:?}", e),
+                color_bright_red.to_owned(),
+                color_reset
+            )
         },
         None => "".to_string()
     }

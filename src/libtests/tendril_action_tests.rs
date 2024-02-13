@@ -1,4 +1,4 @@
-use crate::{tendril_action, TendrilActionError};
+use crate::{tendril_action, TendrilActionError, TendrilActionSuccess};
 use crate::action_mode::ActionMode;
 use crate::tendril::Tendril;
 use crate::tendril_action_report::TendrilActionReport;
@@ -83,17 +83,17 @@ fn pull_returns_tendril_and_result_for_each_given(
                 TendrilActionReport {
                     orig_tendril: &given[0],
                     resolved_paths: vec![Ok(source_app1_file)],
-                    action_results: vec![Some(Err(TendrilActionError::Skipped))],
+                    action_results: vec![Some(Ok(TendrilActionSuccess::Skipped))],
                 },
                 TendrilActionReport {
                     orig_tendril: &given[1],
                     resolved_paths: vec![Ok(source_app2_file)],
-                    action_results: vec![Some(Err(TendrilActionError::Skipped))],
+                    action_results: vec![Some(Ok(TendrilActionSuccess::Skipped))],
                 },
                 TendrilActionReport {
                     orig_tendril: &given[2],
                     resolved_paths: vec![Ok(source_app1_dir)],
-                    action_results: vec![Some(Err(TendrilActionError::Skipped))],
+                    action_results: vec![Some(Ok(TendrilActionSuccess::Skipped))],
                 },
                 TendrilActionReport {
                     orig_tendril: &given[3],
@@ -107,17 +107,17 @@ fn pull_returns_tendril_and_result_for_each_given(
                 TendrilActionReport {
                     orig_tendril: &given[0],
                     resolved_paths: vec![Ok(source_app1_file)],
-                    action_results: vec![Some(Ok(()))],
+                    action_results: vec![Some(Ok(TendrilActionSuccess::Ok))],
                 },
                 TendrilActionReport {
                     orig_tendril: &given[1],
                     resolved_paths: vec![Ok(source_app2_file)],
-                    action_results: vec![Some(Ok(()))],
+                    action_results: vec![Some(Ok(TendrilActionSuccess::Ok))],
                 },
                 TendrilActionReport {
                     orig_tendril: &given[2],
                     resolved_paths: vec![Ok(source_app1_dir)],
-                    action_results: vec![Some(Ok(()))],
+                    action_results: vec![Some(Ok(TendrilActionSuccess::Ok))],
                 },
                 TendrilActionReport {
                     orig_tendril: &given[3],
@@ -143,18 +143,18 @@ fn pull_returns_tendril_and_result_for_each_given(
 
     // TendrilActionError is not equatable so must match manually
     if dry_run {
-        assert!(matches!(actual[0].action_results[0], Some(Err(TendrilActionError::Skipped))));
-        assert!(matches!(actual[1].action_results[0], Some(Err(TendrilActionError::Skipped))));
-        assert!(matches!(actual[2].action_results[0], Some(Err(TendrilActionError::Skipped))));
+        assert!(matches!(actual[0].action_results[0], Some(Ok(TendrilActionSuccess::Skipped))));
+        assert!(matches!(actual[1].action_results[0], Some(Ok(TendrilActionSuccess::Skipped))));
+        assert!(matches!(actual[2].action_results[0], Some(Ok(TendrilActionSuccess::Skipped))));
 
         assert!(!dest_app1_file.exists());
         assert!(!dest_app2_file.exists());
         assert!(!dest_app1_nested.exists());
     }
     else {
-        assert!(matches!(actual[0].action_results[0], Some(Ok(()))));
-        assert!(matches!(actual[1].action_results[0], Some(Ok(()))));
-        assert!(matches!(actual[2].action_results[0], Some(Ok(()))));
+        assert!(matches!(actual[0].action_results[0], Some(Ok(TendrilActionSuccess::Ok))));
+        assert!(matches!(actual[1].action_results[0], Some(Ok(TendrilActionSuccess::Ok))));
+        assert!(matches!(actual[2].action_results[0], Some(Ok(TendrilActionSuccess::Ok))));
 
         let dest_app1_file_contents = read_to_string(dest_app1_file).unwrap();
         let dest_app2_file_contents = read_to_string(dest_app2_file).unwrap();

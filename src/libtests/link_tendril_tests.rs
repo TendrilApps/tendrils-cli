@@ -1,5 +1,5 @@
 use crate::{link_tendril, symlink};
-use crate::errors::TendrilActionError;
+use crate::enums::{TendrilActionError, TendrilActionSuccess};
 use crate::resolved_tendril::{ResolvedTendril, TendrilMode};
 use crate::test_utils::{is_empty, Setup};
 use rstest::rstest;
@@ -120,12 +120,12 @@ fn local_exists_and_is_not_symlink_returns_type_mismatch_error_unless_forced(
             assert!(matches!(dir_actual, Err(TendrilActionError::TypeMismatch)));
         },
         (false, true) => {
-            assert!(matches!(file_actual, Ok(())));
-            assert!(matches!(dir_actual, Ok(())));
+            assert!(matches!(file_actual, Ok(TendrilActionSuccess::Ok)));
+            assert!(matches!(dir_actual, Ok(TendrilActionSuccess::Ok)));
         },
         (true, true) => {
-            assert!(matches!(file_actual, Err(TendrilActionError::Skipped)));
-            assert!(matches!(dir_actual, Err(TendrilActionError::Skipped)));
+            assert!(matches!(file_actual, Ok(TendrilActionSuccess::Skipped)));
+            assert!(matches!(dir_actual, Ok(TendrilActionSuccess::Skipped)));
         },
     }
 
@@ -190,12 +190,12 @@ fn ctrl_is_symlink_returns_type_mismatch_error_unless_forced(
             assert!(matches!(dir_actual, Err(TendrilActionError::TypeMismatch)));
         },
         (false, true) => {
-            assert!(matches!(file_actual, Ok(())));
-            assert!(matches!(dir_actual, Ok(())));
+            assert!(matches!(file_actual, Ok(TendrilActionSuccess::Ok)));
+            assert!(matches!(dir_actual, Ok(TendrilActionSuccess::Ok)));
         },
         (true, true) => {
-            assert!(matches!(file_actual, Err(TendrilActionError::Skipped)));
-            assert!(matches!(dir_actual, Err(TendrilActionError::Skipped)));
+            assert!(matches!(file_actual, Ok(TendrilActionSuccess::Skipped)));
+            assert!(matches!(dir_actual, Ok(TendrilActionSuccess::Skipped)));
         },
     }
 
@@ -267,8 +267,8 @@ fn local_doesnt_exist_but_parent_does_symlink_not_created_in_dry_run(
     let file_actual = link_tendril(&setup.td_dir, &file_tendril, true, force);
     let dir_actual = link_tendril(&setup.td_dir, &dir_tendril, true, force);
 
-    assert!(matches!(file_actual, Err(TendrilActionError::Skipped)));
-    assert!(matches!(dir_actual, Err(TendrilActionError::Skipped)));
+    assert!(matches!(file_actual, Ok(TendrilActionSuccess::Skipped)));
+    assert!(matches!(dir_actual, Ok(TendrilActionSuccess::Skipped)));
     assert!(!setup.local_file.exists());
     assert!(!setup.local_dir.exists());
 }
@@ -329,8 +329,8 @@ fn existing_symlinks_at_local_are_unmodified_in_dry_run(#[case] force: bool) {
     let file_actual = link_tendril(&setup.td_dir, &file_tendril, true, force);
     let dir_actual = link_tendril(&setup.td_dir, &dir_tendril, true, force);
 
-    assert!(matches!(file_actual, Err(TendrilActionError::Skipped)));
-    assert!(matches!(dir_actual, Err(TendrilActionError::Skipped)));
+    assert!(matches!(file_actual, Ok(TendrilActionSuccess::Skipped)));
+    assert!(matches!(dir_actual, Ok(TendrilActionSuccess::Skipped)));
     assert!(setup.local_file.is_symlink());
     assert!(setup.local_dir.is_symlink());
     assert_eq!(setup.local_file_contents(), "Target file contents");

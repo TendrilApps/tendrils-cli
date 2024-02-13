@@ -1,6 +1,6 @@
 use crate::{push_tendril, TendrilMode};
 use crate::test_utils::Setup;
-use crate::errors::TendrilActionError;
+use crate::enums::TendrilActionError;
 use rstest::rstest;
 
 #[rstest]

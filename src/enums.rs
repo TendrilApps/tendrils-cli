@@ -16,6 +16,13 @@ impl From<serde_json::Error> for GetTendrilsError {
     }
 }
 
+#[derive(Debug, Eq, PartialEq)]
+pub enum TendrilActionSuccess {
+    Ok,
+    /// Occurs when a command is executed as a dry-run
+    Skipped,
+}
+
 #[derive(Debug)]
 pub enum TendrilActionError {
     Duplicate,
@@ -25,8 +32,6 @@ pub enum TendrilActionError {
     ModeMismatch,
     ResolveTendrilError(ResolveTendrilError),
     Recursion,
-    /// Occurs when a command is executed as a dry-run
-    Skipped,
     TypeMismatch,
 }
 

@@ -1,11 +1,12 @@
 mod action_mode;
 use action_mode::ActionMode;
 pub mod cli;
-mod errors;
-use errors::{
+mod enums;
+use enums::{
     GetTendrilsError,
-    TendrilActionError,
     ResolveTendrilError,
+    TendrilActionError,
+    TendrilActionSuccess,
 };
 mod resolved_tendril;
 use resolved_tendril::{
@@ -31,11 +32,11 @@ fn copy_fso(
     to: &Path,
     dir_merge: bool,
     dry_run: bool,
-) -> Result<(), TendrilActionError> {
+) -> Result<TendrilActionSuccess, TendrilActionError> {
     let mut to = to;
 
     if from.is_dir() {
-        if dry_run { return Err(TendrilActionError::Skipped); }
+        if dry_run { return Ok(TendrilActionSuccess::Skipped); }
         if !dir_merge && to.is_dir() {
             std::fs::remove_dir_all(to)?;
             create_dir_all(to)?;
@@ -53,7 +54,7 @@ fn copy_fso(
         copy_opts.overwrite = true;
         copy_opts.skip_exist = false;
         match fs_extra::dir::copy(from, to, &copy_opts) {
-            Ok(_v) => Ok(()),
+            Ok(_v) => Ok(TendrilActionSuccess::Ok),
             Err(e) => match e.kind {
                 // Convert fs_extra::errors to PushPullErrors
                 fs_extra::error::ErrorKind::Io(e) => {
@@ -86,7 +87,7 @@ fn copy_fso(
             }
         };
 
-        if dry_run { return Err(TendrilActionError::Skipped); }
+        if dry_run { return Ok(TendrilActionSuccess::Skipped); }
 
         // TODO: Eliminate this unwrap and test how
         // root folders are handled
@@ -100,7 +101,7 @@ fn copy_fso(
         }
 
         match std::fs::copy(from_str, to_str) {
-            Ok(_v) => Ok(()),
+            Ok(_v) => Ok(TendrilActionSuccess::Ok),
             Err(e) => Err(TendrilActionError::from(e))
         }
     }
@@ -191,7 +192,7 @@ fn link_tendril(
     tendril: &ResolvedTendril,
     dry_run: bool,
     force: bool,
-) -> Result<(), TendrilActionError> {
+) -> Result<TendrilActionSuccess, TendrilActionError> {
     let dest= tendril.full_path();
     if tendril.mode != TendrilMode::Link {
         return Err(TendrilActionError::ModeMismatch);
@@ -220,7 +221,7 @@ fn pull_tendril(
     tendril: &ResolvedTendril,
     dry_run: bool,
     force: bool,
-) -> Result<(), TendrilActionError> {
+) -> Result<TendrilActionSuccess, TendrilActionError> {
     let source= tendril.full_path();
     if tendril.mode == TendrilMode::Link {
         return Err(TendrilActionError::ModeMismatch);
@@ -244,7 +245,7 @@ fn push_tendril(
     tendril: &ResolvedTendril,
     dry_run: bool,
     force: bool,
-) -> Result<(), TendrilActionError> {
+) -> Result<TendrilActionSuccess, TendrilActionError> {
     let dest= tendril.full_path();
     if tendril.mode == TendrilMode::Link {
         return Err(TendrilActionError::ModeMismatch);
@@ -355,7 +356,9 @@ fn resolve_tendril(
     }).collect()
 }
 
-fn symlink(create_at: &Path, target: &Path, dry_run: bool, force: bool) -> Result<(), TendrilActionError> {
+fn symlink(
+    create_at: &Path, target: &Path, dry_run: bool, force: bool
+) -> Result<TendrilActionSuccess, TendrilActionError> {
     // TODO: Eliminate this unwrap and test with root folders
     if !create_at.parent().unwrap().exists() {
         let io_err = std::io::Error::from(std::io::ErrorKind::NotFound);
@@ -377,9 +380,11 @@ fn symlink(create_at: &Path, target: &Path, dry_run: bool, force: bool) -> Resul
 }
 
 #[cfg(unix)]
-fn symlink_unix(create_at: &Path, target: &Path, dry_run: bool) -> Result<(), TendrilActionError> {
+fn symlink_unix(
+    create_at: &Path, target: &Path, dry_run: bool
+) -> Result<TendrilActionSuccess, TendrilActionError> {
     if dry_run {
-        Err(TendrilActionError::Skipped)
+        Ok(TendrilActionSuccess::Skipped)
     }
     else {
         if create_at.is_file() {
@@ -388,31 +393,36 @@ fn symlink_unix(create_at: &Path, target: &Path, dry_run: bool) -> Result<(), Te
         if create_at.is_dir() {
             remove_dir_all(create_at)?;
         }
-        Ok(std::os::unix::fs::symlink(target, create_at)?)
+        std::os::unix::fs::symlink(target, create_at)?;
+        Ok(TendrilActionSuccess::Ok)
     }
 }
 
 #[cfg(windows)]
-fn symlink_win(create_at: &Path, target: &Path, dry_run: bool) -> Result<(), TendrilActionError> {
+fn symlink_win(
+    create_at: &Path, target: &Path, dry_run: bool
+) -> Result<TendrilActionSuccess, TendrilActionError> {
     use std::os::windows::fs::{symlink_dir, symlink_file};
     // TODO: Pattern match instead
     if target.is_dir() {
         if dry_run {
-            return Err(TendrilActionError::Skipped);
+            return Ok(TendrilActionSuccess::Skipped);
         }
         else if create_at.exists() {
             remove_dir_all(create_at)?;
         }
-        Ok(symlink_dir(target, create_at)?)
+        symlink_dir(target, create_at)?;
+        Ok(TendrilActionSuccess::Ok)
     }
     else if target.is_file() {
         if dry_run {
-            return Err(TendrilActionError::Skipped);
+            return Ok(TendrilActionSuccess::Skipped);
         }
         else if create_at.exists() {
             remove_file(create_at)?;
         }
-        Ok(symlink_file(target, create_at)?)
+        symlink_file(target, create_at)?;
+        Ok(TendrilActionSuccess::Ok)
     }
     else {
         let io_err = std::io::Error::from(std::io::ErrorKind::NotFound);

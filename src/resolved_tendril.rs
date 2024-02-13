@@ -1,4 +1,4 @@
-use crate::errors::InvalidTendrilError;
+use crate::enums::InvalidTendrilError;
 use std::path::PathBuf;
 
 /// A Tendril that is prepared for use with Tendril operations

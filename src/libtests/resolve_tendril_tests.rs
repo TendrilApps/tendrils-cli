@@ -1,4 +1,4 @@
-use crate::errors::ResolveTendrilError;
+use crate::enums::ResolveTendrilError;
 use crate::{resolve_tendril, ResolvedTendril, Tendril, TendrilMode};
 use crate::test_utils::{set_all_platform_paths, get_username_can_panic};
 use rstest::rstest;

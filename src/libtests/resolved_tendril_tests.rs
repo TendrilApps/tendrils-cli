@@ -1,5 +1,5 @@
 use crate::{ResolvedTendril, TendrilMode};
-use crate::errors::InvalidTendrilError;
+use crate::enums::InvalidTendrilError;
 use rstest::rstest;
 use std::path::PathBuf;
 

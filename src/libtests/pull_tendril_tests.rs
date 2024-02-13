@@ -3,6 +3,7 @@ use crate::{
     pull_tendril,
     symlink,
     TendrilActionError,
+    TendrilActionSuccess,
 };
 use crate::resolved_tendril::{ResolvedTendril, TendrilMode};
 use crate::test_utils::{
@@ -88,8 +89,8 @@ fn local_exists_dry_run_returns_skipped_error_does_not_modify_controlled(
     let file_actual = pull_tendril(&setup.td_dir, &file_tendril, true, force);
     let dir_actual = pull_tendril(&setup.td_dir, &dir_tendril, true, force);
 
-    assert!(matches!(file_actual, Err(TendrilActionError::Skipped)));
-    assert!(matches!(dir_actual, Err(TendrilActionError::Skipped)));
+    assert!(matches!(file_actual, Ok(TendrilActionSuccess::Skipped)));
+    assert!(matches!(dir_actual, Ok(TendrilActionSuccess::Skipped)));
     assert_eq!(setup.ctrl_file_contents(), "Controlled file contents");
     assert_eq!(setup.ctrl_nested_file_contents(), "Controlled nested file contents");
 }
@@ -130,11 +131,11 @@ fn supported_var_in_td_dir_or_group_or_name_uses_raw_path(
     let actual = pull_tendril(&setup.td_dir, &tendril, dry_run, force);
 
     if dry_run {
-        assert!(matches!(actual, Err(TendrilActionError::Skipped)));
+        assert!(matches!(actual, Ok(TendrilActionSuccess::Skipped)));
         assert_eq!(setup.ctrl_file_contents(), "Controlled file contents");
     }
     else {
-        assert!(matches!(actual, Ok(())));
+        assert!(matches!(actual, Ok(TendrilActionSuccess::Ok)));
         assert_eq!(setup.ctrl_file_contents(), "Local file contents");
     }
 }
@@ -164,11 +165,11 @@ fn unsupported_var_in_parent_path_uses_raw_path(
     let actual = pull_tendril(&setup.td_dir, &tendril, dry_run, force);
 
     if dry_run {
-        assert!(matches!(actual, Err(TendrilActionError::Skipped)));
+        assert!(matches!(actual, Ok(TendrilActionSuccess::Skipped)));
         assert_eq!(setup.ctrl_file_contents(), "Controlled file contents");
     }
     else {
-        assert!(matches!(actual, Ok(())));
+        assert!(matches!(actual, Ok(TendrilActionSuccess::Ok)));
         assert_eq!(setup.ctrl_file_contents(), "Local file contents");
     }
 }
@@ -390,10 +391,10 @@ fn local_is_file_and_ctrl_is_dir_returns_type_mismatch_error_unless_forced(
             assert!(matches!(actual, Err(TendrilActionError::TypeMismatch)));
         },
         (false, true) => {
-            assert!(matches!(actual, Ok(())));
+            assert!(matches!(actual, Ok(TendrilActionSuccess::Ok)));
         },
         (true, true) => {
-            assert!(matches!(actual, Err(TendrilActionError::Skipped)));
+            assert!(matches!(actual, Ok(TendrilActionSuccess::Skipped)));
         },
     }
 
@@ -435,10 +436,10 @@ fn local_is_dir_and_ctrl_is_file_returns_type_mismatch_error_unless_forced(
             assert!(matches!(actual, Err(TendrilActionError::TypeMismatch)));
         },
         (false, true) => {
-            assert!(matches!(actual, Ok(())));
+            assert!(matches!(actual, Ok(TendrilActionSuccess::Ok)));
         },
         (true, true) => {
-            assert!(matches!(actual, Err(TendrilActionError::Skipped)));
+            assert!(matches!(actual, Ok(TendrilActionSuccess::Skipped)));
         },
     }
 
@@ -493,12 +494,12 @@ fn local_is_symlink_returns_type_mismatch_error_unless_forced_then_copies_symlin
             assert!(matches!(dir_actual, Err(TendrilActionError::TypeMismatch)));
         },
         (false, true) => {
-            assert!(matches!(file_actual, Ok(())));
-            assert!(matches!(dir_actual, Ok(())));
+            assert!(matches!(file_actual, Ok(TendrilActionSuccess::Ok)));
+            assert!(matches!(dir_actual, Ok(TendrilActionSuccess::Ok)));
         },
         (true, true) => {
-            assert!(matches!(file_actual, Err(TendrilActionError::Skipped)));
-            assert!(matches!(dir_actual, Err(TendrilActionError::Skipped)));
+            assert!(matches!(file_actual, Ok(TendrilActionSuccess::Skipped)));
+            assert!(matches!(dir_actual, Ok(TendrilActionSuccess::Skipped)));
         },
     }
 
@@ -560,12 +561,12 @@ fn ctrl_is_symlink_returns_type_mismatch_error_unless_forced(
             assert!(matches!(dir_actual, Err(TendrilActionError::TypeMismatch)));
         },
         (false, true) => {
-            assert!(matches!(file_actual, Ok(())));
-            assert!(matches!(dir_actual, Ok(())));
+            assert!(matches!(file_actual, Ok(TendrilActionSuccess::Ok)));
+            assert!(matches!(dir_actual, Ok(TendrilActionSuccess::Ok)));
         },
         (true, true) => {
-            assert!(matches!(file_actual, Err(TendrilActionError::Skipped)));
-            assert!(matches!(dir_actual, Err(TendrilActionError::Skipped)));
+            assert!(matches!(file_actual, Ok(TendrilActionSuccess::Skipped)));
+            assert!(matches!(dir_actual, Ok(TendrilActionSuccess::Skipped)));
         },
     }
 
@@ -787,11 +788,11 @@ fn td_dir_doesnt_exist_creates_dir_and_subdirs_first_except_if_dry_run(
     let actual = pull_tendril(&setup.td_dir, &tendril, dry_run, force);
 
     if dry_run {
-        assert!(matches!(actual, Err(TendrilActionError::Skipped)));
+        assert!(matches!(actual, Ok(TendrilActionSuccess::Skipped)));
         assert!(!setup.td_dir.exists());
     }
     else {
-        assert!(matches!(actual, Ok(())));
+        assert!(matches!(actual, Ok(TendrilActionSuccess::Ok)));
         assert_eq!(setup.ctrl_file_contents(), "Local file contents");
     }
 }
@@ -814,10 +815,10 @@ fn local_file_is_unchanged(
 
     assert_eq!(setup.local_file_contents(), "Local file contents");
     if dry_run {
-        assert!(matches!(actual, Err(TendrilActionError::Skipped)));
+        assert!(matches!(actual, Ok(TendrilActionSuccess::Skipped)));
     }
     else {
-        assert!(matches!(actual, Ok(())));
+        assert!(matches!(actual, Ok(TendrilActionSuccess::Ok)));
     }
 }
 
@@ -839,10 +840,10 @@ fn local_dir_is_unchanged(
 
     assert_eq!(setup.local_nested_file_contents(), "Local nested file contents");
     if dry_run {
-        assert!(matches!(actual, Err(TendrilActionError::Skipped)));
+        assert!(matches!(actual, Ok(TendrilActionSuccess::Skipped)));
     }
     else {
-        assert!(matches!(actual, Ok(())));
+        assert!(matches!(actual, Ok(TendrilActionSuccess::Ok)));
     }
 }
 
@@ -870,10 +871,10 @@ fn other_tendrils_in_same_group_dir_are_unchanged(
     let some_other_ctrl_file_contents = read_to_string(some_other_ctrl_file).unwrap();
     assert_eq!(some_other_ctrl_file_contents, "Another tendril from the same group");
     if dry_run {
-        assert!(matches!(actual, Err(TendrilActionError::Skipped)));
+        assert!(matches!(actual, Ok(TendrilActionSuccess::Skipped)));
     }
     else {
-        assert!(matches!(actual, Ok(())));
+        assert!(matches!(actual, Ok(TendrilActionSuccess::Ok)));
     }
 }
 
