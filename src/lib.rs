@@ -294,12 +294,7 @@ fn resolve_overrides(
     combined_tendrils
 }
 
-fn resolve_path_variables(path: &Path) -> Result<PathBuf, ResolveTendrilError> {
-    let orig_string = match path.to_str() {
-        Some(v) => v,
-        None => return Err(ResolveTendrilError::PathParseError)
-    };
-
+fn resolve_path_variables(mut path: String) -> Result<PathBuf, ResolveTendrilError> {
     // TODO: Extract var sets as a constant expression?
     let supported_var_sets: &[(&str, fn() -> Result<String, std::env::VarError>)] = &[
         ("<user>", get_username),
@@ -307,13 +302,12 @@ fn resolve_path_variables(path: &Path) -> Result<PathBuf, ResolveTendrilError> {
         ("<mut-testing>", get_mut_testing_var),
     ];
 
-    let mut resolved: String = orig_string.to_string();
     for var_set in supported_var_sets {
         let value = var_set.1().unwrap_or(var_set.0.to_string());
-        resolved = resolved.replace(var_set.0, &value);
+        path = path.replace(var_set.0, &value);
     }
 
-    Ok(PathBuf::from(&resolved))
+    Ok(PathBuf::from(path))
 }
 
 fn resolve_tendril(
@@ -344,8 +338,8 @@ fn resolve_tendril(
         false => raw_paths
     };
 
-    raw_paths.iter().map(|p| -> Result<ResolvedTendril, ResolveTendrilError> {
-        let parent = resolve_path_variables(&PathBuf::from(p))?;
+    raw_paths.into_iter().map(|p| -> Result<ResolvedTendril, ResolveTendrilError> {
+        let parent = resolve_path_variables(p)?;
 
         Ok(ResolvedTendril::new(
             tendril.group.clone(),
