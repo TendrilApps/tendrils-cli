@@ -46,7 +46,22 @@ impl ResolvedTendril {
     }
 
     pub fn full_path(&self) -> PathBuf {
-       self.parent.join(&self.name)
+        #[cfg(not(windows))]
+        let dir_sep = "/";
+        #[cfg(windows)]
+        let dir_sep = "\\";
+
+        let parent_str = self.parent
+            .to_string_lossy()
+            .to_string();
+        if parent_str.ends_with('\\')
+            || parent_str.ends_with('/')
+            || parent_str.is_empty() {
+            PathBuf::from(parent_str + &self.name)
+        }
+        else {
+            PathBuf::from(parent_str + dir_sep + &self.name)
+        }
     }
 
     fn is_path(x: &str) -> bool {
