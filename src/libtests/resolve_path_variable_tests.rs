@@ -18,7 +18,7 @@ use std::path::PathBuf;
 fn no_supported_variables_returns_given_path(#[case] given: String) {
     let expected = PathBuf::from(given.clone());
 
-    let actual = resolve_path_variables(given).unwrap();
+    let actual = resolve_path_variables(given);
 
     assert_eq!(actual, expected);
 }
@@ -38,7 +38,7 @@ fn user_var_replaces_with_current_username(
 ) {
     let expected = PathBuf::from(expected_str);
 
-    let actual = resolve_path_variables(given).unwrap();
+    let actual = resolve_path_variables(given);
 
     assert_eq!(actual, expected);
 }
@@ -50,7 +50,7 @@ fn supported_variable_missing_returns_raw_path() {
     let expected = PathBuf::from(given.clone());
     std::env::remove_var("mut-testing");
 
-    let actual = resolve_path_variables(given).unwrap();
+    let actual = resolve_path_variables(given);
 
     assert_eq!(actual, expected);
 }
@@ -75,7 +75,7 @@ fn supported_variable_is_non_unicode_returns_raw_path() {
 
     std::env::set_var("mut-testing", non_utf8_string);
 
-    let actual = resolve_path_variables(given).unwrap();
+    let actual = resolve_path_variables(given);
 
     assert_eq!(actual, expected);
 }

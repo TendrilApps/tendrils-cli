@@ -294,7 +294,7 @@ fn resolve_overrides(
     combined_tendrils
 }
 
-fn resolve_path_variables(mut path: String) -> Result<PathBuf, ResolveTendrilError> {
+fn resolve_path_variables(mut path: String) -> PathBuf {
     // TODO: Extract var sets as a constant expression?
     let supported_var_sets: &[(&str, fn() -> Result<String, std::env::VarError>)] = &[
         ("<user>", get_username),
@@ -307,7 +307,7 @@ fn resolve_path_variables(mut path: String) -> Result<PathBuf, ResolveTendrilErr
         path = path.replace(var_set.0, &value);
     }
 
-    Ok(PathBuf::from(path))
+    PathBuf::from(path)
 }
 
 fn resolve_tendril(
@@ -339,7 +339,7 @@ fn resolve_tendril(
     };
 
     raw_paths.into_iter().map(|p| -> Result<ResolvedTendril, ResolveTendrilError> {
-        let parent = resolve_path_variables(p)?;
+        let parent = resolve_path_variables(p);
 
         Ok(ResolvedTendril::new(
             tendril.group.clone(),
