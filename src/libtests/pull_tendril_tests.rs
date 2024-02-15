@@ -13,6 +13,7 @@ use crate::test_utils::{
     Setup,
 };
 use rstest::rstest;
+use serial_test::serial;
 use std::fs::{
     create_dir_all,
     metadata,
@@ -98,11 +99,12 @@ fn local_exists_dry_run_returns_skipped_error_does_not_modify_controlled(
 // TODO: Test when path is invalid and a copy is attempted (with both a folder AND a file)
 
 #[rstest]
-#[case("TendrilsDir", "SomeApp", "<user>")]
-#[case("TendrilsDir", "<user>", "misc.txt")]
-#[case("<user>", "SomeApp", "misc.txt")]
+#[serial("mut-env-var-testing")]
+#[case("TendrilsDir", "SomeApp", "<mut-testing>")]
+#[case("TendrilsDir", "<mut-testing>", "misc.txt")]
+#[case("<mut-testing>", "SomeApp", "misc.txt")]
 #[cfg(not(windows))] // These are invalid paths on Windows
-fn supported_var_in_td_dir_or_group_or_name_uses_raw_path(
+fn env_var_in_td_dir_or_group_or_name_uses_raw_path(
     #[case] td_dir: &str,
     #[case] group: &str,
     #[case] name: &str,
@@ -120,6 +122,7 @@ fn supported_var_in_td_dir_or_group_or_name_uses_raw_path(
     setup.ctrl_file = setup.group_dir.join(name);
     setup.make_local_file();
     setup.make_ctrl_file();
+    std::env::set_var("mut-testing", "value");
 
     let tendril = ResolvedTendril::new(
         group.to_string(),
@@ -142,10 +145,10 @@ fn supported_var_in_td_dir_or_group_or_name_uses_raw_path(
 
 #[rstest]
 #[case("Parent<>Dir")]
-#[case("Parent<unsupported>Dir")]
-#[case("<unsupported>")]
+#[case("Parent<I_do_not_exist>Dir")]
+#[case("<I_do_not_exist>")]
 #[cfg(not(windows))] // These are invalid paths on Windows
-fn unsupported_var_in_parent_path_uses_raw_path(
+fn var_in_parent_path_doesnt_exist_uses_raw_path(
     #[case] parent_name_raw: &str,
 
     #[values(true, false)]
@@ -164,6 +167,8 @@ fn unsupported_var_in_parent_path_uses_raw_path(
 
     let actual = pull_tendril(&setup.td_dir, &tendril, dry_run, force);
 
+    // TODO: Assert error on Windows to allow this test to run on all
+    // platforms
     if dry_run {
         assert!(matches!(actual, Ok(TendrilActionSuccess::Skipped)));
         assert_eq!(setup.ctrl_file_contents(), "Controlled file contents");
