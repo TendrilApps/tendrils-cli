@@ -72,7 +72,7 @@ fn path_with_env_var_set_prints_path() {
 
 #[rstest]
 #[serial("cd")]
-#[cfg(not(windows))]
+#[cfg_attr(windows, ignore)]
 fn tendril_action_no_path_given_and_no_cd_prints_message(
     #[values(ActionMode::Pull, ActionMode::Push, ActionMode::Link)]
     mode: ActionMode,

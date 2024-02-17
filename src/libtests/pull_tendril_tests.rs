@@ -101,7 +101,7 @@ fn local_exists_dry_run_returns_skipped_error_does_not_modify_controlled(
 #[case("TendrilsDir", "SomeApp", "<user>")]
 #[case("TendrilsDir", "<user>", "misc.txt")]
 #[case("<user>", "SomeApp", "misc.txt")]
-#[cfg(not(windows))] // These are invalid paths on Windows
+#[cfg_attr(windows, ignore)] // These are invalid paths on Windows
 fn supported_var_in_td_dir_or_group_or_name_uses_raw_path(
     #[case] td_dir: &str,
     #[case] group: &str,
@@ -144,7 +144,7 @@ fn supported_var_in_td_dir_or_group_or_name_uses_raw_path(
 #[case("Parent<>Dir")]
 #[case("Parent<unsupported>Dir")]
 #[case("<unsupported>")]
-#[cfg(not(windows))] // These are invalid paths on Windows
+#[cfg_attr(windows, ignore)] // These are invalid paths on Windows
 fn unsupported_var_in_parent_path_uses_raw_path(
     #[case] parent_name_raw: &str,
 
