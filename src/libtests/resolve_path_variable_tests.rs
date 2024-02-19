@@ -1,4 +1,4 @@
-use crate::resolve_path_variables;
+use crate::{parse_env_variables, resolve_path_variables};
 use rstest::rstest;
 use serial_test::serial;
 use std::path::PathBuf;
@@ -161,6 +161,8 @@ fn value_is_another_var_name_keeps_value_exceptions(
     // If this case is handled properly in the future,
     // add this test case to the other test.
     let expected = PathBuf::from(expected_str);
+    let parsed_vars = parse_env_variables(&var1_value);
+    assert!(!parsed_vars.is_empty());
     std::env::set_var("var1", var1_value);
     std::env::set_var("var2", var2_value);
 
@@ -170,28 +172,144 @@ fn value_is_another_var_name_keeps_value_exceptions(
 }
 
 #[test]
-#[cfg(not(windows))]
 #[serial("mut-env-var-testing")]
 fn var_value_is_non_unicode_returns_lossy_value() {
     let given = "<mut-testing>".to_string();
+    let expected = PathBuf::from("fo�o");
 
-    // Could not get an equivalent test working on Windows.
-    // Attempted using OsString::from_wide (from std::os::windows::ffi::OsStringExt)
-    // with UTF-16 characters but they were successfully converted to UTF-8 for
-    // some reason
-    use std::os::unix::ffi::OsStringExt;
-    let non_utf8_chars = vec![0x82, 0xAC, 0xFF, 0xFE, 0xFD, 0xFC, 0xD8, 0xDC];
-    let non_utf8_string = std::ffi::OsString::from_vec(non_utf8_chars);
-
-    // All characters replaced with the U+FFFD replacement character
-    // https://doc.rust-lang.org/std/primitive.char.html#associatedconstant.REPLACEMENT_CHARACTER
-    let lossy_string = 
-        "\u{FFFD}\u{FFFD}\u{FFFD}\u{FFFD}\u{FFFD}\u{FFFD}\u{FFFD}\u{FFFD}";
-    let expected = PathBuf::from(lossy_string);
-
-    std::env::set_var("mut-testing", non_utf8_string);
+    #[cfg(unix)] {
+        use std::ffi::OsStr;
+        use std::os::unix::ffi::OsStrExt;
+    
+        // Here, the values 0x66 and 0x6f correspond to 'f' and 'o'
+        // respectively. The value 0x80 is a lone continuation byte, invalid
+        // in a UTF-8 sequence.
+        let source = [0x66, 0x6f, 0x80, 0x6f];
+        let non_utf8_string = OsStr::from_bytes(&source[..]);
+        std::env::set_var("mut-testing", non_utf8_string);
+    }
+    #[cfg(windows)] {
+        use std::ffi::OsString;
+        use std::os::windows::prelude::OsStringExt;
+    
+        // Here the values 0x0066 and 0x006f correspond to 'f' and 'o'
+        // respectively. The value 0xD800 is a lone surrogate half, invalid
+        // in a UTF-16 sequence.
+        let source = [0x0066, 0x006f, 0xD800, 0x006f];
+        let os_string = OsString::from_wide(&source[..]);
+        let non_utf8_string = os_string.as_os_str();
+        std::env::set_var("mut-testing", non_utf8_string);
+    }
 
     let actual = resolve_path_variables(given);
 
     assert_eq!(actual, expected);
 }
+
+#[rstest]
+#[case("~", "MyHome")]
+#[case("~~", "MyHome~")]
+#[case("~/Some/Path", "MyHome/Some/Path")]
+#[case("~\\Some\\Path", "MyHome\\Some\\Path")]
+#[case("~<var>", "MyHomevalue")]
+#[serial("mut-env-var-testing")]
+fn leading_tilde_is_replaced_with_home(
+    #[case] given: String,
+    #[case] expected_str: String
+) {
+    let expected = PathBuf::from(expected_str);
+    std::env::set_var("var", "value");
+    std::env::set_var("HOME", "MyHome");
+
+    let actual = resolve_path_variables(given);
+
+    assert_eq!(actual, expected);
+}
+
+#[rstest]
+#[case("")]
+#[case(" ")]
+#[case("NoTilde")]
+#[case("N~onLeadingTilde")]
+#[case("NonLeadingTilde~")]
+#[serial("mut-env-var-testing")]
+fn no_leading_tilde_returns_given(
+    #[case] given: String,
+) {
+    let expected = PathBuf::from(given.clone());
+    std::env::set_var("var", "value");
+    std::env::set_var("HOME", "MyHome");
+
+    let actual = resolve_path_variables(given);
+
+    assert_eq!(actual, expected);
+}
+
+#[test]
+#[serial("mut-env-var-testing")]
+fn tilde_value_is_another_var_returns_raw_tilde_value() {
+    let home_path = "<var>";
+    let expected = PathBuf::from(home_path);
+    let parsed_vars = parse_env_variables(home_path);
+    assert!(!parsed_vars.is_empty());
+    std::env::set_var("HOME", home_path);
+    std::env::set_var("var", "value");
+
+    let actual = resolve_path_variables("~".to_string());
+
+    assert_eq!(actual, expected);
+}
+
+#[rstest]
+#[case("~")]
+#[case("~/Some/Path")]
+#[case("~\\Some\\Path")]
+#[serial("mut-env-var-testing")]
+fn tilde_value_doesnt_exist_returns_raw_path(
+    #[case] given: String,
+) {
+    let expected = PathBuf::from(given.clone());
+    std::env::remove_var("HOME");
+
+    let actual = resolve_path_variables(given);
+
+    assert_eq!(actual, expected)
+}
+
+#[test]
+#[serial("mut-env-var-testing")]
+fn tilde_value_is_non_unicode_returns_lossy_value() {
+    let given = "~".to_string();
+    let expected = PathBuf::from("fo�o");
+
+    #[cfg(unix)] {
+        use std::ffi::OsStr;
+        use std::os::unix::ffi::OsStrExt;
+    
+        // Here, the values 0x66 and 0x6f correspond to 'f' and 'o'
+        // respectively. The value 0x80 is a lone continuation byte, invalid
+        // in a UTF-8 sequence.
+        let source = [0x66, 0x6f, 0x80, 0x6f];
+        let non_utf8_string = OsStr::from_bytes(&source[..]);
+        std::env::set_var("HOME", non_utf8_string);
+    }
+    #[cfg(windows)] {
+        use std::ffi::OsString;
+        use std::os::windows::prelude::OsStringExt;
+    
+        // Here the values 0x0066 and 0x006f correspond to 'f' and 'o'
+        // respectively. The value 0xD800 is a lone surrogate half, invalid
+        // in a UTF-16 sequence.
+        let source = [0x0066, 0x006f, 0xD800, 0x006f];
+        let os_string = OsString::from_wide(&source[..]);
+        let non_utf8_string = os_string.as_os_str();
+        std::env::set_var("HOME", non_utf8_string);
+    }
+
+    let actual = resolve_path_variables(given);
+
+    assert_eq!(actual, expected);
+}
+
+// TODO: Integration test for tilde and for env vars
+// TODO: Add and test the | escape char for <>

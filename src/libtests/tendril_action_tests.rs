@@ -2,10 +2,17 @@ use crate::{tendril_action, TendrilActionError, TendrilActionSuccess};
 use crate::action_mode::ActionMode;
 use crate::tendril::Tendril;
 use crate::tendril_action_report::TendrilActionReport;
-use crate::test_utils::{get_disposable_dir, is_empty, set_all_platform_paths};
+use crate::test_utils::{
+    get_disposable_dir,
+    is_empty,
+    set_all_platform_paths,
+    Setup
+};
 use fs_extra::file::read_to_string;
 use rstest::rstest;
+use serial_test::serial;
 use std::fs::{create_dir_all, write};
+use std::path::PathBuf;
 use tempdir::TempDir;
 
 #[rstest]
@@ -174,6 +181,52 @@ fn pull_returns_tendril_and_result_for_each_given(
     }
     assert_eq!(actual.len(), expected.len());
 
+}
+
+#[rstest]
+#[serial("mut-env-var-testing")]
+fn parent_path_vars_are_resolved(
+    #[values(ActionMode::Push, ActionMode::Pull, ActionMode::Link)]
+    mode: ActionMode,
+
+    #[values(true, false)]
+    dry_run: bool,
+
+    #[values(true, false)]
+    force: bool,
+) {
+    let setup = Setup::new();
+    let mut tendril = setup.file_tendril();
+    tendril.link = mode == ActionMode::Link;
+    set_all_platform_paths(
+        &mut tendril, &[PathBuf::from("~/I_do_not_exist/<var>")]
+    );
+    let tendrils = [tendril];
+    std::env::set_var("HOME", "My/Home");
+    std::env::set_var("var", "value");
+    
+    let expected_resolved_path = "My/Home/I_do_not_exist/value/misc.txt";
+
+    let actual = tendril_action(
+        mode,
+        &setup.td_dir,
+        &tendrils,
+        dry_run,
+        force,
+    );
+
+    let actual_resolved_path = actual[0].resolved_paths[0]
+        .as_ref()
+        .unwrap()
+        .to_string_lossy();
+    assert_eq!(actual_resolved_path.into_owned(), expected_resolved_path);
+    match actual[0].action_results[0].as_ref() {
+        Some(Err(TendrilActionError::IoError(e))) => {
+            assert_eq!(e.kind(), std::io::ErrorKind::NotFound);
+        },
+        Some(e) => assert_eq!(format!("{:?}", e), "dsfsd"),
+        _ => panic!()
+    }
 }
 
 // TODO: Test when the second tendril is a parent/child to the first tendril

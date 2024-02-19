@@ -285,7 +285,15 @@ fn resolve_overrides(
     combined_tendrils
 }
 
-
+/// Replaces all environment variables in the format `<varname>` in the
+/// given path with their values. If the variable is not found, the
+/// `<varname>` is left as-is in the path.
+/// 
+/// The common tilde (`~`) symbol can also be used as a prefix to the path
+/// and corresponds to the `HOME` variable on Unix/Windows.
+/// 
+/// Any non UTF-8 characters in a variable's value or in the tilde value
+/// are replaced with the U+FFFD replacement character.
 fn resolve_path_variables(mut path: String) -> PathBuf {
     let path_temp = path.clone();
     let vars = parse_env_variables(&path_temp);
@@ -297,11 +305,29 @@ fn resolve_path_variables(mut path: String) -> PathBuf {
         path = path.replace(var, &value);
     }
 
+    if path.starts_with('~') {
+        path = resolve_tilde(&path);
+    }
+
     PathBuf::from(path)
 }
 
+/// Replaces the first instance of `~` with the `HOME` variable (Unix &
+/// Windows) and returns the replaced string.
+/// 
+/// Note: This does *not* check that the tilde is the leading character (it could be
+/// anywhere in the string) - this check should be done prior to calling this.
+fn resolve_tilde(path: &str) -> String {
+    match std::env::var_os("HOME") {
+        Some(v) => {
+            path.replacen('~', &v.to_string_lossy(), 1)
+        },
+        None => path.to_string(),
+    }
+}
+
 /// Extracts all variable names in the given string that
-/// are of the form `<var_name>`. The surrounding brackets
+/// are of the form `<varname>`. The surrounding brackets
 /// are also returned.
 fn parse_env_variables(input: &str) -> Vec<&str> {
     let mut vars = vec![];
