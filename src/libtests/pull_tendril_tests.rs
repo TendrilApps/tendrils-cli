@@ -30,7 +30,7 @@ use tempdir::TempDir;
 #[case("multi.sandwiched.dots")]
 #[case(".LeadingDot")]
 #[case("TrailingDot.")]
-fn local_exists_copies_successfully(
+fn remote_exists_copies_successfully(
     #[case] name: String,
 
     #[values(true, false)]
@@ -40,18 +40,18 @@ fn local_exists_copies_successfully(
     as_dir: bool,
 ) {
     let mut setup = Setup::new();
-    setup.local_file = setup.parent_dir.join(&name);
-    setup.local_dir = setup.parent_dir.join(&name);
-    setup.local_nested_file = setup.local_dir.join("nested.txt");
+    setup.remote_file = setup.parent_dir.join(&name);
+    setup.remote_dir = setup.parent_dir.join(&name);
+    setup.remote_nested_file = setup.remote_dir.join("nested.txt");
     setup.ctrl_file = setup.group_dir.join(&name);
     setup.ctrl_dir = setup.group_dir.join(&name);
     setup.ctrl_nested_file = setup.ctrl_dir.join("nested.txt");
     if as_dir {
-        setup.make_local_dir();
-        setup.make_local_nested_file();
+        setup.make_remote_dir();
+        setup.make_remote_nested_file();
     }
     else {
-        setup.make_local_file();
+        setup.make_remote_file();
     }
 
     let tendril = ResolvedTendril::new(
@@ -64,10 +64,10 @@ fn local_exists_copies_successfully(
     pull_tendril(&setup.td_dir, &tendril, false, force).unwrap();
 
     if as_dir {
-        assert_eq!(setup.ctrl_nested_file_contents(), "Local nested file contents");
+        assert_eq!(setup.ctrl_nested_file_contents(), "Remote nested file contents");
     }
     else {
-        assert_eq!(setup.ctrl_file_contents(), "Local file contents");
+        assert_eq!(setup.ctrl_file_contents(), "Remote file contents");
     }
     assert_eq!(setup.group_dir.read_dir().iter().count(), 1);
 }
@@ -75,13 +75,13 @@ fn local_exists_copies_successfully(
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn local_exists_dry_run_returns_skipped_error_does_not_modify_controlled(
+fn remote_exists_dry_run_returns_skipped_error_does_not_modify_controlled(
     #[case] force: bool,
 ) {
     // TODO: Test for symlink setup
     let setup = Setup::new();
-    setup.make_local_file();
-    setup.make_local_nested_file();
+    setup.make_remote_file();
+    setup.make_remote_nested_file();
     setup.make_ctrl_file();
     setup.make_ctrl_nested_file();
     let file_tendril = setup.resolved_file_tendril();
@@ -122,10 +122,10 @@ fn var_in_any_field_exists_uses_raw_path(
     setup.parent_dir = setup.temp_dir.path().join(parent);
     setup.td_dir = setup.temp_dir.path().join(td_dir);
     setup.group_dir = setup.td_dir.join(group);
-    setup.local_file = setup.parent_dir.join(name);
+    setup.remote_file = setup.parent_dir.join(name);
     setup.ctrl_file = setup.group_dir.join(name);
     setup.make_parent_dir();
-    setup.make_local_file();
+    setup.make_remote_file();
     setup.make_ctrl_file();
     std::env::set_var("mut-testing", "value");
 
@@ -144,7 +144,7 @@ fn var_in_any_field_exists_uses_raw_path(
     }
     else {
         assert!(matches!(actual, Ok(TendrilActionSuccess::Ok)));
-        assert_eq!(setup.ctrl_file_contents(), "Local file contents");
+        assert_eq!(setup.ctrl_file_contents(), "Remote file contents");
     }
 }
 
@@ -170,10 +170,10 @@ fn var_in_any_field_doesnt_exist_uses_raw_path(
     setup.parent_dir = setup.temp_dir.path().join(parent);
     setup.td_dir = setup.temp_dir.path().join(td_dir);
     setup.group_dir = setup.td_dir.join(group);
-    setup.local_file = setup.parent_dir.join(name);
+    setup.remote_file = setup.parent_dir.join(name);
     setup.ctrl_file = setup.group_dir.join(name);
     setup.make_parent_dir();
-    setup.make_local_file();
+    setup.make_remote_file();
     setup.make_ctrl_file();
 
     let tendril = ResolvedTendril::new(
@@ -193,14 +193,14 @@ fn var_in_any_field_doesnt_exist_uses_raw_path(
     }
     else {
         assert!(matches!(actual, Ok(TendrilActionSuccess::Ok)));
-        assert_eq!(setup.ctrl_file_contents(), "Local file contents");
+        assert_eq!(setup.ctrl_file_contents(), "Remote file contents");
     }
 }
 
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn local_doesnt_exist_returns_io_error_not_found(
+fn remote_doesnt_exist_returns_io_error_not_found(
     #[case] dry_run: bool,
 
     #[values(true, false)]
@@ -227,7 +227,7 @@ fn local_doesnt_exist_returns_io_error_not_found(
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn local_is_given_td_dir_returns_recursion_error(
+fn remote_is_given_td_dir_returns_recursion_error(
     #[case] dry_run: bool,
 
     #[values(true, false)]
@@ -251,7 +251,7 @@ fn local_is_given_td_dir_returns_recursion_error(
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn local_is_ancestor_to_given_td_dir_returns_recursion_error(
+fn remote_is_ancestor_to_given_td_dir_returns_recursion_error(
     #[case] dry_run: bool,
 
     #[values(true, false)]
@@ -280,13 +280,13 @@ fn local_is_ancestor_to_given_td_dir_returns_recursion_error(
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn local_is_sibling_to_given_td_dir_copies_normally(
+fn remote_is_sibling_to_given_td_dir_copies_normally(
     #[case] force: bool,
 ) {
     let setup = Setup::new();
-    setup.make_local_dir();
+    setup.make_remote_dir();
     assert_eq!( // Check they are siblings
-        setup.local_dir.parent().unwrap(),
+        setup.remote_dir.parent().unwrap(),
         setup.td_dir.parent().unwrap()
     );
     let tendril = setup.resolved_dir_tendril();
@@ -299,7 +299,7 @@ fn local_is_sibling_to_given_td_dir_copies_normally(
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn local_is_direct_child_of_given_td_dir_returns_recursion_error(
+fn remote_is_direct_child_of_given_td_dir_returns_recursion_error(
     #[case] dry_run: bool,
 
     #[values(true, false)]
@@ -312,7 +312,7 @@ fn local_is_direct_child_of_given_td_dir_returns_recursion_error(
     let td_dir = temp_td_dir.path().to_path_buf();
     let parent_dir = td_dir.clone();
     let source = parent_dir.join("misc.txt");
-    write(&source, "Local file contents").unwrap();
+    write(&source, "Remote file contents").unwrap();
 
     let tendril = ResolvedTendril::new(
         "SomeApp".to_string(),
@@ -329,14 +329,14 @@ fn local_is_direct_child_of_given_td_dir_returns_recursion_error(
     );
 
     assert!(matches!(actual, Err(TendrilActionError::Recursion)));
-    assert_eq!(read_to_string(source).unwrap(), "Local file contents");
+    assert_eq!(read_to_string(source).unwrap(), "Remote file contents");
     assert!(td_dir.read_dir().unwrap().into_iter().count() == 1);
 }
 
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn local_is_nested_child_of_given_td_dir_returns_recursion_error(
+fn remote_is_nested_child_of_given_td_dir_returns_recursion_error(
     #[case] dry_run: bool,
 
     #[values(true, false)]
@@ -354,7 +354,7 @@ fn local_is_nested_child_of_given_td_dir_returns_recursion_error(
     let source = parent_dir
         .join("misc.txt");
     create_dir_all(&source.parent().unwrap()).unwrap();
-    write(&source, "Local file contents").unwrap();
+    write(&source, "Remote file contents").unwrap();
 
     let tendril = ResolvedTendril::new(
         "SomeApp".to_string(),
@@ -366,18 +366,18 @@ fn local_is_nested_child_of_given_td_dir_returns_recursion_error(
     let actual = pull_tendril(&td_dir, &tendril, dry_run, force);
 
     assert!(matches!(actual, Err(TendrilActionError::Recursion)));
-    assert_eq!(read_to_string(source).unwrap(), "Local file contents");
+    assert_eq!(read_to_string(source).unwrap(), "Remote file contents");
     assert!(td_dir.read_dir().unwrap().into_iter().count() == 1);
 }
 
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn local_is_another_td_dir_still_copies(#[case] force: bool) {
+fn remote_is_another_td_dir_still_copies(#[case] force: bool) {
     let setup = Setup::new();
-    setup.make_local_nested_file();
-    write(&setup.local_dir.join("tendrils.json"), "").unwrap();
-    assert!(is_tendrils_dir(&setup.local_dir));
+    setup.make_remote_nested_file();
+    write(&setup.remote_dir.join("tendrils.json"), "").unwrap();
+    assert!(is_tendrils_dir(&setup.remote_dir));
 
     let tendril = setup.resolved_dir_tendril();
 
@@ -391,7 +391,7 @@ fn local_is_another_td_dir_still_copies(#[case] force: bool) {
 #[rstest]
 #[case(TendrilMode::DirMerge)]
 #[case(TendrilMode::DirOverwrite)]
-fn local_is_file_and_ctrl_is_dir_returns_type_mismatch_error_unless_forced(
+fn remote_is_file_and_ctrl_is_dir_returns_type_mismatch_error_unless_forced(
     #[case] mode: TendrilMode,
 
     #[values(true, false)]
@@ -401,7 +401,7 @@ fn local_is_file_and_ctrl_is_dir_returns_type_mismatch_error_unless_forced(
     force: bool,
 ) {
     let setup = Setup::new();
-    setup.make_local_file();
+    setup.make_remote_file();
     create_dir_all(&setup.ctrl_file).unwrap();
 
     let mut tendril = setup.resolved_file_tendril();
@@ -422,11 +422,11 @@ fn local_is_file_and_ctrl_is_dir_returns_type_mismatch_error_unless_forced(
     }
 
     if force && !dry_run {
-        assert_eq!(setup.local_file_contents(), "Local file contents");
-        assert_eq!(setup.ctrl_file_contents(), "Local file contents");
+        assert_eq!(setup.remote_file_contents(), "Remote file contents");
+        assert_eq!(setup.ctrl_file_contents(), "Remote file contents");
     }
     else {
-        assert_eq!(setup.local_file_contents(), "Local file contents");
+        assert_eq!(setup.remote_file_contents(), "Remote file contents");
         assert!(setup.ctrl_file.is_dir());
         assert!(is_empty(&setup.ctrl_file));
     }
@@ -435,7 +435,7 @@ fn local_is_file_and_ctrl_is_dir_returns_type_mismatch_error_unless_forced(
 #[rstest]
 #[case(TendrilMode::DirMerge)]
 #[case(TendrilMode::DirOverwrite)]
-fn local_is_dir_and_ctrl_is_file_returns_type_mismatch_error_unless_forced(
+fn remote_is_dir_and_ctrl_is_file_returns_type_mismatch_error_unless_forced(
     #[case] mode: TendrilMode,
 
     #[values(true, false)]
@@ -445,7 +445,7 @@ fn local_is_dir_and_ctrl_is_file_returns_type_mismatch_error_unless_forced(
     force: bool,
 ) {
     let setup = Setup::new();
-    setup.make_local_nested_file();
+    setup.make_remote_nested_file();
     setup.make_group_dir();
     write(&setup.ctrl_dir, "I'm a file!").unwrap();
 
@@ -466,16 +466,16 @@ fn local_is_dir_and_ctrl_is_file_returns_type_mismatch_error_unless_forced(
         },
     }
 
-    assert!(setup.local_dir.is_dir());
+    assert!(setup.remote_dir.is_dir());
     if force && !dry_run {
-        assert_eq!(&setup.ctrl_nested_file_contents(), "Local nested file contents");
-        assert_eq!(setup.local_dir.read_dir().iter().count(), 1);
+        assert_eq!(&setup.ctrl_nested_file_contents(), "Remote nested file contents");
+        assert_eq!(setup.remote_dir.read_dir().iter().count(), 1);
         assert_eq!(setup.ctrl_dir.read_dir().iter().count(), 1);
     }
     else {
         let ctrl_dir_contents = read_to_string(&setup.ctrl_dir).unwrap();
         assert_eq!(ctrl_dir_contents, "I'm a file!");
-        assert_eq!(setup.local_dir.read_dir().iter().count(), 1);
+        assert_eq!(setup.remote_dir.read_dir().iter().count(), 1);
         assert_eq!(setup.td_dir.read_dir().iter().count(), 1);
     }
 }
@@ -483,7 +483,7 @@ fn local_is_dir_and_ctrl_is_file_returns_type_mismatch_error_unless_forced(
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn local_is_symlink_returns_type_mismatch_error_unless_forced_then_copies_symlink_target_contents_keeps_source_name(
+fn remote_is_symlink_returns_type_mismatch_error_unless_forced_then_copies_symlink_target_contents_keeps_source_name(
     #[case] dry_run: bool,
 
     #[values(true, false)]
@@ -492,8 +492,8 @@ fn local_is_symlink_returns_type_mismatch_error_unless_forced_then_copies_symlin
     let setup = Setup::new();
     setup.make_target_file();
     setup.make_target_nested_file();
-    symlink(&setup.local_file, &setup.target_file, false, false).unwrap();
-    symlink(&setup.local_dir, &setup.target_dir, false, false).unwrap();
+    symlink(&setup.remote_file, &setup.target_file, false, false).unwrap();
+    symlink(&setup.remote_dir, &setup.target_dir, false, false).unwrap();
 
     let file_tendril = setup.resolved_file_tendril();
     let dir_tendril = setup.resolved_dir_tendril();
@@ -526,8 +526,8 @@ fn local_is_symlink_returns_type_mismatch_error_unless_forced_then_copies_symlin
         },
     }
 
-    assert!(setup.local_file.is_symlink());
-    assert!(setup.local_dir.is_symlink());
+    assert!(setup.remote_file.is_symlink());
+    assert!(setup.remote_dir.is_symlink());
     assert!(!setup.ctrl_file.is_symlink());
     assert!(!setup.ctrl_dir.is_symlink());
     if force && !dry_run {
@@ -554,8 +554,8 @@ fn ctrl_is_symlink_returns_type_mismatch_error_unless_forced(
     force: bool,
 ) {
     let setup = Setup::new();
-    setup.make_local_file();
-    setup.make_local_nested_file();
+    setup.make_remote_file();
+    setup.make_remote_nested_file();
     setup.make_target_file();
     setup.make_target_nested_file();
     setup.make_group_dir();
@@ -596,8 +596,8 @@ fn ctrl_is_symlink_returns_type_mismatch_error_unless_forced(
     if force && !dry_run {
         assert!(!setup.ctrl_file.is_symlink());
         assert!(!setup.ctrl_dir.is_symlink());
-        assert_eq!(setup.ctrl_file_contents(), "Local file contents");
-        assert_eq!(setup.ctrl_nested_file_contents(), "Local nested file contents");
+        assert_eq!(setup.ctrl_file_contents(), "Remote file contents");
+        assert_eq!(setup.ctrl_nested_file_contents(), "Remote nested file contents");
     }
     else {
         assert!(setup.ctrl_file.is_symlink());
@@ -610,7 +610,7 @@ fn ctrl_is_symlink_returns_type_mismatch_error_unless_forced(
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn no_read_access_from_local_file_returns_io_error_permission_denied(
+fn no_read_access_from_remote_file_returns_io_error_permission_denied(
     #[case] force: bool,
 ) {
     let temp_td_dir = TempDir::new_in(
@@ -648,7 +648,7 @@ fn no_read_access_from_local_file_returns_io_error_permission_denied(
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn no_read_access_from_local_dir_returns_io_error_permission_denied(
+fn no_read_access_from_remote_dir_returns_io_error_permission_denied(
     #[case] force: bool,
 ) {
     let temp_td_dir = TempDir::new_in(
@@ -689,7 +689,7 @@ fn no_write_access_at_ctrl_file_returns_io_error_permission_denied(
     #[case] force: bool,
 ) {
     let setup = Setup::new();
-    setup.make_local_file();
+    setup.make_remote_file();
     setup.make_ctrl_file();
 
     // Set file read-only
@@ -722,7 +722,7 @@ fn file_tendril_overwrites_ctrl_file_regardless_of_dir_merge_mode(
     force: bool,
 ) {
     let setup = Setup::new();
-    setup.make_local_file();
+    setup.make_remote_file();
     setup.make_ctrl_file();
 
     let mut tendril = setup.resolved_file_tendril();
@@ -730,7 +730,7 @@ fn file_tendril_overwrites_ctrl_file_regardless_of_dir_merge_mode(
 
     pull_tendril(&setup.td_dir, &tendril, false, force).unwrap();
 
-    assert_eq!(setup.ctrl_file_contents(), "Local file contents");
+    assert_eq!(setup.ctrl_file_contents(), "Remote file contents");
 }
 
 #[rstest]
@@ -740,16 +740,16 @@ fn dir_overwrite_w_dir_tendril_replaces_ctrl_dir_recursively(
     #[case] force: bool,
 ) {
     let setup = Setup::new();
-    let local_nested_dir = &setup.local_dir.join("NestedDir");
-    let local_new_2nested_file = local_nested_dir.join("new_nested.txt");
+    let remote_nested_dir = &setup.remote_dir.join("NestedDir");
+    let remote_new_2nested_file = remote_nested_dir.join("new_nested.txt");
     let ctrl_nested_dir = &setup.ctrl_dir.join("NestedDir");
     let ctrl_new_2nested_file = ctrl_nested_dir.join("new_nested.txt");
     let ctrl_extra_2nested_file = ctrl_nested_dir.join("extra_nested.txt");
-    setup.make_local_nested_file();
+    setup.make_remote_nested_file();
     setup.make_ctrl_nested_file();
-    create_dir_all(&local_nested_dir).unwrap();
+    create_dir_all(&remote_nested_dir).unwrap();
     create_dir_all(&ctrl_nested_dir).unwrap();
-    write(&local_new_2nested_file, "I'm not in the tendrils dir").unwrap();
+    write(&remote_new_2nested_file, "I'm not in the tendrils dir").unwrap();
     write(&ctrl_extra_2nested_file, "I'm not in the source dir").unwrap();
 
     let mut tendril = setup.resolved_dir_tendril();
@@ -758,7 +758,7 @@ fn dir_overwrite_w_dir_tendril_replaces_ctrl_dir_recursively(
     pull_tendril(&setup.td_dir, &tendril, false, force).unwrap();
 
     let ctrl_new_2nested_file_contents = read_to_string(ctrl_new_2nested_file).unwrap();
-    assert_eq!(setup.ctrl_nested_file_contents(), "Local nested file contents");
+    assert_eq!(setup.ctrl_nested_file_contents(), "Remote nested file contents");
     assert_eq!(ctrl_new_2nested_file_contents, "I'm not in the tendrils dir");
     assert!(!ctrl_extra_2nested_file.exists());
 }
@@ -770,16 +770,16 @@ fn dir_merge_w_dir_tendril_merges_w_ctrl_dir_recursively(
     #[case] force: bool,
 ) {
     let setup = Setup::new();
-    let local_nested_dir = &setup.local_dir.join("NestedDir");
-    let local_new_2nested_file = local_nested_dir.join("new_nested.txt");
+    let remote_nested_dir = &setup.remote_dir.join("NestedDir");
+    let remote_new_2nested_file = remote_nested_dir.join("new_nested.txt");
     let ctrl_nested_dir = &setup.ctrl_dir.join("NestedDir");
     let ctrl_new_2nested_file = ctrl_nested_dir.join("new_nested.txt");
     let ctrl_extra_2nested_file = ctrl_nested_dir.join("extra_nested.txt");
-    setup.make_local_nested_file();
+    setup.make_remote_nested_file();
     setup.make_ctrl_nested_file();
-    create_dir_all(&local_nested_dir).unwrap();
+    create_dir_all(&remote_nested_dir).unwrap();
     create_dir_all(&ctrl_nested_dir).unwrap();
-    write(&local_new_2nested_file, "I'm not in the tendrils dir").unwrap();
+    write(&remote_new_2nested_file, "I'm not in the tendrils dir").unwrap();
     write(&ctrl_extra_2nested_file, "I'm not in the source dir").unwrap();
 
     let mut tendril = setup.resolved_dir_tendril();
@@ -789,7 +789,7 @@ fn dir_merge_w_dir_tendril_merges_w_ctrl_dir_recursively(
 
     let ctrl_new_2nested_file_contents = read_to_string(ctrl_new_2nested_file).unwrap();
     let ctrl_extra_2nested_file_contents = read_to_string(ctrl_extra_2nested_file).unwrap();
-    assert_eq!(setup.ctrl_nested_file_contents(), "Local nested file contents");
+    assert_eq!(setup.ctrl_nested_file_contents(), "Remote nested file contents");
     assert_eq!(ctrl_new_2nested_file_contents, "I'm not in the tendrils dir");
     assert_eq!(ctrl_extra_2nested_file_contents, "I'm not in the source dir");
 }
@@ -804,7 +804,7 @@ fn td_dir_doesnt_exist_creates_dir_and_subdirs_first_except_if_dry_run(
     force: bool,
 ) {
     let setup = Setup::new();
-    setup.make_local_file();
+    setup.make_remote_file();
 
     let tendril = setup.resolved_file_tendril();
 
@@ -816,27 +816,27 @@ fn td_dir_doesnt_exist_creates_dir_and_subdirs_first_except_if_dry_run(
     }
     else {
         assert!(matches!(actual, Ok(TendrilActionSuccess::Ok)));
-        assert_eq!(setup.ctrl_file_contents(), "Local file contents");
+        assert_eq!(setup.ctrl_file_contents(), "Remote file contents");
     }
 }
 
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn local_file_is_unchanged(
+fn remote_file_is_unchanged(
     #[case] dry_run: bool,
 
     #[values(true, false)]
     force: bool,
 ) {
     let setup = Setup::new();
-    setup.make_local_file();
+    setup.make_remote_file();
 
     let tendril = setup.resolved_file_tendril();
 
     let actual = pull_tendril(&setup.td_dir, &tendril, dry_run, force);
 
-    assert_eq!(setup.local_file_contents(), "Local file contents");
+    assert_eq!(setup.remote_file_contents(), "Remote file contents");
     if dry_run {
         assert!(matches!(actual, Ok(TendrilActionSuccess::Skipped)));
     }
@@ -848,20 +848,20 @@ fn local_file_is_unchanged(
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn local_dir_is_unchanged(
+fn remote_dir_is_unchanged(
     #[case] dry_run: bool,
 
     #[values(true, false)]
     force: bool,
 ) {
     let setup = Setup::new();
-    setup.make_local_nested_file();
+    setup.make_remote_nested_file();
 
     let tendril = setup.resolved_dir_tendril();
 
     let actual = pull_tendril(&setup.td_dir, &tendril, dry_run, force);
 
-    assert_eq!(setup.local_nested_file_contents(), "Local nested file contents");
+    assert_eq!(setup.remote_nested_file_contents(), "Remote nested file contents");
     if dry_run {
         assert!(matches!(actual, Ok(TendrilActionSuccess::Skipped)));
     }
@@ -869,7 +869,6 @@ fn local_dir_is_unchanged(
         assert!(matches!(actual, Ok(TendrilActionSuccess::Ok)));
     }
 }
-
 
 #[rstest]
 #[case(true)]
@@ -881,7 +880,7 @@ fn other_tendrils_in_same_group_dir_are_unchanged(
     force: bool,
 ) {
     let setup = Setup::new();
-    setup.make_local_file();
+    setup.make_remote_file();
     let some_other_ctrl_file= &setup.group_dir.join("other.txt");
     setup.make_group_dir();
     write(some_other_ctrl_file, "Another tendril from the same group").unwrap();
@@ -911,7 +910,7 @@ fn link_mode_tendril_returns_mode_mismatch_error(
     force: bool,
 ) {
     let setup = Setup::new();
-    setup.make_local_file();
+    setup.make_remote_file();
 
     let mut tendril = setup.resolved_file_tendril();
     tendril.mode = TendrilMode::Link;
@@ -919,6 +918,6 @@ fn link_mode_tendril_returns_mode_mismatch_error(
     let actual = pull_tendril(&setup.td_dir, &tendril, dry_run, force);
 
     assert!(matches!(actual, Err(TendrilActionError::ModeMismatch)));
-    assert_eq!(&setup.local_file_contents(), "Local file contents");
+    assert_eq!(&setup.remote_file_contents(), "Remote file contents");
     assert!(is_empty(&setup.td_dir));
 }

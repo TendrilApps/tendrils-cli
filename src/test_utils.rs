@@ -49,9 +49,9 @@ pub struct Setup {
     pub td_dir: PathBuf,
     pub td_json_file: PathBuf,
     pub group_dir: PathBuf,
-    pub local_file: PathBuf,
-    pub local_dir: PathBuf,
-    pub local_nested_file: PathBuf,
+    pub remote_file: PathBuf,
+    pub remote_dir: PathBuf,
+    pub remote_nested_file: PathBuf,
     pub ctrl_file: PathBuf,
     pub ctrl_dir: PathBuf,
     pub ctrl_nested_file: PathBuf,
@@ -71,9 +71,9 @@ impl Setup {
         let td_dir = temp_dir.path().join("TendrilsDir");
         let td_json_file = td_dir.join("tendrils.json");
         let group_dir = td_dir.join("SomeApp");
-        let local_file = parent_dir.join("misc.txt");
-        let local_dir = parent_dir.join("misc");
-        let local_nested_file = local_dir.join("nested.txt");
+        let remote_file = parent_dir.join("misc.txt");
+        let remote_dir = parent_dir.join("misc");
+        let remote_nested_file = remote_dir.join("nested.txt");
         let ctrl_file = group_dir.join("misc.txt");
         let ctrl_dir = group_dir.join("misc");
         let ctrl_nested_file = ctrl_dir.join("nested.txt");
@@ -87,9 +87,9 @@ impl Setup {
             td_dir,
             td_json_file,
             group_dir,
-            local_file,
-            local_dir,
-            local_nested_file,
+            remote_file,
+            remote_dir,
+            remote_nested_file,
             ctrl_file,
             ctrl_dir,
             ctrl_nested_file,
@@ -156,17 +156,17 @@ impl Setup {
         write(&self.ctrl_nested_file, "Controlled nested file contents").unwrap();
     }
 
-    pub fn make_local_file(&self) {
-        write(&self.local_file, "Local file contents").unwrap();
+    pub fn make_remote_file(&self) {
+        write(&self.remote_file, "Remote file contents").unwrap();
     }
 
-    pub fn make_local_dir(&self) {
-        create_dir_all(&self.local_dir).unwrap();
+    pub fn make_remote_dir(&self) {
+        create_dir_all(&self.remote_dir).unwrap();
     }
 
-    pub fn make_local_nested_file(&self) {
-        self.make_local_dir();
-        write(&self.local_nested_file, "Local nested file contents").unwrap();
+    pub fn make_remote_nested_file(&self) {
+        self.make_remote_dir();
+        write(&self.remote_nested_file, "Remote nested file contents").unwrap();
     }
 
     pub fn make_target_file(&self) {
@@ -190,11 +190,11 @@ impl Setup {
         read_to_string(&self.ctrl_nested_file).unwrap()
     }
 
-    pub fn local_file_contents(&self) -> String {
-        read_to_string(&self.local_file).unwrap()
+    pub fn remote_file_contents(&self) -> String {
+        read_to_string(&self.remote_file).unwrap()
     }
 
-    pub fn local_nested_file_contents(&self) -> String {
-        read_to_string(&self.local_nested_file).unwrap()
+    pub fn remote_nested_file_contents(&self) -> String {
+        read_to_string(&self.remote_nested_file).unwrap()
     }
 }

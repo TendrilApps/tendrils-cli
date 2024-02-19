@@ -29,7 +29,7 @@ fn tendril_is_not_link_mode_returns_mode_mismatch_error(
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn local_parent_doesnt_exist_returns_io_error_not_found(
+fn remote_parent_doesnt_exist_returns_io_error_not_found(
     #[case] dry_run: bool,
 
     #[values(true, false)]
@@ -76,22 +76,22 @@ fn ctrl_doesnt_exist_returns_io_error_not_found(
         Err(TendrilActionError::IoError(e)) => assert_eq!(e.kind(), std::io::ErrorKind::NotFound),
         _ => panic!("Actual error: {:?}", actual),
     }
-    assert!(!setup.local_file.exists());
+    assert!(!setup.remote_file.exists());
     assert!(is_empty(&setup.parent_dir));
 }
 
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn local_exists_and_is_not_symlink_returns_type_mismatch_error_unless_forced(
+fn remote_exists_and_is_not_symlink_returns_type_mismatch_error_unless_forced(
     #[case] dry_run: bool,
 
     #[values(true, false)]
     force: bool,
 ) {
     let setup = Setup::new();
-    setup.make_local_file();
-    setup.make_local_nested_file();
+    setup.make_remote_file();
+    setup.make_remote_nested_file();
     setup.make_ctrl_file();
     setup.make_ctrl_nested_file();
 
@@ -130,21 +130,21 @@ fn local_exists_and_is_not_symlink_returns_type_mismatch_error_unless_forced(
     }
 
     if force && !dry_run {
-        assert!(setup.local_file.is_symlink());
-        assert!(setup.local_dir.is_symlink());
-        assert_eq!(setup.local_file_contents(), "Controlled file contents");
+        assert!(setup.remote_file.is_symlink());
+        assert!(setup.remote_dir.is_symlink());
+        assert_eq!(setup.remote_file_contents(), "Controlled file contents");
         assert_eq!(
-            setup.local_nested_file_contents(),
+            setup.remote_nested_file_contents(),
             "Controlled nested file contents"
         );
     }
     else {
-        assert!(!setup.local_file.is_symlink());
-        assert!(!setup.local_dir.is_symlink());
-        assert_eq!(setup.local_file_contents(), "Local file contents");
+        assert!(!setup.remote_file.is_symlink());
+        assert!(!setup.remote_dir.is_symlink());
+        assert_eq!(setup.remote_file_contents(), "Remote file contents");
         assert_eq!(
-            setup.local_nested_file_contents(),
-            "Local nested file contents"
+            setup.remote_nested_file_contents(),
+            "Remote nested file contents"
         );
     }
 }
@@ -208,27 +208,27 @@ fn ctrl_is_symlink_returns_type_mismatch_error_unless_forced(
     assert!(setup.ctrl_dir.is_symlink());
     assert_eq!(setup.td_dir.read_dir().iter().count(), 1);
     if force && !dry_run {
-        assert_eq!(setup.local_file_contents(), "Target file contents");
+        assert_eq!(setup.remote_file_contents(), "Target file contents");
         assert_eq!(
-            setup.local_nested_file_contents(),
+            setup.remote_nested_file_contents(),
             "Target nested file contents"
         );
     }
     else {
-        assert!(!setup.local_file.exists());
-        assert!(!setup.local_dir.exists());
+        assert!(!setup.remote_file.exists());
+        assert!(!setup.remote_dir.exists());
     }
 }
 
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn local_doesnt_exist_but_parent_does_symlink_is_created(#[case] force: bool) {
+fn remote_doesnt_exist_but_parent_does_symlink_is_created(#[case] force: bool) {
     let setup = Setup::new();
     setup.make_ctrl_file();
     setup.make_ctrl_nested_file();
-    assert!(!setup.local_file.exists());
-    assert!(!setup.local_dir.exists());
+    assert!(!setup.remote_file.exists());
+    assert!(!setup.remote_dir.exists());
 
     let mut file_tendril = setup.resolved_file_tendril();
     file_tendril.mode = TendrilMode::Link;
@@ -239,11 +239,11 @@ fn local_doesnt_exist_but_parent_does_symlink_is_created(#[case] force: bool) {
     link_tendril(&setup.td_dir, &file_tendril, false, force).unwrap();
     link_tendril(&setup.td_dir, &dir_tendril, false, force).unwrap();
 
-    assert!(setup.local_file.is_symlink());
-    assert!(setup.local_dir.is_symlink());
-    assert_eq!(setup.local_file_contents(), "Controlled file contents");
+    assert!(setup.remote_file.is_symlink());
+    assert!(setup.remote_dir.is_symlink());
+    assert_eq!(setup.remote_file_contents(), "Controlled file contents");
     assert_eq!(
-        setup.local_nested_file_contents(),
+        setup.remote_nested_file_contents(),
         "Controlled nested file contents"
     );
 }
@@ -251,7 +251,7 @@ fn local_doesnt_exist_but_parent_does_symlink_is_created(#[case] force: bool) {
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn local_doesnt_exist_but_parent_does_symlink_not_created_in_dry_run(
+fn remote_doesnt_exist_but_parent_does_symlink_not_created_in_dry_run(
     #[case] force: bool
 ) {
     let setup = Setup::new();
@@ -269,21 +269,21 @@ fn local_doesnt_exist_but_parent_does_symlink_not_created_in_dry_run(
 
     assert!(matches!(file_actual, Ok(TendrilActionSuccess::Skipped)));
     assert!(matches!(dir_actual, Ok(TendrilActionSuccess::Skipped)));
-    assert!(!setup.local_file.exists());
-    assert!(!setup.local_dir.exists());
+    assert!(!setup.remote_file.exists());
+    assert!(!setup.remote_dir.exists());
 }
 
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn existing_symlinks_at_local_are_overwritten(#[case] force: bool) {
+fn existing_symlinks_at_remote_are_overwritten(#[case] force: bool) {
     let setup = Setup::new();
     setup.make_ctrl_file();
     setup.make_ctrl_nested_file();
     setup.make_target_file();
     setup.make_target_nested_file();
-    symlink(&setup.local_file, &setup.target_file, false, true).unwrap();
-    symlink(&setup.local_dir, &setup.target_dir, false, true).unwrap();
+    symlink(&setup.remote_file, &setup.target_file, false, true).unwrap();
+    symlink(&setup.remote_dir, &setup.target_dir, false, true).unwrap();
 
     let mut file_tendril = setup.resolved_file_tendril();
     file_tendril.mode = TendrilMode::Link;
@@ -294,31 +294,31 @@ fn existing_symlinks_at_local_are_overwritten(#[case] force: bool) {
     link_tendril(&setup.td_dir, &file_tendril, false, force).unwrap();
     link_tendril(&setup.td_dir, &dir_tendril, false, force).unwrap();
 
-    assert!(setup.local_file.is_symlink());
-    assert!(setup.local_dir.is_symlink());
-    assert_eq!(setup.local_file_contents(), "Controlled file contents");
+    assert!(setup.remote_file.is_symlink());
+    assert!(setup.remote_dir.is_symlink());
+    assert_eq!(setup.remote_file_contents(), "Controlled file contents");
     assert_eq!(
-        setup.local_nested_file_contents(),
+        setup.remote_nested_file_contents(),
         "Controlled nested file contents"
     );
 
-    assert!(setup.local_file.is_symlink());
-    assert!(setup.local_dir.is_symlink());
-    assert_eq!(setup.local_file_contents(), "Controlled file contents");
-    assert_eq!(setup.local_nested_file_contents(), "Controlled nested file contents");
+    assert!(setup.remote_file.is_symlink());
+    assert!(setup.remote_dir.is_symlink());
+    assert_eq!(setup.remote_file_contents(), "Controlled file contents");
+    assert_eq!(setup.remote_nested_file_contents(), "Controlled nested file contents");
 }
 
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn existing_symlinks_at_local_are_unmodified_in_dry_run(#[case] force: bool) {
+fn existing_symlinks_at_remote_are_unmodified_in_dry_run(#[case] force: bool) {
     let setup = Setup::new();
     setup.make_ctrl_file();
     setup.make_ctrl_nested_file();
     setup.make_target_file();
     setup.make_target_nested_file();
-    symlink(&setup.local_file, &setup.target_file, false, true).unwrap();
-    symlink(&setup.local_dir, &setup.target_dir, false, true).unwrap();
+    symlink(&setup.remote_file, &setup.target_file, false, true).unwrap();
+    symlink(&setup.remote_dir, &setup.target_dir, false, true).unwrap();
 
     let mut file_tendril = setup.resolved_file_tendril();
     file_tendril.mode = TendrilMode::Link;
@@ -331,8 +331,8 @@ fn existing_symlinks_at_local_are_unmodified_in_dry_run(#[case] force: bool) {
 
     assert!(matches!(file_actual, Ok(TendrilActionSuccess::Skipped)));
     assert!(matches!(dir_actual, Ok(TendrilActionSuccess::Skipped)));
-    assert!(setup.local_file.is_symlink());
-    assert!(setup.local_dir.is_symlink());
-    assert_eq!(setup.local_file_contents(), "Target file contents");
-    assert_eq!(setup.local_nested_file_contents(), "Target nested file contents");
+    assert!(setup.remote_file.is_symlink());
+    assert!(setup.remote_dir.is_symlink());
+    assert_eq!(setup.remote_file_contents(), "Target file contents");
+    assert_eq!(setup.remote_nested_file_contents(), "Target nested file contents");
 }

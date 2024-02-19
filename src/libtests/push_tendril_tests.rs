@@ -20,5 +20,5 @@ fn given_link_mode_tendril_returns_mode_mismatch_error(
     let actual = push_tendril(&setup.td_dir, &tendril, dry_run, force);
 
     assert!(matches!(actual, Err(TendrilActionError::ModeMismatch)));
-    assert!(!setup.local_file.exists());
+    assert!(!setup.remote_file.exists());
 }
