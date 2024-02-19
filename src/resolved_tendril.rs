@@ -47,20 +47,36 @@ impl ResolvedTendril {
 
     pub fn full_path(&self) -> PathBuf {
         #[cfg(not(windows))]
-        let dir_sep = "/";
+        let platform_dir_sep = "/";
         #[cfg(windows)]
-        let dir_sep = "\\";
+        let platform_dir_sep = "\\";
 
         let parent_str = self.parent
             .to_string_lossy()
             .to_string();
+
         if parent_str.ends_with('\\')
             || parent_str.ends_with('/')
             || parent_str.is_empty() {
             PathBuf::from(parent_str + &self.name)
         }
+        else if parent_str.contains('\\') {
+            if parent_str.contains('/') {
+                // Mixed separators - fall back to the
+                // platform's default separator
+                PathBuf::from(parent_str + platform_dir_sep + &self.name)
+            }
+            else {
+                PathBuf::from(parent_str + "\\" + &self.name)
+            }
+        }
+        else if parent_str.contains("/") {
+            PathBuf::from(parent_str + "/" + &self.name)
+        }
         else {
-            PathBuf::from(parent_str + dir_sep + &self.name)
+            // No separators - fall back to the
+            // platform's default separator
+            PathBuf::from(parent_str + platform_dir_sep + &self.name)
         }
     }
 

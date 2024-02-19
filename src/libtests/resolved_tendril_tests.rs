@@ -78,16 +78,16 @@ fn name_is_valid_returns_ok(#[case] name: String) {
 }
 
 #[rstest]
-#[case("misc.txt", "ParentPath/", "ParentPath/misc.txt")]
-#[case("MiscDir", "ParentPath/", "ParentPath/MiscDir")]
+#[case("ParentPath/", "misc.txt", "ParentPath/misc.txt")]
+#[case("ParentPath/", "MiscDir", "ParentPath/MiscDir")]
 #[case(
-    "misc.txt",
     "Crazy`~!@#$%^&*()-_=+|\\[]{}'\";:/?.,<>Symbols/",
+    "misc.txt",
     "Crazy`~!@#$%^&*()-_=+|\\[]{}'\";:/?.,<>Symbols/misc.txt"
 )]
 fn full_path_appends_name_to_parent(
-    #[case] name: String,
     #[case] parent: PathBuf,
+    #[case] name: String,
     #[case] expected: &str,
 ) {
     let tendril = ResolvedTendril::new(
@@ -126,12 +126,31 @@ fn full_path_w_trailing_sep_in_parent_keeps_all_given_seps_regardless_of_curr_pl
 }
 
 #[rstest]
+#[case("Windows\\Style", "Windows\\Style\\misc.txt")]
+#[case("Unix/Style", "Unix/Style/misc.txt")]
+#[case("\\Windows\\Style", "\\Windows\\Style\\misc.txt")]
+#[case("/Unix/Style", "/Unix/Style/misc.txt")]
+fn full_path_wo_trailing_sep_in_parent_matches_other_seps_in_parent_for_join_regardless_of_curr_platform(
+    #[case] parent: &str,
+    #[case] expected: &str,
+) {
+    let tendril = ResolvedTendril::new(
+        "SomeApp".to_string(),
+        "misc.txt".to_string(),
+        PathBuf::from(parent),
+        TendrilMode::DirOverwrite,
+    ).unwrap();
+
+    let actual = tendril.full_path();
+
+    assert_eq!(expected, actual.to_str().unwrap());
+}
+
+#[rstest]
 #[case("Plain")]
-#[case("\\Windows\\Style")]
-#[case("/Unix/Style")]
 #[case("\\Mixed/Style")]
 #[case("/Mixed\\Style")]
-fn full_path_wo_trailing_sep_in_parent_uses_curr_platform_sep_only_for_join(
+fn full_path_wo_trailing_sep_in_parent_or_mixed_seps_uses_curr_platform_sep_for_join(
     #[case] parent: &str,
 ) {
     let tendril = ResolvedTendril::new(
