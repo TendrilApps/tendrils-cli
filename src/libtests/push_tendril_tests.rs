@@ -12,7 +12,7 @@ fn given_link_mode_tendril_returns_mode_mismatch_error(
     force: bool,
 ) {
     let setup = Setup::new();
-    setup.make_ctrl_file();
+    setup.make_local_file();
 
     let mut tendril = setup.resolved_file_tendril();
     tendril.mode = TendrilMode::Link;

@@ -206,7 +206,7 @@ fn tendril_action_dry_run_does_not_modify(
     force: bool,
 ) {
     let setup = Setup::new();
-    setup.make_ctrl_file();
+    setup.make_local_file();
     setup.make_target_file();
     if mode == ActionMode::Link {
         // Setup remote file as symlink to some random (non-tendril) file
@@ -241,7 +241,7 @@ fn tendril_action_dry_run_does_not_modify(
     else {
         assert_eq!(setup.remote_file_contents(), "Remote file contents");
     }
-    assert_eq!(setup.ctrl_file_contents(), "Controlled file contents");
+    assert_eq!(setup.local_file_contents(), "Local file contents");
     assert_eq!(writer.all_output_lines()[0], "No local overrides were found.");
     assert!(writer.all_output_lines()[4].contains("Skipped"));
     assert_eq!(setup.td_dir.read_dir().unwrap().into_iter().count(), 2);
