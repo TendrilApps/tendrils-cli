@@ -101,7 +101,6 @@ fn weird_var_names_still_replace_with_value(
     assert_eq!(actual, expected);
 }
 
-// TODO: How to handle var names that have '<' or '>' in them?
 
 #[rstest]
 #[case("<var>", "<var>", "<var>")]
@@ -209,6 +208,8 @@ fn var_value_is_non_unicode_returns_lossy_value() {
 #[rstest]
 #[case("~", "MyHome")]
 #[case("~~", "MyHome~")]
+#[case("~/", "MyHome/")]
+#[case("~\\", "MyHome\\")]
 #[case("~/Some/Path", "MyHome/Some/Path")]
 #[case("~\\Some\\Path", "MyHome\\Some\\Path")]
 #[case("~<var>", "MyHomevalue")]
@@ -310,6 +311,3 @@ fn tilde_value_is_non_unicode_returns_lossy_value() {
 
     assert_eq!(actual, expected);
 }
-
-// TODO: Integration test for tilde and for env vars
-// TODO: Add and test the | escape char for <>

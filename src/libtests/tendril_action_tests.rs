@@ -199,7 +199,7 @@ fn parent_path_vars_are_resolved(
     let mut tendril = setup.file_tendril();
     tendril.link = mode == ActionMode::Link;
     set_all_platform_paths(
-        &mut tendril, &[PathBuf::from("~/I_do_not_exist/<var>")]
+        &mut tendril, &[PathBuf::from("~/I_do_not_exist/<var>/")]
     );
     let tendrils = [tendril];
     std::env::set_var("HOME", "My/Home");

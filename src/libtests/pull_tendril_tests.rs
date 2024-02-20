@@ -99,12 +99,14 @@ fn local_exists_dry_run_returns_skipped_error_does_not_modify_controlled(
 // TODO: Test when path is invalid and a copy is attempted (with both a folder AND a file)
 
 #[rstest]
+#[case("<mut-testing>", "TendrilsDir", "SomeApp", "misc.txt")]
+#[case("Parent", "<mut-testing>", "SomeApp", "misc.txt")]
+#[case("Parent", "TendrilsDir", "<mut-testing>", "misc.txt")]
+#[case("Parent", "TendrilsDir", "SomeApp", "<mut-testing>")]
+#[cfg_attr(windows, ignore)] // These are invalid paths on Windows
 #[serial("mut-env-var-testing")]
-#[case("TendrilsDir", "SomeApp", "<mut-testing>")]
-#[case("TendrilsDir", "<mut-testing>", "misc.txt")]
-#[case("<mut-testing>", "SomeApp", "misc.txt")]
-#[cfg(not(windows))] // These are invalid paths on Windows
-fn env_var_in_td_dir_or_group_or_name_uses_raw_path(
+fn var_in_any_field_exists_uses_raw_path(
+    #[case] parent: &str,
     #[case] td_dir: &str,
     #[case] group: &str,
     #[case] name: &str,
@@ -115,11 +117,14 @@ fn env_var_in_td_dir_or_group_or_name_uses_raw_path(
     #[values(true, false)]
     force: bool,
 ) {
+    // Any variables should have been resolved at this point
     let mut setup = Setup::new();
+    setup.parent_dir = setup.temp_dir.path().join(parent);
     setup.td_dir = setup.temp_dir.path().join(td_dir);
     setup.group_dir = setup.td_dir.join(group);
     setup.local_file = setup.parent_dir.join(name);
     setup.ctrl_file = setup.group_dir.join(name);
+    setup.make_parent_dir();
     setup.make_local_file();
     setup.make_ctrl_file();
     std::env::set_var("mut-testing", "value");
@@ -144,12 +149,16 @@ fn env_var_in_td_dir_or_group_or_name_uses_raw_path(
 }
 
 #[rstest]
-#[case("Parent<>Dir")]
-#[case("Parent<I_do_not_exist>Dir")]
-#[case("<I_do_not_exist>")]
-#[cfg(not(windows))] // These are invalid paths on Windows
-fn var_in_parent_path_doesnt_exist_uses_raw_path(
-    #[case] parent_name_raw: &str,
+#[case("<I_do_not_exist>", "TendrilsDir", "SomeApp", "misc.txt")]
+#[case("Parent", "<I_do_not_exist>", "SomeApp", "misc.txt")]
+#[case("Parent", "TendrilsDir", "<I_do_not_exist>", "misc.txt")]
+#[case("Parent", "TendrilsDir", "SomeApp", "<I_do_not_exist>")]
+#[cfg_attr(windows, ignore)] // These are invalid paths on Windows
+fn var_in_any_field_doesnt_exist_uses_raw_path(
+    #[case] parent: &str,
+    #[case] td_dir: &str,
+    #[case] group: &str,
+    #[case] name: &str,
 
     #[values(true, false)]
     dry_run: bool,
@@ -158,12 +167,21 @@ fn var_in_parent_path_doesnt_exist_uses_raw_path(
     force: bool,
 ) {
     let mut setup = Setup::new();
-    setup.parent_dir = setup.temp_dir.path().join(parent_name_raw);
-    setup.local_file = setup.parent_dir.join("misc.txt");
-    create_dir_all(&setup.parent_dir).unwrap();
+    setup.parent_dir = setup.temp_dir.path().join(parent);
+    setup.td_dir = setup.temp_dir.path().join(td_dir);
+    setup.group_dir = setup.td_dir.join(group);
+    setup.local_file = setup.parent_dir.join(name);
+    setup.ctrl_file = setup.group_dir.join(name);
+    setup.make_parent_dir();
     setup.make_local_file();
     setup.make_ctrl_file();
-    let tendril = setup.resolved_file_tendril();
+
+    let tendril = ResolvedTendril::new(
+        group.to_string(),
+        name.to_string(),
+        setup.parent_dir.clone(),
+        TendrilMode::DirOverwrite,
+    ).unwrap();
 
     let actual = pull_tendril(&setup.td_dir, &tendril, dry_run, force);
 

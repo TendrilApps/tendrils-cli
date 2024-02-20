@@ -155,17 +155,18 @@ fn duplicate_parent_paths_resolves_all() {
 
 #[test]
 #[serial("mut-env-var-testing")]
-fn vars_in_parent_path_are_resolved_in_all() {
+fn vars_and_leading_tilde_in_parent_path_are_resolved_in_all() {
     let mut given = Tendril::new("SomeApp", "misc.txt");
     given.dir_merge = false;
     std::env::set_var("mut-testing", "value");
+    std::env::set_var("HOME", "MyHome");
 
     set_all_platform_paths(
         &mut given,
         &[
             PathBuf::from("<mut-testing>1"),
-            PathBuf::from("<mut-testing>2"),
-            PathBuf::from("<mut-testing>3")
+            PathBuf::from("~<mut-testing>2"),
+            PathBuf::from("~/<mut-testing>3")
         ]
     );
     let expected = vec![
@@ -178,13 +179,13 @@ fn vars_in_parent_path_are_resolved_in_all() {
         Ok(ResolvedTendril::new(
             "SomeApp".to_string(),
             "misc.txt".to_string(),
-            PathBuf::from("value2"),
+            PathBuf::from("MyHomevalue2"),
             TendrilMode::DirOverwrite,
         ).unwrap()),
         Ok(ResolvedTendril::new(
             "SomeApp".to_string(),
             "misc.txt".to_string(),
-            PathBuf::from("value3"),
+            PathBuf::from("MyHome/value3"),
             TendrilMode::DirOverwrite,
         ).unwrap()),
     ];
@@ -200,29 +201,92 @@ fn var_in_parent_path_doesnt_exist_returns_raw_path() {
     given.dir_merge = false;
     set_all_platform_paths(
         &mut given,
-        &[
-            PathBuf::from("SomeParentPath1".to_string()),
-            PathBuf::from("<I_do_not_exist>".to_string()),
-            PathBuf::from("SomeParentPath3".to_string()),
-        ],
+        &[PathBuf::from("<I_do_not_exist>".to_string())],
     );
     let expected = vec![
-        Ok(ResolvedTendril::new(
-            "SomeApp".to_string(),
-            "misc.txt".to_string(),
-            PathBuf::from("SomeParentPath1"),
-            TendrilMode::DirOverwrite,
-        ).unwrap()),
         Ok(ResolvedTendril::new(
             "SomeApp".to_string(),
             "misc.txt".to_string(),
             PathBuf::from("<I_do_not_exist>"),
             TendrilMode::DirOverwrite,
         ).unwrap()),
+    ];
+
+    let actual = resolve_tendril(given, false);
+
+    assert_eq!(actual, expected);
+}
+
+#[rstest]
+#[case("<mut-testing>", "misc.txt")]
+#[case("SomeApp", "<mut-testing>")]
+#[serial("mut-env-var-testing")]
+fn var_in_group_or_name_exists_uses_raw_path(
+    #[case] group: &str,
+    #[case] name: &str,
+) {
+    let mut given = Tendril::new(group, name);
+    given.dir_merge = false;
+    set_all_platform_paths(&mut given, &[PathBuf::from("SomeParent")]);
+    std::env::set_var("mut-testing", "value");
+
+    let expected = vec![
+        Ok(ResolvedTendril::new(
+            group.to_string(),
+            name.to_string(),
+            PathBuf::from("SomeParent"),
+            TendrilMode::DirOverwrite,
+        ).unwrap()),
+    ];
+
+    let actual = resolve_tendril(given, false);
+
+    assert_eq!(actual, expected);
+}
+
+#[test]
+#[serial("mut-env-var-testing")]
+fn leading_tilde_in_parent_path_tilde_value_doesnt_exist_returns_raw_path() {
+    let mut given = Tendril::new("SomeApp", "misc.txt");
+    given.dir_merge = false;
+    set_all_platform_paths(
+        &mut given,
+        &[PathBuf::from("~/SomeParentPath".to_string())],
+    );
+    std::env::remove_var("HOME");
+
+    let expected = vec![
         Ok(ResolvedTendril::new(
             "SomeApp".to_string(),
             "misc.txt".to_string(),
-            PathBuf::from("SomeParentPath3"),
+            PathBuf::from("~/SomeParentPath"),
+            TendrilMode::DirOverwrite,
+        ).unwrap()),
+    ];
+
+    let actual = resolve_tendril(given, false);
+
+    assert_eq!(actual, expected);
+}
+
+#[rstest]
+#[case("~SomeApp", "misc.txt")]
+#[case("SomeApp", "~misc.txt")]
+#[serial("mut-env-var-testing")]
+fn leading_tilde_in_group_or_name_and_tilde_value_exists_uses_raw_path(
+    #[case] group: &str,
+    #[case] name: &str,
+) {
+    let mut given = Tendril::new(group, name);
+    given.dir_merge = false;
+    set_all_platform_paths(&mut given, &[PathBuf::from("SomeParent")]);
+    std::env::set_var("HOME", "MyHome");
+
+    let expected = vec![
+        Ok(ResolvedTendril::new(
+            group.to_string(),
+            name.to_string(),
+            PathBuf::from("SomeParent"),
             TendrilMode::DirOverwrite,
         ).unwrap()),
     ];

@@ -294,6 +294,15 @@ fn resolve_overrides(
 /// 
 /// Any non UTF-8 characters in a variable's value or in the tilde value
 /// are replaced with the U+FFFD replacement character.
+/// 
+/// # Limitations
+/// If the path contains the `<pattern>` and the pattern corresponds to
+/// an environment variable, there is no way to escape the brackets
+/// to force it to use the raw path. This should only be an issue
+/// on Unix (as Windows doesn't allow `<` or `>` in paths anyways),
+/// and only when the variable exists (otherwise it uses the raw
+/// path). In the future, an escape character such as `|` could be
+/// implemented, but this added complexity was avoided for now.
 fn resolve_path_variables(mut path: String) -> PathBuf {
     let path_temp = path.clone();
     let vars = parse_env_variables(&path_temp);
