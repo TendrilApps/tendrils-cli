@@ -206,14 +206,14 @@ fn tendril_action_dry_run_does_not_modify(
     force: bool,
 ) {
     let setup = Setup::new();
-    setup.make_ctrl_file();
+    setup.make_local_file();
     setup.make_target_file();
     if mode == ActionMode::Link {
-        // Setup local file as symlink to some random (non-tendril) file
-        symlink(&setup.local_file, &setup.target_file, false, false).unwrap();
+        // Setup remote file as symlink to some random (non-tendril) file
+        symlink(&setup.remote_file, &setup.target_file, false, false).unwrap();
     }
     else {
-        setup.make_local_file();
+        setup.make_remote_file();
     }
 
     let mut tendril = setup.file_tendril();
@@ -236,12 +236,12 @@ fn tendril_action_dry_run_does_not_modify(
     run(args, &mut writer);
 
     if mode == ActionMode::Link {
-        assert_eq!(setup.local_file_contents(), "Target file contents");
+        assert_eq!(setup.remote_file_contents(), "Target file contents");
     }
     else {
-        assert_eq!(setup.local_file_contents(), "Local file contents");
+        assert_eq!(setup.remote_file_contents(), "Remote file contents");
     }
-    assert_eq!(setup.ctrl_file_contents(), "Controlled file contents");
+    assert_eq!(setup.local_file_contents(), "Local file contents");
     assert_eq!(writer.all_output_lines()[0], "No local overrides were found.");
     assert!(writer.all_output_lines()[4].contains("Skipped"));
     assert_eq!(setup.td_dir.read_dir().unwrap().into_iter().count(), 2);
