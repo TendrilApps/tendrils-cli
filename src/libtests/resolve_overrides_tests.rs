@@ -3,7 +3,7 @@ use crate::{
     Tendril
 };
 use crate::libtests::sample_tendrils::SampleTendrils;
-use crate::test_utils::set_all_platform_paths;
+use crate::test_utils::set_parents;
 use std::path::PathBuf;
 
 #[test]
@@ -24,7 +24,7 @@ fn empty_globals_returns_empty() {
     let globals = [].to_vec();
 
     let mut override_tendril = SampleTendrils::tendril_1();
-    set_all_platform_paths(
+    set_parents(
         &mut override_tendril,
         &[PathBuf::from("Some").join("override").join("path")]
     );
@@ -76,7 +76,7 @@ fn overrides_matching_globals_override_globals() {
     ].to_vec();
 
     let mut override_tendril = globals[0].clone();
-    set_all_platform_paths(
+    set_parents(
         &mut override_tendril,
         &[PathBuf::from("Some").join("override").join("path")]
     );

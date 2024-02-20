@@ -7,10 +7,10 @@ impl SampleTendrils {
             Tendril {
             group: "MyApp".to_string(),
             name: "settings.json".to_string(),
-            parent_dirs_mac: [].to_vec(),
-            parent_dirs_windows: ["C:\\Users\\<user>\\AppData\\".to_string()].to_vec(),
+            parents: ["C:\\Users\\MyName\\AppData\\".to_string()].to_vec(),
             dir_merge: false,
             link: false,
+            profiles: vec![],
         }
     }
 
@@ -18,10 +18,10 @@ impl SampleTendrils {
         r#"{
             "group": "MyApp",
             "name": "settings.json",
-            "parent-dirs-mac": [],
-            "parent-dirs-windows": ["C:\\Users\\<user>\\AppData\\"],
+            "parents": ["C:\\Users\\MyName\\AppData\\"],
             "dir-merge": false,
-            "link": false
+            "link": false,
+            "profiles": []
         }"#.to_string()
     }
 
@@ -29,11 +29,10 @@ impl SampleTendrils {
         Tendril {
             group: "MyApp2".to_string(),
             name: "settings2.json".to_string(),
-            parent_dirs_mac: ["some/mac/path".to_string()].to_vec(),
-            parent_dirs_windows: ["C:\\Users\\<user>\\Documents\\".to_string()]
-                .to_vec(),
+            parents: ["some/parent/path".to_string()].to_vec(),
             dir_merge: true,
             link: false,
+            profiles: vec!["win".to_string()],
         }
     }
 
@@ -41,10 +40,10 @@ impl SampleTendrils {
         r#"{
             "group": "MyApp2",
             "name": "settings2.json",
-            "parent-dirs-mac": ["some/mac/path"],
-            "parent-dirs-windows": ["C:\\Users\\<user>\\Documents\\"],
+            "parents": ["some/parent/path"],
             "dir-merge": true,
-            "link": false
+            "link": false,
+            "profiles": ["win"]
         }"#.to_string()
     }
 
@@ -52,11 +51,10 @@ impl SampleTendrils {
         Tendril {
             group: "MyApp".to_string(),
             name: "linkme.txt".to_string(),
-            parent_dirs_mac: ["some/mac/path".to_string()].to_vec(),
-            parent_dirs_windows: ["C:\\Users\\<user>".to_string()]
-                .to_vec(),
+            parents: ["some/parent/path2".to_string()].to_vec(),
             dir_merge: false,
             link: true,
+            profiles: vec!["mac".to_string()],
         }
     }
 
@@ -64,10 +62,10 @@ impl SampleTendrils {
         r#"{
             "group": "MyApp",
             "name": "linkme.txt",
-            "parent-dirs-mac": ["some/mac/path"],
-            "parent-dirs-windows": ["C:\\Users\\<user>"],
+            "parents": ["some/parent/path2"],
             "dir-merge": false,
-            "link": true
+            "link": true,
+            "profiles": ["mac"]
         }"#.to_string()
     }
 

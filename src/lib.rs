@@ -367,13 +367,7 @@ fn resolve_tendril(
         (false, false) => TendrilMode::DirOverwrite,
         (_, true) => TendrilMode::Link,
     };
-    // TODO: Consider conditional compilation instead
-    // of matching on every iteration
-    let raw_paths = match std::env::consts::OS {
-        "macos" => tendril.parent_dirs_mac.clone(),
-        "windows" => tendril.parent_dirs_windows.clone(),
-        _ => return vec![]
-    };
+    let raw_paths = tendril.parents.clone();
     let raw_paths = match first_only {
         true => {
             if !raw_paths.is_empty() {

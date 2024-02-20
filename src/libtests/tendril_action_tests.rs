@@ -5,7 +5,7 @@ use crate::tendril_action_report::TendrilActionReport;
 use crate::test_utils::{
     get_disposable_dir,
     is_empty,
-    set_all_platform_paths,
+    set_parents,
     Setup
 };
 use fs_extra::file::read_to_string;
@@ -78,10 +78,10 @@ fn pull_returns_tendril_and_result_for_each_given(
         Tendril::new("App2", "I don't exist"),
     ];
 
-    set_all_platform_paths(&mut given[0], &[given_parent_dir.clone()]);
-    set_all_platform_paths(&mut given[1], &[given_parent_dir.clone()]);
-    set_all_platform_paths(&mut given[2], &[given_parent_dir.clone()]);
-    set_all_platform_paths(&mut given[3], &[given_parent_dir.clone()]);
+    set_parents(&mut given[0], &[given_parent_dir.clone()]);
+    set_parents(&mut given[1], &[given_parent_dir.clone()]);
+    set_parents(&mut given[2], &[given_parent_dir.clone()]);
+    set_parents(&mut given[3], &[given_parent_dir.clone()]);
 
     let io_not_found_err = std::io::Error::from(std::io::ErrorKind::NotFound);
     let expected: Vec<TendrilActionReport> = match dry_run {
@@ -198,7 +198,7 @@ fn parent_path_vars_are_resolved(
     let setup = Setup::new();
     let mut tendril = setup.file_tendril();
     tendril.link = mode == ActionMode::Link;
-    set_all_platform_paths(
+    set_parents(
         &mut tendril, &[PathBuf::from("~/I_do_not_exist/<var>/")]
     );
     let tendrils = [tendril];

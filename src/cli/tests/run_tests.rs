@@ -2,7 +2,7 @@ use crate::action_mode::ActionMode;
 use crate::cli::{run, TendrilCliArgs, TendrilsSubcommands};
 use crate::cli::writer::Writer;
 use crate::{is_tendrils_dir, parse_tendrils, symlink};
-use crate::test_utils::{set_all_platform_paths, Setup};
+use crate::test_utils::{set_parents, Setup};
 use rstest::rstest;
 use serial_test::serial;
 use std::fs::{create_dir_all, write};
@@ -218,7 +218,7 @@ fn tendril_action_dry_run_does_not_modify(
 
     let mut tendril = setup.file_tendril();
     tendril.link = mode == ActionMode::Link;
-    set_all_platform_paths(&mut tendril, &[setup.parent_dir.clone()]);
+    set_parents(&mut tendril, &[setup.parent_dir.clone()]);
     setup.make_td_json_file(&[tendril]);
 
     let mut writer = MockWriter::new();

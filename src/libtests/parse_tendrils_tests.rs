@@ -55,26 +55,10 @@ fn json_missing_name_returns_error() {
 }
 
 #[test]
-fn json_missing_parent_dirs_mac_returns_error() {
-    let original_tendril_json = SampleTendrils::tendril_3_json();
+fn json_missing_parents_returns_error() {
+    let original_tendril_json = SampleTendrils::tendril_2_json();
     let partial_tendril_json = original_tendril_json
-        .replace(r#""parent-dirs-mac": ["some/mac/path"],"#, "");
-    assert_ne!(&original_tendril_json, &partial_tendril_json);
-
-    let given = SampleTendrils::build_tendrils_json(
-        &[partial_tendril_json.clone()].to_vec(),
-    );
-
-    let actual = parse_tendrils(&given);
-
-    assert!(actual.is_err());
-}
-
-#[test]
-fn json_missing_parent_dirs_windows_returns_error() {
-    let original_tendril_json = SampleTendrils::tendril_3_json();
-    let partial_tendril_json = original_tendril_json
-        .replace(r#""parent-dirs-windows": ["C:\\Users\\<user>"],"#, "");
+        .replace(r#""parents": ["some/parent/path"],"#, "");
     assert_ne!(&original_tendril_json, &partial_tendril_json);
 
     let given = SampleTendrils::build_tendrils_json(
@@ -108,10 +92,7 @@ fn json_missing_dir_merge_defaults_to_false() {
 fn json_missing_link_defaults_to_false() {
     let original_tendril_json = SampleTendrils::tendril_1_json();
     let partial_tendril_json = original_tendril_json
-        // Remove trailing comma
-        .replace(r#""dir-merge": false,"#, r#""dir-merge": false"#)
-        // Remove link field
-        .replace(r#""link": false"#, "");
+        .replace(r#""link": false,"#, "");
     assert_ne!(&original_tendril_json, &partial_tendril_json);
 
     let given = SampleTendrils::build_tendrils_json(
@@ -123,6 +104,27 @@ fn json_missing_link_defaults_to_false() {
     let actual = parse_tendrils(&given).unwrap();
 
     assert!(!actual[0].dir_merge);
+}
+
+#[test]
+fn json_missing_profiles_defaults_to_empty() {
+    let original_tendril_json = SampleTendrils::tendril_1_json();
+    let partial_tendril_json = original_tendril_json
+        // Remove trailing comma
+        .replace(r#""link": false,"#, r#""link": false"#)
+        // Remove field field
+        .replace(r#""profiles": []"#, "");
+    assert_ne!(&original_tendril_json, &partial_tendril_json);
+
+    let given = SampleTendrils::build_tendrils_json(
+        &[partial_tendril_json.clone()].to_vec(),
+    );
+    let expected = [SampleTendrils::tendril_1()].to_vec();
+    assert!(expected[0].profiles.is_empty());
+
+    let actual = parse_tendrils(&given).unwrap();
+
+    assert!(actual[0].profiles.is_empty());
 }
 
 #[test]

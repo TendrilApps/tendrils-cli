@@ -6,12 +6,7 @@ use serde::{Deserialize, Serialize};
 pub struct Tendril {
     pub group: String,
     pub name: String,
-
-    #[serde(rename = "parent-dirs-mac")]
-    pub parent_dirs_mac: Vec<String>,
-
-    #[serde(rename = "parent-dirs-windows")]
-    pub parent_dirs_windows: Vec<String>,
+    pub parents: Vec<String>,
 
     #[serde(rename = "dir-merge")]
     #[serde(default)]
@@ -19,6 +14,9 @@ pub struct Tendril {
 
     #[serde(default)]
     pub link: bool,
+
+    #[serde(default)]
+    pub profiles: Vec<String>,
 }
 
 impl Tendril {
@@ -31,10 +29,10 @@ impl Tendril {
         Tendril {
             group: group.to_string(),
             name: name.to_string(),
-            parent_dirs_mac: [].to_vec(),
-            parent_dirs_windows: [].to_vec(),
+            parents: vec![],
             dir_merge: false,
             link: false,
+            profiles: vec![],
         }
     }
 }
