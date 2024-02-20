@@ -23,18 +23,6 @@ pub fn get_samples_dir() -> PathBuf {
         .join("samples")
 }
 
-pub fn get_username_can_panic() -> String {
-    match std::env::consts::OS {
-        "macos" => std::env::var("USER").unwrap(),
-        "windows" => std::env::var("USERNAME").unwrap(),
-        _ => unimplemented!()
-    }
-}
-
-pub fn get_mut_testing_var() -> Result<String, std::env::VarError> {
-    std::env::var("mut-testing")
-}
-
 pub fn is_empty(dir: &Path) -> bool {
     if dir.exists() {
         if !dir.is_dir() {

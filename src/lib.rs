@@ -13,6 +13,7 @@ use resolved_tendril::{
     ResolvedTendril,
     TendrilMode,
 };
+use std::ffi::OsString;
 use std::fs::{create_dir_all, remove_dir_all, remove_file};
 use std::path::{Path, PathBuf};
 mod tendril;
@@ -24,8 +25,6 @@ use tendril_action_report::TendrilActionReport;
 mod libtests;
 #[cfg(test)]
 mod test_utils;
-#[cfg(test)]
-use test_utils::get_mut_testing_var;
 
 fn copy_fso(
     from: &Path,
@@ -166,14 +165,6 @@ fn get_tendril_overrides(
     Ok(tendrils)
 }
 
-fn get_username() -> Result<String, std::env::VarError> {
-    match std::env::consts::OS {
-        "macos" => Ok(std::env::var("USER")?),
-        "windows" => Ok(std::env::var("USERNAME")?),
-        _ => unimplemented!()
-    }
-}
-
 fn is_tendrils_dir(dir: &Path) -> bool {
     dir.join("tendrils.json").is_file()
 }
@@ -294,20 +285,77 @@ fn resolve_overrides(
     combined_tendrils
 }
 
+/// Replaces all environment variables in the format `<varname>` in the
+/// given path with their values. If the variable is not found, the
+/// `<varname>` is left as-is in the path.
+/// 
+/// The common tilde (`~`) symbol can also be used as a prefix to the path
+/// and corresponds to the `HOME` variable on Unix/Windows.
+/// 
+/// Any non UTF-8 characters in a variable's value or in the tilde value
+/// are replaced with the U+FFFD replacement character.
+/// 
+/// # Limitations
+/// If the path contains the `<pattern>` and the pattern corresponds to
+/// an environment variable, there is no way to escape the brackets
+/// to force it to use the raw path. This should only be an issue
+/// on Unix (as Windows doesn't allow `<` or `>` in paths anyways),
+/// and only when the variable exists (otherwise it uses the raw
+/// path). In the future, an escape character such as `|` could be
+/// implemented, but this added complexity was avoided for now.
 fn resolve_path_variables(mut path: String) -> PathBuf {
-    // TODO: Extract var sets as a constant expression?
-    let supported_var_sets: &[(&str, fn() -> Result<String, std::env::VarError>)] = &[
-        ("<user>", get_username),
-        #[cfg(test)]
-        ("<mut-testing>", get_mut_testing_var),
-    ];
+    let path_temp = path.clone();
+    let vars = parse_env_variables(&path_temp);
 
-    for var_set in supported_var_sets {
-        let value = var_set.1().unwrap_or(var_set.0.to_string());
-        path = path.replace(var_set.0, &value);
+    for var in vars {
+        let var_no_brkts = &var[1..var.len()-1];
+        let os_value = std::env::var_os(var_no_brkts).unwrap_or(OsString::from(var));
+        let value = os_value.to_string_lossy();
+        path = path.replace(var, &value);
+    }
+
+    if path.starts_with('~') {
+        path = resolve_tilde(&path);
     }
 
     PathBuf::from(path)
+}
+
+/// Replaces the first instance of `~` with the `HOME` variable (Unix &
+/// Windows) and returns the replaced string.
+/// 
+/// Note: This does *not* check that the tilde is the leading character (it could be
+/// anywhere in the string) - this check should be done prior to calling this.
+fn resolve_tilde(path: &str) -> String {
+    match std::env::var_os("HOME") {
+        Some(v) => {
+            path.replacen('~', &v.to_string_lossy(), 1)
+        },
+        None => path.to_string(),
+    }
+}
+
+/// Extracts all variable names in the given string that
+/// are of the form `<varname>`. The surrounding brackets
+/// are also returned.
+fn parse_env_variables(input: &str) -> Vec<&str> {
+    let mut vars = vec![];
+    let mut depth = 0;
+    let mut start_index = 0;
+
+    for (index, ch) in input.chars().enumerate() {
+        if ch == '<' {
+            start_index = index;
+            depth += 1;
+        } else if ch == '>' && depth > 0 {
+            if depth > 0 {
+                vars.push(&input[start_index..=index]);
+            }
+            depth -= 1;
+        }
+    }
+
+    vars
 }
 
 fn resolve_tendril(
