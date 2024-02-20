@@ -23,10 +23,11 @@ fn tendril_json_not_in_array_returns_error() {
 }
 
 #[test]
-fn json_missing_field_returns_error() {
+fn json_missing_group_returns_error() {
     let original_tendril_json = SampleTendrils::tendril_1_json();
     let partial_tendril_json =
-        original_tendril_json.replace(r#""name": "settings.json","#, "");
+        original_tendril_json.replace(r#""group": "MyApp","#, "");
+    assert_ne!(&original_tendril_json, &partial_tendril_json);
 
     let given = SampleTendrils::build_tendrils_json(
         &[partial_tendril_json.clone()].to_vec(),
@@ -34,8 +35,94 @@ fn json_missing_field_returns_error() {
 
     let actual = parse_tendrils(&given);
 
-    assert_ne!(&original_tendril_json, &partial_tendril_json);
     assert!(actual.is_err());
+}
+
+#[test]
+fn json_missing_name_returns_error() {
+    let original_tendril_json = SampleTendrils::tendril_1_json();
+    let partial_tendril_json =
+        original_tendril_json.replace(r#""name": "settings.json","#, "");
+    assert_ne!(&original_tendril_json, &partial_tendril_json);
+
+    let given = SampleTendrils::build_tendrils_json(
+        &[partial_tendril_json.clone()].to_vec(),
+    );
+
+    let actual = parse_tendrils(&given);
+
+    assert!(actual.is_err());
+}
+
+#[test]
+fn json_missing_parent_dirs_mac_returns_error() {
+    let original_tendril_json = SampleTendrils::tendril_3_json();
+    let partial_tendril_json = original_tendril_json
+        .replace(r#""parent-dirs-mac": ["some/mac/path"],"#, "");
+    assert_ne!(&original_tendril_json, &partial_tendril_json);
+
+    let given = SampleTendrils::build_tendrils_json(
+        &[partial_tendril_json.clone()].to_vec(),
+    );
+
+    let actual = parse_tendrils(&given);
+
+    assert!(actual.is_err());
+}
+
+#[test]
+fn json_missing_parent_dirs_windows_returns_error() {
+    let original_tendril_json = SampleTendrils::tendril_3_json();
+    let partial_tendril_json = original_tendril_json
+        .replace(r#""parent-dirs-windows": ["C:\\Users\\<user>"],"#, "");
+    assert_ne!(&original_tendril_json, &partial_tendril_json);
+
+    let given = SampleTendrils::build_tendrils_json(
+        &[partial_tendril_json.clone()].to_vec(),
+    );
+
+    let actual = parse_tendrils(&given);
+
+    assert!(actual.is_err());
+}
+
+#[test]
+fn json_missing_dir_merge_defaults_to_false() {
+    let original_tendril_json = SampleTendrils::tendril_1_json();
+    let partial_tendril_json = original_tendril_json
+        .replace(r#""dir-merge": false,"#, "");
+    assert_ne!(&original_tendril_json, &partial_tendril_json);
+
+    let given = SampleTendrils::build_tendrils_json(
+        &[partial_tendril_json.clone()].to_vec(),
+    );
+    let expected = [SampleTendrils::tendril_1()].to_vec();
+    assert!(!expected[0].dir_merge);
+
+    let actual = parse_tendrils(&given).unwrap();
+
+    assert!(!actual[0].dir_merge);
+}
+
+#[test]
+fn json_missing_link_defaults_to_false() {
+    let original_tendril_json = SampleTendrils::tendril_1_json();
+    let partial_tendril_json = original_tendril_json
+        // Remove trailing comma
+        .replace(r#""dir-merge": false,"#, r#""dir-merge": false"#)
+        // Remove link field
+        .replace(r#""link": false"#, "");
+    assert_ne!(&original_tendril_json, &partial_tendril_json);
+
+    let given = SampleTendrils::build_tendrils_json(
+        &[partial_tendril_json.clone()].to_vec(),
+    );
+    let expected = [SampleTendrils::tendril_1()].to_vec();
+    assert!(!expected[0].dir_merge);
+
+    let actual = parse_tendrils(&given).unwrap();
+
+    assert!(!actual[0].dir_merge);
 }
 
 #[test]
@@ -89,6 +176,7 @@ fn ignores_extra_json_field_returns_tendril() {
         r#""name": "settings.json","#,
         r#""name": "settings.json", "extra field": true,"#,
     );
+    assert_ne!(original_tendril_json, extra_field_tendril_json);
 
     let given = SampleTendrils::build_tendrils_json(
         &[extra_field_tendril_json.clone()].to_vec(),
@@ -97,6 +185,5 @@ fn ignores_extra_json_field_returns_tendril() {
     let expected = [SampleTendrils::tendril_1()].to_vec();
     let actual = parse_tendrils(&given).unwrap();
 
-    assert_ne!(original_tendril_json, extra_field_tendril_json);
     assert_eq!(actual, expected);
 }

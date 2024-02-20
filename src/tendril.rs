@@ -14,8 +14,10 @@ pub struct Tendril {
     pub parent_dirs_windows: Vec<String>,
 
     #[serde(rename = "dir-merge")]
+    #[serde(default)]
     pub dir_merge: bool,
 
+    #[serde(default)]
     pub link: bool,
 }
 
