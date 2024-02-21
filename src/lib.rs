@@ -139,6 +139,23 @@ fn get_tendrils_dir(starting_path: &Path) -> Option<PathBuf> {
     }
 }
 
+pub fn filter_by_profiles(tendrils: &[Tendril], profiles: &[String]) -> Vec<Tendril> {
+    let mut included = vec![];
+
+    if profiles.is_empty() {
+        return tendrils.to_vec();
+    }
+
+    for tendril in tendrils {
+        if tendril.profiles.is_empty()
+            || tendril.profiles.iter().any(|p| profiles.contains(&p)) {
+            included.push(tendril.to_owned());
+        }
+    }
+
+    included
+}
+
 fn get_tendrils(
     td_dir: &Path,
 ) -> Result<Vec<Tendril>, GetTendrilsError> {

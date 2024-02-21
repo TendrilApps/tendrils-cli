@@ -1,5 +1,6 @@
 mod sample_tendrils;
 
+mod filter_by_profiles_tests;
 mod get_tendrils_dir_tests;
 mod get_tendrils_tests;
 mod get_tendril_overrides_tests;
