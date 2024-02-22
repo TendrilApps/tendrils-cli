@@ -51,7 +51,7 @@ impl SampleTendrils {
         Tendril {
             group: "MyApp".to_string(),
             name: "linkme.txt".to_string(),
-            parents: ["some/parent/path2".to_string()].to_vec(),
+            parents: ["some/parent/path3".to_string()].to_vec(),
             dir_merge: false,
             link: true,
             profiles: vec!["mac".to_string()],
@@ -62,10 +62,31 @@ impl SampleTendrils {
         r#"{
             "group": "MyApp",
             "name": "linkme.txt",
-            "parents": ["some/parent/path2"],
+            "parents": ["some/parent/path3"],
             "dir-merge": false,
             "link": true,
             "profiles": ["mac"]
+        }"#.to_string()
+    }
+
+    pub fn tendril_4() -> Tendril {
+        Tendril {
+            group: "MyApp".to_string(),
+            name: "misc.txt".to_string(),
+            parents: ["some/parent/path4".to_string()].to_vec(),
+            dir_merge: false,
+            link: false,
+            profiles: vec!["mac".to_string(), "win".to_string()],
+        }
+    }
+    pub fn tendril_4_json() -> String {
+        r#"{
+            "group": "MyApp",
+            "name": "misc.txt",
+            "parents": ["some/parent/path4"],
+            "dir-merge": false,
+            "link": false,
+            "profiles": ["mac", "win"]
         }"#.to_string()
     }
 

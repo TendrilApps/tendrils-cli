@@ -157,6 +157,7 @@ fn multiple_tendrils_in_json_returns_tendrils() {
             SampleTendrils::tendril_1_json(),
             SampleTendrils::tendril_2_json(),
             SampleTendrils::tendril_3_json(),
+            SampleTendrils::tendril_4_json(),
         ].to_vec()
     );
 
@@ -164,6 +165,7 @@ fn multiple_tendrils_in_json_returns_tendrils() {
         SampleTendrils::tendril_1(),
         SampleTendrils::tendril_2(),
         SampleTendrils::tendril_3(),
+        SampleTendrils::tendril_4(),
     ].to_vec();
 
     let actual = parse_tendrils(&given).unwrap();
@@ -189,3 +191,6 @@ fn ignores_extra_json_field_returns_tendril() {
 
     assert_eq!(actual, expected);
 }
+
+// TODO: Test when fields are null
+// TODO: Test that profile is deserialized properly

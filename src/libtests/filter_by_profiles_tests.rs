@@ -4,8 +4,12 @@ use rstest::rstest;
 #[rstest]
 #[case(vec![])]
 #[case(vec!["".to_string()])]
+#[case(vec![" ".to_string()])]
+#[case(vec!["*".to_string()])]
+#[case(vec!["**".to_string()])]
 #[case(vec!["p1".to_string()])]
 #[case(vec!["p2".to_string()])]
+#[case(vec!["**p1**".to_string()])]
 #[case(vec!["p1".to_string(), "p2".to_string()])]
 fn tendril_with_empty_profiles_included_in_all(
     #[case] given_filters: Vec<String>
@@ -45,12 +49,16 @@ fn tendril_only_included_if_any_profile_matches_exactly(
 
 #[rstest]
 #[case(vec!["".to_string()])]
+#[case(vec!["*".to_string()])]
+#[case(vec!["**".to_string()])]
 #[case(vec!["P1".to_string()])]
 #[case(vec!["P2".to_string()])]
 #[case(vec!["p3".to_string()])]
 #[case(vec!["p1 ".to_string()])]
 #[case(vec![" p1".to_string()])]
 #[case(vec![" p1".to_string()])]
+#[case(vec!["*p1*".to_string()])]
+#[case(vec!["**p1**".to_string()])]
 #[case(vec!["p1Leading".to_string()])]
 #[case(vec!["Trailingp1".to_string()])]
 #[case(vec!["P1".to_string(), "P2".to_string(), "p3".to_string()])]
@@ -121,6 +129,8 @@ fn duplicate_tendrils_returns_all_instances() {
 #[rstest]
 #[case("")]
 #[case(" ")]
+#[case("*")]
+#[case("**")]
 #[case("\n")]
 #[case("\t")]
 #[case("\r")]
@@ -129,7 +139,9 @@ fn weird_profile_names_are_supported(
 ) {
     let mut t1 = Tendril::new("SomeApp", "misc.txt");
     t1.profiles = vec![profile.clone()];
-    let tendrils = [t1.clone()];
+    let mut t2 = Tendril::new("SomeApp", "misc2.txt");
+    t2.profiles = vec!["p1".to_string()];
+    let tendrils = [t1.clone(), t2.clone()];
 
     let actual = filter_by_profiles(&tendrils, &[profile]);
 
