@@ -2,11 +2,9 @@ use clap::{Parser, Subcommand};
 use inline_colorization::{color_bright_green, color_bright_red, color_reset};
 use crate::{
     filter_by_profiles,
-    get_tendril_overrides,
     get_tendrils,
     get_tendrils_dir,
     is_tendrils_dir,
-    resolve_overrides,
     tendril_action,
 };
 use crate::action_mode::ActionMode;
@@ -176,6 +174,10 @@ fn ansi_styled_result(result: &Option<Result<TendrilActionSuccess, TendrilAction
 }
 
 fn print_reports(reports: &[TendrilActionReport], writer: &mut impl Writer) {
+    if reports.is_empty() {
+        return;
+    }
+
     let mut tbl = TdTable::new();
     tbl.set_header(&[
         "Group".to_string(),
@@ -237,7 +239,7 @@ fn tendril_action_subcommand(
         }
     };
 
-    let common_tendrils = match get_tendrils(&td_dir) {
+    let all_tendrils = match get_tendrils(&td_dir) {
         Ok(v) => v,
         Err(GetTendrilsError::IoError(_e)) => {
             writer.writeln("Error: Could not read the tendrils.json file");
@@ -249,31 +251,19 @@ fn tendril_action_subcommand(
         },
     };
 
-    let override_tendrils = match get_tendril_overrides(&td_dir) {
-        Ok(v) => v,
-        Err(GetTendrilsError::IoError(_e)) => {
-            writer.writeln("Error: Could not read the tendrils-override.json file");
-            return;
-        },
-        Err(GetTendrilsError::ParseError(_e)) => {
-            writer.writeln("Error: Could not parse the tendrils-override.json file");
-            return;
-        },
-    };
+    let filtered_tendrils = filter_by_profiles(&all_tendrils, &profiles);
 
-    if override_tendrils.is_empty() {
-        writer.writeln("No local overrides were found.");
+    if all_tendrils.is_empty() {
+        writer.writeln("No tendrils were found.");
     }
-
-    let combined_tendrils =
-        resolve_overrides(&common_tendrils, &override_tendrils);
-
-    let scoped_tendrils = filter_by_profiles(&combined_tendrils, &profiles);
+    else if filtered_tendrils.is_empty() {
+        writer.writeln("No tendrils matched the given filter(s).");
+    }
 
     let action_reports = tendril_action(
         mode,
         &td_dir,
-        &scoped_tendrils,
+        &filtered_tendrils,
         dry_run,
         force,
     );

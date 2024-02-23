@@ -165,23 +165,6 @@ fn get_tendrils(
     Ok(tendrils)
 }
 
-fn get_tendril_overrides(
-    td_dir: &Path,
-) -> Result<Vec<Tendril>, GetTendrilsError> {
-    let tendrils_file_path =
-        Path::new(&td_dir).join("tendrils-override.json");
-
-    let tendrils_file_contents = if tendrils_file_path.is_file() {
-        std::fs::read_to_string(tendrils_file_path)?
-    }
-    else {
-        return Ok([].to_vec());
-    };
-
-    let tendrils = parse_tendrils(&tendrils_file_contents)?;
-    Ok(tendrils)
-}
-
 fn is_tendrils_dir(dir: &Path) -> bool {
     dir.join("tendrils.json").is_file()
 }
@@ -270,36 +253,6 @@ fn push_tendril(
 
     let dir_merge = tendril.mode == TendrilMode::DirMerge;
     Ok(copy_fso(&source, &dest, dir_merge, dry_run)?)
-}
-
-/// Returns a list of all Tendrils after replacing global ones with any
-/// applicable overrides.
-/// # Arguments
-/// - `global` - The set of Tendrils (typically defined in tendrils.json)
-/// - `overrides` - The set of Tendril overrides (typically defined in
-///   tendrils-overrides.json)
-fn resolve_overrides(
-    global: &[Tendril],
-    overrides: &[Tendril],
-) -> Vec<Tendril> {
-    let mut combined_tendrils = Vec::with_capacity(global.len());
-
-    for tendril in global {
-        let mut last_index: usize = 0;
-        let overrides_iter = overrides.iter();
-
-        if overrides_iter.enumerate().any(|(i, x)| {
-            last_index = i;
-            x.id() == tendril.id() })
-        {
-            combined_tendrils.push(overrides[last_index].clone());
-        }
-        else {
-            combined_tendrils.push(tendril.clone())
-        }
-    }
-
-    combined_tendrils
 }
 
 /// Replaces all environment variables in the format `<varname>` in the
