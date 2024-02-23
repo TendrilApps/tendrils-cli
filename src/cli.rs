@@ -1,9 +1,10 @@
 use clap::{Parser, Subcommand};
 use inline_colorization::{color_bright_green, color_bright_red, color_reset};
 use crate::{
-    get_tendrils_dir,
-    get_tendrils,
+    filter_by_profiles,
     get_tendril_overrides,
+    get_tendrils,
+    get_tendrils_dir,
     is_tendrils_dir,
     resolve_overrides,
     tendril_action,
@@ -51,8 +52,12 @@ pub enum TendrilsSubcommands {
         force: bool,
 
         /// Explicitly sets the path to the Tendrils folder
-        #[arg(short, long)]
+        #[arg(long)]
         path: Option<String>,
+
+        /// Explicitly sets the list of profiles to include
+        #[arg(short, long, num_args = ..)]
+        profiles: Vec<String>,
     },
 
     /// Copies tendrils from the Tendrils folder to their various
@@ -68,8 +73,12 @@ pub enum TendrilsSubcommands {
         force: bool,
 
         /// Explicitly sets the path to the Tendrils folder
-        #[arg(short, long)]
+        #[arg(long)]
         path: Option<String>,
+
+        /// Explicitly sets the list of profiles to include
+        #[arg(short, long, num_args = ..)]
+        profiles: Vec<String>,
     },
 
     /// Creates symlinks at the various locations on the machine
@@ -85,8 +94,12 @@ pub enum TendrilsSubcommands {
         force: bool,
 
         /// Explicitly sets the path to the Tendrils folder
-        #[arg(short, long)]
+        #[arg(long)]
         path: Option<String>,
+
+        /// Explicitly sets the list of profiles to include
+        #[arg(short, long, num_args = ..)]
+        profiles: Vec<String>,
     },
 }
 
@@ -192,6 +205,7 @@ fn tendril_action_subcommand(
     path: Option<String>,
     dry_run: bool,
     force: bool,
+    profiles: Vec<String>,
     writer: &mut impl Writer,
 ) {
     let td_dir = match path {
@@ -254,10 +268,12 @@ fn tendril_action_subcommand(
     let combined_tendrils =
         resolve_overrides(&common_tendrils, &override_tendrils);
 
+    let scoped_tendrils = filter_by_profiles(&combined_tendrils, &profiles);
+
     let action_reports = tendril_action(
         mode,
         &td_dir,
-        &combined_tendrils,
+        &scoped_tendrils,
         dry_run,
         force,
     );
@@ -270,14 +286,35 @@ pub fn run(args: TendrilCliArgs, writer: &mut impl Writer) {
         TendrilsSubcommands::Path => {
             path(writer);
         },
-        TendrilsSubcommands::Pull { path, dry_run, force } => {
-            tendril_action_subcommand(ActionMode::Pull, path, dry_run, force, writer)
+        TendrilsSubcommands::Pull { path, dry_run, force, profiles} => {
+            tendril_action_subcommand(
+                ActionMode::Pull,
+                path,
+                dry_run,
+                force,
+                profiles,
+                writer,
+            )
         },
-        TendrilsSubcommands::Push { path, dry_run , force} => {
-            tendril_action_subcommand(ActionMode::Push, path, dry_run, force, writer)
+        TendrilsSubcommands::Push { path, dry_run , force, profiles} => {
+            tendril_action_subcommand(
+                ActionMode::Push,
+                path,
+                dry_run,
+                force,
+                profiles,
+                writer,
+            )
         },
-        TendrilsSubcommands::Link { path, dry_run, force } => {
-            tendril_action_subcommand(ActionMode::Link, path, dry_run, force, writer)
+        TendrilsSubcommands::Link { path, dry_run, force, profiles } => {
+            tendril_action_subcommand(
+                ActionMode::Link,
+                path,
+                dry_run,
+                force,
+                profiles,
+                writer,
+            )
         },
     };
 }
