@@ -447,33 +447,35 @@ pub fn tendril_action<'a>(
     let first_only = mode == ActionMode::Pull;
 
     for tendril in tendrils.iter() {
-        let resolve_results = resolve_tendril(tendril.clone(), first_only);
-        let mut action_results = vec![];
-        for result in resolve_results.iter() {
-            match (result, mode) {
+        let resolved_tendrils = resolve_tendril(tendril.clone(), first_only);
+
+        for resolved_tendril in resolved_tendrils.into_iter() {
+            let action_result = match (&resolved_tendril, mode) {
                 (Ok(v), ActionMode::Pull) => {
-                    action_results.push(Some(pull_tendril(&td_dir, &v, dry_run, force)));
+                    Some(pull_tendril(&td_dir, &v, dry_run, force))
                 },
                 (Ok(v), ActionMode::Push) => {
-                    action_results.push(Some(push_tendril(&td_dir, &v, dry_run, force)));
+                    Some(push_tendril(&td_dir, &v, dry_run, force))
                 },
                 (Ok(v), ActionMode::Link) => {
-                    action_results.push(Some(link_tendril(&td_dir, &v, dry_run, force)));
+                    Some(link_tendril(&td_dir, &v, dry_run, force))
                 },
-                (Err(_), _) => action_results.push(None),
-            }
+                (Err(_), _) => None,
+            };
+
+            let resolved_path = match resolved_tendril {
+                Ok(v) => Ok(v.full_path()),
+                Err(e) => Err(e),
+            };
+
+            let report = TendrilActionReport {
+                orig_tendril: tendril,
+                resolved_path,
+                action_result,
+            };
+            action_reports.push(report);
         }
-        let report = TendrilActionReport {
-            orig_tendril: tendril,
-            resolved_paths: resolve_results.into_iter().map(|r| {
-                match r {
-                    Ok(v) => Ok(v.full_path()),
-                    Err(e) => Err(e),
-                }
-            }).collect(),
-            action_results,
-        };
-        action_reports.push(report);
     }
+
     action_reports
 }

@@ -187,17 +187,15 @@ fn print_reports(reports: &[TendrilActionReport], writer: &mut impl Writer) {
     ]);
 
     for report in reports {
-        for (i, resolved_path) in report.resolved_paths.iter().enumerate() {
-            let styled_path = ansi_styled_resolved_path(resolved_path);
-            let styled_result = ansi_styled_result(&report.action_results[i]);
+        let styled_path = ansi_styled_resolved_path(&report.resolved_path);
+        let styled_result = ansi_styled_result(&report.action_result);
 
-            tbl.push_row(&[
-                report.orig_tendril.group.clone(),
-                report.orig_tendril.name.clone(),
-                styled_path,
-                styled_result,
-            ]);
-        }
+        tbl.push_row(&[
+            report.orig_tendril.group.clone(),
+            report.orig_tendril.name.clone(),
+            styled_path,
+            styled_result,
+        ]);
     }
     writer.writeln(&tbl.draw())
 }
