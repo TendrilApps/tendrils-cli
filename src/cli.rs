@@ -10,7 +10,7 @@ use crate::{
 use crate::action_mode::ActionMode;
 use crate::enums::{
     GetTendrilsError,
-    ResolveTendrilError,
+    InvalidTendrilError,
     TendrilActionError,
     TendrilActionSuccess,
 };
@@ -136,7 +136,7 @@ fn ansi_hyperlink(url: &str, display: &str) -> String {
 }
 
 fn ansi_styled_resolved_path(
-    path: &Result<PathBuf, ResolveTendrilError>
+    path: &Result<PathBuf, InvalidTendrilError>
 ) -> String {
     match path {
         Ok(p) => {

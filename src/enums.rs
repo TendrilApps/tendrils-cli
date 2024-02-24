@@ -27,19 +27,18 @@ pub enum TendrilActionSuccess {
 
 #[derive(Debug)]
 pub enum TendrilActionError {
-    Duplicate,
     IoError(std::io::Error),
     /// Occurs when a tendril action does not match its
     /// mode (such as trying to pull a link tendril)
     ModeMismatch,
-    ResolveTendrilError(ResolveTendrilError),
+    InvalidTendrilError(InvalidTendrilError),
     Recursion,
     TypeMismatch,
 }
 
-impl From<ResolveTendrilError> for TendrilActionError {
-    fn from(err: ResolveTendrilError) -> Self {
-        TendrilActionError::ResolveTendrilError(err)
+impl From<InvalidTendrilError> for TendrilActionError {
+    fn from(err: InvalidTendrilError) -> Self {
+        TendrilActionError::InvalidTendrilError(err)
     }
 }
 
@@ -49,29 +48,10 @@ impl From<std::io::Error> for TendrilActionError {
     }
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum InvalidTendrilError {
     InvalidGroup,
     InvalidName,
-}
-
-#[derive(Debug, Eq, PartialEq)]
-pub enum ResolveTendrilError {
-    EnvVarError(std::env::VarError),
-    InvalidTendril(InvalidTendrilError),
-    PathParseError,
-}
-
-impl From<std::env::VarError> for ResolveTendrilError {
-    fn from(err: std::env::VarError) -> Self {
-        ResolveTendrilError::EnvVarError(err)
-    }
-}
-
-impl From<InvalidTendrilError> for ResolveTendrilError {
-    fn from(err: InvalidTendrilError) -> Self {
-        ResolveTendrilError::InvalidTendril(err)
-    }
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq)]

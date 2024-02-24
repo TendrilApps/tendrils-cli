@@ -4,7 +4,7 @@ pub mod cli;
 mod enums;
 use enums::{
     GetTendrilsError,
-    ResolveTendrilError,
+    InvalidTendrilError,
     TendrilActionError,
     TendrilActionSuccess,
 };
@@ -331,7 +331,7 @@ fn parse_env_variables(input: &str) -> Vec<&str> {
 fn resolve_tendril(
     tendril: Tendril, // TODO: Use reference only?
     first_only: bool
-) -> Vec<Result<ResolvedTendril, ResolveTendrilError>> {
+) -> Vec<Result<ResolvedTendril, InvalidTendrilError>> {
     let mode = match (&tendril.dir_merge, &tendril.link) {
         (true, false) => TendrilMode::DirMerge,
         (false, false) => TendrilMode::DirOverwrite,
@@ -350,7 +350,7 @@ fn resolve_tendril(
         false => raw_paths
     };
 
-    raw_paths.into_iter().map(|p| -> Result<ResolvedTendril, ResolveTendrilError> {
+    raw_paths.into_iter().map(|p| -> Result<ResolvedTendril, InvalidTendrilError> {
         let parent = resolve_path_variables(p);
 
         Ok(ResolvedTendril::new(

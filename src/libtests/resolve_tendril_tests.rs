@@ -1,4 +1,3 @@
-use crate::enums::ResolveTendrilError;
 use crate::{resolve_tendril, ResolvedTendril, Tendril, TendrilMode};
 use crate::test_utils::set_parents;
 use rstest::rstest;
@@ -37,9 +36,9 @@ fn invalid_tendril_returns_invalid_tendril(
 
     let actual = resolve_tendril(given, false);
 
-    assert!(matches!(actual[0], Err(ResolveTendrilError::InvalidTendril(_))));
-    assert!(matches!(actual[1], Err(ResolveTendrilError::InvalidTendril(_))));
-    assert!(matches!(actual[2], Err(ResolveTendrilError::InvalidTendril(_))));
+    assert!(actual[0].is_err());
+    assert!(actual[1].is_err());
+    assert!(actual[2].is_err());
     assert_eq!(actual.len(), 3);
 }
 
