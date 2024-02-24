@@ -158,6 +158,7 @@ fn multiple_tendrils_in_json_returns_tendrils() {
             SampleTendrils::tendril_2_json(),
             SampleTendrils::tendril_3_json(),
             SampleTendrils::tendril_4_json(),
+            SampleTendrils::tendril_5_json(),
         ].to_vec()
     );
 
@@ -166,6 +167,7 @@ fn multiple_tendrils_in_json_returns_tendrils() {
         SampleTendrils::tendril_2(),
         SampleTendrils::tendril_3(),
         SampleTendrils::tendril_4(),
+        SampleTendrils::tendril_5(),
     ].to_vec();
 
     let actual = parse_tendrils(&given).unwrap();
@@ -192,5 +194,46 @@ fn ignores_extra_json_field_returns_tendril() {
     assert_eq!(actual, expected);
 }
 
+#[test]
+fn non_list_single_parent_returns_list_of_len_1() {
+    let original_tendril_json = SampleTendrils::tendril_2_json();
+    let extra_field_tendril_json = original_tendril_json.replace(
+        r#""parents": ["some/parent/path"],"#,
+        r#""parents": "some/parent/path","#,
+    );
+    assert_ne!(original_tendril_json, extra_field_tendril_json);
+
+    let given = SampleTendrils::build_tendrils_json(
+        &[extra_field_tendril_json.clone()].to_vec(),
+    );
+
+    let expected = [SampleTendrils::tendril_2()].to_vec();
+
+    let actual = parse_tendrils(&given).unwrap();
+
+    assert_eq!(actual, expected);
+    assert_eq!(actual[0].parents, vec!["some/parent/path"])
+}
+
+#[test]
+fn non_list_single_profile_returns_list_of_len_1() {
+    let original_tendril_json = SampleTendrils::tendril_2_json();
+    let extra_field_tendril_json = original_tendril_json.replace(
+        r#""profiles": ["win"]"#,
+        r#""profiles": "win""#,
+    );
+    assert_ne!(original_tendril_json, extra_field_tendril_json);
+
+    let given = SampleTendrils::build_tendrils_json(
+        &[extra_field_tendril_json.clone()].to_vec(),
+    );
+
+    let expected = [SampleTendrils::tendril_2()].to_vec();
+
+    let actual = parse_tendrils(&given).unwrap();
+
+    assert_eq!(actual, expected);
+    assert_eq!(actual[0].profiles, vec!["win"])
+}
+
 // TODO: Test when fields are null
-// TODO: Test that profile is deserialized properly

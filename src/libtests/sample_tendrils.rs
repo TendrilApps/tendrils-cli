@@ -90,6 +90,28 @@ impl SampleTendrils {
         }"#.to_string()
     }
 
+    pub fn tendril_5() -> Tendril {
+        Tendril {
+            group: "MyApp".to_string(),
+            name: "misc.txt".to_string(),
+            parents: ["some/parent/path5".to_string()].to_vec(),
+            dir_merge: false,
+            link: false,
+            profiles: vec!["mac".to_string()],
+        }
+    }
+
+    /// Minimal schema with single values passed as strings
+    /// instead of arrays
+    pub fn tendril_5_json() -> String {
+        r#"{
+            "group": "MyApp",
+            "name": "misc.txt",
+            "parents": "some/parent/path5",
+            "profiles": "mac"
+        }"#.to_string()
+    }
+
     pub fn build_tendrils_json(json_tendrils: &Vec<String>) -> String {
         let json_chunks:Vec<String> = [
             "[".to_string(),
