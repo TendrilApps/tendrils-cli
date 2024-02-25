@@ -22,8 +22,8 @@ impl TdTable {
     /// Note: This must be called *before* any other
     /// data is inserted
     pub fn set_header(&mut self, col_names: &[String]) {
-        let prefix = color_bright_green.to_string() + style_underline;
-        let suffix = color_reset.to_string() + style_reset;
+        let prefix = String::from(color_bright_green) + style_underline;
+        let suffix = String::from(color_reset) + style_reset;
         let styled_names: Vec<String> = col_names.iter().map(
             |n| ansi_style(n, prefix.clone(), &suffix)
         ).collect();

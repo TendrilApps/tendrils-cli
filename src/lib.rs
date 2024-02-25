@@ -291,8 +291,6 @@ fn resolve_path_variables(mut path: String) -> PathBuf {
     }
 
     if path.starts_with('~') {
-        // TODO: Future optimization - only fetch the tilde value once and 
-        // use it for all iterations instead of on each call to this function
         path = resolve_tilde(&path);
     }
 
@@ -316,11 +314,11 @@ fn resolve_tilde(path: &str) -> String {
     };
     match (var_os("HOMEDRIVE"), var_os("HOMEPATH")) {
         (Some(hd), Some(hp)) => {
-            let mut combo = hd.to_string_lossy().to_string();
+            let mut combo = String::from(hd.to_string_lossy());
             combo.push_str(hp.to_string_lossy().as_ref());
             path.replacen('~', &combo, 1)
         },
-        _ => path.to_string(),
+        _ => String::from(path),
     }
 }
 
@@ -348,7 +346,7 @@ fn parse_env_variables(input: &str) -> Vec<&str> {
 }
 
 fn resolve_tendril(
-    tendril: Tendril, // TODO: Use reference only?
+    tendril: &Tendril,
     first_only: bool
 ) -> Vec<Result<ResolvedTendril, InvalidTendrilError>> {
     let mode = match (&tendril.dir_merge, &tendril.link) {
@@ -356,30 +354,23 @@ fn resolve_tendril(
         (false, false) => TendrilMode::DirOverwrite,
         (_, true) => TendrilMode::Link,
     };
-    // TODO: Simplify?
-    let raw_paths = tendril.parents.clone();
-    let raw_paths = match first_only {
-        true => {
-            if !raw_paths.is_empty() {
-                raw_paths[..1].to_vec()
-            }
-            else {
-                raw_paths
-            }
-        }
-        false => raw_paths
+
+    let raw_paths = match (first_only, tendril.parents.is_empty()) {
+        (true, false) => vec![tendril.parents[0].clone()],
+        (false, false) => tendril.parents.clone(),
+        (_, true) => vec![],
     };
 
     let mut resolve_results = 
         Vec::with_capacity(tendril.names.len() * tendril.parents.len());
 
-    for name in tendril.names {
+    for name in tendril.names.iter() {
         for raw_path in raw_paths.iter() {
-            let parent = resolve_path_variables(raw_path.to_string());
+            let parent = resolve_path_variables(String::from(raw_path));
 
             resolve_results.push(ResolvedTendril::new(
-                tendril.group.clone(),
-                name.clone(),
+                &tendril.group,
+                name,
                 parent,
                 mode,
             ));
@@ -474,7 +465,7 @@ pub fn tendril_action<'a>(
     let first_only = mode == ActionMode::Pull;
 
     for tendril in tendrils.iter() {
-        let resolved_tendrils = resolve_tendril(tendril.clone(), first_only);
+        let resolved_tendrils = resolve_tendril(&tendril, first_only);
 
         // The number of parents that were considered when
         // resolving the tendril bundle

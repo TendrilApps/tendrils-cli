@@ -6,20 +6,20 @@ use std::path::PathBuf;
 /// Note: This does *not* guarantee that the path
 /// exists or is valid.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ResolvedTendril {
-    group: String,
-    name: String,
+pub struct ResolvedTendril<'a> {
+    group: &'a str,
+    name: &'a str,
     parent: PathBuf,
     pub mode: TendrilMode,
 }
 
-impl ResolvedTendril {
+impl<'a> ResolvedTendril<'a> {
     pub fn new(
-        group: String,
-        name: String,
+        group: &'a str,
+        name: &'a str,
         parent: PathBuf,
         mode: TendrilMode,
-    ) -> Result<ResolvedTendril, InvalidTendrilError> {
+    ) -> Result<ResolvedTendril<'a>, InvalidTendrilError> {
         if group.is_empty()
             || ResolvedTendril::is_path(&group)
             || group.to_lowercase() == ".git"
@@ -62,9 +62,7 @@ impl ResolvedTendril {
         #[cfg(windows)]
         let platform_dir_sep = "\\";
 
-        let parent_str = self.parent
-            .to_string_lossy()
-            .to_string();
+        let parent_str = String::from(self.parent.to_string_lossy());
 
         if parent_str.ends_with('\\')
             || parent_str.ends_with('/')

@@ -31,7 +31,7 @@ use tempdir::TempDir;
 #[case(".LeadingDot")]
 #[case("TrailingDot.")]
 fn remote_exists_copies_successfully(
-    #[case] name: String,
+    #[case] name: &str,
 
     #[values(true, false)]
     force: bool,
@@ -55,8 +55,8 @@ fn remote_exists_copies_successfully(
     }
 
     let tendril = ResolvedTendril::new(
-        "SomeApp".to_string(),
-        name.clone(),
+        "SomeApp",
+        name,
         setup.parent_dir.clone(),
         TendrilMode::DirOverwrite,
     ).unwrap();
@@ -130,8 +130,8 @@ fn var_in_any_field_exists_uses_raw_path(
     std::env::set_var("mut-testing", "value");
 
     let tendril = ResolvedTendril::new(
-        group.to_string(),
-        name.to_string(),
+        group,
+        name,
         setup.parent_dir.clone(),
         TendrilMode::DirOverwrite,
     ).unwrap();
@@ -177,8 +177,8 @@ fn var_in_any_field_doesnt_exist_uses_raw_path(
     setup.make_local_file();
 
     let tendril = ResolvedTendril::new(
-        group.to_string(),
-        name.to_string(),
+        group,
+        name,
         setup.parent_dir.clone(),
         TendrilMode::DirOverwrite,
     ).unwrap();
@@ -209,8 +209,8 @@ fn remote_doesnt_exist_returns_io_error_not_found(
     let setup = Setup::new();
 
     let tendril = ResolvedTendril::new(
-        "SomeApp".to_string(),
-        "misc.txt".to_string(),
+        "SomeApp",
+        "misc.txt",
         PathBuf::from("SomePathThatDoesNotExist"),
         TendrilMode::DirOverwrite,
     ).unwrap();
@@ -236,9 +236,9 @@ fn remote_is_given_td_dir_returns_recursion_error(
     let setup = Setup::new();
 
     let tendril = ResolvedTendril::new(
-        "SomeApp".to_string(),
-        "TendrilsDir".to_string(),
-        setup.parent_dir.clone(),
+        "SomeApp",
+        "TendrilsDir",
+        setup.parent_dir,
         TendrilMode::DirOverwrite,
     ).unwrap();
 
@@ -265,9 +265,9 @@ fn remote_is_ancestor_to_given_td_dir_returns_recursion_error(
         .join("TendrilsDir");
 
     let tendril = ResolvedTendril::new(
-        "SomeApp".to_string(),
-        "Nested1".to_string(),
-        setup.parent_dir.clone(),
+        "SomeApp",
+        "Nested1",
+        setup.parent_dir,
         TendrilMode::DirOverwrite,
     ).unwrap();
 
@@ -315,8 +315,8 @@ fn remote_is_direct_child_of_given_td_dir_returns_recursion_error(
     write(&source, "Remote file contents").unwrap();
 
     let tendril = ResolvedTendril::new(
-        "SomeApp".to_string(),
-        "misc.txt".to_string(),
+        "SomeApp",
+        "misc.txt",
         parent_dir,
         TendrilMode::DirOverwrite,
     ).unwrap();
@@ -357,8 +357,8 @@ fn remote_is_nested_child_of_given_td_dir_returns_recursion_error(
     write(&source, "Remote file contents").unwrap();
 
     let tendril = ResolvedTendril::new(
-        "SomeApp".to_string(),
-        "misc.txt".to_string(),
+        "SomeApp",
+        "misc.txt",
         parent_dir,
         TendrilMode::DirOverwrite,
     ).unwrap();
@@ -623,8 +623,8 @@ fn no_read_access_from_remote_file_returns_io_error_permission_denied(
     let given_parent_dir = get_samples_dir().join("NoReadAccess");
 
     let given = ResolvedTendril::new(
-        "SomeApp".to_string(),
-        "no_read_access.txt".to_string(),
+        "SomeApp",
+        "no_read_access.txt",
         given_parent_dir,
         TendrilMode::DirOverwrite,
     ).unwrap();
@@ -660,8 +660,8 @@ fn no_read_access_from_remote_dir_returns_io_error_permission_denied(
     // Note: This test sample is not version controlled and must first
     // be created using the setup script - See dev/setup-tendrils.nu
     let given = ResolvedTendril::new(
-        "SomeApp".to_string(),
-        "no_read_access_dir".to_string(),
+        "SomeApp",
+        "no_read_access_dir",
         given_parent_dir,
         TendrilMode::DirOverwrite,
     ).unwrap();
