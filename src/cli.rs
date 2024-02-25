@@ -243,8 +243,9 @@ fn tendril_action_subcommand(
             writer.writeln("Error: Could not read the tendrils.json file");
             return;
         },
-        Err(GetTendrilsError::ParseError(_e)) => {
+        Err(GetTendrilsError::ParseError(e)) => {
             writer.writeln("Error: Could not parse the tendrils.json file");
+            writer.writeln(&format!("{e}"));
             return;
         },
     };

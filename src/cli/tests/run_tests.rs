@@ -201,7 +201,8 @@ fn tendril_action_given_path_and_cd_are_both_tendrils_dirs_uses_given_path(
         tendrils_command,
     };
 
-    let expected = "Error: Could not parse the tendrils.json file\n";
+    let expected = "Error: Could not parse the tendrils.json file\nEOF while \
+    parsing a value at line 1 column 0\n";
 
     run(args, &mut writer);
 
