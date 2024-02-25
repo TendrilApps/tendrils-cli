@@ -9,7 +9,7 @@ use std::path::PathBuf;
 pub struct ResolvedTendril {
     group: String,
     name: String,
-    pub parent: PathBuf,
+    parent: PathBuf,
     pub mode: TendrilMode,
 }
 
@@ -21,12 +21,23 @@ impl ResolvedTendril {
         mode: TendrilMode,
     ) -> Result<ResolvedTendril, InvalidTendrilError> {
         if group.is_empty()
+            || ResolvedTendril::is_path(&group)
             || group.to_lowercase() == ".git"
-            || ResolvedTendril::is_path(&group) {
+            || group.contains('\n')
+            || group.contains('\r') {
             return Err(InvalidTendrilError::InvalidGroup);
         }
-        if name.is_empty() || ResolvedTendril::is_path(&name) {
+
+        if name.is_empty()
+            || ResolvedTendril::is_path(&name)
+            || name.contains('\n')
+            || name.contains('\r') {
             return Err(InvalidTendrilError::InvalidName);
+        }
+
+        let parent_str = parent.to_string_lossy();
+        if parent_str.contains('\n') || parent_str.contains('\r') {
+            return Err(InvalidTendrilError::InvalidParent);
         }
 
         Ok(ResolvedTendril {

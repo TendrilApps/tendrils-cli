@@ -52,6 +52,7 @@ impl From<std::io::Error> for TendrilActionError {
 pub enum InvalidTendrilError {
     InvalidGroup,
     InvalidName,
+    InvalidParent,
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq)]

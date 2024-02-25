@@ -5,6 +5,8 @@ use std::path::PathBuf;
 
 #[rstest]
 #[case("")]
+#[case("New\nLine")]
+#[case("Carriage\rReturn")]
 #[case("some/path")]
 #[case("some\\path")]
 #[case("/somePath")]
@@ -27,6 +29,8 @@ fn group_is_invalid_returns_invalid_group_error(#[case] group: String) {
 
 #[rstest]
 #[case("")]
+#[case("New\nLine")]
+#[case("Carriage\rReturn")]
 #[case("some/path")]
 #[case("some\\path")]
 #[case("/somePath")]
@@ -42,6 +46,20 @@ fn name_is_invalid_returns_invalid_name_error(#[case] name: String) {
     ).unwrap_err();
 
     assert!(matches!(actual, InvalidTendrilError::InvalidName));
+}
+
+#[rstest]
+#[case("New\nLine")]
+#[case("Carriage\rReturn")]
+fn parent_is_invalid_returns_invalid_parent_error(#[case] parent: &str) {
+    let actual = ResolvedTendril::new(
+        "SomeApp".to_string(),
+        "misc.txt".to_string(),
+        PathBuf::from(parent),
+        TendrilMode::DirOverwrite,
+    ).unwrap_err();
+
+    assert!(matches!(actual, InvalidTendrilError::InvalidParent));
 }
 
 #[rstest]
@@ -73,6 +91,22 @@ fn name_is_valid_returns_ok(#[case] name: String) {
         "SomeApp".to_string(),
         name,
         PathBuf::from("SomePath"),
+        TendrilMode::DirOverwrite,
+    ).unwrap();
+}
+
+#[rstest]
+#[case("")]
+#[case("somePath")]
+#[case("/some/path/")]
+#[case(" / some / path / ")]
+#[case("\\some\\path\\")]
+#[case(" \\ some \\ path \\ ")]
+fn parent_is_valid_returns_ok(#[case] group: &str) {
+    ResolvedTendril::new(
+        "SomeApp".to_string(),
+        "misc.txt".to_string(),
+        PathBuf::from(group),
         TendrilMode::DirOverwrite,
     ).unwrap();
 }
