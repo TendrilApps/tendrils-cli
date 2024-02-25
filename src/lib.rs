@@ -260,7 +260,11 @@ fn push_tendril(
 /// `<varname>` is left as-is in the path.
 /// 
 /// The common tilde (`~`) symbol can also be used as a prefix to the path
-/// and corresponds to the `HOME` variable on Unix/Windows.
+/// and corresponds to the `HOME` environment variable on Unix/Windows.
+/// If `HOME` doesn't exist, it will fallback to a combination of `HOMEDRIVE`
+/// and `HOMEPATH` provided they both exist (otherwise the `~` is left as is).
+/// This fallback is mainly a Windows specific issue, but is supported on all
+/// platforms either way.
 /// 
 /// Any non UTF-8 characters in a variable's value or in the tilde value
 /// are replaced with the U+FFFD replacement character.
@@ -285,23 +289,36 @@ fn resolve_path_variables(mut path: String) -> PathBuf {
     }
 
     if path.starts_with('~') {
+        // TODO: Future optimization - only fetch the tilde value once and 
+        // use it for all iterations instead of on each call to this function
         path = resolve_tilde(&path);
     }
 
     PathBuf::from(path)
 }
 
-/// Replaces the first instance of `~` with the `HOME` variable (Unix &
-/// Windows) and returns the replaced string.
+/// Replaces the first instance of `~` with the `HOME` variable
+/// and returns the replaced string. If `HOME` doesn't exist,
+/// `HOMEDRIVE` and `HOMEPATH` will be combined provided they both exist,
+/// otherwise it returns the given string.
 /// 
 /// Note: This does *not* check that the tilde is the leading character (it could be
 /// anywhere in the string) - this check should be done prior to calling this.
 fn resolve_tilde(path: &str) -> String {
-    match std::env::var_os("HOME") {
+    use std::env::var_os;
+    match var_os("HOME") {
         Some(v) => {
-            path.replacen('~', &v.to_string_lossy(), 1)
+            return path.replacen('~', &v.to_string_lossy(), 1);
         },
-        None => path.to_string(),
+        None => ()
+    };
+    match (var_os("HOMEDRIVE"), var_os("HOMEPATH")) {
+        (Some(hd), Some(hp)) => {
+            let mut combo = hd.to_string_lossy().to_string();
+            combo.push_str(hp.to_string_lossy().as_ref());
+            path.replacen('~', &combo, 1)
+        },
+        _ => path.to_string(),
     }
 }
 

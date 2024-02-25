@@ -314,6 +314,8 @@ fn leading_tilde_in_parent_path_tilde_value_doesnt_exist_returns_raw_path() {
         &[PathBuf::from("~/SomeParentPath".to_string())],
     );
     std::env::remove_var("HOME");
+    std::env::remove_var("HOMEDRIVE");
+    std::env::remove_var("HOMEPATH");
 
     let expected = vec![
         Ok(ResolvedTendril::new(

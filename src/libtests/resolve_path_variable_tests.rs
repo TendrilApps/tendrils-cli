@@ -214,17 +214,87 @@ fn var_value_is_non_unicode_returns_lossy_value() {
 #[case("~\\Some\\Path", "MyHome\\Some\\Path")]
 #[case("~<var>", "MyHomevalue")]
 #[serial("mut-env-var-testing")]
-fn leading_tilde_is_replaced_with_home(
+fn leading_tilde_is_replaced_with_home_if_home_exists_regardless_of_fallback_vars(
     #[case] given: String,
-    #[case] expected_str: String
+    #[case] expected_str: String,
+
+    #[values(true, false)]
+    homedrive_exists: bool,
+
+    #[values(true, false)]
+    homepath_exists: bool,
 ) {
     let expected = PathBuf::from(expected_str);
     std::env::set_var("var", "value");
     std::env::set_var("HOME", "MyHome");
+    if homedrive_exists {
+        std::env::set_var("HOMEDRIVE", "X:\\");
+    }
+    else {
+        std::env::remove_var("HOMEDRIVE");
+    }
+    if homepath_exists {
+        std::env::set_var("HOMEPATH", "MyHomePath");
+    }
+    else {
+        std::env::remove_var("HOMEPATH");
+    }
 
     let actual = resolve_path_variables(given);
 
     assert_eq!(actual, expected);
+}
+
+#[rstest]
+#[case("~", "X:\\MyHomePath")]
+#[case("~~", "X:\\MyHomePath~")]
+#[case("~/", "X:\\MyHomePath/")]
+#[case("~\\", "X:\\MyHomePath\\")]
+#[case("~/Some/Path", "X:\\MyHomePath/Some/Path")]
+#[case("~\\Some\\Path", "X:\\MyHomePath\\Some\\Path")]
+#[case("~<var>", "X:\\MyHomePathvalue")]
+#[serial("mut-env-var-testing")]
+fn leading_tilde_is_replaced_with_homedrive_plus_homepath_if_home_doesnt_exist(
+    #[case] given: String,
+    #[case] expected_str: String,
+) {
+    let expected = PathBuf::from(expected_str);
+    std::env::set_var("var", "value");
+    std::env::set_var("HOMEDRIVE", "X:\\");
+    std::env::set_var("HOMEPATH", "MyHomePath");
+    std::env::remove_var("HOME");
+
+    let actual = resolve_path_variables(given);
+
+    assert_eq!(actual, expected);
+}
+
+#[rstest]
+#[case(false, false)]
+#[case(true, false)]
+#[case(false, true)]
+#[serial("mut-env-var-testing")]
+fn leading_tilde_returns_given_if_home_and_either_homedrive_or_homepath_dont_exist(
+    #[case] homedrive_exists: bool,
+    #[case] homepath_exists: bool,
+) {
+    std::env::remove_var("HOME");
+    if homedrive_exists {
+        std::env::set_var("HOMEDRIVE", "X:\\");
+    }
+    else {
+        std::env::remove_var("HOMEDRIVE");
+    }
+    if homepath_exists {
+        std::env::set_var("HOMEPATH", "MyHomePath");
+    }
+    else {
+        std::env::remove_var("HOMEPATH");
+    }
+
+    let actual = resolve_path_variables("~/Some/Path".to_string());
+
+    assert_eq!(actual, PathBuf::from("~/Some/Path"))
 }
 
 #[rstest]
@@ -240,6 +310,8 @@ fn no_leading_tilde_returns_given(
     let expected = PathBuf::from(given.clone());
     std::env::set_var("var", "value");
     std::env::set_var("HOME", "MyHome");
+    std::env::set_var("HOMEDRIVE", "X:\\");
+    std::env::set_var("HOMEPATH", "MyHomePath");
 
     let actual = resolve_path_variables(given);
 
@@ -262,26 +334,15 @@ fn tilde_value_is_another_var_returns_raw_tilde_value() {
 }
 
 #[rstest]
-#[case("~")]
-#[case("~/Some/Path")]
-#[case("~\\Some\\Path")]
+#[case(true, "fo�o")]
+#[case(false, "fo�ofo�o")]
 #[serial("mut-env-var-testing")]
-fn tilde_value_doesnt_exist_returns_raw_path(
-    #[case] given: String,
+fn tilde_value_is_non_unicode_returns_lossy_value(
+    #[case] home_exists: bool,
+    #[case] expected_str: &str,
 ) {
-    let expected = PathBuf::from(given.clone());
-    std::env::remove_var("HOME");
-
-    let actual = resolve_path_variables(given);
-
-    assert_eq!(actual, expected)
-}
-
-#[test]
-#[serial("mut-env-var-testing")]
-fn tilde_value_is_non_unicode_returns_lossy_value() {
     let given = "~".to_string();
-    let expected = PathBuf::from("fo�o");
+    let expected = PathBuf::from(expected_str);
 
     #[cfg(unix)] {
         use std::ffi::OsStr;
@@ -292,7 +353,14 @@ fn tilde_value_is_non_unicode_returns_lossy_value() {
         // in a UTF-8 sequence.
         let source = [0x66, 0x6f, 0x80, 0x6f];
         let non_utf8_string = OsStr::from_bytes(&source[..]);
-        std::env::set_var("HOME", non_utf8_string);
+        if home_exists {
+            std::env::set_var("HOME", non_utf8_string);
+        }
+        else {
+            std::env::remove_var("HOME");
+        }
+        std::env::set_var("HOMEDRIVE", non_utf8_string);
+        std::env::set_var("HOMEPATH", non_utf8_string);
     }
     #[cfg(windows)] {
         use std::ffi::OsString;
@@ -304,7 +372,14 @@ fn tilde_value_is_non_unicode_returns_lossy_value() {
         let source = [0x0066, 0x006f, 0xD800, 0x006f];
         let os_string = OsString::from_wide(&source[..]);
         let non_utf8_string = os_string.as_os_str();
-        std::env::set_var("HOME", non_utf8_string);
+        if home_exists {
+            std::env::set_var("HOME", non_utf8_string);
+        }
+        else {
+            std::env::remove_var("HOME");
+        }
+        std::env::set_var("HOMEDRIVE", non_utf8_string);
+        std::env::set_var("HOMEPATH", non_utf8_string);
     }
 
     let actual = resolve_path_variables(given);
