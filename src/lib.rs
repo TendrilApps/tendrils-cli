@@ -139,21 +139,15 @@ fn get_tendrils_dir(starting_path: &Path) -> Option<PathBuf> {
     }
 }
 
-pub fn filter_by_profiles(tendrils: &[Tendril], profiles: &[String]) -> Vec<Tendril> {
-    let mut included = vec![];
-
+pub fn filter_by_profiles(tendrils: Vec<Tendril>, profiles: &[String]) -> Vec<Tendril> {
     if profiles.is_empty() {
-        return tendrils.to_vec();
+        return tendrils;
     }
 
-    for tendril in tendrils {
-        if tendril.profiles.is_empty()
-            || tendril.profiles.iter().any(|p| profiles.contains(p)) {
-            included.push(tendril.to_owned());
-        }
-    }
-
-    included
+    tendrils.into_iter().filter(|t| -> bool {
+            t.profiles.is_empty()
+            || profiles.iter().any(|p| t.profiles.contains(p))
+        }).collect()
 }
 
 fn get_tendrils(

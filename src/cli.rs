@@ -250,9 +250,10 @@ fn tendril_action_subcommand(
         },
     };
 
-    let filtered_tendrils = filter_by_profiles(&all_tendrils, &profiles);
+    let all_tendrils_is_empty = all_tendrils.is_empty();
+    let filtered_tendrils = filter_by_profiles(all_tendrils, &profiles);
 
-    if all_tendrils.is_empty() {
+    if all_tendrils_is_empty {
         writer.writeln("No tendrils were found.");
     }
     else if filtered_tendrils.is_empty() {

@@ -2,6 +2,19 @@ use crate::{filter_by_profiles, Tendril};
 use rstest::rstest;
 
 #[rstest]
+#[case(&[])]
+#[case(&["".to_string()])]
+#[case(&["p1".to_string()])]
+#[case(&["p1".to_string(), "p2".to_string()])]
+fn empty_tendril_list_returns_empty(#[case] profiles: &[String]) {
+    let tendrils = vec![];
+
+    let actual = filter_by_profiles(tendrils, &profiles);
+
+    assert!(actual.is_empty())
+}
+
+#[rstest]
 #[case(vec![])]
 #[case(vec!["".to_string()])]
 #[case(vec![" ".to_string()])]
@@ -18,9 +31,9 @@ fn tendril_with_empty_profiles_included_in_all(
     assert!(t1.profiles.is_empty());
     let t2 = Tendril::new("SomeApp", vec!["misc2.txt"]);
     assert!(t2.profiles.is_empty());
-    let tendrils = [t1.clone(), t2.clone()];
+    let tendrils = vec![t1.clone(), t2.clone()];
 
-    let actual = filter_by_profiles(&tendrils, &given_filters);
+    let actual = filter_by_profiles(tendrils, &given_filters);
 
     assert_eq!(actual, vec![t1, t2]);
 }
@@ -40,9 +53,9 @@ fn tendril_only_included_if_any_profile_matches_exactly(
     t1.profiles = vec!["p1".to_string(), "p2".to_string()];
     let mut t2 = Tendril::new("SomeApp", vec!["misc2.txt"]);
     t2.profiles = vec!["p4".to_string()];
-    let tendrils = [t1.clone(), t2.clone()];
+    let tendrils = vec![t1.clone(), t2.clone()];
 
-    let actual = filter_by_profiles(&tendrils, &given_filters);
+    let actual = filter_by_profiles(tendrils, &given_filters);
 
     assert_eq!(actual, vec![t1]);
 }
@@ -69,9 +82,9 @@ fn tendril_not_included_if_not_empty_and_no_profile_matches_exactly(
     t1.profiles = vec!["p1".to_string(), "p2".to_string()];
     let t2 = Tendril::new("SomeApp", vec!["misc2.txt"]);
     assert!(t2.profiles.is_empty());
-    let tendrils = [t1.clone(), t2.clone()];
+    let tendrils = vec![t1.clone(), t2.clone()];
 
-    let actual = filter_by_profiles(&tendrils, &given_filters);
+    let actual = filter_by_profiles(tendrils, &given_filters);
 
     assert_eq!(actual, vec![t2]);
 }
@@ -82,14 +95,14 @@ fn duplicate_filter_profiles_only_returns_tendril_once() {
     t1.profiles = vec!["p1".to_string()];
     let mut t2 = Tendril::new("SomeApp", vec!["misc2.txt"]);
     t2.profiles = vec!["p2".to_string()];
-    let tendrils = [t1.clone(), t2.clone()];
+    let tendrils = vec![t1.clone(), t2.clone()];
     let given_filters = [
         "p1".to_string(),
         "p1".to_string(),
         "p1".to_string(),
     ];
 
-    let actual = filter_by_profiles(&tendrils, &given_filters);
+    let actual = filter_by_profiles(tendrils, &given_filters);
 
     assert_eq!(actual, vec![t1]);
 }
@@ -104,10 +117,10 @@ fn duplicate_tendril_profiles_only_returns_tendril_once() {
     ];
     let mut t2 = Tendril::new("SomeApp", vec!["misc2.txt"]);
     t2.profiles = vec!["p2".to_string()];
-    let tendrils = [t1.clone(), t2.clone()];
+    let tendrils = vec![t1.clone(), t2.clone()];
     let given_filters = ["p1".to_string()];
 
-    let actual = filter_by_profiles(&tendrils, &given_filters);
+    let actual = filter_by_profiles(tendrils, &given_filters);
 
     assert_eq!(actual, vec![t1]);
 }
@@ -118,10 +131,10 @@ fn duplicate_tendrils_returns_all_instances() {
     t1.profiles = vec!["p1".to_string()];
     let mut t2 = Tendril::new("SomeApp", vec!["misc2.txt"]);
     t2.profiles = vec!["p2".to_string()];
-    let tendrils = [t1.clone(), t1.clone(), t1.clone(), t2.clone()];
+    let tendrils = vec![t1.clone(), t1.clone(), t1.clone(), t2.clone()];
     let given_filters = ["p1".to_string()];
 
-    let actual = filter_by_profiles(&tendrils, &given_filters);
+    let actual = filter_by_profiles(tendrils, &given_filters);
 
     assert_eq!(actual, vec![t1.clone(), t1.clone(), t1]);
 }
@@ -141,9 +154,9 @@ fn weird_profile_names_are_supported(
     t1.profiles = vec![profile.clone()];
     let mut t2 = Tendril::new("SomeApp", vec!["misc2.txt"]);
     t2.profiles = vec!["p1".to_string()];
-    let tendrils = [t1.clone(), t2.clone()];
+    let tendrils = vec![t1.clone(), t2.clone()];
 
-    let actual = filter_by_profiles(&tendrils, &[profile]);
+    let actual = filter_by_profiles(tendrils, &[profile]);
 
     assert_eq!(actual, vec![t1]);
 }
@@ -154,9 +167,9 @@ fn empty_filters_list_returns_all_tendrils() {
     t1.profiles = vec!["p1".to_string()];
     let mut t2 = Tendril::new("SomeApp", vec!["misc2.txt"]);
     t2.profiles = vec![];
-    let tendrils = [t1.clone(), t2.clone()];
+    let tendrils = vec![t1.clone(), t2.clone()];
 
-    let actual = filter_by_profiles(&tendrils, &[]);
+    let actual = filter_by_profiles(tendrils, &[]);
 
     assert_eq!(actual, vec![t1, t2]);
 }
