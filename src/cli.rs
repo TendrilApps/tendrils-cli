@@ -192,7 +192,7 @@ fn print_reports(reports: &[TendrilActionReport], writer: &mut impl Writer) {
 
         tbl.push_row(&[
             report.orig_tendril.group.clone(),
-            report.orig_tendril.name.clone(),
+            report.name.to_string(),
             styled_path,
             styled_result,
         ]);

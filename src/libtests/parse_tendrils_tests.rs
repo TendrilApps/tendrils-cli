@@ -42,7 +42,7 @@ fn json_missing_group_returns_error() {
 fn json_missing_name_returns_error() {
     let original_tendril_json = SampleTendrils::tendril_1_json();
     let partial_tendril_json =
-        original_tendril_json.replace(r#""name": "settings.json","#, "");
+        original_tendril_json.replace(r#""names": "settings.json","#, "");
     assert_ne!(&original_tendril_json, &partial_tendril_json);
 
     let given = SampleTendrils::build_tendrils_json(
@@ -153,22 +153,10 @@ fn single_tendril_in_json_returns_tendril() {
 #[test]
 fn multiple_tendrils_in_json_returns_tendrils() {
     let given = SampleTendrils::build_tendrils_json(
-        &[
-            SampleTendrils::tendril_1_json(),
-            SampleTendrils::tendril_2_json(),
-            SampleTendrils::tendril_3_json(),
-            SampleTendrils::tendril_4_json(),
-            SampleTendrils::tendril_5_json(),
-        ].to_vec()
+        &SampleTendrils::all_tendril_jsons(),
     );
 
-    let expected = [
-        SampleTendrils::tendril_1(),
-        SampleTendrils::tendril_2(),
-        SampleTendrils::tendril_3(),
-        SampleTendrils::tendril_4(),
-        SampleTendrils::tendril_5(),
-    ].to_vec();
+    let expected = SampleTendrils::all_tendrils();
 
     let actual = parse_tendrils(&given).unwrap();
 
@@ -179,8 +167,8 @@ fn multiple_tendrils_in_json_returns_tendrils() {
 fn ignores_extra_json_field_returns_tendril() {
     let original_tendril_json = SampleTendrils::tendril_1_json();
     let extra_field_tendril_json = original_tendril_json.replace(
-        r#""name": "settings.json","#,
-        r#""name": "settings.json", "extra field": true,"#,
+        r#""names": "settings.json","#,
+        r#""names": "settings.json", "extra field": true,"#,
     );
     assert_ne!(original_tendril_json, extra_field_tendril_json);
 
@@ -195,16 +183,33 @@ fn ignores_extra_json_field_returns_tendril() {
 }
 
 #[test]
+fn non_list_single_name_returns_list_of_len_1() {
+    let original_tendril_json = SampleTendrils::tendril_1_json();
+    assert!(original_tendril_json.contains(r#""names": "settings.json","#));
+
+    let given = SampleTendrils::build_tendrils_json(
+        &[original_tendril_json].to_vec(),
+    );
+
+    let expected = [SampleTendrils::tendril_1()].to_vec();
+
+    let actual = parse_tendrils(&given).unwrap();
+
+    assert_eq!(actual, expected);
+    assert_eq!(actual[0].names, vec!["settings.json"]);
+}
+
+#[test]
 fn non_list_single_parent_returns_list_of_len_1() {
     let original_tendril_json = SampleTendrils::tendril_2_json();
-    let extra_field_tendril_json = original_tendril_json.replace(
+    let modified_json = original_tendril_json.replace(
         r#""parents": ["some/parent/path"],"#,
         r#""parents": "some/parent/path","#,
     );
-    assert_ne!(original_tendril_json, extra_field_tendril_json);
+    assert_ne!(original_tendril_json, modified_json);
 
     let given = SampleTendrils::build_tendrils_json(
-        &[extra_field_tendril_json.clone()].to_vec(),
+        &[modified_json].to_vec(),
     );
 
     let expected = [SampleTendrils::tendril_2()].to_vec();
@@ -212,20 +217,20 @@ fn non_list_single_parent_returns_list_of_len_1() {
     let actual = parse_tendrils(&given).unwrap();
 
     assert_eq!(actual, expected);
-    assert_eq!(actual[0].parents, vec!["some/parent/path"])
+    assert_eq!(actual[0].parents, vec!["some/parent/path"]);
 }
 
 #[test]
 fn non_list_single_profile_returns_list_of_len_1() {
     let original_tendril_json = SampleTendrils::tendril_2_json();
-    let extra_field_tendril_json = original_tendril_json.replace(
+    let modified_json = original_tendril_json.replace(
         r#""profiles": ["win"]"#,
         r#""profiles": "win""#,
     );
-    assert_ne!(original_tendril_json, extra_field_tendril_json);
+    assert_ne!(original_tendril_json, modified_json);
 
     let given = SampleTendrils::build_tendrils_json(
-        &[extra_field_tendril_json.clone()].to_vec(),
+        &[modified_json].to_vec(),
     );
 
     let expected = [SampleTendrils::tendril_2()].to_vec();
@@ -233,7 +238,7 @@ fn non_list_single_profile_returns_list_of_len_1() {
     let actual = parse_tendrils(&given).unwrap();
 
     assert_eq!(actual, expected);
-    assert_eq!(actual[0].profiles, vec!["win"])
+    assert_eq!(actual[0].profiles, vec!["win"]);
 }
 
 // TODO: Test when fields are null

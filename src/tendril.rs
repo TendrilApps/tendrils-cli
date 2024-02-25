@@ -1,12 +1,14 @@
 use crate::enums::OneOrMany;
 use serde::{de, Deserialize, Deserializer, Serialize};
 
-/// Represents a file system object that is controlled
+/// Represents a bundle of file system objects that are controlled
 /// by Tendrils.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Tendril {
     pub group: String,
-    pub name: String,
+
+    #[serde(deserialize_with = "one_or_many_to_vec")]
+    pub names: Vec<String>,
 
     #[serde(deserialize_with = "one_or_many_to_vec")]
     pub parents: Vec<String>,
@@ -24,15 +26,11 @@ pub struct Tendril {
 }
 
 impl Tendril {
-    pub fn id(&self) -> String {
-        self.group.clone() + " - " + &self.name
-    }
-
     #[cfg(test)]
-    pub fn new(group: &str, name: &str) -> Tendril {
+    pub fn new(group: &str, names: Vec<&str>) -> Tendril {
         Tendril {
             group: group.to_string(),
-            name: name.to_string(),
+            names: names.into_iter().map(|n: &str| n.to_string()).collect(),
             parents: vec![],
             dir_merge: false,
             link: false,

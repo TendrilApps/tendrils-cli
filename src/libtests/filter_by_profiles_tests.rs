@@ -14,9 +14,9 @@ use rstest::rstest;
 fn tendril_with_empty_profiles_included_in_all(
     #[case] given_filters: Vec<String>
 ) {
-    let t1 = Tendril::new("SomeApp", "misc.txt");
+    let t1 = Tendril::new("SomeApp", vec!["misc.txt"]);
     assert!(t1.profiles.is_empty());
-    let t2 = Tendril::new("SomeApp", "misc2.txt");
+    let t2 = Tendril::new("SomeApp", vec!["misc2.txt"]);
     assert!(t2.profiles.is_empty());
     let tendrils = [t1.clone(), t2.clone()];
 
@@ -36,9 +36,9 @@ fn tendril_with_empty_profiles_included_in_all(
 fn tendril_only_included_if_any_profile_matches_exactly(
     #[case] given_filters: Vec<String>
 ) {
-    let mut t1 = Tendril::new("SomeApp", "misc.txt");
+    let mut t1 = Tendril::new("SomeApp", vec!["misc.txt"]);
     t1.profiles = vec!["p1".to_string(), "p2".to_string()];
-    let mut t2 = Tendril::new("SomeApp", "misc2.txt");
+    let mut t2 = Tendril::new("SomeApp", vec!["misc2.txt"]);
     t2.profiles = vec!["p4".to_string()];
     let tendrils = [t1.clone(), t2.clone()];
 
@@ -65,9 +65,9 @@ fn tendril_only_included_if_any_profile_matches_exactly(
 fn tendril_not_included_if_not_empty_and_no_profile_matches_exactly(
     #[case] given_filters: Vec<String>
 ) {
-    let mut t1 = Tendril::new("SomeApp", "misc.txt");
+    let mut t1 = Tendril::new("SomeApp", vec!["misc.txt"]);
     t1.profiles = vec!["p1".to_string(), "p2".to_string()];
-    let t2 = Tendril::new("SomeApp", "misc2.txt");
+    let t2 = Tendril::new("SomeApp", vec!["misc2.txt"]);
     assert!(t2.profiles.is_empty());
     let tendrils = [t1.clone(), t2.clone()];
 
@@ -78,9 +78,9 @@ fn tendril_not_included_if_not_empty_and_no_profile_matches_exactly(
 
 #[test]
 fn duplicate_filter_profiles_only_returns_tendril_once() {
-    let mut t1 = Tendril::new("SomeApp", "misc.txt");
+    let mut t1 = Tendril::new("SomeApp", vec!["misc.txt"]);
     t1.profiles = vec!["p1".to_string()];
-    let mut t2 = Tendril::new("SomeApp", "misc2.txt");
+    let mut t2 = Tendril::new("SomeApp", vec!["misc2.txt"]);
     t2.profiles = vec!["p2".to_string()];
     let tendrils = [t1.clone(), t2.clone()];
     let given_filters = [
@@ -96,13 +96,13 @@ fn duplicate_filter_profiles_only_returns_tendril_once() {
 
 #[test]
 fn duplicate_tendril_profiles_only_returns_tendril_once() {
-    let mut t1 = Tendril::new("SomeApp", "misc.txt");
+    let mut t1 = Tendril::new("SomeApp", vec!["misc.txt"]);
     t1.profiles = vec![
         "p1".to_string(),
         "p1".to_string(),
         "p1".to_string(),
     ];
-    let mut t2 = Tendril::new("SomeApp", "misc2.txt");
+    let mut t2 = Tendril::new("SomeApp", vec!["misc2.txt"]);
     t2.profiles = vec!["p2".to_string()];
     let tendrils = [t1.clone(), t2.clone()];
     let given_filters = ["p1".to_string()];
@@ -114,9 +114,9 @@ fn duplicate_tendril_profiles_only_returns_tendril_once() {
 
 #[test]
 fn duplicate_tendrils_returns_all_instances() {
-    let mut t1 = Tendril::new("SomeApp", "misc.txt");
+    let mut t1 = Tendril::new("SomeApp", vec!["misc.txt"]);
     t1.profiles = vec!["p1".to_string()];
-    let mut t2 = Tendril::new("SomeApp", "misc2.txt");
+    let mut t2 = Tendril::new("SomeApp", vec!["misc2.txt"]);
     t2.profiles = vec!["p2".to_string()];
     let tendrils = [t1.clone(), t1.clone(), t1.clone(), t2.clone()];
     let given_filters = ["p1".to_string()];
@@ -137,9 +137,9 @@ fn duplicate_tendrils_returns_all_instances() {
 fn weird_profile_names_are_supported(
     #[case] profile: String
 ) {
-    let mut t1 = Tendril::new("SomeApp", "misc.txt");
+    let mut t1 = Tendril::new("SomeApp", vec!["misc.txt"]);
     t1.profiles = vec![profile.clone()];
-    let mut t2 = Tendril::new("SomeApp", "misc2.txt");
+    let mut t2 = Tendril::new("SomeApp", vec!["misc2.txt"]);
     t2.profiles = vec!["p1".to_string()];
     let tendrils = [t1.clone(), t2.clone()];
 
@@ -150,9 +150,9 @@ fn weird_profile_names_are_supported(
 
 #[test]
 fn empty_filters_list_returns_all_tendrils() {
-    let mut t1 = Tendril::new("SomeApp", "misc.txt");
+    let mut t1 = Tendril::new("SomeApp", vec!["misc.txt"]);
     t1.profiles = vec!["p1".to_string()];
-    let mut t2 = Tendril::new("SomeApp", "misc2.txt");
+    let mut t2 = Tendril::new("SomeApp", vec!["misc2.txt"]);
     t2.profiles = vec![];
     let tendrils = [t1.clone(), t2.clone()];
 

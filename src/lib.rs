@@ -148,7 +148,7 @@ pub fn filter_by_profiles(tendrils: &[Tendril], profiles: &[String]) -> Vec<Tend
 
     for tendril in tendrils {
         if tendril.profiles.is_empty()
-            || tendril.profiles.iter().any(|p| profiles.contains(&p)) {
+            || tendril.profiles.iter().any(|p| profiles.contains(p)) {
             included.push(tendril.to_owned());
         }
     }
@@ -337,6 +337,7 @@ fn resolve_tendril(
         (false, false) => TendrilMode::DirOverwrite,
         (_, true) => TendrilMode::Link,
     };
+    // TODO: Simplify?
     let raw_paths = tendril.parents.clone();
     let raw_paths = match first_only {
         true => {
@@ -350,16 +351,23 @@ fn resolve_tendril(
         false => raw_paths
     };
 
-    raw_paths.into_iter().map(|p| -> Result<ResolvedTendril, InvalidTendrilError> {
-        let parent = resolve_path_variables(p);
+    let mut resolve_results = 
+        Vec::with_capacity(tendril.names.len() * tendril.parents.len());
 
-        Ok(ResolvedTendril::new(
-            tendril.group.clone(),
-            tendril.name.clone(),
-            parent,
-            mode,
-        )?)
-    }).collect()
+    for name in tendril.names {
+        for raw_path in raw_paths.iter() {
+            let parent = resolve_path_variables(raw_path.to_string());
+
+            resolve_results.push(ResolvedTendril::new(
+                tendril.group.clone(),
+                name.clone(),
+                parent,
+                mode,
+            ));
+        }
+    }
+
+    resolve_results
 }
 
 fn symlink(
@@ -449,7 +457,14 @@ pub fn tendril_action<'a>(
     for tendril in tendrils.iter() {
         let resolved_tendrils = resolve_tendril(tendril.clone(), first_only);
 
-        for resolved_tendril in resolved_tendrils.into_iter() {
+        // The number of parents that were considered when
+        // resolving the tendril bundle
+        let num_parents = match first_only {
+            true => 1,
+            false => tendril.parents.len(),
+        };
+
+        for (i, resolved_tendril) in resolved_tendrils.into_iter().enumerate() {
             let action_result = match (&resolved_tendril, mode) {
                 (Ok(v), ActionMode::Pull) => {
                     Some(pull_tendril(&td_dir, &v, dry_run, force))
@@ -468,8 +483,11 @@ pub fn tendril_action<'a>(
                 Err(e) => Err(e),
             };
 
+            let name_idx = ((i/num_parents) as f32).floor() as usize;
+
             let report = TendrilActionReport {
                 orig_tendril: tendril,
+                name: &tendril.names[name_idx],
                 resolved_path,
                 action_result,
             };

@@ -101,7 +101,7 @@ impl Setup {
     pub fn file_tendril(&self) -> Tendril {
         Tendril::new(
             "SomeApp",
-            "misc.txt",
+            vec!["misc.txt"],
         )
     }
 

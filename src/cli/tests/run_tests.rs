@@ -288,9 +288,9 @@ fn tendril_action_tendrils_are_filtered_by_profile(
     let mut t1 = setup.file_tendril();
     let mut t2 = setup.file_tendril();
     let mut t3 = setup.file_tendril();
-    t1.name = "misc1.txt".to_string();
-    t2.name = "misc2.txt".to_string();
-    t3.name = "misc3.txt".to_string();
+    t1.names = vec!["misc1.txt".to_string()];
+    t2.names = vec!["misc2.txt".to_string()];
+    t3.names = vec!["misc3.txt".to_string()];
     t1.link = mode == ActionMode::Link;
     t2.link = mode == ActionMode::Link;
     t3.link = mode == ActionMode::Link;
@@ -385,7 +385,7 @@ fn tendril_action_empty_filtered_tendrils_array_should_print_message(
 ) {
     let setup = Setup::new();
     let mut t1 = setup.file_tendril();
-    t1.name = "misc1.txt".to_string();
+    t1.names = vec!["misc1.txt".to_string()];
     t1.link = mode == ActionMode::Link;
     t1.profiles = vec!["ExcludeMe".to_string()];
     set_parents(&mut t1, &[setup.parent_dir.clone()]);
