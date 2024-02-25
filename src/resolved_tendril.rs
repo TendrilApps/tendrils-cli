@@ -62,9 +62,7 @@ impl<'a> ResolvedTendril<'a> {
         #[cfg(windows)]
         let platform_dir_sep = "\\";
 
-        let parent_str = self.parent
-            .to_string_lossy()
-            .to_string();
+        let parent_str = String::from(self.parent.to_string_lossy());
 
         if parent_str.ends_with('\\')
             || parent_str.ends_with('/')

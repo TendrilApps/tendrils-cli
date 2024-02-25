@@ -29,8 +29,8 @@ impl Tendril {
     #[cfg(test)]
     pub fn new(group: &str, names: Vec<&str>) -> Tendril {
         Tendril {
-            group: group.to_string(),
-            names: names.into_iter().map(|n: &str| n.to_string()).collect(),
+            group: String::from(group),
+            names: names.into_iter().map(|n: &str| String::from(n)).collect(),
             parents: vec![],
             dir_merge: false,
             link: false,

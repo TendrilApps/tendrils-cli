@@ -316,11 +316,11 @@ fn resolve_tilde(path: &str) -> String {
     };
     match (var_os("HOMEDRIVE"), var_os("HOMEPATH")) {
         (Some(hd), Some(hp)) => {
-            let mut combo = hd.to_string_lossy().to_string();
+            let mut combo = String::from(hd.to_string_lossy());
             combo.push_str(hp.to_string_lossy().as_ref());
             path.replacen('~', &combo, 1)
         },
-        _ => path.to_string(),
+        _ => String::from(path),
     }
 }
 
@@ -348,7 +348,7 @@ fn parse_env_variables(input: &str) -> Vec<&str> {
 }
 
 fn resolve_tendril(
-    tendril: &Tendril, // TODO: Use reference only?
+    tendril: &Tendril,
     first_only: bool
 ) -> Vec<Result<ResolvedTendril, InvalidTendrilError>> {
     let mode = match (&tendril.dir_merge, &tendril.link) {
@@ -375,11 +375,11 @@ fn resolve_tendril(
 
     for name in tendril.names.iter() {
         for raw_path in raw_paths.iter() {
-            let parent = resolve_path_variables(raw_path.to_string());
+            let parent = resolve_path_variables(String::from(raw_path));
 
             resolve_results.push(ResolvedTendril::new(
                 &tendril.group,
-                &name,
+                name,
                 parent,
                 mode,
             ));

@@ -36,7 +36,7 @@ pub fn is_empty(dir: &Path) -> bool {
 pub fn set_parents(tendril: &mut Tendril, paths: &[PathBuf]) {
     let path_strings:Vec<String> = paths
         .iter()
-        .map(|x| x.to_str().unwrap().to_string())
+        .map(|x| String::from(x.to_str().unwrap()))
         .collect();
 
     tendril.parents = path_strings;
