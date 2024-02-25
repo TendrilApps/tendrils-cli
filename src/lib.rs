@@ -291,8 +291,6 @@ fn resolve_path_variables(mut path: String) -> PathBuf {
     }
 
     if path.starts_with('~') {
-        // TODO: Future optimization - only fetch the tilde value once and 
-        // use it for all iterations instead of on each call to this function
         path = resolve_tilde(&path);
     }
 
@@ -356,18 +354,11 @@ fn resolve_tendril(
         (false, false) => TendrilMode::DirOverwrite,
         (_, true) => TendrilMode::Link,
     };
-    // TODO: Simplify?
-    let raw_paths = tendril.parents.clone();
-    let raw_paths = match first_only {
-        true => {
-            if !raw_paths.is_empty() {
-                raw_paths[..1].to_vec()
-            }
-            else {
-                raw_paths
-            }
-        }
-        false => raw_paths
+
+    let raw_paths = match (first_only, tendril.parents.is_empty()) {
+        (true, false) => vec![tendril.parents[0].clone()],
+        (false, false) => tendril.parents.clone(),
+        (_, true) => vec![],
     };
 
     let mut resolve_results = 
