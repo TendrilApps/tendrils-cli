@@ -107,8 +107,8 @@ impl Setup {
 
     pub fn resolved_file_tendril(&self) -> ResolvedTendril {
         ResolvedTendril::new(
-            "SomeApp".to_string(),
-            "misc.txt".to_string(),
+            "SomeApp",
+            "misc.txt",
             self.parent_dir.clone(),
             TendrilMode::DirOverwrite,
         ).unwrap()
@@ -116,8 +116,8 @@ impl Setup {
 
     pub fn resolved_dir_tendril(&self) -> ResolvedTendril {
         ResolvedTendril::new(
-            "SomeApp".to_string(),
-            "misc".to_string(),
+            "SomeApp",
+            "misc",
             self.parent_dir.clone(),
             TendrilMode::DirOverwrite,
         ).unwrap()

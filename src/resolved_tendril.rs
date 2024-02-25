@@ -6,20 +6,20 @@ use std::path::PathBuf;
 /// Note: This does *not* guarantee that the path
 /// exists or is valid.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ResolvedTendril {
-    group: String,
-    name: String,
+pub struct ResolvedTendril<'a> {
+    group: &'a str,
+    name: &'a str,
     parent: PathBuf,
     pub mode: TendrilMode,
 }
 
-impl ResolvedTendril {
+impl<'a> ResolvedTendril<'a> {
     pub fn new(
-        group: String,
-        name: String,
+        group: &'a str,
+        name: &'a str,
         parent: PathBuf,
         mode: TendrilMode,
-    ) -> Result<ResolvedTendril, InvalidTendrilError> {
+    ) -> Result<ResolvedTendril<'a>, InvalidTendrilError> {
         if group.is_empty()
             || ResolvedTendril::is_path(&group)
             || group.to_lowercase() == ".git"

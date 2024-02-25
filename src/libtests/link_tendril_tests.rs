@@ -39,8 +39,8 @@ fn remote_parent_doesnt_exist_returns_io_error_not_found(
     setup.make_local_file();
 
     let tendril = ResolvedTendril::new(
-        "SomeApp".to_string(),
-        "misc.txt".to_string(),
+        "SomeApp",
+        "misc.txt",
         PathBuf::from("SomePathThatDoesNotExist"),
         TendrilMode::Link,
     ).unwrap();

@@ -12,7 +12,7 @@ fn empty_parent_list_returns_empty(#[case] first_only: bool) {
 
     set_parents(&mut given, &[]);
 
-    let actual = resolve_tendril(given, first_only);
+    let actual = resolve_tendril(&given, first_only);
 
     assert_eq!(actual, vec![]);
 }
@@ -34,7 +34,7 @@ fn invalid_tendril_returns_invalid_tendril(
         ]
     );
 
-    let actual = resolve_tendril(given, false);
+    let actual = resolve_tendril(&given, false);
 
     assert!(actual[0].is_err());
     assert!(actual[1].is_err());
@@ -52,7 +52,7 @@ fn invalid_tendril_and_empty_parent_list_returns_empty(
     let mut given = Tendril::new(group, vec![name]);
     set_parents(&mut given, &[]);
 
-    let actual = resolve_tendril(given, false);
+    let actual = resolve_tendril(&given, false);
 
     assert!(actual.is_empty());
 }
@@ -70,20 +70,20 @@ fn first_only_true_resolves_first_parent_paths_for_all_names() {
 
     let expected = vec![
         Ok(ResolvedTendril::new(
-            "SomeApp".to_string(),
-            "misc1.txt".to_string(),
+            "SomeApp",
+            "misc1.txt",
             PathBuf::from("FirstParent"),
             TendrilMode::DirOverwrite,
         ).unwrap()),
         Ok(ResolvedTendril::new(
-            "SomeApp".to_string(),
-            "misc2.txt".to_string(),
+            "SomeApp",
+            "misc2.txt",
             PathBuf::from("FirstParent"),
             TendrilMode::DirOverwrite,
         ).unwrap()),
     ];
 
-    let actual = resolve_tendril(given, true);
+    let actual = resolve_tendril(&given, true);
 
     assert_eq!(actual, expected);
 }
@@ -101,44 +101,44 @@ fn first_only_false_resolves_all_parent_paths_for_all_names() {
 
     let expected = vec![
         Ok(ResolvedTendril::new(
-            "SomeApp".to_string(),
-            "misc1.txt".to_string(),
+            "SomeApp",
+            "misc1.txt",
             PathBuf::from("FirstParent"),
             TendrilMode::DirOverwrite,
         ).unwrap()),
         Ok(ResolvedTendril::new(
-            "SomeApp".to_string(),
-            "misc1.txt".to_string(),
+            "SomeApp",
+            "misc1.txt",
             PathBuf::from("SecondParent"),
             TendrilMode::DirOverwrite,
         ).unwrap()),
         Ok(ResolvedTendril::new(
-            "SomeApp".to_string(),
-            "misc1.txt".to_string(),
+            "SomeApp",
+            "misc1.txt",
             PathBuf::from("ThirdParent"),
             TendrilMode::DirOverwrite,
         ).unwrap()),
         Ok(ResolvedTendril::new(
-            "SomeApp".to_string(),
-            "misc2.txt".to_string(),
+            "SomeApp",
+            "misc2.txt",
             PathBuf::from("FirstParent"),
             TendrilMode::DirOverwrite,
         ).unwrap()),
         Ok(ResolvedTendril::new(
-            "SomeApp".to_string(),
-            "misc2.txt".to_string(),
+            "SomeApp",
+            "misc2.txt",
             PathBuf::from("SecondParent"),
             TendrilMode::DirOverwrite,
         ).unwrap()),
         Ok(ResolvedTendril::new(
-            "SomeApp".to_string(),
-            "misc2.txt".to_string(),
+            "SomeApp",
+            "misc2.txt",
             PathBuf::from("ThirdParent"),
             TendrilMode::DirOverwrite,
         ).unwrap()),
     ];
 
-    let actual = resolve_tendril(given, false);
+    let actual = resolve_tendril(&given, false);
 
     assert_eq!(actual, expected);
 }
@@ -153,26 +153,26 @@ fn duplicate_names_resolves_all() {
 
     let expected = vec![
         Ok(ResolvedTendril::new(
-            "SomeApp".to_string(),
-            "misc.txt".to_string(),
+            "SomeApp",
+            "misc.txt",
             PathBuf::from("Parent"),
             TendrilMode::DirOverwrite,
         ).unwrap()),
         Ok(ResolvedTendril::new(
-            "SomeApp".to_string(),
-            "misc.txt".to_string(),
+            "SomeApp",
+            "misc.txt",
             PathBuf::from("Parent"),
             TendrilMode::DirOverwrite,
         ).unwrap()),
         Ok(ResolvedTendril::new(
-            "SomeApp".to_string(),
-            "misc.txt".to_string(),
+            "SomeApp",
+            "misc.txt",
             PathBuf::from("Parent"),
             TendrilMode::DirOverwrite,
         ).unwrap()),
     ];
 
-    let actual = resolve_tendril(given, false);
+    let actual = resolve_tendril(&given, false);
 
     assert_eq!(actual, expected);
 }
@@ -189,26 +189,26 @@ fn duplicate_parent_paths_resolves_all() {
         PathBuf::from("Parent")]);
     let expected = vec![
         Ok(ResolvedTendril::new(
-            "SomeApp".to_string(),
-            "misc.txt".to_string(),
+            "SomeApp",
+            "misc.txt",
             PathBuf::from("Parent"),
             TendrilMode::DirOverwrite,
         ).unwrap()),
         Ok(ResolvedTendril::new(
-            "SomeApp".to_string(),
-            "misc.txt".to_string(),
+            "SomeApp",
+            "misc.txt",
             PathBuf::from("Parent"),
             TendrilMode::DirOverwrite,
         ).unwrap()),
         Ok(ResolvedTendril::new(
-            "SomeApp".to_string(),
-            "misc.txt".to_string(),
+            "SomeApp",
+            "misc.txt",
             PathBuf::from("Parent"),
             TendrilMode::DirOverwrite,
         ).unwrap()),
     ];
 
-    let actual = resolve_tendril(given, false);
+    let actual = resolve_tendril(&given, false);
 
     assert_eq!(actual, expected);
 }
@@ -231,26 +231,26 @@ fn vars_and_leading_tilde_in_parent_path_are_resolved_in_all() {
     );
     let expected = vec![
         Ok(ResolvedTendril::new(
-            "SomeApp".to_string(),
-            "misc.txt".to_string(),
+            "SomeApp",
+            "misc.txt",
             PathBuf::from("value1"),
             TendrilMode::DirOverwrite,
         ).unwrap()),
         Ok(ResolvedTendril::new(
-            "SomeApp".to_string(),
-            "misc.txt".to_string(),
+            "SomeApp",
+            "misc.txt",
             PathBuf::from("MyHomevalue2"),
             TendrilMode::DirOverwrite,
         ).unwrap()),
         Ok(ResolvedTendril::new(
-            "SomeApp".to_string(),
-            "misc.txt".to_string(),
+            "SomeApp",
+            "misc.txt",
             PathBuf::from("MyHome/value3"),
             TendrilMode::DirOverwrite,
         ).unwrap()),
     ];
 
-    let actual = resolve_tendril(given, false);
+    let actual = resolve_tendril(&given, false);
 
     assert_eq!(actual, expected);
 }
@@ -265,14 +265,14 @@ fn var_in_parent_path_doesnt_exist_returns_raw_path() {
     );
     let expected = vec![
         Ok(ResolvedTendril::new(
-            "SomeApp".to_string(),
-            "misc.txt".to_string(),
+            "SomeApp",
+            "misc.txt",
             PathBuf::from("<I_do_not_exist>"),
             TendrilMode::DirOverwrite,
         ).unwrap()),
     ];
 
-    let actual = resolve_tendril(given, false);
+    let actual = resolve_tendril(&given, false);
 
     assert_eq!(actual, expected);
 }
@@ -292,14 +292,14 @@ fn var_in_group_or_name_exists_uses_raw_path(
 
     let expected = vec![
         Ok(ResolvedTendril::new(
-            group.to_string(),
-            name.to_string(),
+            group,
+            name,
             PathBuf::from("SomeParent"),
             TendrilMode::DirOverwrite,
         ).unwrap()),
     ];
 
-    let actual = resolve_tendril(given, false);
+    let actual = resolve_tendril(&given, false);
 
     assert_eq!(actual, expected);
 }
@@ -319,14 +319,14 @@ fn leading_tilde_in_parent_path_tilde_value_doesnt_exist_returns_raw_path() {
 
     let expected = vec![
         Ok(ResolvedTendril::new(
-            "SomeApp".to_string(),
-            "misc.txt".to_string(),
+            "SomeApp",
+            "misc.txt",
             PathBuf::from("~/SomeParentPath"),
             TendrilMode::DirOverwrite,
         ).unwrap()),
     ];
 
-    let actual = resolve_tendril(given, false);
+    let actual = resolve_tendril(&given, false);
 
     assert_eq!(actual, expected);
 }
@@ -346,14 +346,14 @@ fn leading_tilde_in_group_or_name_and_tilde_value_exists_uses_raw_path(
 
     let expected = vec![
         Ok(ResolvedTendril::new(
-            group.to_string(),
-            name.to_string(),
+            group,
+            name,
             PathBuf::from("SomeParent"),
             TendrilMode::DirOverwrite,
         ).unwrap()),
     ];
 
-    let actual = resolve_tendril(given, false);
+    let actual = resolve_tendril(&given, false);
 
     assert_eq!(actual, expected);
 }
@@ -375,14 +375,14 @@ fn resolves_tendril_mode_properly(
 
     let expected = vec![
         Ok(ResolvedTendril::new(
-            "SomeApp".to_string(),
-            "misc.txt".to_string(),
+            "SomeApp",
+            "misc.txt",
             PathBuf::from("SomeParentPath"),
             expected_mode,
         ).unwrap()),
     ];
 
-    let actual = resolve_tendril(given, true);
+    let actual = resolve_tendril(&given, true);
 
     assert_eq!(actual, expected);
 }

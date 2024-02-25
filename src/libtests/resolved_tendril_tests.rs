@@ -16,10 +16,10 @@ use std::path::PathBuf;
 #[case(".git")]
 #[case(".Git")]
 #[case(".GIT")]
-fn group_is_invalid_returns_invalid_group_error(#[case] group: String) {
+fn group_is_invalid_returns_invalid_group_error(#[case] group: &str) {
     let actual = ResolvedTendril::new(
         group,
-        "misc.txt".to_string(),
+        "misc.txt",
         PathBuf::from("SomePath"),
         TendrilMode::DirOverwrite,
     ).unwrap_err();
@@ -37,9 +37,9 @@ fn group_is_invalid_returns_invalid_group_error(#[case] group: String) {
 #[case("\\somePath")]
 #[case("somePath/")]
 #[case("somePath\\")]
-fn name_is_invalid_returns_invalid_name_error(#[case] name: String) {
+fn name_is_invalid_returns_invalid_name_error(#[case] name: &str) {
     let actual = ResolvedTendril::new(
-        "SomeApp".to_string(),
+        "SomeApp",
         name,
         PathBuf::from("SomePath"),
         TendrilMode::DirOverwrite,
@@ -53,8 +53,8 @@ fn name_is_invalid_returns_invalid_name_error(#[case] name: String) {
 #[case("Carriage\rReturn")]
 fn parent_is_invalid_returns_invalid_parent_error(#[case] parent: &str) {
     let actual = ResolvedTendril::new(
-        "SomeApp".to_string(),
-        "misc.txt".to_string(),
+        "SomeApp",
+        "misc.txt",
         PathBuf::from(parent),
         TendrilMode::DirOverwrite,
     ).unwrap_err();
@@ -68,10 +68,10 @@ fn parent_is_invalid_returns_invalid_parent_error(#[case] parent: &str) {
 #[case("multi.sandwiched.dots")]
 #[case(".LeadingDot")]
 #[case("TrailingDot.")]
-fn group_is_valid_returns_ok(#[case] group: String) {
+fn group_is_valid_returns_ok(#[case] group: &str) {
     ResolvedTendril::new(
         group,
-        "misc.txt".to_string(),
+        "misc.txt",
         PathBuf::from("SomePath"),
         TendrilMode::DirOverwrite,
     ).unwrap();
@@ -86,9 +86,9 @@ fn group_is_valid_returns_ok(#[case] group: String) {
 #[case(".git")]
 #[case(".Git")]
 #[case(".GIT")]
-fn name_is_valid_returns_ok(#[case] name: String) {
+fn name_is_valid_returns_ok(#[case] name: &str) {
     ResolvedTendril::new(
-        "SomeApp".to_string(),
+        "SomeApp",
         name,
         PathBuf::from("SomePath"),
         TendrilMode::DirOverwrite,
@@ -104,8 +104,8 @@ fn name_is_valid_returns_ok(#[case] name: String) {
 #[case(" \\ some \\ path \\ ")]
 fn parent_is_valid_returns_ok(#[case] group: &str) {
     ResolvedTendril::new(
-        "SomeApp".to_string(),
-        "misc.txt".to_string(),
+        "SomeApp",
+        "misc.txt",
         PathBuf::from(group),
         TendrilMode::DirOverwrite,
     ).unwrap();
@@ -121,11 +121,11 @@ fn parent_is_valid_returns_ok(#[case] group: &str) {
 )]
 fn full_path_appends_name_to_parent(
     #[case] parent: PathBuf,
-    #[case] name: String,
+    #[case] name: &str,
     #[case] expected: &str,
 ) {
     let tendril = ResolvedTendril::new(
-        "SomeApp".to_string(),
+        "SomeApp",
         name,
         parent,
         TendrilMode::DirOverwrite,
@@ -147,8 +147,8 @@ fn full_path_w_trailing_sep_in_parent_keeps_all_given_seps_regardless_of_curr_pl
     #[case] parent: &str,
 ) {
     let tendril = ResolvedTendril::new(
-        "SomeApp".to_string(),
-        "misc.txt".to_string(),
+        "SomeApp",
+        "misc.txt",
         PathBuf::from(parent),
         TendrilMode::DirOverwrite,
     ).unwrap();
@@ -169,8 +169,8 @@ fn full_path_wo_trailing_sep_in_parent_matches_other_seps_in_parent_for_join_reg
     #[case] expected: &str,
 ) {
     let tendril = ResolvedTendril::new(
-        "SomeApp".to_string(),
-        "misc.txt".to_string(),
+        "SomeApp",
+        "misc.txt",
         PathBuf::from(parent),
         TendrilMode::DirOverwrite,
     ).unwrap();
@@ -188,8 +188,8 @@ fn full_path_wo_trailing_sep_in_parent_or_mixed_seps_uses_curr_platform_sep_for_
     #[case] parent: &str,
 ) {
     let tendril = ResolvedTendril::new(
-        "SomeApp".to_string(),
-        "misc.txt".to_string(),
+        "SomeApp",
+        "misc.txt",
         PathBuf::from(parent),
         TendrilMode::DirOverwrite,
     ).unwrap();
@@ -208,10 +208,10 @@ fn full_path_wo_trailing_sep_in_parent_or_mixed_seps_uses_curr_platform_sep_for_
 #[rstest]
 #[case("misc.txt")]
 #[case("MiscDir")]
-fn full_path_empty_parent_does_not_prepend_dir_sep_to_name(#[case] name: String) {
+fn full_path_empty_parent_does_not_prepend_dir_sep_to_name(#[case] name: &str) {
     let actual = ResolvedTendril::new(
-        "SomeApp".to_string(),
-        name.clone(),
+        "SomeApp",
+        name,
         PathBuf::from(""),
         TendrilMode::DirOverwrite,
     ).unwrap();

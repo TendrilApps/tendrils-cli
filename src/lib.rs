@@ -348,7 +348,7 @@ fn parse_env_variables(input: &str) -> Vec<&str> {
 }
 
 fn resolve_tendril(
-    tendril: Tendril, // TODO: Use reference only?
+    tendril: &Tendril, // TODO: Use reference only?
     first_only: bool
 ) -> Vec<Result<ResolvedTendril, InvalidTendrilError>> {
     let mode = match (&tendril.dir_merge, &tendril.link) {
@@ -373,13 +373,13 @@ fn resolve_tendril(
     let mut resolve_results = 
         Vec::with_capacity(tendril.names.len() * tendril.parents.len());
 
-    for name in tendril.names {
+    for name in tendril.names.iter() {
         for raw_path in raw_paths.iter() {
             let parent = resolve_path_variables(raw_path.to_string());
 
             resolve_results.push(ResolvedTendril::new(
-                tendril.group.clone(),
-                name.clone(),
+                &tendril.group,
+                &name,
                 parent,
                 mode,
             ));
@@ -474,7 +474,7 @@ pub fn tendril_action<'a>(
     let first_only = mode == ActionMode::Pull;
 
     for tendril in tendrils.iter() {
-        let resolved_tendrils = resolve_tendril(tendril.clone(), first_only);
+        let resolved_tendrils = resolve_tendril(&tendril, first_only);
 
         // The number of parents that were considered when
         // resolving the tendril bundle
