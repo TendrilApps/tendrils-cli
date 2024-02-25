@@ -1,6 +1,7 @@
 use clap::{Parser, Subcommand};
 use inline_colorization::{color_bright_green, color_bright_red, color_reset};
 use crate::{
+    filter_by_mode,
     filter_by_profiles,
     get_tendrils,
     get_tendrils_dir,
@@ -251,7 +252,8 @@ fn tendril_action_subcommand(
     };
 
     let all_tendrils_is_empty = all_tendrils.is_empty();
-    let filtered_tendrils = filter_by_profiles(all_tendrils, &profiles);
+    let mut filtered_tendrils = filter_by_mode(all_tendrils, mode);
+    filtered_tendrils = filter_by_profiles(filtered_tendrils, &profiles);
 
     if all_tendrils_is_empty {
         writer.writeln("No tendrils were found.");

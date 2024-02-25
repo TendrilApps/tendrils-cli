@@ -139,6 +139,14 @@ fn get_tendrils_dir(starting_path: &Path) -> Option<PathBuf> {
     }
 }
 
+/// Returns only link style tendrils if the action mode is link, otherwise
+/// it returns only the push/pull style tendrils.
+pub fn filter_by_mode(tendrils: Vec<Tendril>, mode: ActionMode) -> Vec<Tendril> {
+    tendrils.into_iter()
+        .filter(|t| t.link == (mode == ActionMode::Link))
+        .collect()
+}
+
 pub fn filter_by_profiles(tendrils: Vec<Tendril>, profiles: &[String]) -> Vec<Tendril> {
     if profiles.is_empty() {
         return tendrils;
