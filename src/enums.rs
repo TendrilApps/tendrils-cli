@@ -1,3 +1,5 @@
+use serde::Deserialize;
+
 #[derive(Debug)]
 pub enum GetTendrilsError {
     IoError(std::io::Error),
@@ -25,19 +27,18 @@ pub enum TendrilActionSuccess {
 
 #[derive(Debug)]
 pub enum TendrilActionError {
-    Duplicate,
     IoError(std::io::Error),
     /// Occurs when a tendril action does not match its
     /// mode (such as trying to pull a link tendril)
     ModeMismatch,
-    ResolveTendrilError(ResolveTendrilError),
+    InvalidTendrilError(InvalidTendrilError),
     Recursion,
     TypeMismatch,
 }
 
-impl From<ResolveTendrilError> for TendrilActionError {
-    fn from(err: ResolveTendrilError) -> Self {
-        TendrilActionError::ResolveTendrilError(err)
+impl From<InvalidTendrilError> for TendrilActionError {
+    fn from(err: InvalidTendrilError) -> Self {
+        TendrilActionError::InvalidTendrilError(err)
     }
 }
 
@@ -47,27 +48,36 @@ impl From<std::io::Error> for TendrilActionError {
     }
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum InvalidTendrilError {
     InvalidGroup,
     InvalidName,
 }
 
-#[derive(Debug, Eq, PartialEq)]
-pub enum ResolveTendrilError {
-    EnvVarError(std::env::VarError),
-    InvalidTendril(InvalidTendrilError),
-    PathParseError,
+#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[serde(untagged)]
+pub enum OneOrMany<T> {
+    // https://github.com/Mingun/ksc-rs/blob/8532f701e660b07b6d2c74963fdc0490be4fae4b/src/parser.rs#L29pub
+    /// Single value
+    One(T),
+    /// Array of values
+    Vec(Vec<T>),
 }
 
-impl From<std::env::VarError> for ResolveTendrilError {
-    fn from(err: std::env::VarError) -> Self {
-        ResolveTendrilError::EnvVarError(err)
+impl<T> From<OneOrMany<T>> for Vec<T> {
+    fn from(from: OneOrMany<T>) -> Self {
+        match from {
+            OneOrMany::One(val) => vec![val],
+            OneOrMany::Vec(vec) => vec,
+        }
     }
 }
 
-impl From<InvalidTendrilError> for ResolveTendrilError {
-    fn from(err: InvalidTendrilError) -> Self {
-        ResolveTendrilError::InvalidTendril(err)
+impl<T> From<Vec<T>> for OneOrMany<T> {
+    fn from(mut from: Vec<T>) -> Self {
+        match from.len() {
+            1 => OneOrMany::One(from.remove(0)),
+            _ => OneOrMany::Vec(from)
+        }
     }
 }

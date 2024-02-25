@@ -4,7 +4,7 @@ pub mod cli;
 mod enums;
 use enums::{
     GetTendrilsError,
-    ResolveTendrilError,
+    InvalidTendrilError,
     TendrilActionError,
     TendrilActionSuccess,
 };
@@ -139,28 +139,28 @@ fn get_tendrils_dir(starting_path: &Path) -> Option<PathBuf> {
     }
 }
 
+pub fn filter_by_profiles(tendrils: &[Tendril], profiles: &[String]) -> Vec<Tendril> {
+    let mut included = vec![];
+
+    if profiles.is_empty() {
+        return tendrils.to_vec();
+    }
+
+    for tendril in tendrils {
+        if tendril.profiles.is_empty()
+            || tendril.profiles.iter().any(|p| profiles.contains(p)) {
+            included.push(tendril.to_owned());
+        }
+    }
+
+    included
+}
+
 fn get_tendrils(
     td_dir: &Path,
 ) -> Result<Vec<Tendril>, GetTendrilsError> {
     let tendrils_file_path = Path::new(&td_dir).join("tendrils.json");
     let tendrils_file_contents = std::fs::read_to_string(tendrils_file_path)?;
-    let tendrils = parse_tendrils(&tendrils_file_contents)?;
-    Ok(tendrils)
-}
-
-fn get_tendril_overrides(
-    td_dir: &Path,
-) -> Result<Vec<Tendril>, GetTendrilsError> {
-    let tendrils_file_path =
-        Path::new(&td_dir).join("tendrils-override.json");
-
-    let tendrils_file_contents = if tendrils_file_path.is_file() {
-        std::fs::read_to_string(tendrils_file_path)?
-    }
-    else {
-        return Ok([].to_vec());
-    };
-
     let tendrils = parse_tendrils(&tendrils_file_contents)?;
     Ok(tendrils)
 }
@@ -255,36 +255,6 @@ fn push_tendril(
     Ok(copy_fso(&source, &dest, dir_merge, dry_run)?)
 }
 
-/// Returns a list of all Tendrils after replacing global ones with any
-/// applicable overrides.
-/// # Arguments
-/// - `global` - The set of Tendrils (typically defined in tendrils.json)
-/// - `overrides` - The set of Tendril overrides (typically defined in
-///   tendrils-overrides.json)
-fn resolve_overrides(
-    global: &[Tendril],
-    overrides: &[Tendril],
-) -> Vec<Tendril> {
-    let mut combined_tendrils = Vec::with_capacity(global.len());
-
-    for tendril in global {
-        let mut last_index: usize = 0;
-        let overrides_iter = overrides.iter();
-
-        if overrides_iter.enumerate().any(|(i, x)| {
-            last_index = i;
-            x.id() == tendril.id() })
-        {
-            combined_tendrils.push(overrides[last_index].clone());
-        }
-        else {
-            combined_tendrils.push(tendril.clone())
-        }
-    }
-
-    combined_tendrils
-}
-
 /// Replaces all environment variables in the format `<varname>` in the
 /// given path with their values. If the variable is not found, the
 /// `<varname>` is left as-is in the path.
@@ -361,19 +331,14 @@ fn parse_env_variables(input: &str) -> Vec<&str> {
 fn resolve_tendril(
     tendril: Tendril, // TODO: Use reference only?
     first_only: bool
-) -> Vec<Result<ResolvedTendril, ResolveTendrilError>> {
+) -> Vec<Result<ResolvedTendril, InvalidTendrilError>> {
     let mode = match (&tendril.dir_merge, &tendril.link) {
         (true, false) => TendrilMode::DirMerge,
         (false, false) => TendrilMode::DirOverwrite,
         (_, true) => TendrilMode::Link,
     };
-    // TODO: Consider conditional compilation instead
-    // of matching on every iteration
-    let raw_paths = match std::env::consts::OS {
-        "macos" => tendril.parent_dirs_mac.clone(),
-        "windows" => tendril.parent_dirs_windows.clone(),
-        _ => return vec![]
-    };
+    // TODO: Simplify?
+    let raw_paths = tendril.parents.clone();
     let raw_paths = match first_only {
         true => {
             if !raw_paths.is_empty() {
@@ -386,16 +351,23 @@ fn resolve_tendril(
         false => raw_paths
     };
 
-    raw_paths.into_iter().map(|p| -> Result<ResolvedTendril, ResolveTendrilError> {
-        let parent = resolve_path_variables(p);
+    let mut resolve_results = 
+        Vec::with_capacity(tendril.names.len() * tendril.parents.len());
 
-        Ok(ResolvedTendril::new(
-            tendril.group.clone(),
-            tendril.name.clone(),
-            parent,
-            mode,
-        )?)
-    }).collect()
+    for name in tendril.names {
+        for raw_path in raw_paths.iter() {
+            let parent = resolve_path_variables(raw_path.to_string());
+
+            resolve_results.push(ResolvedTendril::new(
+                tendril.group.clone(),
+                name.clone(),
+                parent,
+                mode,
+            ));
+        }
+    }
+
+    resolve_results
 }
 
 fn symlink(
@@ -483,33 +455,45 @@ pub fn tendril_action<'a>(
     let first_only = mode == ActionMode::Pull;
 
     for tendril in tendrils.iter() {
-        let resolve_results = resolve_tendril(tendril.clone(), first_only);
-        let mut action_results = vec![];
-        for result in resolve_results.iter() {
-            match (result, mode) {
+        let resolved_tendrils = resolve_tendril(tendril.clone(), first_only);
+
+        // The number of parents that were considered when
+        // resolving the tendril bundle
+        let num_parents = match first_only {
+            true => 1,
+            false => tendril.parents.len(),
+        };
+
+        for (i, resolved_tendril) in resolved_tendrils.into_iter().enumerate() {
+            let action_result = match (&resolved_tendril, mode) {
                 (Ok(v), ActionMode::Pull) => {
-                    action_results.push(Some(pull_tendril(&td_dir, &v, dry_run, force)));
+                    Some(pull_tendril(&td_dir, &v, dry_run, force))
                 },
                 (Ok(v), ActionMode::Push) => {
-                    action_results.push(Some(push_tendril(&td_dir, &v, dry_run, force)));
+                    Some(push_tendril(&td_dir, &v, dry_run, force))
                 },
                 (Ok(v), ActionMode::Link) => {
-                    action_results.push(Some(link_tendril(&td_dir, &v, dry_run, force)));
+                    Some(link_tendril(&td_dir, &v, dry_run, force))
                 },
-                (Err(_), _) => action_results.push(None),
-            }
+                (Err(_), _) => None,
+            };
+
+            let resolved_path = match resolved_tendril {
+                Ok(v) => Ok(v.full_path()),
+                Err(e) => Err(e),
+            };
+
+            let name_idx = ((i/num_parents) as f32).floor() as usize;
+
+            let report = TendrilActionReport {
+                orig_tendril: tendril,
+                name: &tendril.names[name_idx],
+                resolved_path,
+                action_result,
+            };
+            action_reports.push(report);
         }
-        let report = TendrilActionReport {
-            orig_tendril: tendril,
-            resolved_paths: resolve_results.into_iter().map(|r| {
-                match r {
-                    Ok(v) => Ok(v.full_path()),
-                    Err(e) => Err(e),
-                }
-            }).collect(),
-            action_results,
-        };
-        action_reports.push(report);
     }
+
     action_reports
 }

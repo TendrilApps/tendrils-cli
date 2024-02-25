@@ -2,7 +2,7 @@ use crate::action_mode::ActionMode;
 use crate::cli::{run, TendrilCliArgs, TendrilsSubcommands};
 use crate::cli::writer::Writer;
 use crate::{is_tendrils_dir, parse_tendrils, symlink};
-use crate::test_utils::{set_all_platform_paths, Setup};
+use crate::test_utils::{set_parents, Setup};
 use rstest::rstest;
 use serial_test::serial;
 use std::fs::{create_dir_all, write};
@@ -92,9 +92,15 @@ fn tendril_action_no_path_given_and_no_cd_prints_message(
 
     let mut writer = MockWriter::new();
     let tendrils_command = match mode {
-        ActionMode::Pull => TendrilsSubcommands::Pull {path: None, dry_run, force},
-        ActionMode::Push => TendrilsSubcommands::Push {path: None, dry_run, force},
-        ActionMode::Link => TendrilsSubcommands::Link {path: None, dry_run, force},
+        ActionMode::Pull => TendrilsSubcommands::Pull {
+            path: None, dry_run, force, profiles: vec![]
+        },
+        ActionMode::Push => TendrilsSubcommands::Push {
+            path: None, dry_run, force, profiles: vec![]
+        },
+        ActionMode::Link => TendrilsSubcommands::Link {
+            path: None, dry_run, force, profiles: vec![]
+        },
     };
 
     let args = TendrilCliArgs{
@@ -131,9 +137,15 @@ fn tendril_action_given_path_is_not_tendrils_dir_but_cd_is_should_print_message(
     let mut writer = MockWriter::new();
     let path = Some(given_path.to_str().unwrap().to_string());
     let tendrils_command = match mode {
-        ActionMode::Pull => TendrilsSubcommands::Pull {path, dry_run, force},
-        ActionMode::Push => TendrilsSubcommands::Push {path, dry_run, force},
-        ActionMode::Link => TendrilsSubcommands::Link {path, dry_run, force},
+        ActionMode::Pull => TendrilsSubcommands::Pull {
+            path, dry_run, force, profiles: vec![]
+        },
+        ActionMode::Push => TendrilsSubcommands::Push {
+            path, dry_run, force, profiles: vec![]
+        },
+        ActionMode::Link => TendrilsSubcommands::Link {
+            path, dry_run, force, profiles: vec![]
+        },
     };
 
     let args = TendrilCliArgs{
@@ -175,15 +187,22 @@ fn tendril_action_given_path_and_cd_are_both_tendrils_dirs_uses_given_path(
     let mut writer = MockWriter::new();
     let path = Some(given_path.to_str().unwrap().to_string());
     let tendrils_command = match mode {
-        ActionMode::Pull => TendrilsSubcommands::Pull {path, dry_run, force},
-        ActionMode::Push => TendrilsSubcommands::Push {path, dry_run, force},
-        ActionMode::Link => TendrilsSubcommands::Link {path, dry_run, force},
+        ActionMode::Pull => TendrilsSubcommands::Pull {
+            path, dry_run, force, profiles: vec![]
+        },
+        ActionMode::Push => TendrilsSubcommands::Push {
+            path, dry_run, force, profiles: vec![]
+        },
+        ActionMode::Link => TendrilsSubcommands::Link {
+            path, dry_run, force, profiles: vec![]
+        },
     };
     let args = TendrilCliArgs{
         tendrils_command,
     };
 
-    let expected = "Error: Could not parse the tendrils.json file\n";
+    let expected = "Error: Could not parse the tendrils.json file\nEOF while \
+    parsing a value at line 1 column 0\n";
 
     run(args, &mut writer);
 
@@ -218,16 +237,22 @@ fn tendril_action_dry_run_does_not_modify(
 
     let mut tendril = setup.file_tendril();
     tendril.link = mode == ActionMode::Link;
-    set_all_platform_paths(&mut tendril, &[setup.parent_dir.clone()]);
+    set_parents(&mut tendril, &[setup.parent_dir.clone()]);
     setup.make_td_json_file(&[tendril]);
 
     let mut writer = MockWriter::new();
     let path = Some(setup.td_dir.to_str().unwrap().to_string());
     let dry_run = true;
     let tendrils_command = match mode {
-        ActionMode::Pull => TendrilsSubcommands::Pull {path, dry_run, force},
-        ActionMode::Push => TendrilsSubcommands::Push {path, dry_run, force},
-        ActionMode::Link => TendrilsSubcommands::Link {path, dry_run, force},
+        ActionMode::Pull => TendrilsSubcommands::Pull {
+            path, dry_run, force, profiles: vec![]
+        },
+        ActionMode::Push => TendrilsSubcommands::Push {
+            path, dry_run, force, profiles: vec![]
+        },
+        ActionMode::Link => TendrilsSubcommands::Link {
+            path, dry_run, force, profiles: vec![]
+        },
     };
     let args = TendrilCliArgs{
         tendrils_command,
@@ -242,13 +267,155 @@ fn tendril_action_dry_run_does_not_modify(
         assert_eq!(setup.remote_file_contents(), "Remote file contents");
     }
     assert_eq!(setup.local_file_contents(), "Local file contents");
-    assert_eq!(writer.all_output_lines()[0], "No local overrides were found.");
-    assert!(writer.all_output_lines()[4].contains("Skipped"));
+    assert!(writer.all_output_lines()[3].contains("Skipped"));
     assert_eq!(setup.td_dir.read_dir().unwrap().into_iter().count(), 2);
 }
 
-// TODO: Test uses_correct_platform_paths (see old commits in pull_tendril_tests)
+#[rstest]
+#[case(ActionMode::Pull)]
+#[case(ActionMode::Push)]
+#[case(ActionMode::Link)]
+fn tendril_action_tendrils_are_filtered_by_profile(
+    #[case] mode: ActionMode,
+
+    #[values(true, false)]
+    dry_run: bool,
+
+    #[values(true, false)]
+    force: bool,
+) {
+    let setup = Setup::new();
+
+    let mut t1 = setup.file_tendril();
+    let mut t2 = setup.file_tendril();
+    let mut t3 = setup.file_tendril();
+    t1.names = vec!["misc1.txt".to_string()];
+    t2.names = vec!["misc2.txt".to_string()];
+    t3.names = vec!["misc3.txt".to_string()];
+    t1.link = mode == ActionMode::Link;
+    t2.link = mode == ActionMode::Link;
+    t3.link = mode == ActionMode::Link;
+    t1.profiles = vec!["ExcludeMe".to_string()];
+    t2.profiles = vec!["p1".to_string()];
+    assert!(t3.profiles.is_empty());
+    set_parents(&mut t1, &[setup.parent_dir.clone()]);
+    set_parents(&mut t2, &[setup.parent_dir.clone()]);
+    set_parents(&mut t3, &[setup.parent_dir.clone()]);
+
+    setup.make_td_json_file(&[t1, t2, t3]);
+
+    let given_profiles = vec!["p1".to_string(), "p2".to_string()];
+
+    let mut writer = MockWriter::new();
+    let path = Some(setup.td_dir.to_str().unwrap().to_string());
+    let tendrils_command = match mode {
+        ActionMode::Pull => TendrilsSubcommands::Pull {
+            path, dry_run, force, profiles: given_profiles
+        },
+        ActionMode::Push => TendrilsSubcommands::Push {
+            path, dry_run, force, profiles: given_profiles
+        },
+        ActionMode::Link => TendrilsSubcommands::Link {
+            path, dry_run, force, profiles: given_profiles
+        },
+    };
+    let args = TendrilCliArgs{
+        tendrils_command,
+    };
+
+    run(args, &mut writer);
+
+    assert!(writer.all_output_lines()[3].contains("misc2.txt"));
+    assert!(writer.all_output_lines()[3].contains("NotFound"));
+    assert!(writer.all_output_lines()[5].contains("misc3.txt"));
+    assert!(writer.all_output_lines()[5].contains("NotFound"));
+}
+
+#[rstest]
+#[case(ActionMode::Pull)]
+#[case(ActionMode::Push)]
+#[case(ActionMode::Link)]
+fn tendril_action_empty_tendrils_array_should_print_message(
+    #[case] mode: ActionMode,
+
+    #[values(true, false)]
+    dry_run: bool,
+
+    #[values(true, false)]
+    force: bool,
+) {
+    let setup = Setup::new();
+    setup.make_td_json_file(&[]);
+
+    let given_profiles = vec![];
+
+    let mut writer = MockWriter::new();
+    let path = Some(setup.td_dir.to_str().unwrap().to_string());
+    let tendrils_command = match mode {
+        ActionMode::Pull => TendrilsSubcommands::Pull {
+            path, dry_run, force, profiles: given_profiles
+        },
+        ActionMode::Push => TendrilsSubcommands::Push {
+            path, dry_run, force, profiles: given_profiles
+        },
+        ActionMode::Link => TendrilsSubcommands::Link {
+            path, dry_run, force, profiles: given_profiles
+        },
+    };
+    let args = TendrilCliArgs{
+        tendrils_command,
+    };
+
+    run(args, &mut writer);
+
+    assert_eq!(writer.all_output, "No tendrils were found.\n");
+}
+
+#[rstest]
+#[case(ActionMode::Pull)]
+#[case(ActionMode::Push)]
+#[case(ActionMode::Link)]
+fn tendril_action_empty_filtered_tendrils_array_should_print_message(
+    #[case] mode: ActionMode,
+
+    #[values(true, false)]
+    dry_run: bool,
+
+    #[values(true, false)]
+    force: bool,
+) {
+    let setup = Setup::new();
+    let mut t1 = setup.file_tendril();
+    t1.names = vec!["misc1.txt".to_string()];
+    t1.link = mode == ActionMode::Link;
+    t1.profiles = vec!["ExcludeMe".to_string()];
+    set_parents(&mut t1, &[setup.parent_dir.clone()]);
+    setup.make_td_json_file(&[t1]);
+
+    let given_profiles = vec!["NoMatch".to_string()];
+
+    let mut writer = MockWriter::new();
+    let path = Some(setup.td_dir.to_str().unwrap().to_string());
+    let tendrils_command = match mode {
+        ActionMode::Pull => TendrilsSubcommands::Pull {
+            path, dry_run, force, profiles: given_profiles
+        },
+        ActionMode::Push => TendrilsSubcommands::Push {
+            path, dry_run, force, profiles: given_profiles
+        },
+        ActionMode::Link => TendrilsSubcommands::Link {
+            path, dry_run, force, profiles: given_profiles
+        },
+    };
+    let args = TendrilCliArgs{
+        tendrils_command,
+    };
+
+    run(args, &mut writer);
+
+    assert_eq!(writer.all_output, "No tendrils matched the given filter(s).\n");
+}
+
 // TODO: Test multiple_paths_only_copies_first for pull (see old commits in pull_tendril_tests)
 // TODO: Test multiple_paths_first_is_missing_returns_not_found_error (see old commits in pull_tendril_tests)
 // TODO: Test duplicate_tendrils_returns_duplicate_error_for_second_occurence_onward (see old pull_tests)
-// TODO: Test that empty path list returns skipped error (for any action)

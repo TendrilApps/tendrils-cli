@@ -1,5 +1,5 @@
 use crate::enums::{
-    ResolveTendrilError,
+    InvalidTendrilError,
     TendrilActionError,
     TendrilActionSuccess,
 };
@@ -9,8 +9,7 @@ use std::path::PathBuf;
 #[derive(Debug)]
 pub struct TendrilActionReport<'a> {
     pub orig_tendril: &'a Tendril,
-    pub resolved_paths: Vec<Result<PathBuf, ResolveTendrilError>>,
-    pub action_results: Vec<
-        Option<Result<TendrilActionSuccess, TendrilActionError>>
-    >,
+    pub name: &'a str,
+    pub resolved_path: Result<PathBuf, InvalidTendrilError>,
+    pub action_result: Option<Result<TendrilActionSuccess, TendrilActionError>>,
 }

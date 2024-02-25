@@ -33,14 +33,13 @@ pub fn is_empty(dir: &Path) -> bool {
     true
 }
 
-pub fn set_all_platform_paths(tendril: &mut Tendril, paths: &[PathBuf]) {
+pub fn set_parents(tendril: &mut Tendril, paths: &[PathBuf]) {
     let path_strings:Vec<String> = paths
         .iter()
         .map(|x| x.to_str().unwrap().to_string())
         .collect();
 
-    tendril.parent_dirs_mac = path_strings.clone();
-    tendril.parent_dirs_windows = path_strings;
+    tendril.parents = path_strings;
 }
 
 pub struct Setup {
@@ -102,7 +101,7 @@ impl Setup {
     pub fn file_tendril(&self) -> Tendril {
         Tendril::new(
             "SomeApp",
-            "misc.txt",
+            vec!["misc.txt"],
         )
     }
 

@@ -1,17 +1,16 @@
 use clap::{Parser, Subcommand};
 use inline_colorization::{color_bright_green, color_bright_red, color_reset};
 use crate::{
-    get_tendrils_dir,
+    filter_by_profiles,
     get_tendrils,
-    get_tendril_overrides,
+    get_tendrils_dir,
     is_tendrils_dir,
-    resolve_overrides,
     tendril_action,
 };
 use crate::action_mode::ActionMode;
 use crate::enums::{
     GetTendrilsError,
-    ResolveTendrilError,
+    InvalidTendrilError,
     TendrilActionError,
     TendrilActionSuccess,
 };
@@ -51,8 +50,12 @@ pub enum TendrilsSubcommands {
         force: bool,
 
         /// Explicitly sets the path to the Tendrils folder
-        #[arg(short, long)]
+        #[arg(long)]
         path: Option<String>,
+
+        /// Explicitly sets the list of profiles to include
+        #[arg(short, long, num_args = ..)]
+        profiles: Vec<String>,
     },
 
     /// Copies tendrils from the Tendrils folder to their various
@@ -68,8 +71,12 @@ pub enum TendrilsSubcommands {
         force: bool,
 
         /// Explicitly sets the path to the Tendrils folder
-        #[arg(short, long)]
+        #[arg(long)]
         path: Option<String>,
+
+        /// Explicitly sets the list of profiles to include
+        #[arg(short, long, num_args = ..)]
+        profiles: Vec<String>,
     },
 
     /// Creates symlinks at the various locations on the machine
@@ -85,8 +92,12 @@ pub enum TendrilsSubcommands {
         force: bool,
 
         /// Explicitly sets the path to the Tendrils folder
-        #[arg(short, long)]
+        #[arg(long)]
         path: Option<String>,
+
+        /// Explicitly sets the list of profiles to include
+        #[arg(short, long, num_args = ..)]
+        profiles: Vec<String>,
     },
 }
 
@@ -125,7 +136,7 @@ fn ansi_hyperlink(url: &str, display: &str) -> String {
 }
 
 fn ansi_styled_resolved_path(
-    path: &Result<PathBuf, ResolveTendrilError>
+    path: &Result<PathBuf, InvalidTendrilError>
 ) -> String {
     match path {
         Ok(p) => {
@@ -163,6 +174,10 @@ fn ansi_styled_result(result: &Option<Result<TendrilActionSuccess, TendrilAction
 }
 
 fn print_reports(reports: &[TendrilActionReport], writer: &mut impl Writer) {
+    if reports.is_empty() {
+        return;
+    }
+
     let mut tbl = TdTable::new();
     tbl.set_header(&[
         "Group".to_string(),
@@ -172,17 +187,15 @@ fn print_reports(reports: &[TendrilActionReport], writer: &mut impl Writer) {
     ]);
 
     for report in reports {
-        for (i, resolved_path) in report.resolved_paths.iter().enumerate() {
-            let styled_path = ansi_styled_resolved_path(resolved_path);
-            let styled_result = ansi_styled_result(&report.action_results[i]);
+        let styled_path = ansi_styled_resolved_path(&report.resolved_path);
+        let styled_result = ansi_styled_result(&report.action_result);
 
-            tbl.push_row(&[
-                report.orig_tendril.group.clone(),
-                report.orig_tendril.name.clone(),
-                styled_path,
-                styled_result,
-            ]);
-        }
+        tbl.push_row(&[
+            report.orig_tendril.group.clone(),
+            report.name.to_string(),
+            styled_path,
+            styled_result,
+        ]);
     }
     writer.writeln(&tbl.draw())
 }
@@ -192,6 +205,7 @@ fn tendril_action_subcommand(
     path: Option<String>,
     dry_run: bool,
     force: bool,
+    profiles: Vec<String>,
     writer: &mut impl Writer,
 ) {
     let td_dir = match path {
@@ -223,41 +237,32 @@ fn tendril_action_subcommand(
         }
     };
 
-    let common_tendrils = match get_tendrils(&td_dir) {
+    let all_tendrils = match get_tendrils(&td_dir) {
         Ok(v) => v,
         Err(GetTendrilsError::IoError(_e)) => {
             writer.writeln("Error: Could not read the tendrils.json file");
             return;
         },
-        Err(GetTendrilsError::ParseError(_e)) => {
+        Err(GetTendrilsError::ParseError(e)) => {
             writer.writeln("Error: Could not parse the tendrils.json file");
+            writer.writeln(&format!("{e}"));
             return;
         },
     };
 
-    let override_tendrils = match get_tendril_overrides(&td_dir) {
-        Ok(v) => v,
-        Err(GetTendrilsError::IoError(_e)) => {
-            writer.writeln("Error: Could not read the tendrils-override.json file");
-            return;
-        },
-        Err(GetTendrilsError::ParseError(_e)) => {
-            writer.writeln("Error: Could not parse the tendrils-override.json file");
-            return;
-        },
-    };
+    let filtered_tendrils = filter_by_profiles(&all_tendrils, &profiles);
 
-    if override_tendrils.is_empty() {
-        writer.writeln("No local overrides were found.");
+    if all_tendrils.is_empty() {
+        writer.writeln("No tendrils were found.");
     }
-
-    let combined_tendrils =
-        resolve_overrides(&common_tendrils, &override_tendrils);
+    else if filtered_tendrils.is_empty() {
+        writer.writeln("No tendrils matched the given filter(s).");
+    }
 
     let action_reports = tendril_action(
         mode,
         &td_dir,
-        &combined_tendrils,
+        &filtered_tendrils,
         dry_run,
         force,
     );
@@ -270,14 +275,35 @@ pub fn run(args: TendrilCliArgs, writer: &mut impl Writer) {
         TendrilsSubcommands::Path => {
             path(writer);
         },
-        TendrilsSubcommands::Pull { path, dry_run, force } => {
-            tendril_action_subcommand(ActionMode::Pull, path, dry_run, force, writer)
+        TendrilsSubcommands::Pull { path, dry_run, force, profiles} => {
+            tendril_action_subcommand(
+                ActionMode::Pull,
+                path,
+                dry_run,
+                force,
+                profiles,
+                writer,
+            )
         },
-        TendrilsSubcommands::Push { path, dry_run , force} => {
-            tendril_action_subcommand(ActionMode::Push, path, dry_run, force, writer)
+        TendrilsSubcommands::Push { path, dry_run , force, profiles} => {
+            tendril_action_subcommand(
+                ActionMode::Push,
+                path,
+                dry_run,
+                force,
+                profiles,
+                writer,
+            )
         },
-        TendrilsSubcommands::Link { path, dry_run, force } => {
-            tendril_action_subcommand(ActionMode::Link, path, dry_run, force, writer)
+        TendrilsSubcommands::Link { path, dry_run, force, profiles } => {
+            tendril_action_subcommand(
+                ActionMode::Link,
+                path,
+                dry_run,
+                force,
+                profiles,
+                writer,
+            )
         },
     };
 }

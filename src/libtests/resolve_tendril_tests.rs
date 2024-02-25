@@ -1,6 +1,5 @@
-use crate::enums::ResolveTendrilError;
 use crate::{resolve_tendril, ResolvedTendril, Tendril, TendrilMode};
-use crate::test_utils::set_all_platform_paths;
+use crate::test_utils::set_parents;
 use rstest::rstest;
 use serial_test::serial;
 use std::path::PathBuf;
@@ -9,9 +8,9 @@ use std::path::PathBuf;
 #[case(true)]
 #[case(false)]
 fn empty_parent_list_returns_empty(#[case] first_only: bool) {
-    let mut given = Tendril::new("SomeApp", "misc.txt");
+    let mut given = Tendril::new("SomeApp", vec!["misc.txt"]);
 
-    set_all_platform_paths(&mut given, &[]);
+    set_parents(&mut given, &[]);
 
     let actual = resolve_tendril(given, first_only);
 
@@ -25,8 +24,8 @@ fn invalid_tendril_returns_invalid_tendril(
     #[case] group: &str,
     #[case] name: &str,
 ) {
-    let mut given = Tendril::new(group, name);
-    set_all_platform_paths(
+    let mut given = Tendril::new(group, vec![name]);
+    set_parents(
         &mut given,
         &[
             PathBuf::from("SomeParentPath1"),
@@ -37,9 +36,9 @@ fn invalid_tendril_returns_invalid_tendril(
 
     let actual = resolve_tendril(given, false);
 
-    assert!(matches!(actual[0], Err(ResolveTendrilError::InvalidTendril(_))));
-    assert!(matches!(actual[1], Err(ResolveTendrilError::InvalidTendril(_))));
-    assert!(matches!(actual[2], Err(ResolveTendrilError::InvalidTendril(_))));
+    assert!(actual[0].is_err());
+    assert!(actual[1].is_err());
+    assert!(actual[2].is_err());
     assert_eq!(actual.len(), 3);
 }
 
@@ -50,8 +49,8 @@ fn invalid_tendril_and_empty_parent_list_returns_empty(
     #[case] group: &str,
     #[case] name: &str,
 ) {
-    let mut given = Tendril::new(group, name);
-    set_all_platform_paths(&mut given, &[]);
+    let mut given = Tendril::new(group, vec![name]);
+    set_parents(&mut given, &[]);
 
     let actual = resolve_tendril(given, false);
 
@@ -59,18 +58,26 @@ fn invalid_tendril_and_empty_parent_list_returns_empty(
 }
 
 #[test]
-fn first_only_true_resolves_first_of_multiple_parent_paths() {
-    let mut given = Tendril::new("SomeApp", "misc.txt");
+fn first_only_true_resolves_first_parent_paths_for_all_names() {
+    let mut given = Tendril::new("SomeApp", vec!["misc1.txt", "misc2.txt"]);
     given.dir_merge = false;
-    set_all_platform_paths(
+
+    set_parents(
         &mut given,
         &[PathBuf::from("FirstParent"),
         PathBuf::from("SecondParent"),
         PathBuf::from("ThirdParent")]);
+
     let expected = vec![
         Ok(ResolvedTendril::new(
             "SomeApp".to_string(),
-            "misc.txt".to_string(),
+            "misc1.txt".to_string(),
+            PathBuf::from("FirstParent"),
+            TendrilMode::DirOverwrite,
+        ).unwrap()),
+        Ok(ResolvedTendril::new(
+            "SomeApp".to_string(),
+            "misc2.txt".to_string(),
             PathBuf::from("FirstParent"),
             TendrilMode::DirOverwrite,
         ).unwrap()),
@@ -82,31 +89,50 @@ fn first_only_true_resolves_first_of_multiple_parent_paths() {
 }
 
 #[test]
-fn resolves_all_of_multiple_parent_paths() {
-    let mut given = Tendril::new("SomeApp", "misc.txt");
+fn first_only_false_resolves_all_parent_paths_for_all_names() {
+    let mut given = Tendril::new("SomeApp", vec!["misc1.txt", "misc2.txt"]);
     given.dir_merge = false;
 
-    set_all_platform_paths(
+    set_parents(
         &mut given,
         &[PathBuf::from("FirstParent"),
         PathBuf::from("SecondParent"),
         PathBuf::from("ThirdParent")]);
+
     let expected = vec![
         Ok(ResolvedTendril::new(
             "SomeApp".to_string(),
-            "misc.txt".to_string(),
+            "misc1.txt".to_string(),
             PathBuf::from("FirstParent"),
             TendrilMode::DirOverwrite,
         ).unwrap()),
         Ok(ResolvedTendril::new(
             "SomeApp".to_string(),
-            "misc.txt".to_string(),
+            "misc1.txt".to_string(),
             PathBuf::from("SecondParent"),
             TendrilMode::DirOverwrite,
         ).unwrap()),
         Ok(ResolvedTendril::new(
             "SomeApp".to_string(),
-            "misc.txt".to_string(),
+            "misc1.txt".to_string(),
+            PathBuf::from("ThirdParent"),
+            TendrilMode::DirOverwrite,
+        ).unwrap()),
+        Ok(ResolvedTendril::new(
+            "SomeApp".to_string(),
+            "misc2.txt".to_string(),
+            PathBuf::from("FirstParent"),
+            TendrilMode::DirOverwrite,
+        ).unwrap()),
+        Ok(ResolvedTendril::new(
+            "SomeApp".to_string(),
+            "misc2.txt".to_string(),
+            PathBuf::from("SecondParent"),
+            TendrilMode::DirOverwrite,
+        ).unwrap()),
+        Ok(ResolvedTendril::new(
+            "SomeApp".to_string(),
+            "misc2.txt".to_string(),
             PathBuf::from("ThirdParent"),
             TendrilMode::DirOverwrite,
         ).unwrap()),
@@ -118,11 +144,45 @@ fn resolves_all_of_multiple_parent_paths() {
 }
 
 #[test]
+fn duplicate_names_resolves_all() {
+    let mut given = Tendril::new(
+        "SomeApp", vec!["misc.txt", "misc.txt", "misc.txt"]
+    );
+    given.dir_merge = false;
+    set_parents(&mut given, &[PathBuf::from("Parent")]);
+
+    let expected = vec![
+        Ok(ResolvedTendril::new(
+            "SomeApp".to_string(),
+            "misc.txt".to_string(),
+            PathBuf::from("Parent"),
+            TendrilMode::DirOverwrite,
+        ).unwrap()),
+        Ok(ResolvedTendril::new(
+            "SomeApp".to_string(),
+            "misc.txt".to_string(),
+            PathBuf::from("Parent"),
+            TendrilMode::DirOverwrite,
+        ).unwrap()),
+        Ok(ResolvedTendril::new(
+            "SomeApp".to_string(),
+            "misc.txt".to_string(),
+            PathBuf::from("Parent"),
+            TendrilMode::DirOverwrite,
+        ).unwrap()),
+    ];
+
+    let actual = resolve_tendril(given, false);
+
+    assert_eq!(actual, expected);
+}
+
+#[test]
 fn duplicate_parent_paths_resolves_all() {
-    let mut given = Tendril::new("SomeApp", "misc.txt");
+    let mut given = Tendril::new("SomeApp", vec!["misc.txt"]);
     given.dir_merge = false;
 
-    set_all_platform_paths(
+    set_parents(
         &mut given,
         &[PathBuf::from("Parent"),
         PathBuf::from("Parent"),
@@ -156,12 +216,12 @@ fn duplicate_parent_paths_resolves_all() {
 #[test]
 #[serial("mut-env-var-testing")]
 fn vars_and_leading_tilde_in_parent_path_are_resolved_in_all() {
-    let mut given = Tendril::new("SomeApp", "misc.txt");
+    let mut given = Tendril::new("SomeApp", vec!["misc.txt"]);
     given.dir_merge = false;
     std::env::set_var("mut-testing", "value");
     std::env::set_var("HOME", "MyHome");
 
-    set_all_platform_paths(
+    set_parents(
         &mut given,
         &[
             PathBuf::from("<mut-testing>1"),
@@ -197,9 +257,9 @@ fn vars_and_leading_tilde_in_parent_path_are_resolved_in_all() {
 
 #[test]
 fn var_in_parent_path_doesnt_exist_returns_raw_path() {
-    let mut given = Tendril::new("SomeApp", "misc.txt");
+    let mut given = Tendril::new("SomeApp", vec!["misc.txt"]);
     given.dir_merge = false;
-    set_all_platform_paths(
+    set_parents(
         &mut given,
         &[PathBuf::from("<I_do_not_exist>".to_string())],
     );
@@ -225,9 +285,9 @@ fn var_in_group_or_name_exists_uses_raw_path(
     #[case] group: &str,
     #[case] name: &str,
 ) {
-    let mut given = Tendril::new(group, name);
+    let mut given = Tendril::new(group, vec![name]);
     given.dir_merge = false;
-    set_all_platform_paths(&mut given, &[PathBuf::from("SomeParent")]);
+    set_parents(&mut given, &[PathBuf::from("SomeParent")]);
     std::env::set_var("mut-testing", "value");
 
     let expected = vec![
@@ -247,9 +307,9 @@ fn var_in_group_or_name_exists_uses_raw_path(
 #[test]
 #[serial("mut-env-var-testing")]
 fn leading_tilde_in_parent_path_tilde_value_doesnt_exist_returns_raw_path() {
-    let mut given = Tendril::new("SomeApp", "misc.txt");
+    let mut given = Tendril::new("SomeApp", vec!["misc.txt"]);
     given.dir_merge = false;
-    set_all_platform_paths(
+    set_parents(
         &mut given,
         &[PathBuf::from("~/SomeParentPath".to_string())],
     );
@@ -277,9 +337,9 @@ fn leading_tilde_in_group_or_name_and_tilde_value_exists_uses_raw_path(
     #[case] group: &str,
     #[case] name: &str,
 ) {
-    let mut given = Tendril::new(group, name);
+    let mut given = Tendril::new(group, vec![name]);
     given.dir_merge = false;
-    set_all_platform_paths(&mut given, &[PathBuf::from("SomeParent")]);
+    set_parents(&mut given, &[PathBuf::from("SomeParent")]);
     std::env::set_var("HOME", "MyHome");
 
     let expected = vec![
@@ -296,36 +356,6 @@ fn leading_tilde_in_group_or_name_and_tilde_value_exists_uses_raw_path(
     assert_eq!(actual, expected);
 }
 
-#[test]
-fn resolves_paths_for_current_platform() {
-    let given = Tendril {
-        group: "SomeApp".to_string(),
-        name: "misc.txt".to_string(),
-        parent_dirs_mac: ["MacParent".to_string()].to_vec(),
-        parent_dirs_windows: ["WinParent".to_string()].to_vec(),
-        dir_merge: false,
-        link: false,
-    };
-
-    let expected_parent = match std::env::consts::OS {
-        "macos" => PathBuf::from(&given.parent_dirs_mac[0]),
-        "windows" => PathBuf::from(&given.parent_dirs_windows[0]),
-        _ => unimplemented!()
-    };
-    let expected = vec![
-        Ok(ResolvedTendril::new(
-            "SomeApp".to_string(),
-            "misc.txt".to_string(),
-            expected_parent,
-            TendrilMode::DirOverwrite
-        ).unwrap()),
-    ];
-
-    let actual = resolve_tendril(given, true);
-
-    assert_eq!(actual, expected);
-}
-
 #[rstest]
 #[case(true, false, TendrilMode::DirMerge)]
 #[case(false, false, TendrilMode::DirOverwrite)]
@@ -336,10 +366,10 @@ fn resolves_tendril_mode_properly(
     #[case] link: bool,
     #[case] expected_mode: TendrilMode,
 ) {
-    let mut given = Tendril::new("SomeApp", "misc.txt");
+    let mut given = Tendril::new("SomeApp", vec!["misc.txt"]);
     given.dir_merge = dir_merge;
     given.link = link;
-    set_all_platform_paths(&mut given, &[PathBuf::from("SomeParentPath")]);
+    set_parents(&mut given, &[PathBuf::from("SomeParentPath")]);
 
     let expected = vec![
         Ok(ResolvedTendril::new(
