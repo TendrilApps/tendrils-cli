@@ -1,8 +1,13 @@
 use crate::cli::{run, TendrilCliArgs, TendrilsSubcommands};
 use crate::writer::Writer;
-use tendrils::is_tendrils_dir;
-use tendrils::action_mode::ActionMode;
-use tendrils::test_utils::{get_disposable_dir, parse_tendrils_expose, set_parents, symlink_expose, Setup};
+use tendrils::{ActionMode, is_tendrils_dir};
+use tendrils::test_utils::{
+    get_disposable_dir,
+    parse_tendrils_expose,
+    set_parents,
+    symlink_expose,
+    Setup
+};
 use rstest::rstest;
 use serial_test::serial;
 use std::fs::{create_dir_all, write};

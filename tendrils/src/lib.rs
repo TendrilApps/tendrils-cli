@@ -1,14 +1,13 @@
-pub mod action_mode;
-use action_mode::ActionMode;
-pub mod enums;
-use enums::{
+mod enums;
+pub use enums::{
+    ActionMode,
     GetTendrilsError,
     InvalidTendrilError,
     TendrilActionError,
     TendrilActionSuccess,
 };
 mod resolved_tendril;
-use resolved_tendril::{
+pub use resolved_tendril::{
     ResolvedTendril,
     TendrilMode,
 };
@@ -16,9 +15,9 @@ use std::ffi::OsString;
 use std::fs::{create_dir_all, remove_dir_all, remove_file};
 use std::path::{Path, PathBuf};
 mod tendril;
-use tendril::Tendril;
-pub mod tendril_action_report;
-use tendril_action_report::TendrilActionReport;
+pub use tendril::Tendril;
+mod tendril_action_report;
+pub use tendril_action_report::TendrilActionReport;
 
 #[cfg(test)]
 mod tests;

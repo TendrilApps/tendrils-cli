@@ -1,5 +1,5 @@
 use crate::{tendril_action, TendrilActionError, TendrilActionSuccess};
-use crate::action_mode::ActionMode;
+use crate::enums::ActionMode;
 use crate::tendril::Tendril;
 use crate::tendril_action_report::TendrilActionReport;
 use crate::test_utils::{

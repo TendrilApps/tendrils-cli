@@ -3,21 +3,19 @@ use crate::td_table::TdTable;
 use crate::writer::Writer;
 use inline_colorization::{color_bright_green, color_bright_red, color_reset};
 use tendrils::{
+    ActionMode,
     filter_by_mode,
     filter_by_profiles,
     get_tendrils,
     get_tendrils_dir,
-    is_tendrils_dir,
-    tendril_action,
-};
-use tendrils::action_mode::ActionMode;
-use tendrils::enums::{
     GetTendrilsError,
     InvalidTendrilError,
+    is_tendrils_dir,
+    tendril_action,
     TendrilActionError,
     TendrilActionSuccess,
+    TendrilActionReport,
 };
-use tendrils::tendril_action_report::TendrilActionReport;
 use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
