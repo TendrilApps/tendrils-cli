@@ -1,8 +1,8 @@
-use crate::action_mode::ActionMode;
 use crate::cli::{run, TendrilCliArgs, TendrilsSubcommands};
-use crate::cli::writer::Writer;
-use crate::{is_tendrils_dir, parse_tendrils, symlink};
-use crate::test_utils::{set_parents, Setup};
+use crate::writer::Writer;
+use tendrils::is_tendrils_dir;
+use tendrils::action_mode::ActionMode;
+use tendrils::test_utils::{get_disposable_dir, parse_tendrils_expose, set_parents, symlink_expose, Setup};
 use rstest::rstest;
 use serial_test::serial;
 use std::fs::{create_dir_all, write};
@@ -84,7 +84,7 @@ fn tendril_action_no_path_given_and_no_cd_prints_message(
     force: bool,
 ) {
     let delete_me = tempdir::TempDir::new_in(
-        crate::test_utils::get_disposable_dir(),
+        get_disposable_dir(),
         "DeleteMe"
     ).unwrap();
     std::env::set_current_dir(delete_me.path()).unwrap();
@@ -180,8 +180,8 @@ fn tendril_action_given_path_and_cd_are_both_tendrils_dirs_uses_given_path(
     setup.make_td_json_file(&[]);
     create_dir_all(&given_path).unwrap();
     write(given_path.join("tendrils.json"), "").unwrap();
-    assert!(parse_tendrils("[]").unwrap().is_empty());
-    assert!(parse_tendrils("").is_err());
+    assert!(parse_tendrils_expose("[]").unwrap().is_empty());
+    assert!(parse_tendrils_expose("").is_err());
     std::env::set_current_dir(&setup.td_dir).unwrap();
 
     let mut writer = MockWriter::new();
@@ -229,7 +229,7 @@ fn tendril_action_dry_run_does_not_modify(
     setup.make_target_file();
     if mode == ActionMode::Link {
         // Setup remote file as symlink to some random (non-tendril) file
-        symlink(&setup.remote_file, &setup.target_file, false, false).unwrap();
+        symlink_expose(&setup.remote_file, &setup.target_file, false, false).unwrap();
     }
     else {
         setup.make_remote_file();

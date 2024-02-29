@@ -1,10 +1,6 @@
 use crate::resolved_tendril::ResolvedTendril;
-use crate::{Tendril, TendrilMode};
-use std::fs::{
-    create_dir_all,
-    read_to_string,
-    write,
-};
+use crate::{parse_tendrils, symlink, Tendril, TendrilMode};
+use std::fs::{create_dir_all, read_to_string, write};
 use std::path::{Path, PathBuf};
 use tempdir::TempDir;
 
@@ -19,6 +15,8 @@ pub fn get_disposable_dir() -> PathBuf {
 
 pub fn get_samples_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .unwrap()
         .join("tests")
         .join("samples")
 }
@@ -33,6 +31,13 @@ pub fn is_empty(dir: &Path) -> bool {
     true
 }
 
+/// Exposes the otherwise private function
+pub fn parse_tendrils_expose(
+    json: &str
+) -> Result<Vec<Tendril>, serde_json::Error> {
+    parse_tendrils(json)
+}
+
 pub fn set_parents(tendril: &mut Tendril, paths: &[PathBuf]) {
     let path_strings:Vec<String> = paths
         .iter()
@@ -40,6 +45,13 @@ pub fn set_parents(tendril: &mut Tendril, paths: &[PathBuf]) {
         .collect();
 
     tendril.parents = path_strings;
+}
+
+/// Exposes the otherwise private function
+pub fn symlink_expose(
+    create_at: &Path, target: &Path, dry_run: bool, force: bool
+) -> Result<crate::TendrilActionSuccess, crate::TendrilActionError> {
+    symlink(create_at, target, dry_run, force)
 }
 
 pub struct Setup {

@@ -1,7 +1,6 @@
-mod action_mode;
+pub mod action_mode;
 use action_mode::ActionMode;
-pub mod cli;
-mod enums;
+pub mod enums;
 use enums::{
     GetTendrilsError,
     InvalidTendrilError,
@@ -18,13 +17,14 @@ use std::fs::{create_dir_all, remove_dir_all, remove_file};
 use std::path::{Path, PathBuf};
 mod tendril;
 use tendril::Tendril;
-mod tendril_action_report;
+pub mod tendril_action_report;
 use tendril_action_report::TendrilActionReport;
 
 #[cfg(test)]
-mod libtests;
-#[cfg(test)]
-mod test_utils;
+mod tests;
+
+#[cfg(any(test, feature = "_test_utils"))]
+pub mod test_utils;
 
 fn copy_fso(
     from: &Path,
@@ -119,7 +119,7 @@ fn fso_types_mismatch(source: &Path, dest: &Path) -> bool {
 
 // TODO: Recursively look through all parent folders before
 // checking environment variable
-fn get_tendrils_dir(starting_path: &Path) -> Option<PathBuf> {
+pub fn get_tendrils_dir(starting_path: &Path) -> Option<PathBuf> {
     if is_tendrils_dir(starting_path) {
         Some(starting_path.to_owned())
     }
@@ -158,7 +158,7 @@ pub fn filter_by_profiles(tendrils: Vec<Tendril>, profiles: &[String]) -> Vec<Te
         }).collect()
 }
 
-fn get_tendrils(
+pub fn get_tendrils(
     td_dir: &Path,
 ) -> Result<Vec<Tendril>, GetTendrilsError> {
     let tendrils_file_path = Path::new(&td_dir).join("tendrils.json");
@@ -167,7 +167,7 @@ fn get_tendrils(
     Ok(tendrils)
 }
 
-fn is_tendrils_dir(dir: &Path) -> bool {
+pub fn is_tendrils_dir(dir: &Path) -> bool {
     dir.join("tendrils.json").is_file()
 }
 

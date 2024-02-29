@@ -621,6 +621,8 @@ fn no_read_access_from_remote_file_returns_io_error_permission_denied(
     // Note: This test sample is not version controlled and must first
     // be created using the setup script - See dev/setup-tendrils.nu
     let given_parent_dir = get_samples_dir().join("NoReadAccess");
+    
+    print!("{}", given_parent_dir.to_string_lossy());
 
     let given = ResolvedTendril::new(
         "SomeApp",

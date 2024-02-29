@@ -1,6 +1,8 @@
 use clap::{Parser, Subcommand};
+use crate::td_table::TdTable;
+use crate::writer::Writer;
 use inline_colorization::{color_bright_green, color_bright_red, color_reset};
-use crate::{
+use tendrils::{
     filter_by_mode,
     filter_by_profiles,
     get_tendrils,
@@ -8,22 +10,15 @@ use crate::{
     is_tendrils_dir,
     tendril_action,
 };
-use crate::action_mode::ActionMode;
-use crate::enums::{
+use tendrils::action_mode::ActionMode;
+use tendrils::enums::{
     GetTendrilsError,
     InvalidTendrilError,
     TendrilActionError,
     TendrilActionSuccess,
 };
-use crate::tendril_action_report::TendrilActionReport;
+use tendrils::tendril_action_report::TendrilActionReport;
 use std::path::PathBuf;
-pub mod td_table;
-use td_table::TdTable;
-pub mod writer;
-use writer::Writer;
-
-#[cfg(test)]
-mod tests;
 
 #[derive(Parser, Debug)]
 #[command(version)]
@@ -124,7 +119,7 @@ fn path(writer: &mut impl Writer) {
 
 // Note: For ansi styling to render properly with 'tabled' tables,
 // its 'ansi' feature must be enabled
-fn ansi_style(text: &str, ansi_prefix: String, ansi_suffix: &str) -> String {
+pub fn ansi_style(text: &str, ansi_prefix: String, ansi_suffix: &str) -> String {
     ansi_prefix + text + ansi_suffix
 }
 

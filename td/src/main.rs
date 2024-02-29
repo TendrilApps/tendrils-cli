@@ -1,6 +1,7 @@
 use clap::Parser;
-use tendrils::cli::{run, TendrilCliArgs};
-use tendrils::cli::writer::StdOutWriter;
+mod cli; use cli::{TendrilCliArgs, run};
+mod td_table; mod writer; use writer::StdOutWriter;
+#[cfg(test)] mod tests;
 
 fn main() {
     let mut stdout_writer = StdOutWriter {};
