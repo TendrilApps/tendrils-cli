@@ -1,4 +1,5 @@
-use crate::cli::{run, TendrilCliArgs, TendrilsSubcommands};
+use crate::run;
+use crate::cli::{TendrilCliArgs, TendrilsSubcommands};
 use crate::writer::Writer;
 use tendrils::{ActionMode, is_tendrils_dir};
 use tendrils::test_utils::{
