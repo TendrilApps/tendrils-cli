@@ -6,6 +6,8 @@ use tempdir::TempDir;
 
 pub fn get_disposable_dir() -> PathBuf {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .unwrap()
         .join("target")
         .join("tempdirs");
 
