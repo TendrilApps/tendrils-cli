@@ -1,4 +1,5 @@
-use crate::{action_mode::ActionMode, filter_by_mode, Tendril};
+use crate::{filter_by_mode, Tendril};
+use crate::enums::ActionMode;
 use rstest::rstest;
 
 #[rstest]

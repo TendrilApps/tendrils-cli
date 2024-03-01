@@ -26,7 +26,7 @@ pub struct Tendril {
 }
 
 impl Tendril {
-    #[cfg(test)]
+    #[cfg(any(test, feature = "_test_utils"))]
     pub fn new(group: &str, names: Vec<&str>) -> Tendril {
         Tendril {
             group: String::from(group),

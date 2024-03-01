@@ -1,5 +1,12 @@
 use serde::Deserialize;
 
+#[derive(Clone, Copy, Eq, PartialEq)]
+pub enum ActionMode {
+    Push,
+    Pull,
+    Link,
+}
+
 #[derive(Debug)]
 pub enum GetTendrilsError {
     IoError(std::io::Error),
