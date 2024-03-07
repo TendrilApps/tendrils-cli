@@ -18,3 +18,6 @@ tempdir = { version = "0.3.7", optional = true }
 rstest = "0.18.2"
 serial_test = "2.0.0"
 tempdir = "0.3.7"
+
+[lints]
+workspace = true
