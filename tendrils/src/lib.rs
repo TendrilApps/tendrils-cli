@@ -21,6 +21,10 @@ pub use tendril_action_report::TendrilActionReport;
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+// Must be included in top level to be available
+// in test modules for some reason
+use rstest_reuse;
 
 #[cfg(any(test, feature = "_test_utils"))]
 pub mod test_utils;

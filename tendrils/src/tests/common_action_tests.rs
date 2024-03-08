@@ -15,6 +15,7 @@ use crate::enums::{TendrilActionError, TendrilActionSuccess};
 use crate::resolved_tendril::{ResolvedTendril, TendrilMode};
 use crate::test_utils::{is_empty, get_disposable_dir, Setup, symlink_expose};
 use rstest::rstest;
+use rstest_reuse::{self, apply, template};
 use serial_test::serial;
 use std::fs::{create_dir_all, read_to_string, write};
 use std::path::Path;
@@ -468,12 +469,21 @@ fn link_mode_tendril_returns_mode_mismatch_error(
     assert_eq!(&setup.local_file_contents(), "Local file contents");
 }
 
+#[template]
 #[rstest]
 #[case(link_tendril, true)]
 #[case(link_tendril, false)]
 #[case(pull_tendril, true)] // Only applies to pull in a dry run
 #[case(push_tendril, true)]
 #[case(push_tendril, false)]
+fn cases_that_do_not_modify_local(
+    #[case] action: fn(&Path, &ResolvedTendril, bool, bool)
+        -> Result<TendrilActionSuccess, TendrilActionError>,
+
+    #[case] dry_run: bool,
+) { }
+
+#[apply(cases_that_do_not_modify_local)]
 pub(crate) fn local_is_unchanged(
     #[case] action: fn(&Path, &ResolvedTendril, bool, bool)
         -> Result<TendrilActionSuccess, TendrilActionError>,
@@ -513,12 +523,7 @@ pub(crate) fn local_is_unchanged(
     }
 }
 
-#[rstest]
-#[case(link_tendril, true)]
-#[case(link_tendril, false)]
-#[case(pull_tendril, true)] // Only applies to pull in a dry run
-#[case(push_tendril, true)]
-#[case(push_tendril, false)]
+#[apply(cases_that_do_not_modify_local)]
 pub(crate) fn local_symlink_is_unchanged(
     #[case] action: fn(&Path, &ResolvedTendril, bool, bool)
         -> Result<TendrilActionSuccess, TendrilActionError>,
@@ -565,11 +570,20 @@ pub(crate) fn local_symlink_is_unchanged(
     }
 }
 
+#[template]
 #[rstest]
 #[case(link_tendril, true)] // Only applies to link in a dry run
 #[case(pull_tendril, true)] 
 #[case(pull_tendril, false)] 
 #[case(push_tendril, true)] // Only applies to push in a dry run
+fn cases_that_do_not_modify_remote(
+    #[case] action: fn(&Path, &ResolvedTendril, bool, bool)
+        -> Result<TendrilActionSuccess, TendrilActionError>,
+
+    #[case] dry_run: bool,
+) { }
+
+#[apply(cases_that_do_not_modify_remote)]
 pub(crate) fn remote_is_unchanged(
     #[case] action: fn(&Path, &ResolvedTendril, bool, bool)
         -> Result<TendrilActionSuccess, TendrilActionError>,
@@ -611,11 +625,7 @@ pub(crate) fn remote_is_unchanged(
     }
 }
 
-#[rstest]
-#[case(link_tendril, true)] // Only applies to link in a dry run
-#[case(pull_tendril, true)] 
-#[case(pull_tendril, false)] 
-#[case(push_tendril, true)] // Only applies to push in a dry run
+#[apply(cases_that_do_not_modify_remote)]
 pub(crate) fn remote_symlink_is_unchanged(
     #[case] action: fn(&Path, &ResolvedTendril, bool, bool)
         -> Result<TendrilActionSuccess, TendrilActionError>,

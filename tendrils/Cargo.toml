@@ -16,6 +16,7 @@ tempdir = { version = "0.3.7", optional = true }
 
 [dev-dependencies]
 rstest = "0.18.2"
+rstest_reuse = "0.6.0"
 serial_test = "2.0.0"
 tempdir = "0.3.7"
 
