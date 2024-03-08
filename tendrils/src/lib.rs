@@ -105,7 +105,7 @@ fn copy_fso(
     }
     else {
         let e = std::io::Error::from(std::io::ErrorKind::NotFound);
-        return Err(TendrilActionError::from(e));
+        Err(TendrilActionError::from(e))
     }
 }
 
@@ -189,8 +189,13 @@ fn link_tendril(
     if tendril.mode != TendrilMode::Link {
         return Err(TendrilActionError::ModeMismatch);
     }
-    else if is_recursive_tendril(td_dir, &dest) {
+    if is_recursive_tendril(td_dir, &dest) {
         return Err(TendrilActionError::Recursion);
+    }
+    // TODO: Eliminate this unwrap and test with root folders
+    if !dest.parent().unwrap().exists() {
+        let io_err = std::io::Error::from(std::io::ErrorKind::NotFound);
+        return Err(TendrilActionError::IoError(io_err));
     }
 
     let target = td_dir.join(tendril.group()).join(tendril.name());
@@ -244,6 +249,11 @@ fn push_tendril(
     }
     if is_recursive_tendril(td_dir, &dest) {
         return Err(TendrilActionError::Recursion);
+    }
+    // TODO: Eliminate this unwrap and test with root folders
+    if !dest.parent().unwrap().exists() {
+        let io_err = std::io::Error::from(std::io::ErrorKind::NotFound);
+        return Err(TendrilActionError::IoError(io_err));
     }
 
     let source = td_dir.join(tendril.group()).join(tendril.name());
@@ -382,12 +392,7 @@ fn resolve_tendril(
 fn symlink(
     create_at: &Path, target: &Path, dry_run: bool, force: bool
 ) -> Result<TendrilActionSuccess, TendrilActionError> {
-    // TODO: Eliminate this unwrap and test with root folders
-    if !create_at.parent().unwrap().exists() {
-        let io_err = std::io::Error::from(std::io::ErrorKind::NotFound);
-        Err(TendrilActionError::IoError(io_err))
-    }
-    else if !force && target.is_symlink() {
+    if !force && target.is_symlink() {
         Err(TendrilActionError::TypeMismatch)
     }
     else if target.exists() {
