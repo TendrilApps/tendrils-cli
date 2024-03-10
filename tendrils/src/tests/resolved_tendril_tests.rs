@@ -10,7 +10,9 @@ use std::path::PathBuf;
 #[case("single.dot")]
 #[case("multi.sandwiched.dots")]
 #[case(".LeadingDot")]
-#[cfg_attr(not(windows), case("TrailingDot."))] // Dot is dropped on Windows
+#[case("TrailingDot.")] // Trailing dots are dropped on Windows filesystems,
+                        // but a path with a trailing dot will still point to
+                        // its equivalent without the dot
 fn valid_groups_and_names(#[case] value: &str) {}
 
 #[template]

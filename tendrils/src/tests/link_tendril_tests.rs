@@ -8,6 +8,7 @@ use crate::test_utils::Setup;
 use rstest::rstest;
 use rstest_reuse::{self, apply};
 use std::fs::create_dir_all;
+use std::path::PathBuf;
 
 /// See also [`crate::tests::common_action_tests::remote_is_unchanged`] for
 /// `dry_run` case
@@ -46,23 +47,47 @@ fn remote_parent_and_local_exist_symlink_to_local_is_created(
 
     link_tendril(&setup.td_dir, &tendril, false, force).unwrap();
 
+    use std::env::consts::FAMILY;
+    let expected_target: PathBuf;
     if as_dir {
         assert_eq!(
             setup.remote_nested_file_contents(),
             "Local nested file contents"
         );
         assert!(setup.remote_dir.is_symlink());
+        if FAMILY == "windows" && name.ends_with('.') {
+            // Trailing dots are dropped by the Windows filesystem
+            let stripped_name = &name[..name.len()-1];
+            expected_target = setup.local_dir
+                .parent()
+                .unwrap()
+                .join(stripped_name);
+        }
+        else {
+            expected_target = setup.local_dir;
+        }
         assert_eq!(
             std::fs::read_link(setup.remote_dir).unwrap(),
-            setup.local_dir
+            expected_target,
         );
     }
     else {
         assert_eq!(setup.remote_file_contents(), "Local file contents");
         assert!(setup.remote_file.is_symlink());
+        if FAMILY == "windows" && name.ends_with('.') {
+            // Trailing dots are dropped by the Windows filesystem
+            let stripped_name = &name[..name.len()-1];
+            expected_target = setup.local_file
+                .parent()
+                .unwrap()
+                .join(stripped_name);
+        }
+        else {
+            expected_target = setup.local_file;
+        }
         assert_eq!(
             std::fs::read_link(setup.remote_file).unwrap(),
-            setup.local_file
+            expected_target
         );
     }
 }
