@@ -676,3 +676,5 @@ pub(crate) fn remote_symlink_is_unchanged(
         assert!(matches!(dir_actual, Ok(TendrilActionSuccess::Ok)));
     }
 }
+
+// TODO: Test when path is invalid and a copy is attempted with both a folder and a file (Windows only?)

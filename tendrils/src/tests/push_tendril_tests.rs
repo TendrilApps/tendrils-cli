@@ -12,7 +12,7 @@ use tempdir::TempDir;
 /// See also [`crate::tests::common_action_tests::remote_is_unchanged`] for
 /// `dry_run` case
 #[apply(crate::tests::resolved_tendril_tests::valid_groups_and_names)]
-fn local_exists_copies_to_remote(
+fn remote_parent_and_local_exist_copies_to_remote(
     #[case] name: &str,
 
     #[values(true, false)]
@@ -403,9 +403,6 @@ fn no_read_access_from_local_file_returns_io_error_permission_denied_unless_dry_
     }
 }
 
-// TODO: Test read/write access cases for push/link
-// TODO: Test when path is invalid and a copy is attempted with both a folder and a file (Windows only?)
-
 #[rstest]
 #[case(true)]
 #[case(false)]
@@ -528,5 +525,3 @@ fn no_write_access_at_remote_dir_returns_io_error_permission_denied_unless_dry_r
         }
     }
 }
-
-// TODO: Test when path is invalid and a copy is attempted with both a folder and a file (Windows only?)

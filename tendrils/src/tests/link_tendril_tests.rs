@@ -4,11 +4,17 @@
 use crate::{link_tendril, symlink};
 use crate::enums::{TendrilActionError, TendrilActionSuccess};
 use crate::resolved_tendril::{ResolvedTendril, TendrilMode};
-use crate::test_utils::Setup;
+use crate::test_utils::{
+    get_disposable_dir,
+    get_samples_dir,
+    Setup,
+    symlink_expose
+};
 use rstest::rstest;
 use rstest_reuse::{self, apply};
-use std::fs::create_dir_all;
+use std::fs::{create_dir_all, metadata, set_permissions};
 use std::path::PathBuf;
+use tempdir::TempDir;
 
 /// See also [`crate::tests::common_action_tests::remote_is_unchanged`] for
 /// `dry_run` case
@@ -267,6 +273,138 @@ fn existing_symlinks_at_remote_are_overwritten(#[case] force: bool) {
     assert!(setup.remote_dir.is_symlink());
     assert_eq!(setup.remote_file_contents(), "Local file contents");
     assert_eq!(setup.remote_nested_file_contents(), "Local nested file contents");
+}
+
+#[rstest]
+#[case(true)]
+#[case(false)]
+fn no_read_access_from_local_file_returns_success(
+    #[case] dry_run: bool,
+
+    #[values(true, false)]
+    force: bool,
+) {
+    let temp_parent_dir = TempDir::new_in(
+        get_disposable_dir(),
+        "ParentDir"
+    ).unwrap();
+
+    // Note: This test sample is not version controlled and must first
+    // be created using the setup script - See dev/setup-tendrils.nu
+    let td_dir = get_samples_dir();
+
+    let tendril = ResolvedTendril::new(
+        "NoReadAccess",
+        "no_read_access.txt",
+        temp_parent_dir.path().to_path_buf(),
+        TendrilMode::Link,
+    ).unwrap();
+
+    let actual = link_tendril(
+        &td_dir,
+        &tendril,
+        dry_run,
+        force,
+    );
+
+    assert_eq!(
+        temp_parent_dir.path().join("no_read_access.txt").exists(),
+        !dry_run
+    );
+    if dry_run {
+        assert!(matches!(actual, Ok(TendrilActionSuccess::Skipped)));
+    }
+    else {
+        assert!(matches!(actual, Ok(TendrilActionSuccess::Ok)));
+    }
+}
+
+#[rstest]
+#[case(true)]
+#[case(false)]
+fn no_read_access_from_local_dir_returns_success(
+    #[case] dry_run: bool,
+
+    #[values(true, false)]
+    force: bool,
+) {
+    let temp_parent_dir = TempDir::new_in(
+        get_disposable_dir(),
+        "ParentDir"
+    ).unwrap();
+
+    // Note: This test sample is not version controlled and must first
+    // be created using the setup script - See dev/setup-tendrils.nu
+    let td_dir = get_samples_dir();
+
+    let tendril = ResolvedTendril::new(
+        "NoReadAccess",
+        "no_read_access_dir",
+        temp_parent_dir.path().to_path_buf(),
+        TendrilMode::Link,
+    ).unwrap();
+
+    let actual = link_tendril(
+        &td_dir,
+        &tendril,
+        dry_run,
+        force,
+    );
+
+    assert_eq!(
+        temp_parent_dir.path().join("no_read_access_dir").exists(),
+        !dry_run
+    );
+    if dry_run {
+        assert!(matches!(actual, Ok(TendrilActionSuccess::Skipped)));
+    }
+    else {
+        assert!(matches!(actual, Ok(TendrilActionSuccess::Ok)));
+    }
+}
+
+// The symdir equivalent test is not included as both Windows and Unix
+// appear to overwrite symdirs regardless of their permissions
+#[rstest]
+#[case(true)]
+#[case(false)]
+#[cfg_attr(unix, ignore)] // On most Unix implementations, the symlink permissions
+                          // are ignored and the target's permissions are respected
+fn no_write_access_at_remote_symfile_returns_io_error_permission_denied_unless_dry_run(
+    #[case] dry_run: bool,
+
+    #[values(true, false)]
+    force: bool,
+) {
+    let setup = Setup::new();
+    setup.make_remote_file();
+    setup.make_local_file();
+    setup.make_target_file();
+    symlink_expose(&setup.remote_file, &setup.target_file, false, true)
+        .unwrap();
+
+    // Set file read-only
+    let mut perms = metadata(&setup.remote_file).unwrap().permissions();
+    perms.set_readonly(true);
+    set_permissions(&setup.remote_file, perms).unwrap();
+
+    let mut tendril = setup.resolved_file_tendril();
+    tendril.mode = TendrilMode::Link;
+
+    let actual = link_tendril(&setup.td_dir, &tendril, dry_run, force);
+
+    assert_eq!(setup.remote_file_contents(), "Target file contents");
+    if dry_run {
+        assert!(matches!(actual, Ok(TendrilActionSuccess::Skipped)));
+    }
+    else {
+        match actual {
+            Err(TendrilActionError::IoError(e)) => {
+                assert_eq!(e.kind(), std::io::ErrorKind::PermissionDenied)
+            },
+            _ => panic!("{:?}", actual)
+        }
+    }
 }
 
 #[rstest]
