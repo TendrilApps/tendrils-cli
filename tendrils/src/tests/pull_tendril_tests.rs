@@ -28,7 +28,7 @@ use tempdir::TempDir;
 /// See also [`crate::tests::common_action_tests::local_is_unchanged`] for
 /// `dry_run` case
 #[apply(crate::tests::resolved_tendril_tests::valid_groups_and_names)]
-fn remote_exists_copies_successfully(
+fn remote_exists_copies_to_local(
     #[case] name: &str,
 
     #[values(true, false)]
@@ -196,6 +196,7 @@ fn local_is_symlink_returns_type_mismatch_error_unless_forced(
     }
 }
 
+// AKA `source_is_file_and_dest_is_dir`
 #[rstest]
 #[case(TendrilMode::DirMerge)]
 #[case(TendrilMode::DirOverwrite)]
@@ -240,6 +241,7 @@ fn remote_is_file_and_local_is_dir_returns_type_mismatch_error_unless_forced(
     }
 }
 
+// AKA `source_is_dir_and_dest_is_file`
 #[rstest]
 #[case(TendrilMode::DirMerge)]
 #[case(TendrilMode::DirOverwrite)]
@@ -325,17 +327,18 @@ fn dir_overwrite_w_dir_tendril_replaces_local_dir_recursively(
     setup.make_local_nested_file();
     create_dir_all(&remote_nested_dir).unwrap();
     create_dir_all(&local_nested_dir).unwrap();
-    write(&remote_new_2nested_file, "I'm not in the tendrils dir").unwrap();
-    write(&local_extra_2nested_file, "I'm not in the source dir").unwrap();
+    write(&remote_new_2nested_file, "I'm not in the local dir").unwrap();
+    write(&local_extra_2nested_file, "I'm not in the remote dir").unwrap();
 
     let mut tendril = setup.resolved_dir_tendril();
     tendril.mode = TendrilMode::DirOverwrite;
 
     pull_tendril(&setup.td_dir, &tendril, false, force).unwrap();
 
-    let local_new_2nested_file_contents = read_to_string(local_new_2nested_file).unwrap();
+    let local_new_2nested_file_contents =
+        read_to_string(local_new_2nested_file).unwrap();
     assert_eq!(setup.local_nested_file_contents(), "Remote nested file contents");
-    assert_eq!(local_new_2nested_file_contents, "I'm not in the tendrils dir");
+    assert_eq!(local_new_2nested_file_contents, "I'm not in the local dir");
     assert!(!local_extra_2nested_file.exists());
 }
 
@@ -355,26 +358,31 @@ fn dir_merge_w_dir_tendril_merges_w_local_dir_recursively(
     setup.make_local_nested_file();
     create_dir_all(&remote_nested_dir).unwrap();
     create_dir_all(&local_nested_dir).unwrap();
-    write(&remote_new_2nested_file, "I'm not in the tendrils dir").unwrap();
-    write(&local_extra_2nested_file, "I'm not in the source dir").unwrap();
+    write(&remote_new_2nested_file, "I'm not in the local dir").unwrap();
+    write(&local_extra_2nested_file, "I'm not in the remote dir").unwrap();
 
     let mut tendril = setup.resolved_dir_tendril();
     tendril.mode = TendrilMode::DirMerge;
 
     pull_tendril(&setup.td_dir, &tendril, false, force).unwrap();
 
-    let local_new_2nested_file_contents = read_to_string(local_new_2nested_file).unwrap();
-    let local_extra_2nested_file_contents = read_to_string(local_extra_2nested_file).unwrap();
+    let local_new_2nested_file_contents =
+        read_to_string(local_new_2nested_file).unwrap();
+    let local_extra_2nested_file_contents =
+        read_to_string(local_extra_2nested_file).unwrap();
     assert_eq!(setup.local_nested_file_contents(), "Remote nested file contents");
-    assert_eq!(local_new_2nested_file_contents, "I'm not in the tendrils dir");
-    assert_eq!(local_extra_2nested_file_contents, "I'm not in the source dir");
+    assert_eq!(local_new_2nested_file_contents, "I'm not in the local dir");
+    assert_eq!(local_extra_2nested_file_contents, "I'm not in the remote dir");
 }
 
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn no_read_access_from_remote_file_returns_io_error_permission_denied(
-    #[case] force: bool,
+fn no_read_access_from_remote_file_returns_io_error_permission_denied_unless_dry_run(
+    #[case] dry_run: bool,
+
+    #[values(true, false)]
+    force: bool,
 ) {
     let temp_td_dir = TempDir::new_in(
         get_disposable_dir(),
@@ -387,7 +395,7 @@ fn no_read_access_from_remote_file_returns_io_error_permission_denied(
     
     print!("{}", given_parent_dir.to_string_lossy());
 
-    let given = ResolvedTendril::new(
+    let tendril = ResolvedTendril::new(
         "SomeApp",
         "no_read_access.txt",
         given_parent_dir,
@@ -396,25 +404,33 @@ fn no_read_access_from_remote_file_returns_io_error_permission_denied(
 
     let actual = pull_tendril(
         &temp_td_dir.path(),
-        &given,
-        false,
+        &tendril,
+        dry_run,
         force,
     );
 
-    match actual {
-        Err(TendrilActionError::IoError(e)) => {
-            assert_eq!(e.kind(), std::io::ErrorKind::PermissionDenied)
-        },
-        _ => panic!()
-    }
     assert!(is_empty(&temp_td_dir.path().join("SomeApp")));
+    if dry_run {
+        assert!(matches!(actual, Ok(TendrilActionSuccess::Skipped)));
+    }
+    else {
+        match actual {
+            Err(TendrilActionError::IoError(e)) => {
+                assert_eq!(e.kind(), std::io::ErrorKind::PermissionDenied)
+            },
+            _ => panic!("{:?}", actual)
+        }
+    }
 }
 
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn no_read_access_from_remote_dir_returns_io_error_permission_denied(
-    #[case] force: bool,
+fn no_read_access_from_remote_dir_returns_io_error_permission_denied_unless_dry_run(
+    #[case] dry_run: bool,
+
+    #[values(true, false)]
+    force: bool,
 ) {
     let temp_td_dir = TempDir::new_in(
         get_disposable_dir(),
@@ -434,24 +450,32 @@ fn no_read_access_from_remote_dir_returns_io_error_permission_denied(
     let actual = pull_tendril(
         &temp_td_dir.path(),
         &given,
-        false,
+        dry_run,
         force,
     );
 
-    match actual {
-        Err(TendrilActionError::IoError(e)) => {
-            assert_eq!(e.kind(), std::io::ErrorKind::PermissionDenied)
-        },
-        _ => panic!()
-    }
     assert!(is_empty(&temp_td_dir.path().join("SomeApp")));
+    if dry_run {
+        assert!(matches!(actual, Ok(TendrilActionSuccess::Skipped)));
+    }
+    else {
+        match actual {
+            Err(TendrilActionError::IoError(e)) => {
+                assert_eq!(e.kind(), std::io::ErrorKind::PermissionDenied)
+            },
+            _ => panic!("{:?}", actual)
+        }
+    }
 }
 
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn no_write_access_at_local_file_returns_io_error_permission_denied(
-    #[case] force: bool,
+fn no_write_access_at_local_file_returns_io_error_permission_denied_unless_dry_run(
+    #[case] dry_run: bool,
+
+    #[values(true, false)]
+    force: bool,
 ) {
     let setup = Setup::new();
     setup.make_remote_file();
@@ -464,23 +488,31 @@ fn no_write_access_at_local_file_returns_io_error_permission_denied(
 
     let tendril = setup.resolved_file_tendril();
 
-    let actual = pull_tendril(&setup.td_dir, &tendril, false, force);
+    let actual = pull_tendril(&setup.td_dir, &tendril, dry_run, force);
 
-    match actual {
-        Err(TendrilActionError::IoError(e)) => {
-            assert_eq!(e.kind(), std::io::ErrorKind::PermissionDenied)
-        },
-        _ => panic!()
-    }
     assert_eq!(setup.local_file_contents(), "Local file contents");
+    if dry_run {
+        assert!(matches!(actual, Ok(TendrilActionSuccess::Skipped)));
+    }
+    else {
+        match actual {
+            Err(TendrilActionError::IoError(e)) => {
+                assert_eq!(e.kind(), std::io::ErrorKind::PermissionDenied)
+            },
+            _ => panic!("{:?}", actual)
+        }
+    }
 }
 
 #[rstest]
 #[case(true)]
 #[case(false)]
 #[cfg_attr(windows, ignore)]
-fn no_write_access_at_local_dir_returns_io_error_permission_denied(
-    #[case] force: bool,
+fn no_write_access_at_local_dir_returns_io_error_permission_denied_unless_dry_run(
+    #[case] dry_run: bool,
+
+    #[values(true, false)]
+    force: bool,
 ) {
     let setup = Setup::new();
     setup.make_remote_dir();
@@ -493,19 +525,24 @@ fn no_write_access_at_local_dir_returns_io_error_permission_denied(
 
     let tendril = setup.resolved_dir_tendril();
 
-    let actual = pull_tendril(&setup.td_dir, &tendril, false, force);
-
-    match actual {
-        Err(TendrilActionError::IoError(e)) => {
-            assert_eq!(e.kind(), std::io::ErrorKind::PermissionDenied)
-        },
-        _ => panic!()
-    }
-    assert_eq!(setup.local_nested_file_contents(), "Local nested file contents");
+    let actual = pull_tendril(&setup.td_dir, &tendril, dry_run, force);
 
     // Cleanup
     perms.set_readonly(false);
     set_permissions(&setup.local_dir, perms).unwrap();
+
+    assert_eq!(setup.local_nested_file_contents(), "Local nested file contents");
+    if dry_run {
+        assert!(matches!(actual, Ok(TendrilActionSuccess::Skipped)));
+    }
+    else {
+        match actual {
+            Err(TendrilActionError::IoError(e)) => {
+                assert_eq!(e.kind(), std::io::ErrorKind::PermissionDenied)
+            },
+            _ => panic!("{:?}", actual)
+        }
+    }
 }
 
 #[rstest]
@@ -559,5 +596,3 @@ fn remote_doesnt_exist_but_parent_does_returns_io_error_not_found(
     }
     assert!(is_empty(&setup.td_dir));
 }
-
-// TODO: Test when path is invalid and a copy is attempted (with both a folder AND a file)

@@ -13,7 +13,11 @@ use crate::{
 };
 use crate::enums::{TendrilActionError, TendrilActionSuccess};
 use crate::resolved_tendril::{ResolvedTendril, TendrilMode};
-use crate::test_utils::{is_empty, get_disposable_dir, Setup, symlink_expose};
+use crate::test_utils::{
+    get_disposable_dir,
+    is_empty,
+    symlink_expose,
+    Setup};
 use rstest::rstest;
 use rstest_reuse::{self, apply, template};
 use serial_test::serial;
