@@ -426,6 +426,48 @@ fn resolve_tendril(
     resolve_results
 }
 
+/// Returns `true` if the current *Tendrils* process is capable
+/// of creating symlinks.
+/// 
+/// This is mainly applicable on Windows, where creating symlinks
+/// requires administrator priviledges, or enabling *Developer Mode*.
+/// On Unix platforms this always returns `true`.
+pub fn can_symlink() -> bool {
+    #[cfg(windows)]
+    match std::env::consts::FAMILY {
+        "windows" => is_root::is_root() || is_dev_mode(),
+        _ => true,
+    }
+
+    #[cfg(unix)]
+    true
+}
+
+/// Returns `true` if *Developer Mode* is enabled on Windows.
+/// Returns `false` if the setting cannot be determined for whatever reason.
+#[cfg(windows)]
+fn is_dev_mode() -> bool {
+    use winreg::enums::HKEY_LOCAL_MACHINE;
+    use winreg::RegKey;
+
+    let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
+    let app_model = match hklm.open_subkey(
+        "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AppModelUnlock"
+    ) {
+        Ok(v) => v,
+        _ => return false,
+    };
+
+    let reg_value: u32 = match app_model.get_value(
+        "AllowDevelopmentWithoutDevLicense"
+    ) {
+        Ok(v) => v,
+        _ => return false,
+    };
+
+    reg_value == 1
+}
+
 fn symlink(
     create_at: &Path, target: &Path, dry_run: bool, force: bool
 ) -> Result<TendrilActionSuccess, TendrilActionError> {
@@ -540,6 +582,7 @@ pub fn tendril_action<'a>(
 ) -> Vec<TendrilActionReport<'a>> {
     let mut action_reports: Vec<TendrilActionReport> = vec![];
     let first_only = mode == ActionMode::Pull;
+    let can_symlink = mode == ActionMode::Link && can_symlink();
 
     for tendril in tendrils.iter() {
         let resolved_tendrils = resolve_tendril(&tendril, first_only);
@@ -552,17 +595,24 @@ pub fn tendril_action<'a>(
         };
 
         for (i, resolved_tendril) in resolved_tendrils.into_iter().enumerate() {
-            let action_result = match (&resolved_tendril, mode) {
-                (Ok(v), ActionMode::Pull) => {
+            let action_result = match (&resolved_tendril, mode, can_symlink) {
+                (Ok(v), ActionMode::Pull, _) => {
                     Some(pull_tendril(&td_dir, &v, dry_run, force))
                 },
-                (Ok(v), ActionMode::Push) => {
+                (Ok(v), ActionMode::Push, _) => {
                     Some(push_tendril(&td_dir, &v, dry_run, force))
                 },
-                (Ok(v), ActionMode::Link) => {
+                (Ok(v), ActionMode::Link, true) => {
                     Some(link_tendril(&td_dir, &v, dry_run, force))
                 },
-                (Err(_), _) => None,
+                (Ok(_v), ActionMode::Link, false) => {
+                    // Do not attempt to symlink if it has already been determined
+                    // that the process does not have the required permissions.
+                    // This prevents deleting any of the remote files unnecessarily.
+                    let io_err = std::io::Error::from(std::io::ErrorKind::PermissionDenied);
+                    Some(Err(TendrilActionError::IoError(io_err)))
+                },
+                (Err(_), _, _) => None,
             };
 
             let resolved_path = match resolved_tendril {

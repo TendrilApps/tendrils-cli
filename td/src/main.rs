@@ -10,14 +10,15 @@ use cli::{
 };
 use std::path::PathBuf;
 use tendrils::{
-    ActionMode,
+    can_symlink,
     filter_by_mode,
     filter_by_profiles,
     get_tendrils,
     get_tendrils_dir,
-    GetTendrilsError,
     is_tendrils_dir,
     tendril_action,
+    ActionMode,
+    GetTendrilsError
 };
 mod writer;
 use writer::Writer;
@@ -126,6 +127,15 @@ fn tendril_action_subcommand(
             }
         }
     };
+
+    use std::env::consts::OS;
+    if mode == ActionMode::Link && OS == "windows" && !can_symlink() {
+        writer.writeln("Error: Missing the permissions required to create symlinks on Windows. Consider:");
+        writer.writeln("    - Running this command in an elevated terminal");
+        writer.writeln("    - Enabling developer mode (this allows creating symlinks without requiring administrator priviledges)");
+        writer.writeln("    - Changing these tendrils to non-link modes instead");
+        return;
+    }
 
     let all_tendrils = match get_tendrils(&td_dir) {
         Ok(v) => v,
