@@ -1,5 +1,5 @@
-//! Contains tests specific to pull actions
-//! See also [`crate::tests::common_action_tests`]
+//! Contains tests specific to pull actions.
+//! See also [`crate::tests::common_action_tests`].
 
 use crate::{
     pull_tendril,
@@ -15,6 +15,7 @@ use crate::test_utils::{
     Setup,
 };
 use rstest::rstest;
+use rstest_reuse::apply;
 use std::fs::{
     create_dir_all,
     metadata,
@@ -24,18 +25,9 @@ use std::fs::{
 };
 use tempdir::TempDir;
 
-// TODO: move to common, rename as various_names_still_succeed
-// Or use this as an rstest::reuse template across all actions
-// TODO: Test these cases as the parent string as well
-// TODO: Eliminate the as_dir and do all in one test
 /// See also [`crate::tests::common_action_tests::local_is_unchanged`] for
 /// `dry_run` case
-#[rstest]
-#[case("NoDot")]
-#[case("single.dot")]
-#[case("multi.sandwiched.dots")]
-#[case(".LeadingDot")]
-#[case("TrailingDot.")]
+#[apply(crate::tests::resolved_tendril_tests::valid_groups_and_names)]
 fn remote_exists_copies_successfully(
     #[case] name: &str,
 
@@ -486,6 +478,7 @@ fn no_write_access_at_local_file_returns_io_error_permission_denied(
 #[rstest]
 #[case(true)]
 #[case(false)]
+#[cfg_attr(windows, ignore)]
 fn no_write_access_at_local_dir_returns_io_error_permission_denied(
     #[case] force: bool,
 ) {

@@ -22,8 +22,7 @@ pub use tendril_action_report::TendrilActionReport;
 #[cfg(test)]
 mod tests;
 #[cfg(test)]
-// Must be included in top level to be available
-// in test modules for some reason
+// Must be included in top level of the crate (see rstest_reuse docs)
 use rstest_reuse;
 
 #[cfg(any(test, feature = "_test_utils"))]

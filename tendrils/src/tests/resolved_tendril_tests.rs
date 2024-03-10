@@ -1,8 +1,19 @@
 use crate::{ResolvedTendril, TendrilMode};
 use crate::enums::InvalidTendrilError;
 use rstest::rstest;
+use rstest_reuse::{self, apply, template};
 use std::path::PathBuf;
 
+#[template]
+#[rstest]
+#[case("NoDot")]
+#[case("single.dot")]
+#[case("multi.sandwiched.dots")]
+#[case(".LeadingDot")]
+#[cfg_attr(not(windows), case("TrailingDot."))] // Dot is dropped on Windows
+fn valid_groups_and_names(#[case] value: &str) {}
+
+#[template]
 #[rstest]
 #[case("")]
 #[case("New\nLine")]
@@ -13,9 +24,16 @@ use std::path::PathBuf;
 #[case("\\somePath")]
 #[case("somePath/")]
 #[case("somePath\\")]
+fn invalid_groups_and_names(#[case] value: &str) {}
+
+#[template]
+#[rstest]
 #[case(".git")]
 #[case(".Git")]
 #[case(".GIT")]
+fn forbidden_groups(#[case] value: &str) {}
+
+#[apply(invalid_groups_and_names)]
 fn group_is_invalid_returns_invalid_group_error(#[case] group: &str) {
     let actual = ResolvedTendril::new(
         group,
@@ -27,16 +45,12 @@ fn group_is_invalid_returns_invalid_group_error(#[case] group: &str) {
     assert!(matches!(actual, InvalidTendrilError::InvalidGroup));
 }
 
-#[rstest]
-#[case("")]
-#[case("New\nLine")]
-#[case("Carriage\rReturn")]
-#[case("some/path")]
-#[case("some\\path")]
-#[case("/somePath")]
-#[case("\\somePath")]
-#[case("somePath/")]
-#[case("somePath\\")]
+#[apply(forbidden_groups)]
+fn group_is_forbidden_returns_invalid_group_error(#[case] group: &str) {
+    group_is_invalid_returns_invalid_group_error(group);
+}
+
+#[apply(invalid_groups_and_names)]
 fn name_is_invalid_returns_invalid_name_error(#[case] name: &str) {
     let actual = ResolvedTendril::new(
         "SomeApp",
@@ -62,12 +76,7 @@ fn parent_is_invalid_returns_invalid_parent_error(#[case] parent: &str) {
     assert!(matches!(actual, InvalidTendrilError::InvalidParent));
 }
 
-#[rstest]
-#[case("NoDot")]
-#[case("single.dot")]
-#[case("multi.sandwiched.dots")]
-#[case(".LeadingDot")]
-#[case("TrailingDot.")]
+#[apply(valid_groups_and_names)]
 fn group_is_valid_returns_ok(#[case] group: &str) {
     ResolvedTendril::new(
         group,
@@ -77,15 +86,7 @@ fn group_is_valid_returns_ok(#[case] group: &str) {
     ).unwrap();
 }
 
-#[rstest]
-#[case("NoDot")]
-#[case("single.dot")]
-#[case("multi.sandwiched.dots")]
-#[case(".LeadingDot")]
-#[case("TrailingDot.")]
-#[case(".git")]
-#[case(".Git")]
-#[case(".GIT")]
+#[apply(valid_groups_and_names)]
 fn name_is_valid_returns_ok(#[case] name: &str) {
     ResolvedTendril::new(
         "SomeApp",
@@ -95,7 +96,12 @@ fn name_is_valid_returns_ok(#[case] name: &str) {
     ).unwrap();
 }
 
-#[rstest]
+#[apply(forbidden_groups)]
+fn name_is_forbidden_group_returns_ok(#[case] name: &str) {
+    name_is_valid_returns_ok(name);
+}
+
+#[apply(valid_groups_and_names)]
 #[case("")]
 #[case("somePath")]
 #[case("/some/path/")]

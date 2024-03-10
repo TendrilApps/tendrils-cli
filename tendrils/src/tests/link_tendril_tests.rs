@@ -1,41 +1,70 @@
-//! Contains tests specific to link actions
-//! See also [`crate::tests::common_action_tests`]
+//! Contains tests specific to link actions.
+//! See also [`crate::tests::common_action_tests`].
 
 use crate::{link_tendril, symlink};
 use crate::enums::{TendrilActionError, TendrilActionSuccess};
-use crate::resolved_tendril::TendrilMode;
+use crate::resolved_tendril::{ResolvedTendril, TendrilMode};
 use crate::test_utils::Setup;
 use rstest::rstest;
+use rstest_reuse::{self, apply};
 use std::fs::create_dir_all;
 
 /// See also [`crate::tests::common_action_tests::remote_is_unchanged`] for
 /// `dry_run` case
-#[rstest]
-#[case(true)]
-#[case(false)]
-fn remote_parent_and_local_exist_symlink_is_created(#[case] force: bool) {
-    let setup = Setup::new();
-    setup.make_local_file();
-    setup.make_local_nested_file();
+#[apply(crate::tests::resolved_tendril_tests::valid_groups_and_names)]
+fn remote_parent_and_local_exist_symlink_to_local_is_created(
+    #[case] name: &str,
+
+    #[values(true, false)]
+    force: bool,
+
+    #[values(true, false)]
+    as_dir: bool,
+) {
+    let mut setup = Setup::new();
+    setup.remote_file = setup.parent_dir.join(&name);
+    setup.remote_dir = setup.parent_dir.join(&name);
+    setup.remote_nested_file = setup.remote_dir.join("nested.txt");
+    setup.local_file = setup.group_dir.join(&name);
+    setup.local_dir = setup.group_dir.join(&name);
+    setup.local_nested_file = setup.local_dir.join("nested.txt");
+    if as_dir {
+        setup.make_local_nested_file();
+    }
+    else {
+        setup.make_local_file();
+    }
     assert!(!setup.remote_file.exists());
     assert!(!setup.remote_dir.exists());
 
-    let mut file_tendril = setup.resolved_file_tendril();
-    file_tendril.mode = TendrilMode::Link;
+    let tendril =  ResolvedTendril::new(
+        "SomeApp",
+        name,
+        setup.parent_dir.clone(),
+        TendrilMode::Link,
+    ).unwrap();
 
-    let mut dir_tendril = setup.resolved_dir_tendril();
-    dir_tendril.mode = TendrilMode::Link;
+    link_tendril(&setup.td_dir, &tendril, false, force).unwrap();
 
-    link_tendril(&setup.td_dir, &file_tendril, false, force).unwrap();
-    link_tendril(&setup.td_dir, &dir_tendril, false, force).unwrap();
-
-    assert!(setup.remote_file.is_symlink());
-    assert!(setup.remote_dir.is_symlink());
-    assert_eq!(setup.remote_file_contents(), "Local file contents");
-    assert_eq!(
-        setup.remote_nested_file_contents(),
-        "Local nested file contents"
-    );
+    if as_dir {
+        assert_eq!(
+            setup.remote_nested_file_contents(),
+            "Local nested file contents"
+        );
+        assert!(setup.remote_dir.is_symlink());
+        assert_eq!(
+            std::fs::read_link(setup.remote_dir).unwrap(),
+            setup.local_dir
+        );
+    }
+    else {
+        assert_eq!(setup.remote_file_contents(), "Local file contents");
+        assert!(setup.remote_file.is_symlink());
+        assert_eq!(
+            std::fs::read_link(setup.remote_file).unwrap(),
+            setup.local_file
+        );
+    }
 }
 
 #[rstest]
