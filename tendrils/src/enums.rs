@@ -38,15 +38,8 @@ pub enum TendrilActionError {
     /// Occurs when a tendril action does not match its
     /// mode (such as trying to pull a link tendril)
     ModeMismatch,
-    InvalidTendrilError(InvalidTendrilError),
     Recursion,
     TypeMismatch,
-}
-
-impl From<InvalidTendrilError> for TendrilActionError {
-    fn from(err: InvalidTendrilError) -> Self {
-        TendrilActionError::InvalidTendrilError(err)
-    }
 }
 
 impl From<std::io::Error> for TendrilActionError {
