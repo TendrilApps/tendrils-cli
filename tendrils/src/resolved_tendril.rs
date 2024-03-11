@@ -1,7 +1,7 @@
 use crate::enums::InvalidTendrilError;
 use std::path::PathBuf;
 
-/// A Tendril that is prepared for use with Tendril operations
+/// A Tendril that is prepared for use with Tendril actions
 /// and always exists in a valid state.
 /// Note: This does *not* guarantee that the path
 /// exists or is valid.
@@ -94,9 +94,20 @@ impl<'a> ResolvedTendril<'a> {
     }
 }
 
+/// Indicates the behaviour of this tendril, and determines whether it is
+/// a push/pull style, or a link style tendril.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum TendrilMode {
+    /// Overwrite any files/folders that are present in both the source and
+    /// destination, but keep anything in the destination folder that is not
+    /// in the source folder. This only applies to folder tendrils.
+    /// Tendrils with this mode are considered push/pull.
     DirMerge,
+    /// Completely overwrite the destination folder with the contents of
+    /// the source folder. This only applies to folder tendrils.
+    /// Tendrils with this mode are considered push/pull.
     DirOverwrite,
+    /// Create a symlink at the remote location that points to local
+    /// file/folder.
     Link,
 }
