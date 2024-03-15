@@ -8,7 +8,7 @@ use crate::{
     TendrilActionSuccess,
     TendrilMode,
 };
-use crate::resolved_tendril::ResolvedTendril;
+use crate::tendril::Tendril;
 use crate::test_utils::{
     get_disposable_dir,
     get_samples_dir,
@@ -28,7 +28,7 @@ use tempdir::TempDir;
 
 /// See also [`crate::tests::common_action_tests::local_is_unchanged`] for
 /// `dry_run` case
-#[apply(crate::tests::resolved_tendril_tests::valid_groups_and_names)]
+#[apply(crate::tests::tendril_tests::valid_groups_and_names)]
 fn remote_exists_copies_to_local(
     #[case] name: &str,
 
@@ -52,7 +52,7 @@ fn remote_exists_copies_to_local(
         setup.make_remote_file();
     }
 
-    let tendril = ResolvedTendril::new(
+    let tendril = Tendril::new(
         "SomeApp",
         name,
         setup.parent_dir.clone(),
@@ -85,8 +85,8 @@ fn remote_is_symlink_returns_type_mismatch_error_unless_forced_then_copies_symli
     symlink(&setup.remote_file, &setup.target_file, false, false).unwrap();
     symlink(&setup.remote_dir, &setup.target_dir, false, false).unwrap();
 
-    let file_tendril = setup.resolved_file_tendril();
-    let dir_tendril = setup.resolved_dir_tendril();
+    let file_tendril = setup.file_tendril();
+    let dir_tendril = setup.dir_tendril();
 
     let file_actual = pull_tendril(
         &setup.td_dir,
@@ -152,8 +152,8 @@ fn local_is_symlink_returns_type_mismatch_error_unless_forced(
     symlink(&setup.local_file, &setup.target_file, false, true).unwrap();
     symlink(&setup.local_dir, &setup.target_dir, false, true).unwrap();
 
-    let file_tendril = setup.resolved_file_tendril();
-    let dir_tendril = setup.resolved_dir_tendril();
+    let file_tendril = setup.file_tendril();
+    let dir_tendril = setup.dir_tendril();
 
     let file_actual = pull_tendril(
         &setup.td_dir,
@@ -214,7 +214,7 @@ fn remote_is_file_and_local_is_dir_returns_type_mismatch_error_unless_forced(
     setup.make_remote_file();
     create_dir_all(&setup.local_file).unwrap();
 
-    let mut tendril = setup.resolved_file_tendril();
+    let mut tendril = setup.file_tendril();
     tendril.mode = mode;
 
     let actual = pull_tendril(&setup.td_dir, &tendril, dry_run, force);
@@ -260,7 +260,7 @@ fn remote_is_dir_and_local_is_file_returns_type_mismatch_error_unless_forced(
     setup.make_group_dir();
     write(&setup.local_dir, "I'm a file!").unwrap();
 
-    let mut tendril = setup.resolved_dir_tendril();
+    let mut tendril = setup.dir_tendril();
     tendril.mode = mode;
 
     let actual = pull_tendril(&setup.td_dir, &tendril, dry_run, force);
@@ -304,7 +304,7 @@ fn file_tendril_overwrites_local_file_regardless_of_dir_merge_mode(
     setup.make_remote_file();
     setup.make_local_file();
 
-    let mut tendril = setup.resolved_file_tendril();
+    let mut tendril = setup.file_tendril();
     tendril.mode = mode;
 
     pull_tendril(&setup.td_dir, &tendril, false, force).unwrap();
@@ -331,7 +331,7 @@ fn dir_overwrite_w_dir_tendril_replaces_local_dir_recursively(
     write(&remote_new_2nested_file, "I'm not in the local dir").unwrap();
     write(&local_extra_2nested_file, "I'm not in the remote dir").unwrap();
 
-    let mut tendril = setup.resolved_dir_tendril();
+    let mut tendril = setup.dir_tendril();
     tendril.mode = TendrilMode::DirOverwrite;
 
     pull_tendril(&setup.td_dir, &tendril, false, force).unwrap();
@@ -362,7 +362,7 @@ fn dir_merge_w_dir_tendril_merges_w_local_dir_recursively(
     write(&remote_new_2nested_file, "I'm not in the local dir").unwrap();
     write(&local_extra_2nested_file, "I'm not in the remote dir").unwrap();
 
-    let mut tendril = setup.resolved_dir_tendril();
+    let mut tendril = setup.dir_tendril();
     tendril.mode = TendrilMode::DirMerge;
 
     pull_tendril(&setup.td_dir, &tendril, false, force).unwrap();
@@ -396,7 +396,7 @@ fn no_read_access_from_remote_file_returns_io_error_permission_denied_unless_dry
     
     print!("{}", given_parent_dir.to_string_lossy());
 
-    let tendril = ResolvedTendril::new(
+    let tendril = Tendril::new(
         "SomeApp",
         "no_read_access.txt",
         given_parent_dir,
@@ -441,7 +441,7 @@ fn no_read_access_from_remote_dir_returns_io_error_permission_denied_unless_dry_
 
     // Note: This test sample is not version controlled and must first
     // be created using the setup script - See dev/setup-tendrils.nu
-    let given = ResolvedTendril::new(
+    let given = Tendril::new(
         "SomeApp",
         "no_read_access_dir",
         given_parent_dir,
@@ -487,7 +487,7 @@ fn no_write_access_at_local_file_returns_io_error_permission_denied_unless_dry_r
     perms.set_readonly(true);
     set_permissions(&setup.local_file, perms).unwrap();
 
-    let tendril = setup.resolved_file_tendril();
+    let tendril = setup.file_tendril();
 
     let actual = pull_tendril(&setup.td_dir, &tendril, dry_run, force);
 
@@ -524,7 +524,7 @@ fn no_write_access_at_local_dir_returns_io_error_permission_denied_unless_dry_ru
     perms.set_readonly(true);
     set_permissions(&setup.local_dir, perms.clone()).unwrap();
 
-    let tendril = setup.resolved_dir_tendril();
+    let tendril = setup.dir_tendril();
 
     let actual = pull_tendril(&setup.td_dir, &tendril, dry_run, force);
 
@@ -559,7 +559,7 @@ fn td_dir_doesnt_exist_creates_dir_and_subdirs_first_except_if_dry_run(
     setup.make_remote_file();
     assert!(!setup.td_dir.exists());
 
-    let tendril = setup.resolved_file_tendril();
+    let tendril = setup.file_tendril();
 
     let actual = pull_tendril(&setup.td_dir, &tendril, dry_run, force);
 
@@ -585,7 +585,7 @@ fn remote_doesnt_exist_but_parent_does_returns_io_error_not_found(
     let setup = Setup::new();
     create_dir_all(&setup.parent_dir).unwrap();
 
-    let tendril = setup.resolved_file_tendril();
+    let tendril = setup.file_tendril();
     assert!(tendril.full_path().parent().unwrap().exists());
     assert!(!tendril.full_path().exists());
 

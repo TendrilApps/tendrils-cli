@@ -6,22 +6,22 @@ use std::path::PathBuf;
 /// Note: This does *not* guarantee that the path
 /// exists or is valid.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ResolvedTendril<'a> {
+pub struct Tendril<'a> {
     group: &'a str,
     name: &'a str,
     parent: PathBuf,
     pub mode: TendrilMode,
 }
 
-impl<'a> ResolvedTendril<'a> {
+impl<'a> Tendril<'a> {
     pub fn new(
         group: &'a str,
         name: &'a str,
         parent: PathBuf,
         mode: TendrilMode,
-    ) -> Result<ResolvedTendril<'a>, InvalidTendrilError> {
+    ) -> Result<Tendril<'a>, InvalidTendrilError> {
         if group.is_empty()
-            || ResolvedTendril::is_path(&group)
+            || Tendril::is_path(&group)
             || group.to_lowercase() == "tendrils.json"
             || group.to_lowercase() == ".git"
             || group.contains('\n')
@@ -30,7 +30,7 @@ impl<'a> ResolvedTendril<'a> {
         }
 
         if name.is_empty()
-            || ResolvedTendril::is_path(&name)
+            || Tendril::is_path(&name)
             || name.contains('\n')
             || name.contains('\r') {
             return Err(InvalidTendrilError::InvalidName);
@@ -41,7 +41,7 @@ impl<'a> ResolvedTendril<'a> {
             return Err(InvalidTendrilError::InvalidParent);
         }
 
-        Ok(ResolvedTendril {
+        Ok(Tendril {
             group,
             name,
             parent,

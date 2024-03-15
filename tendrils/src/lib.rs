@@ -10,8 +10,8 @@ pub use enums::{
     TendrilActionSuccess,
     TendrilMode,
 };
-mod resolved_tendril;
-use resolved_tendril::ResolvedTendril;
+mod tendril;
+use tendril::Tendril;
 use std::ffi::OsString;
 use std::fs::{create_dir_all, remove_dir_all, remove_file};
 use std::path::{Path, PathBuf};
@@ -216,7 +216,7 @@ fn is_recursive_tendril(
 
 fn link_tendril(
     td_dir: &Path,
-    tendril: &ResolvedTendril,
+    tendril: &Tendril,
     dry_run: bool,
     force: bool,
 ) -> Result<TendrilActionSuccess, TendrilActionError> {
@@ -250,7 +250,7 @@ fn parse_tendrils(json: &str) -> Result<Vec<TendrilBundle>, serde_json::Error> {
 
 fn pull_tendril(
     td_dir: &Path,
-    tendril: &ResolvedTendril,
+    tendril: &Tendril,
     dry_run: bool,
     force: bool,
 ) -> Result<TendrilActionSuccess, TendrilActionError> {
@@ -274,7 +274,7 @@ fn pull_tendril(
 
 fn push_tendril(
     td_dir: &Path,
-    tendril: &ResolvedTendril,
+    tendril: &Tendril,
     dry_run: bool,
     force: bool,
 ) -> Result<TendrilActionSuccess, TendrilActionError> {
@@ -392,7 +392,7 @@ fn parse_env_variables(input: &str) -> Vec<&str> {
 fn resolve_tendril_bundle(
     td_bundle: &TendrilBundle,
     first_only: bool
-) -> Vec<Result<ResolvedTendril, InvalidTendrilError>> {
+) -> Vec<Result<Tendril, InvalidTendrilError>> {
     let mode = match (&td_bundle.dir_merge, &td_bundle.link) {
         (true, false) => TendrilMode::DirMerge,
         (false, false) => TendrilMode::DirOverwrite,
@@ -412,7 +412,7 @@ fn resolve_tendril_bundle(
         for raw_path in raw_paths.iter() {
             let parent = resolve_path_variables(String::from(raw_path));
 
-            resolve_results.push(ResolvedTendril::new(
+            resolve_results.push(Tendril::new(
                 &td_bundle.group,
                 name,
                 parent,

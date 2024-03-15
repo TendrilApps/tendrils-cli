@@ -1,4 +1,4 @@
-use crate::resolved_tendril::ResolvedTendril;
+use crate::tendril::Tendril;
 use crate::{parse_tendrils, symlink, TendrilBundle, TendrilMode};
 use std::fs::{create_dir_all, read_to_string, write};
 use std::path::{Path, PathBuf};
@@ -112,15 +112,15 @@ impl Setup {
         }
     }
 
-    pub fn file_tendril(&self) -> TendrilBundle {
+    pub fn file_tendril_bundle(&self) -> TendrilBundle {
         TendrilBundle::new(
             "SomeApp",
             vec!["misc.txt"],
         )
     }
 
-    pub fn resolved_file_tendril(&self) -> ResolvedTendril {
-        ResolvedTendril::new(
+    pub fn file_tendril(&self) -> Tendril {
+        Tendril::new(
             "SomeApp",
             "misc.txt",
             self.parent_dir.clone(),
@@ -128,8 +128,8 @@ impl Setup {
         ).unwrap()
     }
 
-    pub fn resolved_dir_tendril(&self) -> ResolvedTendril {
-        ResolvedTendril::new(
+    pub fn dir_tendril(&self) -> Tendril {
+        Tendril::new(
             "SomeApp",
             "misc",
             self.parent_dir.clone(),

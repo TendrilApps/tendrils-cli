@@ -3,7 +3,7 @@
 
 use crate::{link_tendril, symlink};
 use crate::enums::{TendrilActionError, TendrilActionSuccess, TendrilMode};
-use crate::resolved_tendril::ResolvedTendril;
+use crate::tendril::Tendril;
 use crate::test_utils::{
     get_disposable_dir,
     get_samples_dir,
@@ -18,7 +18,7 @@ use tempdir::TempDir;
 
 /// See also [`crate::tests::common_action_tests::remote_is_unchanged`] for
 /// `dry_run` case
-#[apply(crate::tests::resolved_tendril_tests::valid_groups_and_names)]
+#[apply(crate::tests::tendril_tests::valid_groups_and_names)]
 fn remote_parent_and_local_exist_symlink_to_local_is_created(
     #[case] name: &str,
 
@@ -44,7 +44,7 @@ fn remote_parent_and_local_exist_symlink_to_local_is_created(
     assert!(!setup.remote_file.exists());
     assert!(!setup.remote_dir.exists());
 
-    let tendril =  ResolvedTendril::new(
+    let tendril =  Tendril::new(
         "SomeApp",
         name,
         setup.parent_dir.clone(),
@@ -113,10 +113,10 @@ fn remote_exists_and_is_not_symlink_returns_type_mismatch_error_unless_forced(
     setup.make_local_file();
     setup.make_local_nested_file();
 
-    let mut file_tendril = setup.resolved_file_tendril();
+    let mut file_tendril = setup.file_tendril();
     file_tendril.mode = TendrilMode::Link;
 
-    let mut dir_tendril = setup.resolved_dir_tendril();
+    let mut dir_tendril = setup.dir_tendril();
     dir_tendril.mode = TendrilMode::Link;
     
     let file_actual = link_tendril(
@@ -183,10 +183,10 @@ fn local_is_symlink_returns_type_mismatch_error_unless_forced(
     symlink(&setup.local_file, &setup.target_file, false, false).unwrap();
     symlink(&setup.local_dir, &setup.target_dir, false, false).unwrap();
 
-    let mut file_tendril = setup.resolved_file_tendril();
+    let mut file_tendril = setup.file_tendril();
     file_tendril.mode = TendrilMode::Link;
 
-    let mut dir_tendril = setup.resolved_dir_tendril();
+    let mut dir_tendril = setup.dir_tendril();
     dir_tendril.mode = TendrilMode::Link;
 
     let file_actual = link_tendril(
@@ -252,10 +252,10 @@ fn existing_symlinks_at_remote_are_overwritten(#[case] force: bool) {
     symlink(&setup.remote_file, &setup.target_file, false, true).unwrap();
     symlink(&setup.remote_dir, &setup.target_dir, false, true).unwrap();
 
-    let mut file_tendril = setup.resolved_file_tendril();
+    let mut file_tendril = setup.file_tendril();
     file_tendril.mode = TendrilMode::Link;
 
-    let mut dir_tendril = setup.resolved_dir_tendril();
+    let mut dir_tendril = setup.dir_tendril();
     dir_tendril.mode = TendrilMode::Link;
 
     link_tendril(&setup.td_dir, &file_tendril, false, force).unwrap();
@@ -293,7 +293,7 @@ fn no_read_access_from_local_file_returns_success(
     // be created using the setup script - See dev/setup-tendrils.nu
     let td_dir = get_samples_dir();
 
-    let tendril = ResolvedTendril::new(
+    let tendril = Tendril::new(
         "NoReadAccess",
         "no_read_access.txt",
         temp_parent_dir.path().to_path_buf(),
@@ -337,7 +337,7 @@ fn no_read_access_from_local_dir_returns_success(
     // be created using the setup script - See dev/setup-tendrils.nu
     let td_dir = get_samples_dir();
 
-    let tendril = ResolvedTendril::new(
+    let tendril = Tendril::new(
         "NoReadAccess",
         "no_read_access_dir",
         temp_parent_dir.path().to_path_buf(),
@@ -388,7 +388,7 @@ fn no_write_access_at_remote_symfile_returns_io_error_permission_denied_unless_d
     perms.set_readonly(true);
     set_permissions(&setup.remote_file, perms).unwrap();
 
-    let mut tendril = setup.resolved_file_tendril();
+    let mut tendril = setup.file_tendril();
     tendril.mode = TendrilMode::Link;
 
     let actual = link_tendril(&setup.td_dir, &tendril, dry_run, force);
@@ -419,7 +419,7 @@ fn non_link_mode_tendril_returns_mode_mismatch_error(
     force: bool,
 ) {
     let setup = Setup::new();
-    let mut tendril = setup.resolved_file_tendril();
+    let mut tendril = setup.file_tendril();
     tendril.mode = mode;
 
     let actual = link_tendril(&setup.td_dir, &tendril, dry_run, force);

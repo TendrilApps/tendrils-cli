@@ -1,4 +1,4 @@
-use crate::{resolve_tendril_bundle, ResolvedTendril, TendrilBundle, TendrilMode};
+use crate::{resolve_tendril_bundle, Tendril, TendrilBundle, TendrilMode};
 use crate::test_utils::set_parents;
 use rstest::rstest;
 use serial_test::serial;
@@ -69,13 +69,13 @@ fn first_only_true_resolves_first_parent_paths_for_all_names() {
         PathBuf::from("ThirdParent")]);
 
     let expected = vec![
-        Ok(ResolvedTendril::new(
+        Ok(Tendril::new(
             "SomeApp",
             "misc1.txt",
             PathBuf::from("FirstParent"),
             TendrilMode::DirOverwrite,
         ).unwrap()),
-        Ok(ResolvedTendril::new(
+        Ok(Tendril::new(
             "SomeApp",
             "misc2.txt",
             PathBuf::from("FirstParent"),
@@ -100,37 +100,37 @@ fn first_only_false_resolves_all_parent_paths_for_all_names() {
         PathBuf::from("ThirdParent")]);
 
     let expected = vec![
-        Ok(ResolvedTendril::new(
+        Ok(Tendril::new(
             "SomeApp",
             "misc1.txt",
             PathBuf::from("FirstParent"),
             TendrilMode::DirOverwrite,
         ).unwrap()),
-        Ok(ResolvedTendril::new(
+        Ok(Tendril::new(
             "SomeApp",
             "misc1.txt",
             PathBuf::from("SecondParent"),
             TendrilMode::DirOverwrite,
         ).unwrap()),
-        Ok(ResolvedTendril::new(
+        Ok(Tendril::new(
             "SomeApp",
             "misc1.txt",
             PathBuf::from("ThirdParent"),
             TendrilMode::DirOverwrite,
         ).unwrap()),
-        Ok(ResolvedTendril::new(
+        Ok(Tendril::new(
             "SomeApp",
             "misc2.txt",
             PathBuf::from("FirstParent"),
             TendrilMode::DirOverwrite,
         ).unwrap()),
-        Ok(ResolvedTendril::new(
+        Ok(Tendril::new(
             "SomeApp",
             "misc2.txt",
             PathBuf::from("SecondParent"),
             TendrilMode::DirOverwrite,
         ).unwrap()),
-        Ok(ResolvedTendril::new(
+        Ok(Tendril::new(
             "SomeApp",
             "misc2.txt",
             PathBuf::from("ThirdParent"),
@@ -152,19 +152,19 @@ fn duplicate_names_resolves_all() {
     set_parents(&mut given, &[PathBuf::from("Parent")]);
 
     let expected = vec![
-        Ok(ResolvedTendril::new(
+        Ok(Tendril::new(
             "SomeApp",
             "misc.txt",
             PathBuf::from("Parent"),
             TendrilMode::DirOverwrite,
         ).unwrap()),
-        Ok(ResolvedTendril::new(
+        Ok(Tendril::new(
             "SomeApp",
             "misc.txt",
             PathBuf::from("Parent"),
             TendrilMode::DirOverwrite,
         ).unwrap()),
-        Ok(ResolvedTendril::new(
+        Ok(Tendril::new(
             "SomeApp",
             "misc.txt",
             PathBuf::from("Parent"),
@@ -188,19 +188,19 @@ fn duplicate_parent_paths_resolves_all() {
         PathBuf::from("Parent"),
         PathBuf::from("Parent")]);
     let expected = vec![
-        Ok(ResolvedTendril::new(
+        Ok(Tendril::new(
             "SomeApp",
             "misc.txt",
             PathBuf::from("Parent"),
             TendrilMode::DirOverwrite,
         ).unwrap()),
-        Ok(ResolvedTendril::new(
+        Ok(Tendril::new(
             "SomeApp",
             "misc.txt",
             PathBuf::from("Parent"),
             TendrilMode::DirOverwrite,
         ).unwrap()),
-        Ok(ResolvedTendril::new(
+        Ok(Tendril::new(
             "SomeApp",
             "misc.txt",
             PathBuf::from("Parent"),
@@ -230,19 +230,19 @@ fn vars_and_leading_tilde_in_parent_path_are_resolved_in_all() {
         ]
     );
     let expected = vec![
-        Ok(ResolvedTendril::new(
+        Ok(Tendril::new(
             "SomeApp",
             "misc.txt",
             PathBuf::from("value1"),
             TendrilMode::DirOverwrite,
         ).unwrap()),
-        Ok(ResolvedTendril::new(
+        Ok(Tendril::new(
             "SomeApp",
             "misc.txt",
             PathBuf::from("MyHomevalue2"),
             TendrilMode::DirOverwrite,
         ).unwrap()),
-        Ok(ResolvedTendril::new(
+        Ok(Tendril::new(
             "SomeApp",
             "misc.txt",
             PathBuf::from("MyHome/value3"),
@@ -264,7 +264,7 @@ fn var_in_parent_path_doesnt_exist_returns_raw_path() {
         &[PathBuf::from("<I_do_not_exist>".to_string())],
     );
     let expected = vec![
-        Ok(ResolvedTendril::new(
+        Ok(Tendril::new(
             "SomeApp",
             "misc.txt",
             PathBuf::from("<I_do_not_exist>"),
@@ -291,7 +291,7 @@ fn var_in_group_or_name_exists_uses_raw_path(
     std::env::set_var("mut-testing", "value");
 
     let expected = vec![
-        Ok(ResolvedTendril::new(
+        Ok(Tendril::new(
             group,
             name,
             PathBuf::from("SomeParent"),
@@ -318,7 +318,7 @@ fn leading_tilde_in_parent_path_tilde_value_doesnt_exist_returns_raw_path() {
     std::env::remove_var("HOMEPATH");
 
     let expected = vec![
-        Ok(ResolvedTendril::new(
+        Ok(Tendril::new(
             "SomeApp",
             "misc.txt",
             PathBuf::from("~/SomeParentPath"),
@@ -345,7 +345,7 @@ fn leading_tilde_in_group_or_name_and_tilde_value_exists_uses_raw_path(
     std::env::set_var("HOME", "MyHome");
 
     let expected = vec![
-        Ok(ResolvedTendril::new(
+        Ok(Tendril::new(
             group,
             name,
             PathBuf::from("SomeParent"),
@@ -374,7 +374,7 @@ fn resolves_tendril_mode_properly(
     set_parents(&mut given, &[PathBuf::from("SomeParentPath")]);
 
     let expected = vec![
-        Ok(ResolvedTendril::new(
+        Ok(Tendril::new(
             "SomeApp",
             "misc.txt",
             PathBuf::from("SomeParentPath"),

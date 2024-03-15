@@ -677,7 +677,7 @@ fn parent_path_vars_are_resolved(
     force: bool,
 ) {
     let setup = Setup::new();
-    let mut tendril = setup.file_tendril();
+    let mut tendril = setup.file_tendril_bundle();
     tendril.link = mode == ActionMode::Link;
     set_parents(
         &mut tendril, &[PathBuf::from("~/I_do_not_exist/<var>/")]

@@ -1,4 +1,4 @@
-use crate::{ResolvedTendril, TendrilMode};
+use crate::{Tendril, TendrilMode};
 use crate::enums::InvalidTendrilError;
 use rstest::rstest;
 use rstest_reuse::{self, apply, template};
@@ -40,7 +40,7 @@ fn forbidden_groups(#[case] value: &str) {}
 
 #[apply(invalid_groups_and_names)]
 fn group_is_invalid_returns_invalid_group_error(#[case] group: &str) {
-    let actual = ResolvedTendril::new(
+    let actual = Tendril::new(
         group,
         "misc.txt",
         PathBuf::from("SomePath"),
@@ -57,7 +57,7 @@ fn group_is_forbidden_returns_invalid_group_error(#[case] group: &str) {
 
 #[apply(invalid_groups_and_names)]
 fn name_is_invalid_returns_invalid_name_error(#[case] name: &str) {
-    let actual = ResolvedTendril::new(
+    let actual = Tendril::new(
         "SomeApp",
         name,
         PathBuf::from("SomePath"),
@@ -71,7 +71,7 @@ fn name_is_invalid_returns_invalid_name_error(#[case] name: &str) {
 #[case("New\nLine")]
 #[case("Carriage\rReturn")]
 fn parent_is_invalid_returns_invalid_parent_error(#[case] parent: &str) {
-    let actual = ResolvedTendril::new(
+    let actual = Tendril::new(
         "SomeApp",
         "misc.txt",
         PathBuf::from(parent),
@@ -83,7 +83,7 @@ fn parent_is_invalid_returns_invalid_parent_error(#[case] parent: &str) {
 
 #[apply(valid_groups_and_names)]
 fn group_is_valid_returns_ok(#[case] group: &str) {
-    ResolvedTendril::new(
+    Tendril::new(
         group,
         "misc.txt",
         PathBuf::from("SomePath"),
@@ -93,7 +93,7 @@ fn group_is_valid_returns_ok(#[case] group: &str) {
 
 #[apply(valid_groups_and_names)]
 fn name_is_valid_returns_ok(#[case] name: &str) {
-    ResolvedTendril::new(
+    Tendril::new(
         "SomeApp",
         name,
         PathBuf::from("SomePath"),
@@ -114,7 +114,7 @@ fn name_is_forbidden_group_returns_ok(#[case] name: &str) {
 #[case("\\some\\path\\")]
 #[case(" \\ some \\ path \\ ")]
 fn parent_is_valid_returns_ok(#[case] group: &str) {
-    ResolvedTendril::new(
+    Tendril::new(
         "SomeApp",
         "misc.txt",
         PathBuf::from(group),
@@ -135,7 +135,7 @@ fn full_path_appends_name_to_parent(
     #[case] name: &str,
     #[case] expected: &str,
 ) {
-    let tendril = ResolvedTendril::new(
+    let tendril = Tendril::new(
         "SomeApp",
         name,
         parent,
@@ -157,7 +157,7 @@ fn full_path_appends_name_to_parent(
 fn full_path_w_trailing_sep_in_parent_keeps_all_given_seps_regardless_of_curr_platform(
     #[case] parent: &str,
 ) {
-    let tendril = ResolvedTendril::new(
+    let tendril = Tendril::new(
         "SomeApp",
         "misc.txt",
         PathBuf::from(parent),
@@ -179,7 +179,7 @@ fn full_path_wo_trailing_sep_in_parent_matches_other_seps_in_parent_for_join_reg
     #[case] parent: &str,
     #[case] expected: &str,
 ) {
-    let tendril = ResolvedTendril::new(
+    let tendril = Tendril::new(
         "SomeApp",
         "misc.txt",
         PathBuf::from(parent),
@@ -198,7 +198,7 @@ fn full_path_wo_trailing_sep_in_parent_matches_other_seps_in_parent_for_join_reg
 fn full_path_wo_trailing_sep_in_parent_or_mixed_seps_uses_curr_platform_sep_for_join(
     #[case] parent: &str,
 ) {
-    let tendril = ResolvedTendril::new(
+    let tendril = Tendril::new(
         "SomeApp",
         "misc.txt",
         PathBuf::from(parent),
@@ -220,7 +220,7 @@ fn full_path_wo_trailing_sep_in_parent_or_mixed_seps_uses_curr_platform_sep_for_
 #[case("misc.txt")]
 #[case("MiscDir")]
 fn full_path_empty_parent_does_not_prepend_dir_sep_to_name(#[case] name: &str) {
-    let actual = ResolvedTendril::new(
+    let actual = Tendril::new(
         "SomeApp",
         name,
         PathBuf::from(""),

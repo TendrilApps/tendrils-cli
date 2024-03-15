@@ -241,7 +241,7 @@ fn tendril_action_dry_run_does_not_modify(
         setup.make_remote_file();
     }
 
-    let mut tendril = setup.file_tendril();
+    let mut tendril = setup.file_tendril_bundle();
     tendril.link = mode == ActionMode::Link;
     set_parents(&mut tendril, &[setup.parent_dir.clone()]);
     setup.make_td_json_file(&[tendril]);
@@ -292,9 +292,9 @@ fn tendril_action_tendrils_are_filtered_by_mode(
 ) {
     let setup = Setup::new();
 
-    let mut t1 = setup.file_tendril();
-    let mut t2 = setup.file_tendril();
-    let mut t3 = setup.file_tendril();
+    let mut t1 = setup.file_tendril_bundle();
+    let mut t2 = setup.file_tendril_bundle();
+    let mut t3 = setup.file_tendril_bundle();
     t1.names = vec!["misc1.txt".to_string()];
     t2.names = vec!["misc2.txt".to_string()];
     t3.names = vec!["misc3.txt".to_string()];
@@ -355,9 +355,9 @@ fn tendril_action_tendrils_are_filtered_by_profile(
 ) {
     let setup = Setup::new();
 
-    let mut t1 = setup.file_tendril();
-    let mut t2 = setup.file_tendril();
-    let mut t3 = setup.file_tendril();
+    let mut t1 = setup.file_tendril_bundle();
+    let mut t2 = setup.file_tendril_bundle();
+    let mut t3 = setup.file_tendril_bundle();
     t1.names = vec!["misc1.txt".to_string()];
     t2.names = vec!["misc2.txt".to_string()];
     t3.names = vec!["misc3.txt".to_string()];
@@ -455,7 +455,7 @@ fn tendril_action_empty_filtered_tendrils_array_should_print_message(
     force: bool,
 ) {
     let setup = Setup::new();
-    let mut t1 = setup.file_tendril();
+    let mut t1 = setup.file_tendril_bundle();
     t1.names = vec!["misc1.txt".to_string()];
     t1.link = mode == ActionMode::Link;
     t1.profiles = vec!["ExcludeMe".to_string()];

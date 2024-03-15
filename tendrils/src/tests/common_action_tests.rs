@@ -12,7 +12,7 @@ use crate::{
     push_tendril,
 };
 use crate::enums::{TendrilActionError, TendrilActionSuccess, TendrilMode};
-use crate::resolved_tendril::ResolvedTendril;
+use crate::tendril::Tendril;
 use crate::test_utils::{
     get_disposable_dir,
     is_empty,
@@ -30,7 +30,7 @@ use tempdir::TempDir;
 #[case(pull_tendril)]
 #[case(push_tendril)]
 fn remote_is_given_td_dir_returns_recursion_error(
-    #[case] action: fn(&Path, &ResolvedTendril, bool, bool)
+    #[case] action: fn(&Path, &Tendril, bool, bool)
         -> Result<TendrilActionSuccess, TendrilActionError>,
 
     #[values(true, false)]
@@ -41,7 +41,7 @@ fn remote_is_given_td_dir_returns_recursion_error(
 ) {
     let setup = Setup::new();
 
-    let mut tendril = ResolvedTendril::new(
+    let mut tendril = Tendril::new(
         "SomeApp",
         "TendrilsDir",
         setup.td_dir.parent().unwrap().to_path_buf(),
@@ -61,7 +61,7 @@ fn remote_is_given_td_dir_returns_recursion_error(
 #[case(pull_tendril)]
 #[case(push_tendril)]
 fn remote_is_ancestor_to_given_td_dir_returns_recursion_error(
-    #[case] action: fn(&Path, &ResolvedTendril, bool, bool)
+    #[case] action: fn(&Path, &Tendril, bool, bool)
         -> Result<TendrilActionSuccess, TendrilActionError>,
 
     #[values(true, false)]
@@ -77,7 +77,7 @@ fn remote_is_ancestor_to_given_td_dir_returns_recursion_error(
         .join("Nested3")
         .join("TendrilsDir");
 
-    let mut tendril = ResolvedTendril::new(
+    let mut tendril = Tendril::new(
         "SomeApp",
         "Nested1",
         setup.parent_dir,
@@ -97,7 +97,7 @@ fn remote_is_ancestor_to_given_td_dir_returns_recursion_error(
 #[case(pull_tendril)]
 #[case(push_tendril)]
 fn remote_is_direct_child_of_given_td_dir_returns_recursion_error(
-    #[case] action: fn(&Path, &ResolvedTendril, bool, bool)
+    #[case] action: fn(&Path, &Tendril, bool, bool)
         -> Result<TendrilActionSuccess, TendrilActionError>,
 
     #[values(true, false)]
@@ -115,7 +115,7 @@ fn remote_is_direct_child_of_given_td_dir_returns_recursion_error(
     let remote_file = parent_dir.join("misc.txt");
     write(&remote_file, "Remote file contents").unwrap();
 
-    let mut tendril = ResolvedTendril::new(
+    let mut tendril = Tendril::new(
         "SomeApp",
         "misc.txt",
         parent_dir,
@@ -135,7 +135,7 @@ fn remote_is_direct_child_of_given_td_dir_returns_recursion_error(
 #[case(pull_tendril)]
 #[case(push_tendril)]
 fn remote_is_nested_child_of_given_td_dir_returns_recursion_error(
-    #[case] action: fn(&Path, &ResolvedTendril, bool, bool)
+    #[case] action: fn(&Path, &Tendril, bool, bool)
         -> Result<TendrilActionSuccess, TendrilActionError>,
 
     #[values(true, false)]
@@ -158,7 +158,7 @@ fn remote_is_nested_child_of_given_td_dir_returns_recursion_error(
     create_dir_all(&remote_file.parent().unwrap()).unwrap();
     write(&remote_file, "Remote file contents").unwrap();
 
-    let mut tendril = ResolvedTendril::new(
+    let mut tendril = Tendril::new(
         "SomeApp",
         "misc.txt",
         parent_dir,
@@ -178,7 +178,7 @@ fn remote_is_nested_child_of_given_td_dir_returns_recursion_error(
 #[case(pull_tendril)]
 #[case(push_tendril)]
 fn remote_is_sibling_to_given_td_dir_proceeds_normally(
-    #[case] action: fn(&Path, &ResolvedTendril, bool, bool)
+    #[case] action: fn(&Path, &Tendril, bool, bool)
         -> Result<TendrilActionSuccess, TendrilActionError>,
 
     #[values(true, false)]
@@ -194,7 +194,7 @@ fn remote_is_sibling_to_given_td_dir_proceeds_normally(
         setup.td_dir.parent().unwrap()
     );
 
-    let mut tendril = setup.resolved_dir_tendril();
+    let mut tendril = setup.dir_tendril();
     if action == link_tendril {
         tendril.mode = TendrilMode::Link;
     }
@@ -217,7 +217,7 @@ fn remote_is_sibling_to_given_td_dir_proceeds_normally(
 #[case(pull_tendril)]
 #[case(push_tendril)]
 fn remote_is_another_td_dir_proceeds_normally(
-    #[case] action: fn(&Path, &ResolvedTendril, bool, bool)
+    #[case] action: fn(&Path, &Tendril, bool, bool)
         -> Result<TendrilActionSuccess, TendrilActionError>,
 
     #[values(true, false)]
@@ -232,7 +232,7 @@ fn remote_is_another_td_dir_proceeds_normally(
     write(&setup.remote_dir.join("tendrils.json"), "").unwrap();
     assert!(is_tendrils_dir(&setup.remote_dir));
 
-    let mut tendril = setup.resolved_dir_tendril();
+    let mut tendril = setup.dir_tendril();
     if action == link_tendril {
         tendril.mode = TendrilMode::Link;
     }
@@ -268,7 +268,7 @@ fn var_in_any_field_exists_uses_raw_path_even_if_var_exists(
     #[case] name: &str,
 
     #[values(link_tendril, pull_tendril, push_tendril)]
-    action: fn(&Path, &ResolvedTendril, bool, bool)
+    action: fn(&Path, &Tendril, bool, bool)
         -> Result<TendrilActionSuccess, TendrilActionError>,
 
     #[values(true, false)]
@@ -288,7 +288,7 @@ fn var_in_any_field_exists_uses_raw_path_even_if_var_exists(
     setup.make_local_file();
     std::env::set_var("mut-testing", "NON-EXISTENT PATH");
 
-    let mut tendril = ResolvedTendril::new(
+    let mut tendril = Tendril::new(
         group,
         name,
         setup.parent_dir.clone(),
@@ -316,7 +316,7 @@ fn var_in_any_field_exists_uses_raw_path_even_if_var_exists(
 #[case(pull_tendril)]
 #[case(push_tendril)]
 fn other_tendrils_in_same_group_dir_are_unchanged(
-    #[case] action: fn(&Path, &ResolvedTendril, bool, bool)
+    #[case] action: fn(&Path, &Tendril, bool, bool)
         -> Result<TendrilActionSuccess, TendrilActionError>,
 
     #[values(true, false)]
@@ -335,8 +335,8 @@ fn other_tendrils_in_same_group_dir_are_unchanged(
     write(some_other_local_file, "Another tendril from the same group").unwrap();
     write(some_other_local_nested, "Another nested from the same group").unwrap();
 
-    let mut file_tendril = setup.resolved_file_tendril();
-    let mut dir_tendril = setup.resolved_dir_tendril();
+    let mut file_tendril = setup.file_tendril();
+    let mut dir_tendril = setup.dir_tendril();
     if action == link_tendril {
         file_tendril.mode = TendrilMode::Link;
         dir_tendril.mode = TendrilMode::Link;
@@ -369,7 +369,7 @@ fn other_tendrils_in_same_group_dir_are_unchanged(
 #[case(pull_tendril)]
 #[case(push_tendril)]
 fn remote_parent_doesnt_exist_returns_io_error_not_found(
-    #[case] action: fn(&Path, &ResolvedTendril, bool, bool)
+    #[case] action: fn(&Path, &Tendril, bool, bool)
         -> Result<TendrilActionSuccess, TendrilActionError>,
 
     #[values(true, false)]
@@ -383,8 +383,8 @@ fn remote_parent_doesnt_exist_returns_io_error_not_found(
     setup.make_local_file();
     setup.make_local_nested_file();
 
-    let mut file_tendril = setup.resolved_file_tendril();
-    let mut dir_tendril = setup.resolved_dir_tendril();
+    let mut file_tendril = setup.file_tendril();
+    let mut dir_tendril = setup.dir_tendril();
     if action == link_tendril {
         file_tendril.mode = TendrilMode::Link;
         dir_tendril.mode = TendrilMode::Link;
@@ -415,7 +415,7 @@ fn remote_parent_doesnt_exist_returns_io_error_not_found(
 #[case(link_tendril)]
 #[case(push_tendril)]
 fn local_doesnt_exist_returns_io_error_not_found(
-    #[case] action: fn(&Path, &ResolvedTendril, bool, bool)
+    #[case] action: fn(&Path, &Tendril, bool, bool)
         -> Result<TendrilActionSuccess, TendrilActionError>,
 
     #[values(true, false)]
@@ -429,8 +429,8 @@ fn local_doesnt_exist_returns_io_error_not_found(
     assert!(!setup.local_file.exists());
     assert!(!setup.local_dir.exists());
 
-    let mut file_tendril = setup.resolved_file_tendril();
-    let mut dir_tendril = setup.resolved_dir_tendril();
+    let mut file_tendril = setup.file_tendril();
+    let mut dir_tendril = setup.dir_tendril();
     if action == link_tendril {
         file_tendril.mode = TendrilMode::Link;
         dir_tendril.mode = TendrilMode::Link;
@@ -450,7 +450,7 @@ fn local_doesnt_exist_returns_io_error_not_found(
 #[case(pull_tendril)]
 #[case(push_tendril)]
 fn link_mode_tendril_returns_mode_mismatch_error(
-    #[case] action: fn(&Path, &ResolvedTendril, bool, bool)
+    #[case] action: fn(&Path, &Tendril, bool, bool)
         -> Result<TendrilActionSuccess, TendrilActionError>,
 
     #[values(true, false)]
@@ -463,7 +463,7 @@ fn link_mode_tendril_returns_mode_mismatch_error(
     setup.make_remote_file();
     setup.make_local_file();
 
-    let mut tendril = setup.resolved_file_tendril();
+    let mut tendril = setup.file_tendril();
     tendril.mode = TendrilMode::Link;
 
     let actual = action(&setup.td_dir, &tendril, dry_run, force);
@@ -489,7 +489,7 @@ fn cases_that_do_not_modify_local(
 
 #[apply(cases_that_do_not_modify_local)]
 pub(crate) fn local_is_unchanged(
-    #[case] action: fn(&Path, &ResolvedTendril, bool, bool)
+    #[case] action: fn(&Path, &Tendril, bool, bool)
         -> Result<TendrilActionSuccess, TendrilActionError>,
 
     #[case] dry_run: bool,
@@ -501,8 +501,8 @@ pub(crate) fn local_is_unchanged(
     setup.make_local_file();
     setup.make_local_nested_file();
 
-    let mut file_tendril = setup.resolved_file_tendril();
-    let mut dir_tendril = setup.resolved_dir_tendril();
+    let mut file_tendril = setup.file_tendril();
+    let mut dir_tendril = setup.dir_tendril();
     if action == link_tendril {
         file_tendril.mode = TendrilMode::Link;
         dir_tendril.mode = TendrilMode::Link;
@@ -529,7 +529,7 @@ pub(crate) fn local_is_unchanged(
 
 #[apply(cases_that_do_not_modify_local)]
 pub(crate) fn local_symlink_is_unchanged(
-    #[case] action: fn(&Path, &ResolvedTendril, bool, bool)
+    #[case] action: fn(&Path, &Tendril, bool, bool)
         -> Result<TendrilActionSuccess, TendrilActionError>,
 
     #[case] dry_run: bool,
@@ -546,8 +546,8 @@ pub(crate) fn local_symlink_is_unchanged(
     symlink_expose(&setup.local_file, &setup.target_file, false, true).unwrap();
     symlink_expose(&setup.local_dir, &setup.target_dir, false, true).unwrap();
 
-    let mut file_tendril = setup.resolved_file_tendril();
-    let mut dir_tendril = setup.resolved_dir_tendril();
+    let mut file_tendril = setup.file_tendril();
+    let mut dir_tendril = setup.dir_tendril();
     if action == link_tendril {
         file_tendril.mode = TendrilMode::Link;
         dir_tendril.mode = TendrilMode::Link;
@@ -589,7 +589,7 @@ fn cases_that_do_not_modify_remote(
 
 #[apply(cases_that_do_not_modify_remote)]
 pub(crate) fn remote_is_unchanged(
-    #[case] action: fn(&Path, &ResolvedTendril, bool, bool)
+    #[case] action: fn(&Path, &Tendril, bool, bool)
         -> Result<TendrilActionSuccess, TendrilActionError>,
 
     #[case] dry_run: bool,
@@ -603,8 +603,8 @@ pub(crate) fn remote_is_unchanged(
     setup.make_remote_file();
     setup.make_remote_nested_file();
 
-    let mut file_tendril = setup.resolved_file_tendril();
-    let mut dir_tendril = setup.resolved_dir_tendril();
+    let mut file_tendril = setup.file_tendril();
+    let mut dir_tendril = setup.dir_tendril();
     if action == link_tendril {
         file_tendril.mode = TendrilMode::Link;
         dir_tendril.mode = TendrilMode::Link;
@@ -631,7 +631,7 @@ pub(crate) fn remote_is_unchanged(
 
 #[apply(cases_that_do_not_modify_remote)]
 pub(crate) fn remote_symlink_is_unchanged(
-    #[case] action: fn(&Path, &ResolvedTendril, bool, bool)
+    #[case] action: fn(&Path, &Tendril, bool, bool)
         -> Result<TendrilActionSuccess, TendrilActionError>,
 
     #[case] dry_run: bool,
@@ -649,8 +649,8 @@ pub(crate) fn remote_symlink_is_unchanged(
     symlink_expose(&setup.remote_dir, &setup.target_dir, false, true)
         .unwrap();
 
-    let mut file_tendril = setup.resolved_file_tendril();
-    let mut dir_tendril = setup.resolved_dir_tendril();
+    let mut file_tendril = setup.file_tendril();
+    let mut dir_tendril = setup.dir_tendril();
     if action == link_tendril {
         file_tendril.mode = TendrilMode::Link;
         dir_tendril.mode = TendrilMode::Link;
