@@ -1,3 +1,6 @@
+//! Provides tools for managing tendrils.
+//! See also the [`td` CLI](..//td/index.html)
+
 mod enums;
 pub use enums::{
     ActionMode,
