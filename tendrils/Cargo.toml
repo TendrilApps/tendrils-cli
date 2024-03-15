@@ -1,0 +1,24 @@
+[package]
+name = "tendrils"
+version = "0.0.1"
+edition = "2018"
+
+[features]
+# Exposes members that that are only meant for usage in tests within
+# this workspace and should not be depended on otherwise
+_test_utils = ["dep:tempdir"]
+
+[dependencies]
+fs_extra = "1.3.0"
+serde = { version = "1.0.193", features = ["derive"] }
+serde_json = "1.0.108"
+tempdir = { version = "0.3.7", optional = true }
+
+[dev-dependencies]
+rstest = "0.18.2"
+rstest_reuse = "0.6.0"
+serial_test = "2.0.0"
+tempdir = "0.3.7"
+
+[lints]
+workspace = true

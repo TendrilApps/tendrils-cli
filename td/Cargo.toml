@@ -1,0 +1,22 @@
+[package]
+name = "td"
+version = "0.0.1"
+edition = "2018"
+
+[dependencies]
+clap = { version = "4.4.11", features = ["derive"] }
+inline_colorization = "0.1.6"
+tabled = { version = "0.15.0", features = ["ansi"] }
+tendrils = { path = "../tendrils" } # See also the usage in dev-dependencies
+
+[dev-dependencies]
+rstest = "0.18.2"
+serial_test = "2.0.0"
+tempdir = "0.3.7"
+# Despite being a dev-dependency, in order to prevent "_test_utils"
+# from being included in non-testing builds the resolver "2" must
+# be used (see workspace Cargo.toml).
+tendrils = { path = "../tendrils", features = ["_test_utils"] }
+
+[lints]
+workspace = true

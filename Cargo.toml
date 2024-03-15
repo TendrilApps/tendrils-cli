@@ -1,0 +1,15 @@
+[workspace]
+members = [
+    "td",
+    "tendrils",
+]
+resolver = "2" # Required to use 2 vs 1 to prevent _test_utils
+               # being included even outside of testing
+
+[workspace.lints.rustdoc]
+broken-intra-doc-links = "forbid"
+private-intra-doc-links = "forbid"
+
+[profile.release]
+strip = true
+lto = true

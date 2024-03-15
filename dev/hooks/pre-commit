@@ -1,0 +1,9 @@
+#!/bin/sh
+
+# Run the test suite
+nu ./dev/generic/test-staged.nu
+eCode=$?
+if [ $eCode != 0 ]
+then
+    exit $eCode
+fi
