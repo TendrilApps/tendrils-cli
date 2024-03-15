@@ -1,3 +1,6 @@
+//! Provides tools for managing tendrils.
+//! See also the [`td` CLI](..//td/index.html)
+
 mod enums;
 pub use enums::{
     ActionMode,
@@ -112,6 +115,12 @@ fn copy_fso(
     }
 }
 
+/// Returns `true` if the type (file vs folder) of the source and
+/// destination are mismatched.
+/// - Returns `false` if the source or destination do not exist.
+/// - Returns `true` if either the source or destination are symlinks.
+///
+/// Note: This is not useful in link mode.
 fn fso_types_mismatch(source: &Path, dest: &Path) -> bool {
     (source.is_dir() && dest.is_file())
         || (source.is_file() && dest.is_dir())
@@ -119,6 +128,56 @@ fn fso_types_mismatch(source: &Path, dest: &Path) -> bool {
         || dest.is_symlink()
 }
 
+/// Returns only link style tendrils if the action mode is `Link`, otherwise
+/// it returns only the push/pull style tendrils.
+///
+/// # Arguments
+/// - `tendrils` - List of tendrils to filter through.
+/// - `mode` - The action to be filtered for (link, push, pull, etc.)
+pub fn filter_by_mode(tendrils: Vec<Tendril>, mode: ActionMode) -> Vec<Tendril> {
+    tendrils.into_iter()
+        .filter(|t| t.link == (mode == ActionMode::Link))
+        .collect()
+}
+
+/// Returns only tendrils that match any of the given profiles, and those
+/// tendrils that belong to all profiles (i.e. those that do not have any
+/// profiles defined).
+///
+/// # Arguments
+/// - `tendrils` - List of tendrils to filter through.
+/// - `profiles` - The profiles to be filtered for.
+pub fn filter_by_profiles(tendrils: Vec<Tendril>, profiles: &[String]) -> Vec<Tendril> {
+    if profiles.is_empty() {
+        return tendrils;
+    }
+
+    tendrils.into_iter().filter(|t| -> bool {
+            t.profiles.is_empty()
+            || profiles.iter().any(|p| t.profiles.contains(p))
+        }).collect()
+}
+
+/// Parses the `tendrils.json` file in the given *Tendrils* folder
+/// and returns the tendrils in the order they are defined in the file.
+///
+/// # Arguments
+/// - `td_dir` - Path to the *Tendrils* folder.
+pub fn get_tendrils(
+    td_dir: &Path,
+) -> Result<Vec<Tendril>, GetTendrilsError> {
+    let tendrils_file_path = Path::new(&td_dir).join("tendrils.json");
+    let tendrils_file_contents = std::fs::read_to_string(tendrils_file_path)?;
+    let tendrils = parse_tendrils(&tendrils_file_contents)?;
+    Ok(tendrils)
+}
+
+/// Looks for a *Tendrils* folder (as defined by [`is_tendrils_dir`])
+/// - Begins looking at the `starting_path`. If it is a *Tendrils*
+/// folder, the given path is returned.
+/// - If it is not a *Tendrils* folder, the environment variable `TENDRILS_DIR`
+/// is used. If this variable does not exist or does not point to a
+/// valid *Tendrils* folder, then `None` is returned.
 // TODO: Recursively look through all parent folders before
 // checking environment variable
 pub fn get_tendrils_dir(starting_path: &Path) -> Option<PathBuf> {
@@ -141,34 +200,9 @@ pub fn get_tendrils_dir(starting_path: &Path) -> Option<PathBuf> {
     }
 }
 
-/// Returns only link style tendrils if the action mode is link, otherwise
-/// it returns only the push/pull style tendrils.
-pub fn filter_by_mode(tendrils: Vec<Tendril>, mode: ActionMode) -> Vec<Tendril> {
-    tendrils.into_iter()
-        .filter(|t| t.link == (mode == ActionMode::Link))
-        .collect()
-}
-
-pub fn filter_by_profiles(tendrils: Vec<Tendril>, profiles: &[String]) -> Vec<Tendril> {
-    if profiles.is_empty() {
-        return tendrils;
-    }
-
-    tendrils.into_iter().filter(|t| -> bool {
-            t.profiles.is_empty()
-            || profiles.iter().any(|p| t.profiles.contains(p))
-        }).collect()
-}
-
-pub fn get_tendrils(
-    td_dir: &Path,
-) -> Result<Vec<Tendril>, GetTendrilsError> {
-    let tendrils_file_path = Path::new(&td_dir).join("tendrils.json");
-    let tendrils_file_contents = std::fs::read_to_string(tendrils_file_path)?;
-    let tendrils = parse_tendrils(&tendrils_file_contents)?;
-    Ok(tendrils)
-}
-
+/// Returns `true` if the given folder is a *Tendrils* folder, otherwise `false`.
+/// - A *Tendrils* folder is defined by having a `tendrils.json` file in its top level.
+/// - Note: This does *not* check that the `tendrils.json` contents are valid.
 pub fn is_tendrils_dir(dir: &Path) -> bool {
     dir.join("tendrils.json").is_file()
 }
@@ -461,6 +495,42 @@ fn symlink_win(
     }
 }
 
+/// Performs a tendril action on the list of given tendrils and returns
+/// reports for each action.
+/// 
+/// # Arguments
+/// - `mode` - The action mode to be performed.
+/// - `td_dir` - The *Tendrils* folder to perform the actions on.
+/// - `tendrils` - The list of tendrils to perform the actions on.
+/// - `dry_run`
+///     - `true` will perform the internal checks for the action but does not
+/// modify anything on the file system. If the action is expected to fail, the
+/// expected [`TendrilActionError`] is returned. If it's expected to succeed,
+/// it returns [`TendrilActionSuccess::Skipped`]. Note: It is still possible
+/// for a successful dry run to fail in an actual run.
+///     - `false` will perform the action normally (modifying the file system),
+/// and will return [`TendrilActionSuccess::Ok`] if successful.
+/// - `force`
+///     - `true` will ignore any type mismatches and will force the operation.
+///     - `false` will simply return [`TendrilActionError::TypeMismatch`] if there
+/// is a type mismatch.
+/// 
+/// # Returns
+/// A [`TendrilActionReport`] for each tendril action. A given [`Tendril`] may
+/// result in many actions if it includes multiple names and/or parents.
+/// The order of the actions & reports maintains the order of the given
+/// tendrils, but each one is expanded into individual tendrils firstly by
+/// each of its `names`, then by each of its `parents`. For example, for a
+/// list of two tendrils [t1, t2], each having multiple names [n1, n2] and
+/// multiple parents [p1, p2], the list will be expanded to:
+/// - t1_n1_p1
+/// - t1_n1_p2
+/// - t1_n2_p1
+/// - t1_n2_p2
+/// - t2_n1_p1
+/// - t2_n1_p2
+/// - t2_n2_p1
+/// - t2_n2_p2
 pub fn tendril_action<'a>(
     mode: ActionMode,
     td_dir: &Path,

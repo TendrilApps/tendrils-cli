@@ -18,13 +18,14 @@ pub struct TendrilCliArgs {
     pub tendrils_command: TendrilsSubcommands,
 }
 
+/// A CLI tool for managing tendrils
 #[derive(Subcommand, Debug)]
 pub enum TendrilsSubcommands {
     /// Gets the Tendrils folder path environment variable
     /// if it is set
     Path,
 
-    /// Copies tendrils from their various locations on the machine
+    /// Copies tendrils from their various locations on the computer
     /// to the Tendrils folder
     Pull {
         /// Prints what the command would do without modifying
@@ -46,7 +47,7 @@ pub enum TendrilsSubcommands {
     },
 
     /// Copies tendrils from the Tendrils folder to their various
-    /// locations on the machine
+    /// locations on the computer
     Push {
         /// Prints what the command would do without modifying
         /// the file system
@@ -66,7 +67,7 @@ pub enum TendrilsSubcommands {
         profiles: Vec<String>,
     },
 
-    /// Creates symlinks at the various locations on the machine
+    /// Creates symlinks at the various locations on the computer
     /// to the tendrils in the Tendrils folder
     Link {
         /// Prints what the command would do without modifying
