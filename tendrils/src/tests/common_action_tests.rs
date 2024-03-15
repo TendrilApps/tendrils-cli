@@ -11,8 +11,8 @@ use crate::{
     pull_tendril,
     push_tendril,
 };
-use crate::enums::{TendrilActionError, TendrilActionSuccess};
-use crate::resolved_tendril::{ResolvedTendril, TendrilMode};
+use crate::enums::{TendrilActionError, TendrilActionSuccess, TendrilMode};
+use crate::resolved_tendril::ResolvedTendril;
 use crate::test_utils::{
     get_disposable_dir,
     is_empty,

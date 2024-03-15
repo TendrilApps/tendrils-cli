@@ -1,9 +1,15 @@
 //! Contains tests specific to push actions.
 //! See also [`crate::tests::common_action_tests`].
 
-use crate::{push_tendril, symlink, TendrilActionError, TendrilActionSuccess};
+use crate::{
+    push_tendril,
+    symlink,
+    TendrilActionError,
+    TendrilActionSuccess,
+    TendrilMode
+};
 use crate::test_utils::{get_disposable_dir, get_samples_dir, is_empty, Setup};
-use crate::resolved_tendril::{ResolvedTendril, TendrilMode};
+use crate::resolved_tendril::ResolvedTendril;
 use rstest::rstest;
 use rstest_reuse::{self, apply};
 use std::fs::{create_dir_all, metadata, read_to_string, set_permissions, write};

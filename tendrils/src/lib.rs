@@ -8,12 +8,10 @@ pub use enums::{
     InvalidTendrilError,
     TendrilActionError,
     TendrilActionSuccess,
-};
-mod resolved_tendril;
-pub use resolved_tendril::{
-    ResolvedTendril,
     TendrilMode,
 };
+mod resolved_tendril;
+use resolved_tendril::ResolvedTendril;
 use std::ffi::OsString;
 use std::fs::{create_dir_all, remove_dir_all, remove_file};
 use std::path::{Path, PathBuf};

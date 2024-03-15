@@ -74,6 +74,24 @@ impl From<std::io::Error> for TendrilActionError {
     }
 }
 
+/// Indicates the behaviour of this tendril, and determines whether it is
+/// a push/pull style, or a link style tendril.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum TendrilMode {
+    /// Overwrite any files/folders that are present in both the source and
+    /// destination, but keep anything in the destination folder that is not
+    /// in the source folder. This only applies to folder tendrils.
+    /// Tendrils with this mode are considered push/pull.
+    DirMerge,
+    /// Completely overwrite the destination folder with the contents of
+    /// the source folder. This only applies to folder tendrils.
+    /// Tendrils with this mode are considered push/pull.
+    DirOverwrite,
+    /// Create a symlink at the remote location that points to local
+    /// file/folder.
+    Link,
+}
+
 /// Indicates an invalid tendril field.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum InvalidTendrilError {

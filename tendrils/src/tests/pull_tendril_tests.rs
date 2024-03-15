@@ -6,8 +6,9 @@ use crate::{
     symlink,
     TendrilActionError,
     TendrilActionSuccess,
+    TendrilMode,
 };
-use crate::resolved_tendril::{ResolvedTendril, TendrilMode};
+use crate::resolved_tendril::ResolvedTendril;
 use crate::test_utils::{
     get_disposable_dir,
     get_samples_dir,
