@@ -4,12 +4,12 @@ use serde::Deserialize;
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub enum ActionMode {
     /// Copy tendrils from the *Tendrils* folder to their various locations
-    /// on the machine.
+    /// on the computer.
     Push,
-    /// Copy tendrils from their various locations on the machine to the
+    /// Copy tendrils from their various locations on the computer to the
     /// *Tendrils* folder.
     Pull,
-    /// Create symlinks at the various locations on the machine to the
+    /// Create symlinks at the various locations on the computer to the
     /// tendrils in the *Tendrils* folder.
     Link,
 }
