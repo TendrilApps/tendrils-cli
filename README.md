@@ -1,5 +1,5 @@
 # General
-- *Tendrils* provides a centralized location for working with, synchronizing, and version controlling miscellaneous files & folders that are dispersed across the computer
+- *Tendrils* provides a centralized location for working with, synchronizing, and version controlling files & folders dispersed across the computer
     - Each file/folder is defined by a tendril in the [`tendrils.json`](#tendrilsjson) file
     - They are all stored in a common [Tendrils folder](#tendrils-folder)
     - `td` is the CLI tool to manage these tendrils
