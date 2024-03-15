@@ -81,7 +81,8 @@ cargo build --release # For a 'release' build
 - The name of the group/app that the tendril belongs to
 - Items in the [Tendrils folder](#tendrils-folder) will be placed into subfolders with this `group` name 
 - Group cannot be an empty string, cannot contain line breaks, and cannot be a path (i.e cannot contain `/` or `\`)
-- Some specific values are invalid to prevent interfering with other common folders that may also be in the [Tendrils folder](#tendrils-folder). These invalid values are not case sensitive:
+- Some specific values are invalid to prevent interfering with other common files/folders that may also be in the [Tendrils folder](#tendrils-folder). These invalid values are not case sensitive:
+    - `tendrils.json`
     - `.git`
 
 ### `names`

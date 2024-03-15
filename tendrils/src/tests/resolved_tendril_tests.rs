@@ -33,6 +33,9 @@ fn invalid_groups_and_names(#[case] value: &str) {}
 #[case(".git")]
 #[case(".Git")]
 #[case(".GIT")]
+#[case("tendrils.json")]
+#[case("Tendrils.json")]
+#[case("TENDRILS.JSON")]
 fn forbidden_groups(#[case] value: &str) {}
 
 #[apply(invalid_groups_and_names)]

@@ -22,6 +22,7 @@ impl<'a> ResolvedTendril<'a> {
     ) -> Result<ResolvedTendril<'a>, InvalidTendrilError> {
         if group.is_empty()
             || ResolvedTendril::is_path(&group)
+            || group.to_lowercase() == "tendrils.json"
             || group.to_lowercase() == ".git"
             || group.contains('\n')
             || group.contains('\r') {
