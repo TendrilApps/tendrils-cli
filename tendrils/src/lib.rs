@@ -15,8 +15,8 @@ use resolved_tendril::ResolvedTendril;
 use std::ffi::OsString;
 use std::fs::{create_dir_all, remove_dir_all, remove_file};
 use std::path::{Path, PathBuf};
-mod tendril;
-pub use tendril::Tendril;
+mod tendril_bundle;
+pub use tendril_bundle::TendrilBundle;
 mod tendril_action_report;
 pub use tendril_action_report::TendrilActionReport;
 
@@ -132,7 +132,7 @@ fn fso_types_mismatch(source: &Path, dest: &Path) -> bool {
 /// # Arguments
 /// - `tendrils` - List of tendrils to filter through.
 /// - `mode` - The action to be filtered for (link, push, pull, etc.)
-pub fn filter_by_mode(tendrils: Vec<Tendril>, mode: ActionMode) -> Vec<Tendril> {
+pub fn filter_by_mode(tendrils: Vec<TendrilBundle>, mode: ActionMode) -> Vec<TendrilBundle> {
     tendrils.into_iter()
         .filter(|t| t.link == (mode == ActionMode::Link))
         .collect()
@@ -145,7 +145,7 @@ pub fn filter_by_mode(tendrils: Vec<Tendril>, mode: ActionMode) -> Vec<Tendril> 
 /// # Arguments
 /// - `tendrils` - List of tendrils to filter through.
 /// - `profiles` - The profiles to be filtered for.
-pub fn filter_by_profiles(tendrils: Vec<Tendril>, profiles: &[String]) -> Vec<Tendril> {
+pub fn filter_by_profiles(tendrils: Vec<TendrilBundle>, profiles: &[String]) -> Vec<TendrilBundle> {
     if profiles.is_empty() {
         return tendrils;
     }
@@ -157,13 +157,13 @@ pub fn filter_by_profiles(tendrils: Vec<Tendril>, profiles: &[String]) -> Vec<Te
 }
 
 /// Parses the `tendrils.json` file in the given *Tendrils* folder
-/// and returns the tendrils in the order they are defined in the file.
+/// and returns the tendril bundles in the order they are defined in the file.
 ///
 /// # Arguments
 /// - `td_dir` - Path to the *Tendrils* folder.
 pub fn get_tendrils(
     td_dir: &Path,
-) -> Result<Vec<Tendril>, GetTendrilsError> {
+) -> Result<Vec<TendrilBundle>, GetTendrilsError> {
     let tendrils_file_path = Path::new(&td_dir).join("tendrils.json");
     let tendrils_file_contents = std::fs::read_to_string(tendrils_file_path)?;
     let tendrils = parse_tendrils(&tendrils_file_contents)?;
@@ -243,9 +243,9 @@ fn link_tendril(
 }
 
 /// # Arguments
-/// - `json` - JSON array of Tendrils
-fn parse_tendrils(json: &str) -> Result<Vec<Tendril>, serde_json::Error> {
-    serde_json::from_str::<Vec<Tendril>>(json)
+/// - `json` - JSON array of tendril bundles
+fn parse_tendrils(json: &str) -> Result<Vec<TendrilBundle>, serde_json::Error> {
+    serde_json::from_str::<Vec<TendrilBundle>>(json)
 }
 
 fn pull_tendril(
@@ -389,31 +389,31 @@ fn parse_env_variables(input: &str) -> Vec<&str> {
     vars
 }
 
-fn resolve_tendril(
-    tendril: &Tendril,
+fn resolve_tendril_bundle(
+    td_bundle: &TendrilBundle,
     first_only: bool
 ) -> Vec<Result<ResolvedTendril, InvalidTendrilError>> {
-    let mode = match (&tendril.dir_merge, &tendril.link) {
+    let mode = match (&td_bundle.dir_merge, &td_bundle.link) {
         (true, false) => TendrilMode::DirMerge,
         (false, false) => TendrilMode::DirOverwrite,
         (_, true) => TendrilMode::Link,
     };
 
-    let raw_paths = match (first_only, tendril.parents.is_empty()) {
-        (true, false) => vec![tendril.parents[0].clone()],
-        (false, false) => tendril.parents.clone(),
+    let raw_paths = match (first_only, td_bundle.parents.is_empty()) {
+        (true, false) => vec![td_bundle.parents[0].clone()],
+        (false, false) => td_bundle.parents.clone(),
         (_, true) => vec![],
     };
 
     let mut resolve_results = 
-        Vec::with_capacity(tendril.names.len() * tendril.parents.len());
+        Vec::with_capacity(td_bundle.names.len() * td_bundle.parents.len());
 
-    for name in tendril.names.iter() {
+    for name in td_bundle.names.iter() {
         for raw_path in raw_paths.iter() {
             let parent = resolve_path_variables(String::from(raw_path));
 
             resolve_results.push(ResolvedTendril::new(
-                &tendril.group,
+                &td_bundle.group,
                 name,
                 parent,
                 mode,
@@ -541,7 +541,7 @@ fn symlink_win(
 /// # Arguments
 /// - `mode` - The action mode to be performed.
 /// - `td_dir` - The *Tendrils* folder to perform the actions on.
-/// - `tendrils` - The list of tendrils to perform the actions on.
+/// - `td_bundles` - The list of tendril bundles to perform the actions on.
 /// - `dry_run`
 ///     - `true` will perform the internal checks for the action but does not
 /// modify anything on the file system. If the action is expected to fail, the
@@ -556,7 +556,7 @@ fn symlink_win(
 /// is a type mismatch.
 /// 
 /// # Returns
-/// A [`TendrilActionReport`] for each tendril action. A given [`Tendril`] may
+/// A [`TendrilActionReport`] for each tendril action. A given [`TendrilBundle`] may
 /// result in many actions if it includes multiple names and/or parents.
 /// The order of the actions & reports maintains the order of the given
 /// tendrils, but each one is expanded into individual tendrils firstly by
@@ -574,7 +574,7 @@ fn symlink_win(
 pub fn tendril_action<'a>(
     mode: ActionMode,
     td_dir: &Path,
-    tendrils: &'a [Tendril],
+    td_bundles: &'a [TendrilBundle],
     dry_run: bool,
     force: bool,
 ) -> Vec<TendrilActionReport<'a>> {
@@ -582,8 +582,8 @@ pub fn tendril_action<'a>(
     let first_only = mode == ActionMode::Pull;
     let can_symlink = mode == ActionMode::Link && can_symlink();
 
-    for tendril in tendrils.iter() {
-        let resolved_tendrils = resolve_tendril(&tendril, first_only);
+    for tendril in td_bundles.iter() {
+        let resolved_tendrils = resolve_tendril_bundle(&tendril, first_only);
 
         // The number of parents that were considered when
         // resolving the tendril bundle

@@ -1,6 +1,6 @@
 use crate::{tendril_action, TendrilActionError, TendrilActionSuccess};
 use crate::enums::ActionMode;
-use crate::tendril::Tendril;
+use crate::tendril_bundle::TendrilBundle;
 use crate::tendril_action_report::TendrilActionReport;
 use crate::test_utils::{
     get_disposable_dir,
@@ -77,10 +77,10 @@ fn pull_returns_tendril_and_result_for_each_given(
     write(&remote_app1_nested_file, "Remote app 1 nested file contents").unwrap();
 
     let mut given = [
-        Tendril::new("App1", vec!["misc1.txt"]),
-        Tendril::new("App2", vec!["misc2.txt"]),
-        Tendril::new("App1", vec!["App1 Dir"]),
-        Tendril::new("App3", vec!["I don't exist", "misc3.txt"]),
+        TendrilBundle::new("App1", vec!["misc1.txt"]),
+        TendrilBundle::new("App2", vec!["misc2.txt"]),
+        TendrilBundle::new("App1", vec!["App1 Dir"]),
+        TendrilBundle::new("App3", vec!["I don't exist", "misc3.txt"]),
     ];
 
     set_parents(&mut given[0], &[given_parent_dir_a.clone()]);
@@ -258,10 +258,10 @@ fn push_returns_tendril_and_result_for_each_given(
     write(&local_nested_app1_file, "Local app 1 nested file contents").unwrap();
 
     let mut given = [
-        Tendril::new("App1", vec!["misc1.txt"]),
-        Tendril::new("App2", vec!["misc2.txt"]),
-        Tendril::new("App1", vec!["App1 Dir"]),
-        Tendril::new("App3", vec!["I don't exist", "misc3.txt"]),
+        TendrilBundle::new("App1", vec!["misc1.txt"]),
+        TendrilBundle::new("App2", vec!["misc2.txt"]),
+        TendrilBundle::new("App1", vec!["App1 Dir"]),
+        TendrilBundle::new("App3", vec!["I don't exist", "misc3.txt"]),
     ];
 
     set_parents(&mut given[0], &[given_parent_dir_a.clone()]);
@@ -477,10 +477,10 @@ fn link_returns_tendril_and_result_for_each_given(
     write(&local_nested_app1_file, "Local app 1 nested file contents").unwrap();
 
     let mut given = [
-        Tendril::new("App1", vec!["misc1.txt"]),
-        Tendril::new("App2", vec!["misc2.txt"]),
-        Tendril::new("App1", vec!["App1 Dir"]),
-        Tendril::new("App3", vec!["I don't exist", "misc3.txt"]),
+        TendrilBundle::new("App1", vec!["misc1.txt"]),
+        TendrilBundle::new("App2", vec!["misc2.txt"]),
+        TendrilBundle::new("App1", vec!["App1 Dir"]),
+        TendrilBundle::new("App3", vec!["I don't exist", "misc3.txt"]),
     ];
 
     given[0].link = true;

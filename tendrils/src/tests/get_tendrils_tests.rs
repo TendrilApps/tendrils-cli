@@ -1,7 +1,7 @@
 use crate::{
     get_tendrils,
     GetTendrilsError,
-    Tendril,
+    TendrilBundle,
 };
 use crate::tests::sample_tendrils::SampleTendrils;
 use crate::test_utils::get_disposable_dir;
@@ -60,7 +60,7 @@ fn valid_json_returns_tendrils_in_same_order_as_file() {
         SampleTendrils::tendril_2(),
     ];
 
-    let actual: Vec<Tendril> = get_tendrils(&temp_td_dir.path()).unwrap();
+    let actual: Vec<TendrilBundle> = get_tendrils(&temp_td_dir.path()).unwrap();
 
     assert_eq!(actual, expected);
 }

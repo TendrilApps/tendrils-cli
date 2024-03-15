@@ -1,5 +1,5 @@
 use crate::resolved_tendril::ResolvedTendril;
-use crate::{parse_tendrils, symlink, Tendril, TendrilMode};
+use crate::{parse_tendrils, symlink, TendrilBundle, TendrilMode};
 use std::fs::{create_dir_all, read_to_string, write};
 use std::path::{Path, PathBuf};
 use tempdir::TempDir;
@@ -36,11 +36,11 @@ pub fn is_empty(dir: &Path) -> bool {
 /// Exposes the otherwise private function
 pub fn parse_tendrils_expose(
     json: &str
-) -> Result<Vec<Tendril>, serde_json::Error> {
+) -> Result<Vec<TendrilBundle>, serde_json::Error> {
     parse_tendrils(json)
 }
 
-pub fn set_parents(tendril: &mut Tendril, paths: &[PathBuf]) {
+pub fn set_parents(tendril: &mut TendrilBundle, paths: &[PathBuf]) {
     let path_strings:Vec<String> = paths
         .iter()
         .map(|x| String::from(x.to_str().unwrap()))
@@ -112,8 +112,8 @@ impl Setup {
         }
     }
 
-    pub fn file_tendril(&self) -> Tendril {
-        Tendril::new(
+    pub fn file_tendril(&self) -> TendrilBundle {
+        TendrilBundle::new(
             "SomeApp",
             vec!["misc.txt"],
         )
@@ -145,7 +145,7 @@ impl Setup {
         create_dir_all(&self.td_dir).unwrap();
     }
 
-    pub fn make_td_json_file(&self, tendrils: &[Tendril]) {
+    pub fn make_td_json_file(&self, tendrils: &[TendrilBundle]) {
         self.make_td_dir();
         let json = serde_json::to_string(tendrils).unwrap();
         write(&self.td_json_file, json).unwrap();

@@ -1,10 +1,10 @@
-use crate::Tendril;
+use crate::TendrilBundle;
 
 pub struct SampleTendrils {}
 
 impl SampleTendrils {
-    pub fn tendril_1() -> Tendril {
-            Tendril {
+    pub fn tendril_1() -> TendrilBundle {
+            TendrilBundle {
             group: "MyApp".to_string(),
             names: vec!["settings.json".to_string()],
             parents: ["C:\\Users\\MyName\\AppData\\".to_string()].to_vec(),
@@ -25,8 +25,8 @@ impl SampleTendrils {
         }"#.to_string()
     }
 
-    pub fn tendril_2() -> Tendril {
-        Tendril {
+    pub fn tendril_2() -> TendrilBundle {
+        TendrilBundle {
             group: "MyApp2".to_string(),
             names: vec!["settings2.json".to_string()],
             parents: ["some/parent/path".to_string()].to_vec(),
@@ -47,8 +47,8 @@ impl SampleTendrils {
         }"#.to_string()
     }
 
-    pub fn tendril_3() -> Tendril {
-        Tendril {
+    pub fn tendril_3() -> TendrilBundle {
+        TendrilBundle {
             group: "MyApp".to_string(),
             names: vec!["linkme.txt".to_string()],
             parents: ["some/parent/path3".to_string()].to_vec(),
@@ -69,8 +69,8 @@ impl SampleTendrils {
         }"#.to_string()
     }
 
-    pub fn tendril_4() -> Tendril {
-        Tendril {
+    pub fn tendril_4() -> TendrilBundle {
+        TendrilBundle {
             group: "MyApp".to_string(),
             names: vec!["misc.txt".to_string()],
             parents: ["some/parent/path4".to_string()].to_vec(),
@@ -91,8 +91,8 @@ impl SampleTendrils {
         }"#.to_string()
     }
 
-    pub fn tendril_5() -> Tendril {
-        Tendril {
+    pub fn tendril_5() -> TendrilBundle {
+        TendrilBundle {
             group: "MyApp".to_string(),
             names: vec!["misc.txt".to_string()],
             parents: ["some/parent/path5".to_string()].to_vec(),
@@ -113,8 +113,8 @@ impl SampleTendrils {
         }"#.to_string()
     }
 
-    pub fn tendril_6() -> Tendril {
-        Tendril {
+    pub fn tendril_6() -> TendrilBundle {
+        TendrilBundle {
             group: "MyApp".to_string(),
             names: vec!["misc1.txt".to_string(), "misc2.txt".to_string()],
             parents: ["some/parent/path6a".to_string(), "some/parent/path6b".to_string()].to_vec(),
@@ -133,7 +133,7 @@ impl SampleTendrils {
         }"#.to_string()
     }
 
-    pub fn all_tendrils() -> Vec<Tendril> {
+    pub fn all_tendrils() -> Vec<TendrilBundle> {
         vec![
             SampleTendrils::tendril_1(),
             SampleTendrils::tendril_2(),

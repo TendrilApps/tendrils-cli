@@ -1,4 +1,4 @@
-use crate::{filter_by_mode, Tendril};
+use crate::{filter_by_mode, TendrilBundle};
 use crate::enums::ActionMode;
 use rstest::rstest;
 
@@ -18,11 +18,11 @@ fn empty_tendril_list_returns_empty(
 
 #[test]
 fn link_action_only_includes_tendrils_with_link_true() {
-    let mut t1 = Tendril::new("SomeApp", vec!["misc.txt"]);
+    let mut t1 = TendrilBundle::new("SomeApp", vec!["misc.txt"]);
     t1.link = false;
-    let mut t2 = Tendril::new("SomeApp", vec!["misc2.txt"]);
+    let mut t2 = TendrilBundle::new("SomeApp", vec!["misc2.txt"]);
     t2.link = true;
-    let mut t3 = Tendril::new("SomeApp", vec!["misc3.txt"]);
+    let mut t3 = TendrilBundle::new("SomeApp", vec!["misc3.txt"]);
     t3.link = false;
     let tendrils = vec![t1.clone(), t2.clone(), t3.clone()];
 
@@ -37,11 +37,11 @@ fn link_action_only_includes_tendrils_with_link_true() {
 fn non_link_action_only_includes_tendrils_with_link_false(
     #[case] action_mode: ActionMode,
 ) {
-    let mut t1 = Tendril::new("SomeApp", vec!["misc.txt"]);
+    let mut t1 = TendrilBundle::new("SomeApp", vec!["misc.txt"]);
     t1.link = false;
-    let mut t2 = Tendril::new("SomeApp", vec!["misc2.txt"]);
+    let mut t2 = TendrilBundle::new("SomeApp", vec!["misc2.txt"]);
     t2.link = true;
-    let mut t3 = Tendril::new("SomeApp", vec!["misc3.txt"]);
+    let mut t3 = TendrilBundle::new("SomeApp", vec!["misc3.txt"]);
     t3.link = false;
     let tendrils = vec![t1.clone(), t2.clone(), t3.clone()];
 

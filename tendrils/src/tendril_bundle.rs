@@ -4,7 +4,7 @@ use serde::{de, Deserialize, Deserializer, Serialize};
 /// Represents a bundle of file system objects that are controlled
 /// by Tendrils.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
-pub struct Tendril {
+pub struct TendrilBundle {
     /// The group by which this tendril will be sorted in
     /// the *Tendrils* folder.
     pub group: String,
@@ -40,10 +40,10 @@ pub struct Tendril {
     pub profiles: Vec<String>
 }
 
-impl Tendril {
+impl TendrilBundle {
     #[cfg(any(test, feature = "_test_utils"))]
-    pub fn new(group: &str, names: Vec<&str>) -> Tendril {
-        Tendril {
+    pub fn new(group: &str, names: Vec<&str>) -> TendrilBundle {
+        TendrilBundle {
             group: String::from(group),
             names: names.into_iter().map(|n: &str| String::from(n)).collect(),
             parents: vec![],
