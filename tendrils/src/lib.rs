@@ -234,12 +234,26 @@ fn link_tendril(
     }
 
     let target = td_dir.join(tendril.group()).join(tendril.name());
-
-    if !force && dest.exists() && !dest.is_symlink() {
+    if td_dir.exists() && !target.exists() {
+        // Local does not exist - copy it first
+        copy_fso(&dest, &target, false, dry_run)?;
+    }
+    else if !force && dest.exists() && !dest.is_symlink() {
         return Err(TendrilActionError::TypeMismatch);
     }
 
-    Ok(symlink(&dest, &target, dry_run, force)?)
+    match symlink(&dest, &target, dry_run, force) {
+        Err(TendrilActionError::IoError(ref io_e)) if dry_run
+            && io_e.kind() == std::io::ErrorKind::NotFound
+            && dest.exists()
+            && td_dir.exists() =>
+        {
+            // Local does not exist and should be copied before link
+            // in a non-dry run. Ignore this error here
+            Ok(TendrilActionSuccess::Skipped)
+        }
+        result => result,
+    }
 }
 
 /// # Arguments

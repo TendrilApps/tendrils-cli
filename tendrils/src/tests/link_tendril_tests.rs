@@ -98,6 +98,8 @@ fn remote_parent_and_local_exist_symlink_to_local_is_created(
     }
 }
 
+/// Note: This doesn't apply if the local doesn't exist.
+/// See [`local_doesnt_exist_but_td_dir_does_copies_remote_to_local_then_links_unless_dryrun`]
 #[rstest]
 #[case(true)]
 #[case(false)]
@@ -425,4 +427,45 @@ fn non_link_mode_tendril_returns_mode_mismatch_error(
     let actual = link_tendril(&setup.td_dir, &tendril, dry_run, force);
 
     assert!(matches!(actual, Err(TendrilActionError::ModeMismatch)));
+}
+
+/// This is an exception to [`remote_exists_and_is_not_symlink_returns_type_mismatch_error_unless_forced`]
+#[rstest]
+#[case(true)]
+#[case(false)]
+fn local_doesnt_exist_but_td_dir_does_copies_remote_to_local_then_links_unless_dryrun(
+    #[case] dry_run: bool,
+
+    #[values(true, false)]
+    force: bool,
+) {
+    let setup = Setup::new();
+    setup.make_td_dir();
+    setup.make_remote_file();
+    setup.make_remote_nested_file();
+    assert!(!setup.local_file.exists());
+    assert!(!setup.local_dir.exists());
+
+    let mut file_tendril = setup.file_tendril();
+    let mut dir_tendril = setup.dir_tendril();
+    file_tendril.mode = TendrilMode::Link;
+    dir_tendril.mode = TendrilMode::Link;
+
+    let file_actual = link_tendril(&setup.td_dir, &file_tendril, dry_run, force);
+    let dir_actual = link_tendril(&setup.td_dir, &dir_tendril, dry_run, force);
+
+    println!("{:?}", file_actual);
+    println!("{:?}", dir_actual);
+    if dry_run {
+        assert!(matches!(file_actual, Ok(TendrilActionSuccess::Skipped)));
+        assert!(matches!(dir_actual, Ok(TendrilActionSuccess::Skipped)));
+        assert!(!setup.local_file.exists());
+        assert!(!setup.local_dir.exists());
+    }
+    else {
+        assert!(matches!(file_actual, Ok(TendrilActionSuccess::Ok)));
+        assert!(matches!(dir_actual, Ok(TendrilActionSuccess::Ok)));
+        assert_eq!(setup.local_file_contents(), "Remote file contents");
+        assert_eq!(setup.local_nested_file_contents(), "Remote nested file contents");
+    }
 }
