@@ -13,11 +13,7 @@ use crate::{
 };
 use crate::enums::{TendrilActionError, TendrilActionSuccess, TendrilMode};
 use crate::tendril::Tendril;
-use crate::test_utils::{
-    get_disposable_dir,
-    is_empty,
-    symlink_expose,
-    Setup};
+use crate::test_utils::{get_disposable_dir, symlink_expose, Setup};
 use rstest::rstest;
 use rstest_reuse::{self, apply, template};
 use serial_test::serial;
@@ -413,8 +409,9 @@ fn remote_parent_doesnt_exist_returns_io_error_not_found(
 
 #[rstest]
 #[case(link_tendril)]
+#[case(pull_tendril)]
 #[case(push_tendril)]
-fn local_doesnt_exist_returns_io_error_not_found(
+fn td_dir_doesnt_exist_returns_io_error_not_found(
     #[case] action: fn(&Path, &Tendril, bool, bool)
         -> Result<TendrilActionSuccess, TendrilActionError>,
 
@@ -425,16 +422,23 @@ fn local_doesnt_exist_returns_io_error_not_found(
     force: bool,
 ) {
     let setup = Setup::new();
-    setup.make_parent_dir();
-    assert!(!setup.local_file.exists());
-    assert!(!setup.local_dir.exists());
-
     let mut file_tendril = setup.file_tendril();
     let mut dir_tendril = setup.dir_tendril();
     if action == link_tendril {
         file_tendril.mode = TendrilMode::Link;
         dir_tendril.mode = TendrilMode::Link;
+        setup.make_target_file();
+        setup.make_target_dir();
+        symlink_expose(&setup.remote_file, &setup.target_file, false, true)
+            .unwrap();
+        symlink_expose(&setup.remote_file, &setup.target_file, false, true)
+            .unwrap();
     }
+    else {
+        setup.make_remote_file();
+        setup.make_remote_dir();
+    }
+    assert!(!setup.td_dir.exists());
 
     let actual = action(&setup.td_dir, &file_tendril, dry_run, force);
 
@@ -442,8 +446,7 @@ fn local_doesnt_exist_returns_io_error_not_found(
         Err(TendrilActionError::IoError(e)) => assert_eq!(e.kind(), std::io::ErrorKind::NotFound),
         _ => panic!("Actual error: {:?}", actual),
     }
-    assert!(!setup.remote_file.exists());
-    assert!(is_empty(&setup.parent_dir));
+    assert!(!setup.td_dir.exists());
 }
 
 #[rstest]

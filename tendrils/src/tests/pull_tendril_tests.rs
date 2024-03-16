@@ -45,6 +45,7 @@ fn remote_exists_copies_to_local(
     setup.local_file = setup.group_dir.join(&name);
     setup.local_dir = setup.group_dir.join(&name);
     setup.local_nested_file = setup.local_dir.join("nested.txt");
+    setup.make_td_dir();
     if as_dir {
         setup.make_remote_nested_file();
     }
@@ -80,6 +81,7 @@ fn remote_is_symlink_returns_type_mismatch_error_unless_forced_then_copies_symli
     force: bool,
 ) {
     let setup = Setup::new();
+    setup.make_td_dir();
     setup.make_target_file();
     setup.make_target_nested_file();
     symlink(&setup.remote_file, &setup.target_file, false, false).unwrap();
@@ -549,33 +551,6 @@ fn no_write_access_at_local_dir_returns_io_error_permission_denied_unless_dry_ru
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn td_dir_doesnt_exist_creates_dir_and_subdirs_first_except_if_dry_run(
-    #[case] dry_run: bool,
-
-    #[values(true, false)]
-    force: bool,
-) {
-    let setup = Setup::new();
-    setup.make_remote_file();
-    assert!(!setup.td_dir.exists());
-
-    let tendril = setup.file_tendril();
-
-    let actual = pull_tendril(&setup.td_dir, &tendril, dry_run, force);
-
-    if dry_run {
-        assert!(matches!(actual, Ok(TendrilActionSuccess::Skipped)));
-        assert!(!setup.td_dir.exists());
-    }
-    else {
-        assert!(matches!(actual, Ok(TendrilActionSuccess::Ok)));
-        assert_eq!(setup.local_file_contents(), "Remote file contents");
-    }
-}
-
-#[rstest]
-#[case(true)]
-#[case(false)]
 fn remote_doesnt_exist_but_parent_does_returns_io_error_not_found(
     #[case] dry_run: bool,
 
@@ -583,7 +558,8 @@ fn remote_doesnt_exist_but_parent_does_returns_io_error_not_found(
     force: bool,
 ) {
     let setup = Setup::new();
-    create_dir_all(&setup.parent_dir).unwrap();
+    setup.make_td_dir();
+    setup.make_parent_dir();
 
     let tendril = setup.file_tendril();
     assert!(tendril.full_path().parent().unwrap().exists());

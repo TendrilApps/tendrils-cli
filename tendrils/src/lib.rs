@@ -261,6 +261,10 @@ fn pull_tendril(
     else if is_recursive_tendril(td_dir, &source) {
         return Err(TendrilActionError::Recursion);
     }
+    else if !td_dir.exists() {
+        let io_err = std::io::Error::from(std::io::ErrorKind::NotFound);
+        return Err(TendrilActionError::IoError(io_err));
+    }
 
     let dest = td_dir.join(tendril.group()).join(tendril.name());
 

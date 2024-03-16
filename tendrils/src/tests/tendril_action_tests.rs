@@ -70,6 +70,7 @@ fn pull_returns_tendril_and_result_for_each_given(
     let local_app1_nested_file= local_app1_dir.join("nested1.txt");
     let local_app2_file = given_td_dir.join("App2").join("misc2.txt");
     let local_app3_file_b = given_td_dir.join("App3").join("misc3.txt");
+    create_dir_all(&given_td_dir).unwrap();
     create_dir_all(&remote_app1_dir).unwrap();
     write(&remote_app1_file, "Remote app 1 file contents").unwrap();
     write(&remote_app2_file, "Remote app 2 file contents").unwrap();
