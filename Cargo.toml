@@ -13,3 +13,7 @@ private-intra-doc-links = "forbid"
 [profile.release]
 strip = true
 lto = true
+panic = "abort"
+opt-level = "z"
+codegen-units = 1
+incremental = true
