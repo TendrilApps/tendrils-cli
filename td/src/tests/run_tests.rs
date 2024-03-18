@@ -4,10 +4,11 @@ use crate::writer::Writer;
 use tendrils::{ActionMode, is_tendrils_dir};
 use tendrils::test_utils::{
     get_disposable_dir,
+    is_empty,
     parse_tendrils_expose,
     set_parents,
     symlink_expose,
-    Setup
+    Setup,
 };
 use rstest::rstest;
 use serial_test::serial;
@@ -40,6 +41,255 @@ impl Writer for MockWriter {
         self.all_output.push_str(text);
         self.all_output.push('\n');
     }
+}
+
+#[rstest]
+#[case(true)]
+#[case(false)]
+#[serial("cd")]
+fn init_no_path_given_uses_current_dir(#[case] force: bool) {
+    let mut writer = MockWriter::new();
+    let temp_dir = tempdir::TempDir::new_in(
+        get_disposable_dir(),
+        "InitFolder",
+    ).unwrap();
+    std::env::set_current_dir(temp_dir.path()).unwrap();
+
+    let args = TendrilCliArgs{
+        tendrils_command: TendrilsSubcommands::Init {
+            force,
+            path: None,
+        }
+    };
+
+    run(args, &mut writer);
+
+    assert!(temp_dir.path().join("tendrils.json").exists());
+    assert_eq!(writer.all_output, format!(
+        "Created a Tendrils folder at: {}.\n",
+        temp_dir.path().to_string_lossy()
+    ));
+}
+
+#[rstest]
+#[case(true)]
+#[case(false)]
+#[serial("cd")]
+fn init_path_given_uses_given_path_and_ignores_valid_current_dir(#[case] force: bool) {
+    let mut writer = MockWriter::new();
+    let temp_dir = tempdir::TempDir::new_in(
+        get_disposable_dir(),
+        "TempDir",
+    ).unwrap();
+    let cd = temp_dir.path().join("CurrentDir");
+    let given_dir = temp_dir.path().join("GivenDir");
+    create_dir_all(&cd).unwrap();
+    create_dir_all(&given_dir).unwrap();
+    std::env::set_current_dir(&cd).unwrap();
+    assert!(is_empty(&cd));
+
+    let args = TendrilCliArgs{
+        tendrils_command: TendrilsSubcommands::Init {
+            force,
+            path: Some(given_dir.to_string_lossy().into()),
+        }
+    };
+
+    run(args, &mut writer);
+
+    assert!(given_dir.join("tendrils.json").exists());
+    assert_eq!(writer.all_output, format!(
+        "Created a Tendrils folder at: {}.\n",
+        given_dir.to_string_lossy()
+    ));
+}
+
+#[rstest]
+#[case(true)]
+#[case(false)]
+#[serial("cd")]
+fn init_path_given_uses_given_path_and_ignores_invalid_current_dir(#[case] force: bool) {
+    let mut writer = MockWriter::new();
+    let temp_dir = tempdir::TempDir::new_in(
+        get_disposable_dir(),
+        "TempDir",
+    ).unwrap();
+    let cd = temp_dir.path().join("CurrentDir");
+    let given_dir = temp_dir.path().join("GivenDir");
+    create_dir_all(&cd).unwrap();
+    create_dir_all(&given_dir).unwrap();
+    std::env::set_current_dir(&cd).unwrap();
+    // Current dir is already a Tendrils folder
+    // and has other misc files in it making it
+    // invalid for init
+    write(cd.join("tendrils.json"), "").unwrap();
+    write(cd.join("misc.txt"), "").unwrap();
+    create_dir_all(cd.join("misc")).unwrap();
+    assert!(is_tendrils_dir(&cd));
+
+    let args = TendrilCliArgs{
+        tendrils_command: TendrilsSubcommands::Init {
+            force,
+            path: Some(given_dir.to_string_lossy().into()),
+        }
+    };
+
+    run(args, &mut writer);
+
+    assert!(given_dir.join("tendrils.json").exists());
+    assert_eq!(writer.all_output, format!(
+        "Created a Tendrils folder at: {}.\n",
+        given_dir.to_string_lossy()
+    ));
+}
+
+#[rstest]
+#[case(true)]
+#[case(false)]
+#[cfg_attr(windows, ignore)]
+#[serial("cd")]
+fn init_path_given_uses_given_path_and_ignores_missing_current_dir(#[case] force: bool) {
+    let mut writer = MockWriter::new();
+    let temp_dir = tempdir::TempDir::new_in(
+        get_disposable_dir(),
+        "TempDir",
+    ).unwrap();
+    let cd = temp_dir.path().join("CurrentDir");
+    let given_dir = temp_dir.path().join("GivenDir");
+    create_dir_all(&cd).unwrap();
+    create_dir_all(&given_dir).unwrap();
+    std::env::set_current_dir(&cd).unwrap();
+    std::fs::remove_dir(&cd).unwrap();
+
+    let args = TendrilCliArgs{
+        tendrils_command: TendrilsSubcommands::Init {
+            force,
+            path: Some(given_dir.to_string_lossy().into()),
+        }
+    };
+
+    run(args, &mut writer);
+
+    assert!(given_dir.join("tendrils.json").exists());
+    assert_eq!(writer.all_output, format!(
+        "Created a Tendrils folder at: {}.\n",
+        given_dir.to_string_lossy()
+    ));
+}
+
+#[rstest]
+#[case(true)]
+#[case(false)]
+#[cfg_attr(windows, ignore)]
+#[serial("cd")]
+fn init_no_path_given_and_no_cd_prints_error_message(#[case] force: bool) {
+    let mut writer = MockWriter::new();
+    let temp_dir = tempdir::TempDir::new_in(
+        get_disposable_dir(),
+        "CurrentDir",
+    ).unwrap();
+    let cd = temp_dir.path();
+    std::env::set_current_dir(&cd).unwrap();
+    std::fs::remove_dir(&cd).unwrap();
+
+    let args = TendrilCliArgs{
+        tendrils_command: TendrilsSubcommands::Init {
+            force,
+            path: None,
+        }
+    };
+
+    run(args, &mut writer);
+
+    assert!(!cd.exists());
+    assert_eq!(
+        writer.all_output,
+        "Error: Could not get the current directory.\n"
+    );
+}
+
+#[rstest]
+#[case(true)]
+#[case(false)]
+fn init_non_empty_dir_prints_error_message_unless_forced(#[case] force: bool) {
+    let mut writer = MockWriter::new();
+    let temp_dir = tempdir::TempDir::new_in(
+        get_disposable_dir(),
+        "TempDir",
+    ).unwrap();
+    let given_dir = temp_dir.path();
+    write(given_dir.join("misc.txt"), "").unwrap();
+
+    let args = TendrilCliArgs{
+        tendrils_command: TendrilsSubcommands::Init {
+            force,
+            path: Some(given_dir.to_string_lossy().into()),
+        }
+    };
+
+    run(args, &mut writer);
+
+    if force {
+        assert!(given_dir.join("tendrils.json").exists());
+        assert_eq!(writer.all_output, format!(
+            "Created a Tendrils folder at: {}.\n",
+            given_dir.to_string_lossy()
+        ));
+    }
+    else {
+        assert!(!given_dir.join("tendrils.json").exists());
+        assert_eq!(writer.all_output_lines()[0], "Error: This folder is not empty. Creating a Tendrils folder here may interfere with the existing contents.");
+        assert_eq!(writer.all_output_lines()[1], "Consider running with the 'force' flag to ignore this error:");
+        assert_eq!(writer.all_output_lines()[2], "");
+        assert_eq!(writer.all_output_lines()[3], "td init --force");
+    }
+}
+
+#[rstest]
+#[case(true)]
+#[case(false)]
+fn init_dir_is_already_tendrils_dir_prints_error_message(#[case] force: bool) {
+    let mut writer = MockWriter::new();
+    let temp_dir = tempdir::TempDir::new_in(
+        get_disposable_dir(),
+        "TempDir",
+    ).unwrap();
+    let given_dir = temp_dir.path();
+    write(given_dir.join("tendrils.json"), "").unwrap();
+    assert!(is_tendrils_dir(&given_dir));
+
+    let args = TendrilCliArgs{
+        tendrils_command: TendrilsSubcommands::Init {
+            force,
+            path: Some(given_dir.to_string_lossy().into()),
+        }
+    };
+
+    run(args, &mut writer);
+
+    assert_eq!(
+        writer.all_output, 
+        "Error: This folder is already a Tendrils folder.\n",
+    );
+}
+
+#[rstest]
+#[case(true)]
+#[case(false)]
+fn init_dir_does_exists_prints_io_error_message(#[case] force: bool) {
+    let mut writer = MockWriter::new();
+    let given_dir = PathBuf::from("I do not exist");
+
+    let args = TendrilCliArgs{
+        tendrils_command: TendrilsSubcommands::Init {
+            force,
+            path: Some(given_dir.to_string_lossy().into()),
+        }
+    };
+
+    run(args, &mut writer);
+
+    assert_eq!(writer.all_output, "Error: entity not found.\n");
 }
 
 #[test]

@@ -21,6 +21,18 @@ pub struct TendrilCliArgs {
 /// A CLI tool for managing tendrils
 #[derive(Subcommand, Debug)]
 pub enum TendrilsSubcommands {
+    /// Initializes a new Tendrils folder in the current directory
+    Init {
+        /// Ignores errors due to a non-empty folder
+        #[arg(short, long)]
+        force: bool,
+
+        /// Explicitly sets the path to the Tendrils folder, instead of the
+        /// current directory
+        #[arg(long)]
+        path: Option<String>,
+    },
+
     /// Gets the Tendrils folder path environment variable
     /// if it is set
     Path,

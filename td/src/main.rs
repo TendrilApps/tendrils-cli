@@ -15,10 +15,12 @@ use tendrils::{
     filter_by_profiles,
     get_tendrils,
     get_tendrils_dir,
+    init_tendrils_dir,
     is_tendrils_dir,
     tendril_action,
     ActionMode,
-    GetTendrilsError
+    GetTendrilsError,
+    InitError,
 };
 mod writer;
 use writer::Writer;
@@ -35,6 +37,9 @@ fn main() {
 
 fn run(args: TendrilCliArgs, writer: &mut impl Writer) {
     match args.tendrils_command {
+        TendrilsSubcommands::Init { path, force } => {
+            init(path, force, writer);
+        }
         TendrilsSubcommands::Path => {
             path(writer);
         },
@@ -68,6 +73,43 @@ fn run(args: TendrilCliArgs, writer: &mut impl Writer) {
                 writer,
             )
         },
+    };
+}
+
+fn init(path: Option<String>, force: bool, writer: &mut impl Writer) {
+    let td_dir = match path {
+        Some(v) => {
+            PathBuf::from(v)
+        }
+        None => {
+            match std::env::current_dir() {
+                Ok(v) => v,
+                Err(_err) => {
+                    writer.writeln("Error: Could not get the current directory.");
+                    return;
+                }
+            }
+        }
+    };
+
+    match init_tendrils_dir(&td_dir, force) {
+        Ok(()) => {
+            writer.writeln(&format!(
+                "Created a Tendrils folder at: {}.",
+                &td_dir.to_string_lossy()
+            ));
+        },
+        Err(InitError::IoError(e)) => {
+            writer.writeln(&format!("Error: {}.", e));
+        },
+        Err(InitError::AlreadyInitialized) => {
+            writer.writeln(&format!("Error: This folder is already a Tendrils folder."));
+        },
+        Err(InitError::NotEmpty) => {
+            writer.writeln(&format!("Error: This folder is not empty. Creating a Tendrils folder here may interfere with the existing contents."));
+            writer.writeln(&format!("Consider running with the 'force' flag to ignore this error:\n"));
+            writer.writeln(&format!("td init --force"));
+        }
     };
 }
 

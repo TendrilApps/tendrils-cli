@@ -21,10 +21,17 @@ cargo build --release # For a 'release' build
 - Once built, it is recommended to update your `PATH` variable to include this location (or copy the executable to somewhere in your `PATH`)
 
 ## Set Up
-- Create a new empty folder that will become the [Tendrils folder](#tendrils-folder)
-- Create a [`tendrils.json`](#tendrilsjson) file inside the new folder
-- Define some tendrils in the file following the [schema](#schema)
-- Run a [`pull`](#pulling) to do an initial copy of the tendrils to the [Tendrils folder](#tendrils-folder)
+1. Create a new empty folder that will become the [Tendrils folder](#tendrils-folder)
+2. `cd` into the new folder, then run the `td init` command
+    -  This will create a starter [`tendrils.json`](#tendrilsjson) file inside the new folder
+``` bash
+cd MyTendrilsFolder
+td init
+```
+
+3. Define some tendrils in the file following the [schema](#schema)
+4. Run a [`pull`](#pulling) to make an initial copy of any [push/pull style](#pushpull-style) tendrils to the [Tendrils folder](#tendrils-folder)
+5. Run a [`link`](#linking) to setup any [link style](#link-style) tendrils
 
 # Tendrils Folder
 - Serves as a common location for all of the tendrils defined in the [`tendrils.json`](#tendrilsjson) file

@@ -5,6 +5,7 @@ mod filter_by_mode_tests;
 mod filter_by_profiles_tests;
 mod get_tendrils_dir_tests;
 mod get_tendrils_tests;
+mod init_tendrils_dir_tests;
 mod is_tendrils_dir_tests;
 mod link_tendril_tests;
 mod parse_env_variables_tests;

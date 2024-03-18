@@ -5,6 +5,7 @@ mod enums;
 pub use enums::{
     ActionMode,
     GetTendrilsError,
+    InitError,
     InvalidTendrilError,
     TendrilActionError,
     TendrilActionSuccess,
@@ -196,6 +197,52 @@ pub fn get_tendrils_dir(starting_path: &Path) -> Option<PathBuf> {
             _ => None
         }
     }
+}
+
+const INIT_TD_TENDRILS_JSON: &str =
+r#"[
+    {
+        "group": "SomeApp",
+        "names": "SomeFile.ext",
+        "parents": "path/to/containing/folder"
+    },
+    {
+        "group": "SomeApp2",
+        "names": ["SomeFile2.ext", "SomeFolder3"],
+        "parents": [
+            "path/to/containing/folder2",
+            "path/to/containing/folder3",
+            "path/to/containing/folder4"
+        ],
+        "dir-merge": false,
+        "link": true,
+        "profiles": ["home", "work"]
+    }
+]
+"#;
+
+/// Initializes a *Tendrils* folder with a pre-populated `tendrils.json` file.
+/// This will fail if the folder is already a *Tendrils* folder or if there are
+/// general file-system errors. This will also fail if the folder is not empty and
+/// `force` is false.
+/// 
+/// # Arguments
+/// - `dir` - The folder to initialize
+/// - `force` - Ignores the [`InitError::NotEmpty`] error
+pub fn init_tendrils_dir(dir: &Path, force: bool) -> Result<(), InitError> {
+    if !dir.exists() {
+        let std_io_err = std::io::Error::from(std::io::ErrorKind::NotFound);
+        return Err(InitError::IoError(std_io_err));
+    }
+    else if is_tendrils_dir(dir) {
+        return Err(InitError::AlreadyInitialized);
+    }
+    else if !force && std::fs::read_dir(dir)?.into_iter().count() > 0 {
+        return Err(InitError::NotEmpty);
+    }
+
+    let td_json_file = dir.join("tendrils.json");
+    Ok(std::fs::write(td_json_file, INIT_TD_TENDRILS_JSON)?)
 }
 
 /// Returns `true` if the given folder is a *Tendrils* folder, otherwise `false`.

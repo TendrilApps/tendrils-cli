@@ -14,6 +14,27 @@ pub enum ActionMode {
     Link,
 }
 
+/// Indicates an error while initializing a new
+/// *Tendrils* folder.
+#[derive(Debug)]
+pub enum InitError {
+    /// A general file system error
+    IoError(std::io::Error),
+
+    /// The folder to initialize is already a
+    /// *Tendrils* folder
+    AlreadyInitialized,
+
+    /// The folder to initialize is not empty.
+    NotEmpty,
+}
+
+impl From<std::io::Error> for InitError {
+    fn from(err: std::io::Error) -> Self {
+        InitError::IoError(err)
+    }
+}
+
 /// Indicates an error while reading/parsing the
 /// tendrils from file.
 #[derive(Debug)]
