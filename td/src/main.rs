@@ -76,6 +76,9 @@ fn run(args: TendrilCliArgs, writer: &mut impl Writer) {
     };
 }
 
+/// `Error` in bright red font
+const ERR_PREFIX: &str = "\u{1b}[91mError\u{1b}[39m";
+
 fn init(path: Option<String>, force: bool, writer: &mut impl Writer) {
     let td_dir = match path {
         Some(v) => {
@@ -85,7 +88,9 @@ fn init(path: Option<String>, force: bool, writer: &mut impl Writer) {
             match std::env::current_dir() {
                 Ok(v) => v,
                 Err(_err) => {
-                    writer.writeln("Error: Could not get the current directory.");
+                    writer.writeln(&format!(
+                        "{ERR_PREFIX}: Could not get the current directory."
+                    ));
                     return;
                 }
             }
@@ -100,15 +105,15 @@ fn init(path: Option<String>, force: bool, writer: &mut impl Writer) {
             ));
         },
         Err(InitError::IoError(e)) => {
-            writer.writeln(&format!("Error: {}.", e));
+            writer.writeln(&format!("{ERR_PREFIX}: {e}."));
         },
         Err(InitError::AlreadyInitialized) => {
-            writer.writeln(&format!("Error: This folder is already a Tendrils folder."));
+            writer.writeln(&format!("{ERR_PREFIX}: This folder is already a Tendrils folder."));
         },
         Err(InitError::NotEmpty) => {
-            writer.writeln(&format!("Error: This folder is not empty. Creating a Tendrils folder here may interfere with the existing contents."));
-            writer.writeln(&format!("Consider running with the 'force' flag to ignore this error:\n"));
-            writer.writeln(&format!("td init --force"));
+            writer.writeln(&format!("{ERR_PREFIX}: This folder is not empty. Creating a Tendrils folder here may interfere with the existing contents."));
+            writer.writeln("Consider running with the 'force' flag to ignore this error:\n");
+            writer.writeln("td init --force");
         }
     };
 }
@@ -127,7 +132,7 @@ fn path(writer: &mut impl Writer) {
         },
         Err(std::env::VarError::NotUnicode(_v)) => {
             writer.writeln(&format!(
-                "Error: The '{ENV_NAME}' environment variable is not valid UTF-8."
+                "{ERR_PREFIX}: The '{ENV_NAME}' environment variable is not valid UTF-8."
             ))
         }
     } 
@@ -148,7 +153,9 @@ fn tendril_action_subcommand(
                 test_path
             }
             else {
-                writer.writeln("Error: The given path is not a Tendrils folder");
+                writer.writeln(&format!(
+                    "{ERR_PREFIX}: The given path is not a Tendrils folder."
+                ));
                 return;
             }
         }
@@ -156,14 +163,18 @@ fn tendril_action_subcommand(
             let starting_dir = match std::env::current_dir() {
                 Ok(v) => v,
                 Err(_err) => {
-                    writer.writeln("Error: Could not get the current directory");
+                    writer.writeln(&format!(
+                        "{ERR_PREFIX}: Could not get the current directory."
+                    ));
                     return;
                 }
             };
             match get_tendrils_dir(&starting_dir) {
                 Some(v) => v,
                 None => {
-                    writer.writeln("Error: Could not find a Tendrils folder");
+                    writer.writeln(&format!(
+                        "{ERR_PREFIX}: Could not find a Tendrils folder."
+                    ));
                     return;
                 }
             }
@@ -172,7 +183,7 @@ fn tendril_action_subcommand(
 
     use std::env::consts::OS;
     if mode == ActionMode::Link && OS == "windows" && !can_symlink() {
-        writer.writeln("Error: Missing the permissions required to create symlinks on Windows. Consider:");
+        writer.writeln(&format!("{ERR_PREFIX}: Missing the permissions required to create symlinks on Windows. Consider:"));
         writer.writeln("    - Running this command in an elevated terminal");
         writer.writeln("    - Enabling developer mode (this allows creating symlinks without requiring administrator priviledges)");
         writer.writeln("    - Changing these tendrils to non-link modes instead");
@@ -182,11 +193,15 @@ fn tendril_action_subcommand(
     let all_tendrils = match get_tendrils(&td_dir) {
         Ok(v) => v,
         Err(GetTendrilsError::IoError(_e)) => {
-            writer.writeln("Error: Could not read the tendrils.json file");
+            writer.writeln(&format!(
+                "{ERR_PREFIX}: Could not read the tendrils.json file."
+            ));
             return;
         },
         Err(GetTendrilsError::ParseError(e)) => {
-            writer.writeln("Error: Could not parse the tendrils.json file");
+            writer.writeln(&format!(
+                "{ERR_PREFIX}: Could not parse the tendrils.json file."
+            ));
             writer.writeln(&format!("{e}"));
             return;
         },

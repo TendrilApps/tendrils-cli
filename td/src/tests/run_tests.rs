@@ -1,4 +1,4 @@
-use crate::run;
+use crate::{ERR_PREFIX, run};
 use crate::cli::{TendrilCliArgs, TendrilsSubcommands};
 use crate::writer::Writer;
 use tendrils::{ActionMode, is_tendrils_dir};
@@ -204,7 +204,7 @@ fn init_no_path_given_and_no_cd_prints_error_message(#[case] force: bool) {
     assert!(!cd.exists());
     assert_eq!(
         writer.all_output,
-        "Error: Could not get the current directory.\n"
+        format!("{ERR_PREFIX}: Could not get the current directory.\n")
     );
 }
 
@@ -238,10 +238,13 @@ fn init_non_empty_dir_prints_error_message_unless_forced(#[case] force: bool) {
     }
     else {
         assert!(!given_dir.join("tendrils.json").exists());
-        assert_eq!(writer.all_output_lines()[0], "Error: This folder is not empty. Creating a Tendrils folder here may interfere with the existing contents.");
-        assert_eq!(writer.all_output_lines()[1], "Consider running with the 'force' flag to ignore this error:");
-        assert_eq!(writer.all_output_lines()[2], "");
-        assert_eq!(writer.all_output_lines()[3], "td init --force");
+        let expected = format!("{ERR_PREFIX}: This folder is not empty. \
+        Creating a Tendrils folder here may interfere with the existing \
+        contents.\n\
+        Consider running with the 'force' flag to ignore this error:\n\
+        \n\
+        td init --force\n");
+        assert_eq!(writer.all_output, expected);
     }
 }
 
@@ -269,7 +272,7 @@ fn init_dir_is_already_tendrils_dir_prints_error_message(#[case] force: bool) {
 
     assert_eq!(
         writer.all_output, 
-        "Error: This folder is already a Tendrils folder.\n",
+        format!("{ERR_PREFIX}: This folder is already a Tendrils folder.\n"),
     );
 }
 
@@ -289,7 +292,7 @@ fn init_dir_does_exists_prints_io_error_message(#[case] force: bool) {
 
     run(args, &mut writer);
 
-    assert_eq!(writer.all_output, "Error: entity not found.\n");
+    assert_eq!(writer.all_output, format!("{ERR_PREFIX}: entity not found.\n"));
 }
 
 #[test]
@@ -362,7 +365,9 @@ fn tendril_action_no_path_given_and_no_cd_prints_message(
     let args = TendrilCliArgs{
         tendrils_command,
     };
-    let expected = "Error: Could not get the current directory\n";
+    let expected = format!(
+        "{ERR_PREFIX}: Could not get the current directory.\n"
+    );
 
     run(args, &mut writer);
 
@@ -407,7 +412,9 @@ fn tendril_action_given_path_is_not_tendrils_dir_but_cd_is_should_print_message(
     let args = TendrilCliArgs{
         tendrils_command,
     };
-    let expected = "Error: The given path is not a Tendrils folder\n";
+    let expected = format!(
+        "{ERR_PREFIX}: The given path is not a Tendrils folder.\n"
+    );
 
     run(args, &mut writer);
 
@@ -457,8 +464,8 @@ fn tendril_action_given_path_and_cd_are_both_tendrils_dirs_uses_given_path(
         tendrils_command,
     };
 
-    let expected = "Error: Could not parse the tendrils.json file\nEOF while \
-    parsing a value at line 1 column 0\n";
+    let expected = format!("{ERR_PREFIX}: Could not parse the tendrils.json \
+    file.\nEOF while parsing a value at line 1 column 0\n");
 
     run(args, &mut writer);
 
