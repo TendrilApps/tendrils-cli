@@ -121,16 +121,16 @@ fn ansi_styled_resolved_path(
     match path {
         Ok(p) => {
             let raw_path_text = p.to_string_lossy().to_string();
-            return ansi_hyperlink(&raw_path_text, &raw_path_text)
+            ansi_hyperlink(&raw_path_text, &raw_path_text)
         },
         Err(e) => {
-            return ansi_style(
+            ansi_style(
                 &format!("{:?}", e),
                 color_bright_red.to_owned(),
                 color_reset
-            );
+            )
         }
-    };
+    }
 }
 
 fn ansi_styled_result(
@@ -169,8 +169,16 @@ pub fn print_reports(reports: &[TendrilActionReport], writer: &mut impl Writer) 
     ]);
 
     for report in reports {
-        let styled_path = ansi_styled_resolved_path(&report.resolved_path);
-        let styled_result = ansi_styled_result(&report.action_result);
+        let (styled_path, styled_result) = match &report.resolved_path {
+            Ok(_) => {(
+                ansi_styled_resolved_path(&report.resolved_path),
+                ansi_styled_result(&report.action_result)
+            )},
+            Err(_) => {(
+                "".to_string(),
+                ansi_styled_resolved_path(&report.resolved_path),
+            )},
+        };
 
         tbl.push_row(&[
             report.orig_tendril.group.clone(),
