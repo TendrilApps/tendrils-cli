@@ -17,8 +17,8 @@ use crate::test_utils::{get_disposable_dir, symlink_expose, Setup};
 use rstest::rstest;
 use rstest_reuse::{self, apply, template};
 use serial_test::serial;
-use std::fs::{create_dir_all, read_to_string, write};
-use std::path::Path;
+use std::fs::{create_dir_all, read_to_string, remove_dir, remove_file, write};
+use std::path::{Path, PathBuf};
 use tempdir::TempDir;
 
 #[rstest]
@@ -678,6 +678,198 @@ pub(crate) fn remote_symlink_is_unchanged(
         assert!(matches!(file_actual, Ok(TendrilActionSuccess::Ok)));
         assert!(matches!(dir_actual, Ok(TendrilActionSuccess::Ok)));
     }
+}
+
+#[rstest]
+#[case(link_tendril)]
+#[case(pull_tendril)]
+#[case(push_tendril)]
+#[cfg_attr(not(windows), ignore)]
+#[serial("root")]
+fn parent_is_windows_root_returns_permission_error_unless_dry_run_or_dir(
+    #[case] action: fn(&Path, &Tendril, bool, bool)
+        -> Result<TendrilActionSuccess, TendrilActionError>,
+
+    #[values(true, false)]
+    dry_run: bool,
+
+    #[values(true, false)]
+    force: bool,
+) {
+    let mut setup = Setup::new();
+    setup.parent_dir = PathBuf::from(
+        std::env::var("HOME_DRIVE").unwrap_or("C:\\".to_string())
+    );
+    assert_eq!(setup.parent_dir.parent(), None);
+    setup.remote_file = setup.parent_dir.join("tendrils_test_file.txt");
+    setup.remote_dir = setup.parent_dir.join("tendrils_test_dir");
+    setup.remote_nested_file = setup.remote_dir.join("nested.txt");
+    setup.local_file = setup.group_dir.join("tendrils_test_file.txt");
+    setup.local_dir = setup.group_dir.join("tendrils_test_dir");
+    setup.local_nested_file = setup.local_dir.join("nested.txt");
+    setup.make_local_file();
+    setup.make_local_nested_file();
+    let mut mode = TendrilMode::DirOverwrite;
+    if action == link_tendril {
+        mode = TendrilMode::Link;
+    }
+    else if action == pull_tendril {
+        setup.make_remote_nested_file();
+    }
+
+    let file_tendril = Tendril::new(
+        "SomeApp",
+        "tendrils_test_file.txt",
+        setup.parent_dir.clone(),
+        mode
+    ).unwrap();
+    let dir_tendril = Tendril::new(
+        "SomeApp",
+        "tendrils_test_dir",
+        setup.parent_dir.clone(),
+        mode
+    ).unwrap();
+
+    let file_actual = action(&setup.td_dir, &file_tendril, dry_run, force);
+    let dir_actual = action(&setup.td_dir, &dir_tendril, dry_run, force);
+
+    if action == pull_tendril {
+        // No way to create a file at the root for the test. In theory, if a tendril
+        // pointed to an existing file at the root this would return successfully
+        match file_actual {
+            Err(TendrilActionError::IoError(e)) => {
+                assert_eq!(e.kind(), std::io::ErrorKind::NotFound);
+            },
+            _ => panic!("Actual error: {:?}", file_actual),
+        }
+        if dry_run {
+            assert!(matches!(dir_actual, Ok(TendrilActionSuccess::Skipped)));
+            assert_eq!(setup.local_nested_file_contents(), "Local nested file contents");
+        }
+        else {
+            assert!(matches!(dir_actual, Ok(TendrilActionSuccess::Ok)));
+            assert_eq!(setup.local_nested_file_contents(), "Remote nested file contents");
+        }
+    }
+    else if dry_run {
+        assert!(matches!(file_actual, Ok(TendrilActionSuccess::Skipped)));
+        assert!(matches!(dir_actual, Ok(TendrilActionSuccess::Skipped)));
+        assert!(!setup.remote_file.exists());
+        assert!(!setup.remote_dir.exists());
+    }
+    else {
+        // File creation at root fails but directory creation is successful
+        match file_actual {
+            Err(TendrilActionError::IoError(e)) => {
+                assert_eq!(e.kind(), std::io::ErrorKind::PermissionDenied);
+            },
+            _ => panic!("Actual error: {:?}", file_actual),
+        }
+        assert!(matches!(dir_actual, Ok(TendrilActionSuccess::Ok)));
+        assert!(!setup.remote_file.exists());
+        assert_eq!(setup.remote_nested_file_contents(), "Local nested file contents");
+    }
+
+    // Cleanup
+    remove_file(&setup.remote_file).ok();
+    remove_file(&setup.remote_nested_file).ok();
+    remove_dir(&setup.remote_dir).ok();
+}
+
+#[rstest]
+#[case(link_tendril)]
+#[case(pull_tendril)]
+#[case(push_tendril)]
+#[cfg_attr(windows, ignore)]
+#[serial]
+#[serial("root")]
+fn parent_is_not_windows_root_returns_permission_error_unless_dry_run(
+    #[case] action: fn(&Path, &Tendril, bool, bool)
+        -> Result<TendrilActionSuccess, TendrilActionError>,
+
+    #[values(true, false)]
+    dry_run: bool,
+
+    #[values(true, false)]
+    force: bool,
+) {
+    let mut setup = Setup::new();
+    setup.parent_dir = PathBuf::from("/");
+    assert_eq!(setup.parent_dir.parent(), None);
+    setup.remote_file = setup.parent_dir.join("tendrils_test_file.txt");
+    setup.remote_dir = setup.parent_dir.join("tendrils_test_dir");
+    setup.remote_nested_file = setup.remote_dir.join("nested.txt");
+    setup.local_file = setup.group_dir.join("tendrils_test_file.txt");
+    setup.local_dir = setup.group_dir.join("tendrils_test_dir");
+    setup.local_nested_file = setup.local_dir.join("nested.txt");
+    setup.make_local_file();
+    setup.make_local_nested_file();
+    let mut mode = TendrilMode::DirOverwrite;
+    if action == link_tendril {
+        mode = TendrilMode::Link;
+    }
+
+    let file_tendril = Tendril::new(
+        "SomeApp",
+        "tendrils_test_file.txt",
+        setup.parent_dir.clone(),
+        mode
+    ).unwrap();
+    let dir_tendril = Tendril::new(
+        "SomeApp",
+        "tendrils_test_dir",
+        setup.parent_dir.clone(),
+        mode
+    ).unwrap();
+
+    let file_actual = action(&setup.td_dir, &file_tendril, dry_run, force);
+    let dir_actual = action(&setup.td_dir, &dir_tendril, dry_run, force);
+
+    if action == pull_tendril {
+        match file_actual {
+            Err(TendrilActionError::IoError(e)) => {
+                assert_eq!(e.kind(), std::io::ErrorKind::NotFound);
+            },
+            _ => panic!("Actual error: {:?}", file_actual),
+        }
+        match dir_actual {
+            Err(TendrilActionError::IoError(e)) => {
+                assert_eq!(e.kind(), std::io::ErrorKind::NotFound);
+            },
+            _ => panic!("Actual error: {:?}", dir_actual),
+        }
+        assert_eq!(setup.local_file_contents(), "Local file contents");
+        assert_eq!(setup.local_nested_file_contents(), "Local nested file contents");
+    }
+    else if dry_run {
+        assert!(matches!(file_actual, Ok(TendrilActionSuccess::Skipped)));
+        assert!(matches!(dir_actual, Ok(TendrilActionSuccess::Skipped)));
+        assert!(!setup.remote_file.exists());
+        assert!(!setup.remote_dir.exists());
+    }
+    else {
+        match file_actual {
+            Err(TendrilActionError::IoError(e)) => {
+                // Possible bug where the std::io::ErrorKind::ReadOnlyFilesystem
+                // is only available in nightly but is being returned on Mac
+                assert!(format!("{:?}", e).contains("ReadOnlyFilesystem"));
+            },
+            _ => panic!("Actual error: {:?}", file_actual),
+        }
+        match dir_actual {
+            Err(TendrilActionError::IoError(e)) => {
+                assert!(format!("{:?}", e).contains("ReadOnlyFilesystem"));
+            },
+            _ => panic!("Actual error: {:?}", dir_actual),
+        }
+        assert!(!setup.remote_file.exists());
+        assert!(!setup.remote_dir.exists());
+    }
+
+    // Cleanup
+    remove_file(&setup.remote_file).ok();
+    remove_file(&setup.remote_nested_file).ok();
+    remove_dir(&setup.remote_dir).ok();
 }
 
 // TODO: Test when path is invalid and a copy is attempted with both a folder and a file (Windows only?)

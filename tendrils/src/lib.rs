@@ -48,9 +48,7 @@ fn copy_fso(
             remove_file(&to)?;
         }
 
-        // TODO: Eliminate this unwrap and test how
-        // root folders are handled
-        to = to.parent().unwrap();
+        to = to.parent().unwrap_or(to);
         create_dir_all(to)?;
 
         let mut copy_opts = fs_extra::dir::CopyOptions::new();
@@ -92,9 +90,7 @@ fn copy_fso(
 
         if dry_run { return Ok(TendrilActionSuccess::Skipped); }
 
-        // TODO: Eliminate this unwrap and test how
-        // root folders are handled
-        create_dir_all(to.parent().unwrap())?;
+        create_dir_all(to.parent().unwrap_or(to))?;
 
         if to.is_dir() {
             remove_dir_all(&to)?;
@@ -274,8 +270,7 @@ fn link_tendril(
     if is_recursive_tendril(td_dir, &dest) {
         return Err(TendrilActionError::Recursion);
     }
-    // TODO: Eliminate this unwrap and test with root folders
-    if !dest.parent().unwrap().exists() {
+    if !dest.parent().unwrap_or(&dest).exists() {
         let io_err = std::io::Error::from(std::io::ErrorKind::NotFound);
         return Err(TendrilActionError::IoError(io_err));
     }
@@ -350,8 +345,7 @@ fn push_tendril(
     if is_recursive_tendril(td_dir, &dest) {
         return Err(TendrilActionError::Recursion);
     }
-    // TODO: Eliminate this unwrap and test with root folders
-    if !dest.parent().unwrap().exists() {
+    if !dest.parent().unwrap_or(&dest).exists() {
         let io_err = std::io::Error::from(std::io::ErrorKind::NotFound);
         return Err(TendrilActionError::IoError(io_err));
     }
