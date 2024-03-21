@@ -37,7 +37,9 @@ impl<'a> Tendril<'a> {
         }
 
         let parent_str = parent.to_string_lossy();
-        if parent_str.contains('\n') || parent_str.contains('\r') {
+        if parent_str.is_empty()
+            || parent_str.contains('\n')
+            || parent_str.contains('\r') {
             return Err(InvalidTendrilError::InvalidParent);
         }
 

@@ -68,6 +68,7 @@ fn name_is_invalid_returns_invalid_name_error(#[case] name: &str) {
 }
 
 #[rstest]
+#[case("")]
 #[case("New\nLine")]
 #[case("Carriage\rReturn")]
 fn parent_is_invalid_returns_invalid_parent_error(#[case] parent: &str) {
@@ -107,17 +108,16 @@ fn name_is_forbidden_group_returns_ok(#[case] name: &str) {
 }
 
 #[apply(valid_groups_and_names)]
-#[case("")]
 #[case("somePath")]
 #[case("/some/path/")]
 #[case(" / some / path / ")]
 #[case("\\some\\path\\")]
 #[case(" \\ some \\ path \\ ")]
-fn parent_is_valid_returns_ok(#[case] group: &str) {
+fn parent_is_valid_returns_ok(#[case] parent: &str) {
     Tendril::new(
         "SomeApp",
         "misc.txt",
-        PathBuf::from(group),
+        PathBuf::from(parent),
         TendrilMode::DirOverwrite,
     ).unwrap();
 }
@@ -214,18 +214,4 @@ fn full_path_wo_trailing_sep_in_parent_or_mixed_seps_uses_curr_platform_sep_for_
     let actual = tendril.full_path();
 
     assert_eq!(expected, actual.to_str().unwrap());
-}
-
-#[rstest]
-#[case("misc.txt")]
-#[case("MiscDir")]
-fn full_path_empty_parent_does_not_prepend_dir_sep_to_name(#[case] name: &str) {
-    let actual = Tendril::new(
-        "SomeApp",
-        name,
-        PathBuf::from(""),
-        TendrilMode::DirOverwrite,
-    ).unwrap();
-
-    assert_eq!(actual.full_path(), PathBuf::from(name))
 }

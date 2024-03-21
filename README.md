@@ -100,7 +100,7 @@ td init
 ``` json
 "names": "file.txt"
 ```
-- Names cannot be an empty strings, cannot contain line breaks, and cannot be paths (i.e cannot contain `/` or `\`)
+- Names cannot be empty strings, cannot contain line breaks, and cannot be paths (i.e cannot contain `/` or `\`)
 
 ### `parents`
 - A list of folder paths containing the files/subfolders in [`names`](#names) (i.e. their parent folder)
@@ -112,7 +112,7 @@ td init
 ``` json
 "parents": "~/parent/folder"
 ```
-- Parents cannot contain line breaks
+- Parents cannot be empty strings, and cannot contain line breaks
 
 ### `dir-merge`
 - Specifies the merge strategy when folders are copied to or from the [Tendrils folder](#tendrils-folder)
