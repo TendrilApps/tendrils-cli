@@ -83,6 +83,7 @@ td init
 - The example above would define 6 tendrils
     - One for each of the 3 names in each of the 2 parent folders
     - The profiles/tendril modes are applied to all of these tendrils
+- `null` is not valid in any of these fields
 
 ### `group`
 - The name of the group/app that the tendril belongs to
@@ -99,6 +100,10 @@ td init
 - If there is only one name, the square brackets can be omitted
 ``` json
 "names": "file.txt"
+# Or
+"names": ["file.txt"]
+# Or
+"names": ["file.txt", "SomeFolder"]
 ```
 - Names cannot be empty strings, cannot contain line breaks, and cannot be paths (i.e cannot contain `/` or `\`)
 
@@ -111,6 +116,10 @@ td init
 - If there is only one parent, the square brackets can be omitted
 ``` json
 "parents": "~/parent/folder"
+# Or
+"parents": ["~/parent/folder"]
+# Or
+"parents": ["~/parent/folder1", "~/parent/folder2"]
 ```
 - Parents cannot be empty strings, and cannot contain line breaks
 
@@ -138,7 +147,11 @@ td init
 - If this field is omitted, it defaults to an empty list
 - If there is only one profile, the square brackets can be omitted
 ```json
-"profiles": "my-only-profile"
+"profiles": "my-profile"
+# Or
+"profiles": ["my-profile"]
+# Or
+"profiles": ["my-profile1", "my-profile2"]
 ```
 
 # Tendril Actions
