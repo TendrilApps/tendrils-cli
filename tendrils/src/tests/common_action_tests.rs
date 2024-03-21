@@ -684,6 +684,50 @@ pub(crate) fn remote_symlink_is_unchanged(
 #[case(link_tendril)]
 #[case(pull_tendril)]
 #[case(push_tendril)]
+fn current_dir_is_unchanged(
+    #[case] action: fn(&Path, &Tendril, bool, bool)
+        -> Result<TendrilActionSuccess, TendrilActionError>,
+
+    #[values(true, false)]
+    dry_run: bool,
+
+    #[values(true, false)]
+    force: bool,
+) {
+    let setup = Setup::new();
+
+    let orig_cd = std::env::current_dir().unwrap();
+
+    let mut file_tendril = setup.file_tendril();
+    let mut dir_tendril = setup.dir_tendril();
+    if action == link_tendril {
+        file_tendril.mode = TendrilMode::Link;
+        dir_tendril.mode = TendrilMode::Link;
+    }
+
+    let file_actual = action(&setup.td_dir, &file_tendril, dry_run, force);
+    let dir_actual = action(&setup.td_dir, &dir_tendril, dry_run, force);
+
+    assert_eq!(std::env::current_dir().unwrap(), orig_cd);
+    match file_actual {
+        Err(TendrilActionError::IoError(e)) => {
+            assert_eq!(e.kind(), std::io::ErrorKind::NotFound);
+        },
+        _ => panic!("Actual error: {:?}", file_actual),
+    }
+    match dir_actual {
+        Err(TendrilActionError::IoError(e)) => {
+            assert_eq!(e.kind(), std::io::ErrorKind::NotFound);
+        },
+        _ => panic!("Actual error: {:?}", dir_actual),
+    }
+}
+
+
+#[rstest]
+#[case(link_tendril)]
+#[case(pull_tendril)]
+#[case(push_tendril)]
 #[cfg_attr(not(windows), ignore)]
 #[serial("root")]
 fn parent_is_windows_root_returns_permission_error_unless_dry_run_or_dir(
