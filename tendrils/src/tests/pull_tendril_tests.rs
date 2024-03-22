@@ -573,3 +573,103 @@ fn remote_doesnt_exist_but_parent_does_returns_io_error_not_found(
     }
     assert!(is_empty(&setup.td_dir));
 }
+
+#[rstest]
+#[case(true)]
+#[case(false)]
+fn group_dir_is_created_if_it_doesnt_exist(
+    #[case] as_dir: bool,
+
+    #[values(true, false)]
+    dry_run: bool,
+
+    #[values(true, false)]
+    force: bool,
+) {
+    let setup = Setup::new();
+    setup.make_td_dir();
+    assert!(!setup.group_dir.exists());
+
+    let tendril: Tendril;
+    if as_dir {
+        setup.make_remote_nested_file();
+        tendril = setup.dir_tendril();
+    }
+    else {
+        setup.make_remote_file();
+        tendril = setup.file_tendril();
+    }
+
+    let actual = pull_tendril(
+        &setup.td_dir,
+        &tendril,
+        dry_run,
+        force
+    );
+
+    if dry_run {
+        assert!(matches!(actual, Ok(TendrilActionSuccess::Skipped)));
+        assert!(!setup.group_dir.exists());
+    }
+    else {
+        assert!(matches!(actual, Ok(TendrilActionSuccess::Ok)));
+        if as_dir {
+            assert_eq!(
+                setup.local_nested_file_contents(),
+                "Remote nested file contents"
+            );
+        }
+        else {
+            assert_eq!(setup.local_file_contents(), "Remote file contents");
+        }
+    }
+}
+
+#[rstest]
+#[case(true)]
+#[case(false)]
+fn group_dir_is_file_returns_io_error_already_exists_unless_dry_run(
+    #[case] as_dir: bool,
+
+    #[values(true, false)]
+    dry_run: bool,
+
+    #[values(true, false)]
+    force: bool,
+) {
+    let setup = Setup::new();
+    setup.make_td_dir();
+    write(&setup.group_dir, "I'm a file!").unwrap();
+
+    let tendril: Tendril;
+    if as_dir {
+        setup.make_remote_nested_file();
+        tendril = setup.dir_tendril();
+    }
+    else {
+        setup.make_remote_file();
+        tendril = setup.file_tendril();
+    }
+
+    let actual = pull_tendril(
+        &setup.td_dir,
+        &tendril,
+        dry_run,
+        force
+    );
+
+    println!("{:?}", actual);
+    if dry_run {
+        assert!(matches!(actual, Ok(TendrilActionSuccess::Skipped)));
+        assert!(setup.group_dir.is_file());
+    }
+    else {
+        match actual {
+            Err(TendrilActionError::IoError(e)) => {
+                assert_eq!(e.kind(), std::io::ErrorKind::AlreadyExists)
+            },
+            _ => panic!("{:?}", actual)
+        }
+        assert!(setup.group_dir.is_file());
+    }
+}
