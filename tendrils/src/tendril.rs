@@ -60,36 +60,14 @@ impl<'a> Tendril<'a> {
     }
 
     pub fn full_path(&self) -> PathBuf {
-        #[cfg(not(windows))]
-        let platform_dir_sep = "/";
-        #[cfg(windows)]
-        let platform_dir_sep = "\\";
+        use std::path::MAIN_SEPARATOR_STR;
 
         let parent_str = String::from(self.parent.to_string_lossy());
 
-        if parent_str.ends_with('\\')
-            || parent_str.ends_with('/')
-            || parent_str.is_empty() {
-            PathBuf::from(parent_str + &self.name)
-        }
-        else if parent_str.contains('\\') {
-            if parent_str.contains('/') {
-                // Mixed separators - fall back to the
-                // platform's default separator
-                PathBuf::from(parent_str + platform_dir_sep + &self.name)
-            }
-            else {
-                PathBuf::from(parent_str + "\\" + &self.name)
-            }
-        }
-        else if parent_str.contains("/") {
-            PathBuf::from(parent_str + "/" + &self.name)
-        }
-        else {
-            // No separators - fall back to the
-            // platform's default separator
-            PathBuf::from(parent_str + platform_dir_sep + &self.name)
-        }
+        PathBuf::from(parent_str
+            .replace('\\', MAIN_SEPARATOR_STR)
+            .replace('/', MAIN_SEPARATOR_STR)
+        ).join(&self.name)
     }
 
     fn is_path(x: &str) -> bool {

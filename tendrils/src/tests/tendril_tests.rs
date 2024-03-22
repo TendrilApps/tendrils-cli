@@ -2,7 +2,7 @@ use crate::{Tendril, TendrilMode};
 use crate::enums::InvalidTendrilError;
 use rstest::rstest;
 use rstest_reuse::{self, apply, template};
-use std::path::PathBuf;
+use std::path::{MAIN_SEPARATOR, PathBuf};
 
 #[template]
 #[rstest]
@@ -123,93 +123,35 @@ fn parent_is_valid_returns_ok(#[case] parent: &str) {
 }
 
 #[rstest]
-#[case("ParentPath/", "misc.txt", "ParentPath/misc.txt")]
-#[case("ParentPath/", "MiscDir", "ParentPath/MiscDir")]
+#[case("Plain", &format!("Plain{MAIN_SEPARATOR}misc.txt"))]
+#[case("TrailingSep/",  &format!("TrailingSep{MAIN_SEPARATOR}misc.txt"))]
+#[case("TrailingSep\\", &format!("TrailingSep{MAIN_SEPARATOR}misc.txt"))]
+#[case("/LeadingSep",  &format!("{MAIN_SEPARATOR}LeadingSep{MAIN_SEPARATOR}misc.txt"))]
+#[case("\\LeadingSep", &format!("{MAIN_SEPARATOR}LeadingSep{MAIN_SEPARATOR}misc.txt"))]
+#[case("/Both/",   &format!("{MAIN_SEPARATOR}Both{MAIN_SEPARATOR}misc.txt"))]
+#[case("\\Both\\", &format!("{MAIN_SEPARATOR}Both{MAIN_SEPARATOR}misc.txt"))]
 #[case(
-    "Crazy`~!@#$%^&*()-_=+|\\[]{}'\";:/?.,<>Symbols/",
-    "misc.txt",
-    "Crazy`~!@#$%^&*()-_=+|\\[]{}'\";:/?.,<>Symbols/misc.txt"
+    "\\Mixed/Style",
+    &format!("{MAIN_SEPARATOR}Mixed{MAIN_SEPARATOR}Style{MAIN_SEPARATOR}misc.txt")
 )]
-fn full_path_appends_name_to_parent(
+#[case(
+    "/Mixed\\Style",
+    &format!("{MAIN_SEPARATOR}Mixed{MAIN_SEPARATOR}Style{MAIN_SEPARATOR}misc.txt")
+)]
+#[case(
+    "Crazy`~!@#$%^&*()-_=+|\\[]{}'\";:/?.,<>Symbols/", 
+    &format!("Crazy`~!@#$%^&*()-_=+|{MAIN_SEPARATOR}[]{{}}'\";:{MAIN_SEPARATOR}?.,<>Symbols{MAIN_SEPARATOR}misc.txt")
+)]
+fn full_path_appends_name_to_parent_using_platform_dir_sep_for_all_slashes(
     #[case] parent: PathBuf,
-    #[case] name: &str,
     #[case] expected: &str,
 ) {
     let tendril = Tendril::new(
         "SomeApp",
-        name,
+        "misc.txt",
         parent,
         TendrilMode::DirOverwrite,
     ).unwrap();
-
-    let actual = tendril.full_path();
-
-    assert_eq!(expected, actual.to_str().unwrap());
-}
-
-#[rstest]
-#[case("WindowsStyle\\")]
-#[case("UnixStyle/")]
-#[case("\\Windows\\Style\\")]
-#[case("/Unix/Style/")]
-#[case("\\Mixed/Style\\")]
-#[case("/Mixed\\Style/")]
-fn full_path_w_trailing_sep_in_parent_keeps_all_given_seps_regardless_of_curr_platform(
-    #[case] parent: &str,
-) {
-    let tendril = Tendril::new(
-        "SomeApp",
-        "misc.txt",
-        PathBuf::from(parent),
-        TendrilMode::DirOverwrite,
-    ).unwrap();
-    let expected = parent.to_owned() + "misc.txt";
-
-    let actual = tendril.full_path();
-
-    assert_eq!(expected, actual.to_str().unwrap());
-}
-
-#[rstest]
-#[case("Windows\\Style", "Windows\\Style\\misc.txt")]
-#[case("Unix/Style", "Unix/Style/misc.txt")]
-#[case("\\Windows\\Style", "\\Windows\\Style\\misc.txt")]
-#[case("/Unix/Style", "/Unix/Style/misc.txt")]
-fn full_path_wo_trailing_sep_in_parent_matches_other_seps_in_parent_for_join_regardless_of_curr_platform(
-    #[case] parent: &str,
-    #[case] expected: &str,
-) {
-    let tendril = Tendril::new(
-        "SomeApp",
-        "misc.txt",
-        PathBuf::from(parent),
-        TendrilMode::DirOverwrite,
-    ).unwrap();
-
-    let actual = tendril.full_path();
-
-    assert_eq!(expected, actual.to_str().unwrap());
-}
-
-#[rstest]
-#[case("Plain")]
-#[case("\\Mixed/Style")]
-#[case("/Mixed\\Style")]
-fn full_path_wo_trailing_sep_in_parent_or_mixed_seps_uses_curr_platform_sep_for_join(
-    #[case] parent: &str,
-) {
-    let tendril = Tendril::new(
-        "SomeApp",
-        "misc.txt",
-        PathBuf::from(parent),
-        TendrilMode::DirOverwrite,
-    ).unwrap();
-
-    let expected_join_sep = match std::env::consts::OS {
-        "windows" => "\\",
-        _ => "/",
-    };
-    let expected = parent.to_owned() + expected_join_sep + "misc.txt";
 
     let actual = tendril.full_path();
 

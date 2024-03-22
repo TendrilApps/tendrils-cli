@@ -256,6 +256,38 @@ fn vars_and_leading_tilde_in_parent_path_are_resolved_in_all() {
 }
 
 #[test]
+#[serial("mut-env-var-testing")]
+fn slashes_in_var_or_leading_tilde_values_are_replaced_with_platform_dir_sep() {
+    let mut given = TendrilBundle::new("SomeApp", vec!["misc.txt"]);
+    given.parents = vec!["~<mut-testing>".to_string()];
+    given.dir_merge = false;
+    std::env::set_var("mut-testing", "some\\value/");
+    std::env::set_var("HOME", "My/Home\\");
+
+    use std::path::MAIN_SEPARATOR;
+    let expected_path_str = format!(
+        "My{MAIN_SEPARATOR}Home{MAIN_SEPARATOR}some{MAIN_SEPARATOR}value{MAIN_SEPARATOR}misc.txt"
+    );
+
+    let expected = vec![
+        Ok(Tendril::new(
+            "SomeApp",
+            "misc.txt",
+            PathBuf::from("My/Home\\some\\value/"),
+            TendrilMode::DirOverwrite,
+        ).unwrap()),
+    ];
+
+    let actual = resolve_tendril_bundle(&given, false);
+
+    assert_eq!(actual, expected);
+    assert_eq!(
+        actual[0].as_ref().unwrap().full_path().to_string_lossy(),
+        expected_path_str
+    );
+}
+
+#[test]
 fn var_in_parent_path_doesnt_exist_returns_raw_path() {
     let mut given = TendrilBundle::new("SomeApp", vec!["misc.txt"]);
     given.dir_merge = false;

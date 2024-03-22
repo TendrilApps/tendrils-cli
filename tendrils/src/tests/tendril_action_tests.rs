@@ -687,7 +687,10 @@ fn parent_path_vars_are_resolved(
     std::env::set_var("HOME", "My/Home");
     std::env::set_var("var", "value");
 
-    let expected_resolved_path = "My/Home/I_do_not_exist/value/misc.txt";
+    use std::path::MAIN_SEPARATOR;
+    let expected_resolved_path = format!(
+        "My{MAIN_SEPARATOR}Home{MAIN_SEPARATOR}I_do_not_exist{MAIN_SEPARATOR}value{MAIN_SEPARATOR}misc.txt"
+    );
 
     let actual = tendril_action(
         mode,
