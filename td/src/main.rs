@@ -11,8 +11,8 @@ use cli::{
 use std::path::PathBuf;
 use tendrils::{
     can_symlink,
-    filter_by_mode,
-    filter_by_profiles,
+    filter_tendrils,
+    FilterSpec,
     get_tendrils,
     get_tendrils_dir,
     init_tendrils_dir,
@@ -208,8 +208,13 @@ fn tendril_action_subcommand(
     };
 
     let all_tendrils_is_empty = all_tendrils.is_empty();
-    let mut filtered_tendrils = filter_by_mode(all_tendrils, mode);
-    filtered_tendrils = filter_by_profiles(filtered_tendrils, &profiles);
+    
+    let filter = FilterSpec {
+        mode: Some(mode),
+        profiles: &profiles
+    };
+
+    let filtered_tendrils = filter_tendrils(all_tendrils, filter);
 
     if all_tendrils_is_empty {
         writer.writeln("No tendrils were found.");

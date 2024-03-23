@@ -1,5 +1,6 @@
-use crate::{filter_by_mode, TendrilBundle};
+use crate::TendrilBundle;
 use crate::enums::ActionMode;
+use crate::filtering::filter_by_mode;
 use rstest::rstest;
 
 #[rstest]

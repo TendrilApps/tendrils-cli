@@ -1,4 +1,5 @@
-use crate::{filter_by_profiles, TendrilBundle};
+use crate::TendrilBundle;
+use crate::filtering::filter_by_profiles;
 use rstest::rstest;
 
 #[rstest]

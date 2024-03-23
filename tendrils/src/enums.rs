@@ -1,7 +1,7 @@
 use serde::Deserialize;
 
 /// Indicates the tendril action to be performed.
-#[derive(Clone, Copy, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ActionMode {
     /// Copy tendrils from the *Tendrils* folder to their various locations
     /// on the computer.
