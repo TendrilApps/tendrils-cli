@@ -43,33 +43,69 @@ fn run(args: TendrilCliArgs, writer: &mut impl Writer) {
         TendrilsSubcommands::Path => {
             path(writer);
         },
-        TendrilsSubcommands::Pull { path, dry_run, force, profiles} => {
+        TendrilsSubcommands::Pull {
+            path,
+            dry_run,
+            force,
+            names,
+            profiles
+        } => {
+            let filter = FilterSpec {
+                mode: Some(ActionMode::Pull),
+                names: &names,
+                profiles: &profiles,
+            };
+
             tendril_action_subcommand(
                 ActionMode::Pull,
                 path,
                 dry_run,
                 force,
-                profiles,
+                filter,
                 writer,
             )
         },
-        TendrilsSubcommands::Push { path, dry_run , force, profiles} => {
+        TendrilsSubcommands::Push {
+            path,
+            dry_run,
+            force,
+            names,
+            profiles
+        } => {
+            let filter = FilterSpec {
+                mode: Some(ActionMode::Push),
+                names: &names,
+                profiles: &profiles,
+            };
+
             tendril_action_subcommand(
                 ActionMode::Push,
                 path,
                 dry_run,
                 force,
-                profiles,
+                filter,
                 writer,
             )
         },
-        TendrilsSubcommands::Link { path, dry_run, force, profiles } => {
+        TendrilsSubcommands::Link {
+            path,
+            dry_run,
+            force,
+            names,
+            profiles
+        } => {
+            let filter = FilterSpec {
+                mode: Some(ActionMode::Link),
+                names: &names,
+                profiles: &profiles,
+            };
+
             tendril_action_subcommand(
                 ActionMode::Link,
                 path,
                 dry_run,
                 force,
-                profiles,
+                filter,
                 writer,
             )
         },
@@ -143,7 +179,7 @@ fn tendril_action_subcommand(
     path: Option<String>,
     dry_run: bool,
     force: bool,
-    profiles: Vec<String>,
+    filter: FilterSpec,
     writer: &mut impl Writer,
 ) {
     let td_dir = match path {
@@ -208,12 +244,6 @@ fn tendril_action_subcommand(
     };
 
     let all_tendrils_is_empty = all_tendrils.is_empty();
-    
-    let filter = FilterSpec {
-        mode: Some(mode),
-        profiles: &profiles
-    };
-
     let filtered_tendrils = filter_tendrils(all_tendrils, filter);
 
     if all_tendrils_is_empty {

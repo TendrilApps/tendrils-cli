@@ -13,6 +13,11 @@ pub struct FilterSpec<'a> {
     /// `None`, all tendrils will match.
     pub mode: Option<ActionMode>,
 
+    /// Matches only those tendril names that match any of the given names.
+    /// Any tendril names that do not match are omitted, and any tendrils
+    /// without any matching names are omitted entirely.
+    pub names: &'a [String],
+
     /// Matches only those tendrils that match any of the given profiles, and those
     /// that belong to all profiles (i.e. those that do not have any
     /// profiles defined).
@@ -31,8 +36,7 @@ pub fn filter_tendrils(
     };
 
     filtered = filter_by_profiles(filtered, filter.profiles);
-
-    filtered
+    filter_by_names(filtered, filter.names)
 }
 
 fn filter_by_mode(tendrils: Vec<TendrilBundle>, mode: ActionMode) -> Vec<TendrilBundle> {
@@ -52,4 +56,25 @@ fn filter_by_profiles(tendrils: Vec<TendrilBundle>, profiles: &[String]) -> Vec<
             || profiles.iter().any(|p| t.profiles.contains(p))
         })
         .collect()
+}
+
+fn filter_by_names(mut tendrils: Vec<TendrilBundle>, names: &[String]) -> Vec<TendrilBundle> {
+    if names.is_empty() {
+        return tendrils;
+    }
+
+    for t in tendrils.iter_mut() {
+        let filtered_names_iter = t.names.iter().filter_map(|n| {
+            if names.contains(n) {
+                Some(n.to_owned())
+            }
+            else {
+                None
+            }
+        });
+
+        t.names = filtered_names_iter.collect();
+    }
+
+    tendrils.into_iter().filter(|t| !t.names.is_empty()).collect()
 }

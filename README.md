@@ -219,15 +219,26 @@ td push --path some/tendrils/folder
 ```
 
 ## Filtering Tendrils
+### Filtering by Name
+- Using the `--names (-n)` argument
+- Available on all of the actions listed above
+- Only includes tendril [names](#names) that match any of the given names
+- Any tendril names that do not match are omitted, and any tendrils without any matching names are omitted entirely.
+- Is case sensitive, and must be an exact match
+``` bash
+td link -n file1.txt file2.txt
+```
+- Will only include tendrils whose name is exactly `file1.txt` or `file2.txt`
+
 ### Filtering by Profile
 - Using the `--profiles (-p)` argument
 - Available on all of the actions listed above
-- Only tendrils with one or more matching profiles will be included
+- Only tendrils with one or more matching [profiles](#profiles) will be included
 - Tendrils without any profiles specified will still be included
 ``` bash
 td push -p home mac
 ```
-- The above example will include any tendrils with the `home` or `mac` profile, and any that don't have a profile
+- Will include any tendrils with the `home` or `mac` profile, and any that don't have a profile
 
 # Path Resolving
 ## Resolving Environment Variables

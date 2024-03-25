@@ -53,7 +53,11 @@ pub enum TendrilsSubcommands {
         #[arg(long)]
         path: Option<String>,
 
-        /// Explicitly sets the list of profiles to include
+        /// List of names to filter for
+        #[arg(short, long, num_args = ..)]
+        names: Vec<String>,
+
+        /// Explicitly sets the list of profiles to filter for
         #[arg(short, long, num_args = ..)]
         profiles: Vec<String>,
     },
@@ -74,7 +78,11 @@ pub enum TendrilsSubcommands {
         #[arg(long)]
         path: Option<String>,
 
-        /// Explicitly sets the list of profiles to include
+        /// List of names to filter for
+        #[arg(short, long, num_args = ..)]
+        names: Vec<String>,
+
+        /// Explicitly sets the list of profiles to filter for
         #[arg(short, long, num_args = ..)]
         profiles: Vec<String>,
     },
@@ -95,7 +103,11 @@ pub enum TendrilsSubcommands {
         #[arg(long)]
         path: Option<String>,
 
-        /// Explicitly sets the list of profiles to include
+        /// List of names to filter for
+        #[arg(short, long, num_args = ..)]
+        names: Vec<String>,
+
+        /// Explicitly sets the list of profiles to filter for
         #[arg(short, long, num_args = ..)]
         profiles: Vec<String>,
     },
