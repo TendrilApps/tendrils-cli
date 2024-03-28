@@ -2,8 +2,9 @@ use crate::TendrilBundle;
 use crate::filtering::filter_by_profiles;
 use crate::filtering::tests::filter_tendrils_tests::{
     string_filter_empty_tests,
-    string_filter_exact_match_tests,
-    string_filter_non_exact_match_tests,
+    string_filter_match_tests,
+    string_filter_non_match_tests,
+    supported_asterisk_literals,
     supported_weird_values,
 };
 use rstest::rstest;
@@ -19,7 +20,8 @@ fn empty_tendril_list_returns_empty(#[case] profiles: &[String]) {
 }
 
 #[apply(string_filter_empty_tests)]
-fn tendril_with_empty_profiles_included_in_all(
+#[case(&[])]
+fn tendril_with_empty_profiles_list_included_in_all(
     #[case] profiles: &[String]
 ) {
     let t1 = TendrilBundle::new("SomeApp", vec!["misc.txt"]);
@@ -33,16 +35,14 @@ fn tendril_with_empty_profiles_included_in_all(
     assert_eq!(actual, vec![t1, t2]);
 }
 
-#[apply(string_filter_exact_match_tests)]
-fn tendril_only_included_if_any_profile_matches_exactly(
+#[apply(string_filter_match_tests)]
+fn tendril_only_included_if_any_profile_matches(
     #[case] profiles: &[String],
     #[case] exp_matches: &[&str],
 ) {
     let mut t1 = TendrilBundle::new("SomeApp", vec!["misc.txt"]);
     t1.profiles = vec!["v1".to_string(), "v2".to_string()];
-    let mut t2 = TendrilBundle::new("SomeApp", vec!["misc2.txt"]);
-    t2.profiles = vec!["v4".to_string()];
-    let tendrils = vec![t1.clone(), t2.clone()];
+    let tendrils = vec![t1.clone()];
 
     let actual = filter_by_profiles(tendrils, profiles);
 
@@ -57,8 +57,8 @@ fn tendril_only_included_if_any_profile_matches_exactly(
     );
 }
 
-#[apply(string_filter_non_exact_match_tests)]
-fn tendril_not_included_if_not_empty_and_no_profile_matches_exactly(
+#[apply(string_filter_non_match_tests)]
+fn tendril_not_included_if_not_empty_and_no_profile_matches(
     #[case] profiles: &[String]
 ) {
     let mut t1 = TendrilBundle::new("SomeApp", vec!["misc.txt"]);
@@ -129,10 +129,26 @@ fn filter_supports_weird_profiles(
     let mut t1 = TendrilBundle::new("SomeApp", vec!["misc.txt"]);
     t1.profiles = vec![profile.clone()];
     let mut t2 = TendrilBundle::new("SomeApp", vec!["misc2.txt"]);
-    t2.profiles = vec!["v1".to_string()];
+    t2.profiles = vec!["v2".to_string()];
     let tendrils = vec![t1.clone(), t2.clone()];
 
     let actual = filter_by_profiles(tendrils, &[profile]);
+
+    assert_eq!(actual, vec![t1]);
+}
+
+#[apply(supported_asterisk_literals)]
+fn filter_supports_asterisk_literals(
+    #[case] profile: String,
+    #[case] pattern: String,
+) {
+    let mut t1 = TendrilBundle::new("SomeApp", vec!["misc.txt"]);
+    t1.profiles = vec![profile];
+    let mut t2 = TendrilBundle::new("SomeApp", vec!["misc2.txt"]);
+    t2.profiles = vec!["p2".to_string()];
+    let tendrils = vec![t1.clone(), t2.clone()];
+
+    let actual = filter_by_profiles(tendrils, &[pattern]);
 
     assert_eq!(actual, vec![t1]);
 }

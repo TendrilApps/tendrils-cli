@@ -4,7 +4,6 @@ use rstest_reuse::{self, template};
 
 #[template]
 #[rstest]
-#[case(&[])]
 #[case(&["".to_string()])]
 #[case(&["*".to_string()])]
 #[case(&["**".to_string()])]
@@ -24,39 +23,50 @@ fn string_filter_empty_tests(#[case] value: &[String]) {}
 #[case(&["v1".to_string(), "v3".to_string()], &["v1"])]
 #[case(&["v2".to_string(), "v3".to_string()], &["v2"])]
 #[case(&["v1".to_string(), "v2".to_string(), "v3".to_string()], &["v1", "v2"])]
-fn string_filter_exact_match_tests(
+#[case(&["*".to_string()], &["v1", "v2"])]
+#[case(&["**".to_string()], &["v1", "v2"])]
+#[case(&["v?".to_string()], &["v1", "v2"])]
+#[case(&["*?".to_string()], &["v1", "v2"])]
+#[case(&["??".to_string()], &["v1", "v2"])]
+#[case(&["*1".to_string()], &["v1"])]
+#[case(&["?1".to_string()], &["v1"])]
+#[case(&["!v1".to_string()], &["v2"])]
+#[case(&["v[12]".to_string()], &["v1", "v2"])]
+#[case(&["v{!1,2}".to_string()], &["v2"])]
+fn string_filter_match_tests(
     #[case] value: &[String],
     #[case] exp_matches: &[&str],
 ) {}
 
+/// Expected to not match based on a field under test with values ["v1", "v2"]
 #[template]
 #[rstest]
 #[case(&["".to_string()])]
-#[case(&["*".to_string()])]
-#[case(&["**".to_string()])]
 #[case(&["V1".to_string()])]
 #[case(&["V2".to_string()])]
 #[case(&["v3".to_string()])]
 #[case(&["v1 ".to_string()])]
 #[case(&[" v1".to_string()])]
 #[case(&[" v1".to_string()])]
-#[case(&["*v1*".to_string()])]
-#[case(&["**v1**".to_string()])]
 #[case(&["v1Leading".to_string()])]
 #[case(&["Trailingv1".to_string()])]
 #[case(&["V1".to_string(), "V2".to_string(), "v3".to_string()])]
-fn string_filter_non_exact_match_tests(#[case] value: &[String]) {}
+fn string_filter_non_match_tests(#[case] value: &[String]) {}
 
 #[template]
 #[rstest]
 #[case("")]
 #[case(" ")]
-#[case("*")]
-#[case("**")]
 #[case("\n")]
 #[case("\t")]
 #[case("\r")]
 fn supported_weird_values(#[case] value: &str) {}
+
+#[template]
+#[rstest]
+#[case("*", "\\*")]
+#[case("**", "\\*\\*")]
+fn supported_asterisk_literals(#[case] value: &str, #[case] pattern: &str) {}
 
 fn samples() -> Vec<TendrilBundle> {
     let mut t0 = TendrilBundle::new("g0", vec!["n0"]);

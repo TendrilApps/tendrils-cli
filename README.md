@@ -219,10 +219,14 @@ td push --path some/tendrils/folder
 ```
 
 ## Filtering Tendrils
+- For the filters below that support glob patterns, these are resolved using the [`glob-match`](https://crates.io/crates/glob-match) crate
+    - Consult this crate's documentation for the syntax
+
 ### Filtering by Name
 - Using the `--names (-n)` argument
 - Available on all of the actions listed above
 - Only includes tendril [names](#names) that match any of the given names
+    - Glob patterns are supported
 - Any tendril names that do not match are omitted, and any tendrils without any matching names are omitted entirely.
 - Is case sensitive, and must be an exact match
 ``` bash
@@ -234,6 +238,7 @@ td link -n file1.txt file2.txt
 - Using the `--profiles (-p)` argument
 - Available on all of the actions listed above
 - Only tendrils with one or more matching [profiles](#profiles) will be included
+    - Glob patterns are supported
 - Tendrils without any profiles specified will still be included
 ``` bash
 td push -p home mac

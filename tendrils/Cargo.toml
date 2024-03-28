@@ -10,6 +10,9 @@ _test_utils = ["dep:tempdir"]
 
 [dependencies]
 fs_extra = "1.3.0"
+# Chose glob-match over globset due to having no dependencies
+# and greatly reduced bloat of binary size
+glob-match = "0.2.1"
 serde = { version = "1.0.193", features = ["derive"] }
 serde_json = "1.0.108"
 tempdir = { version = "0.3.7", optional = true }

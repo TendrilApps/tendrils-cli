@@ -1,5 +1,6 @@
 use crate::tendril_bundle::TendrilBundle;
 use crate::enums::ActionMode;
+use glob_match::glob_match;
 
 #[cfg(test)]
 mod tests;
@@ -15,12 +16,14 @@ pub struct FilterSpec<'a> {
 
     /// Matches only those tendril names that match any of the given names.
     /// Any tendril names that do not match are omitted, and any tendrils
-    /// without any matching names are omitted entirely.
+    /// without any matching names are omitted entirely. Glob patterns
+    /// are supported
     pub names: &'a [String],
 
     /// Matches only those tendrils that match any of the given profiles, and those
     /// that belong to all profiles (i.e. those that do not have any
-    /// profiles defined).
+    /// profiles defined). Glob patterns
+    /// are supported
     pub profiles: &'a [String],
 }
 
@@ -50,12 +53,12 @@ fn filter_by_profiles(tendrils: Vec<TendrilBundle>, profiles: &[String]) -> Vec<
         return tendrils;
     }
 
-    tendrils.into_iter()
-        .filter(|t| -> bool {
-            t.profiles.is_empty()
-            || profiles.iter().any(|p| t.profiles.contains(p))
+    tendrils.into_iter().filter(|t| -> bool {
+        t.profiles.is_empty()
+        || t.profiles.iter().any(|p| {
+            profiles.iter().any(|f| glob_match(f, p))
         })
-        .collect()
+    }).collect()
 }
 
 fn filter_by_names(mut tendrils: Vec<TendrilBundle>, names: &[String]) -> Vec<TendrilBundle> {
@@ -65,14 +68,13 @@ fn filter_by_names(mut tendrils: Vec<TendrilBundle>, names: &[String]) -> Vec<Te
 
     for t in tendrils.iter_mut() {
         let filtered_names_iter = t.names.iter().filter_map(|n| {
-            if names.contains(n) {
+            if names.iter().any(|f| glob_match(f, n)) {
                 Some(n.to_owned())
             }
             else {
                 None
             }
         });
-
         t.names = filtered_names_iter.collect();
     }
 
