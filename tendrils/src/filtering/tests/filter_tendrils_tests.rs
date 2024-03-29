@@ -11,7 +11,7 @@ use rstest_reuse::{self, template};
 #[case(&["*v1*".to_string()])]
 #[case(&["**v1**".to_string()])]
 #[case(&["v1".to_string(), "v2".to_string()])]
-fn string_filter_empty_tests(#[case] value: &[String]) {}
+fn string_filter_empty_tests(#[case] filters: &[String]) {}
 
 /// Expected matches based on a field under test with values ["v1", "v2"]
 #[template]
@@ -34,7 +34,7 @@ fn string_filter_empty_tests(#[case] value: &[String]) {}
 #[case(&["v[12]".to_string()], &["v1", "v2"])]
 #[case(&["v{!1,2}".to_string()], &["v2"])]
 fn string_filter_match_tests(
-    #[case] value: &[String],
+    #[case] filters: &[String],
     #[case] exp_matches: &[&str],
 ) {}
 
@@ -51,7 +51,7 @@ fn string_filter_match_tests(
 #[case(&["v1Leading".to_string()])]
 #[case(&["Trailingv1".to_string()])]
 #[case(&["V1".to_string(), "V2".to_string(), "v3".to_string()])]
-fn string_filter_non_match_tests(#[case] value: &[String]) {}
+fn string_filter_non_match_tests(#[case] filters: &[String]) {}
 
 #[template]
 #[rstest]
@@ -60,13 +60,13 @@ fn string_filter_non_match_tests(#[case] value: &[String]) {}
 #[case("\n")]
 #[case("\t")]
 #[case("\r")]
-fn supported_weird_values(#[case] value: &str) {}
+fn supported_weird_values(#[case] filter: &str) {}
 
 #[template]
 #[rstest]
 #[case("*", "\\*")]
 #[case("**", "\\*\\*")]
-fn supported_asterisk_literals(#[case] value: &str, #[case] pattern: &str) {}
+fn supported_asterisk_literals(#[case] value: &str, #[case] filter: &str) {}
 
 fn samples() -> Vec<TendrilBundle> {
     let mut t0 = TendrilBundle::new("g0", vec!["n0"]);
@@ -93,6 +93,7 @@ fn empty_tendril_list_returns_empty() {
     let tendrils = vec![];
     let filter = FilterSpec {
         mode: None,
+        groups: &[],
         names: &[],
         profiles: &[],
     };
@@ -107,6 +108,7 @@ fn mode_filter_is_none_does_not_filter_by_mode() {
     let tendrils = samples();
     let filter = FilterSpec {
         mode: None,
+        groups: &["g0".to_string(), "g1".to_string(), "g2".to_string()],
         names: &["n0".to_string(), "n1".to_string(), "n2".to_string()],
         profiles: &["p1".to_string(), "p2".to_string()],
     };
@@ -121,10 +123,49 @@ fn mode_filter_is_none_does_not_filter_by_mode() {
 }
 
 #[test]
+fn group_filter_is_empty_does_not_filter_by_group() {
+    let tendrils = samples();
+    let filter = FilterSpec {
+        mode: Some(ActionMode::Pull),
+        groups: &[],
+        names: &["n0".to_string(), "n1".to_string(), "n3".to_string()],
+        profiles: &["p1".to_string(), "p3".to_string()],
+    };
+
+    let actual = filter_tendrils(tendrils.clone(), filter);
+
+    assert_eq!(actual, vec![
+        tendrils[0].clone(),
+        tendrils[1].clone(),
+        tendrils[3].clone(),
+    ]);
+}
+
+#[test]
+fn name_filter_is_empty_does_not_filter_by_name() {
+    let tendrils = samples();
+    let filter = FilterSpec {
+        mode: Some(ActionMode::Pull),
+        groups: &["g0".to_string(), "g1".to_string(), "g3".to_string()],
+        names: &[],
+        profiles: &["p1".to_string(), "p3".to_string()],
+    };
+
+    let actual = filter_tendrils(tendrils.clone(), filter);
+
+    assert_eq!(actual, vec![
+        tendrils[0].clone(),
+        tendrils[1].clone(),
+        tendrils[3].clone(),
+    ]);
+}
+
+#[test]
 fn profile_filter_is_empty_does_not_filter_by_profile() {
     let tendrils = samples();
     let filter = FilterSpec {
         mode: Some(ActionMode::Pull),
+        groups: &["g0".to_string(), "g1".to_string(), "g3".to_string()],
         names: &["n0".to_string(), "n1".to_string(), "n3".to_string()],
         profiles: &[],
     };
@@ -145,6 +186,12 @@ fn all_filters_are_cumulative() {
     let tendrils = samples();
     let filter = FilterSpec {
         mode: Some(ActionMode::Pull), // Eliminates t2
+        groups: &[
+            "g0".to_string(),
+            "g2".to_string(),
+            "g3".to_string(),
+            "g4".to_string(),
+        ], // Eliminates t1
         names: &[
             "n1".to_string(),
             "n2".to_string(),
@@ -161,5 +208,5 @@ fn all_filters_are_cumulative() {
 
     let actual = filter_tendrils(tendrils.clone(), filter);
 
-    assert_eq!(actual, vec![tendrils[1].clone(), tendrils[3].clone()]);
+    assert_eq!(actual, vec![tendrils[3].clone()]);
 }

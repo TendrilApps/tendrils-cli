@@ -92,6 +92,7 @@ td init
 - Some specific values are invalid to prevent interfering with other common files/folders that may also be in the [Tendrils folder](#tendrils-folder). These invalid values are not case sensitive:
     - `tendrils.json`
     - `.git`
+- See [Filtering by Group](#filtering-by-group)
 
 ### `names`
 - A list of file and/or folder names
@@ -106,6 +107,7 @@ td init
 "names": ["file.txt", "SomeFolder"]
 ```
 - Names cannot be empty strings, cannot contain line breaks, and cannot be paths (i.e cannot contain `/` or `\`)
+- See [Filtering by Name](#filtering-by-name)
 
 ### `parents`
 - A list of folder paths containing the files/subfolders in [`names`](#names) (i.e. their parent folder)
@@ -219,8 +221,19 @@ td push --path some/tendrils/folder
 ```
 
 ## Filtering Tendrils
+- These filters are cumulative
 - For the filters below that support glob patterns, these are resolved using the [`glob-match`](https://crates.io/crates/glob-match) crate
     - Consult this crate's documentation for the syntax
+
+### Filtering by Group
+- Using the `--group (-g)` argument
+- Available on all of the actions listed above
+- Only tendrils who's [group](#group) matches any of the given filters will be included
+    - Glob patterns are supported
+``` bash
+td link -g App1 App2
+```
+- Will only include tendrils whose group is exactly `App1` or `App2`
 
 ### Filtering by Name
 - Using the `--names (-n)` argument
@@ -228,11 +241,10 @@ td push --path some/tendrils/folder
 - Only includes tendril [names](#names) that match any of the given names
     - Glob patterns are supported
 - Any tendril names that do not match are omitted, and any tendrils without any matching names are omitted entirely.
-- Is case sensitive, and must be an exact match
 ``` bash
-td link -n file1.txt file2.txt
+td link -n file1.txt file2.txt *.json
 ```
-- Will only include tendrils whose name is exactly `file1.txt` or `file2.txt`
+- Will only include tendrils whose name is exactly `file1.txt` or `file2.txt`, and all JSON files
 
 ### Filtering by Profile
 - Using the `--profiles (-p)` argument
@@ -267,6 +279,7 @@ td push -p home mac
 - Are not officially supported and their behaviour is undefined
 
 # Developer Notes
+- Prior to running tests, run the [`setup-tendrils.nu`](./dev/setup-tendrils.nu) script
 - Running tests on Windows may require running in an elevated process due to Windows preventing the creation of symlinks without admin rights
     - Running the terminal as administrator will allow these tests to pass
     - Enabling developer mode will allow these tests to pass without running as administrator

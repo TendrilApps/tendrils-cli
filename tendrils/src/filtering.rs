@@ -14,16 +14,20 @@ pub struct FilterSpec<'a> {
     /// `None`, all tendrils will match.
     pub mode: Option<ActionMode>,
 
+    /// Matches only those tendrils whose group matches any of the given groups.
+    /// Glob patterns are supported.
+    pub groups: &'a [String],
+
     /// Matches only those tendril names that match any of the given names.
     /// Any tendril names that do not match are omitted, and any tendrils
     /// without any matching names are omitted entirely. Glob patterns
-    /// are supported
+    /// are supported.
     pub names: &'a [String],
 
     /// Matches only those tendrils that match any of the given profiles, and those
     /// that belong to all profiles (i.e. those that do not have any
     /// profiles defined). Glob patterns
-    /// are supported
+    /// are supported.
     pub profiles: &'a [String],
 }
 
@@ -39,6 +43,7 @@ pub fn filter_tendrils(
     };
 
     filtered = filter_by_profiles(filtered, filter.profiles);
+    filtered = filter_by_group(filtered, filter.groups);
     filter_by_names(filtered, filter.names)
 }
 
@@ -59,6 +64,16 @@ fn filter_by_profiles(tendrils: Vec<TendrilBundle>, profiles: &[String]) -> Vec<
             profiles.iter().any(|f| glob_match(f, p))
         })
     }).collect()
+}
+
+fn filter_by_group(tendrils: Vec<TendrilBundle>, groups: &[String]) -> Vec<TendrilBundle> {
+    if groups.is_empty() {
+        return tendrils;
+    }
+
+    tendrils.into_iter().filter(|t| groups.iter().any(|f| {
+        glob_match(f, &t.group)
+    })).collect()
 }
 
 fn filter_by_names(mut tendrils: Vec<TendrilBundle>, names: &[String]) -> Vec<TendrilBundle> {

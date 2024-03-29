@@ -53,11 +53,15 @@ pub enum TendrilsSubcommands {
         #[arg(long)]
         path: Option<String>,
 
-        /// List of names to filter for
+        /// List of groups to filter for. Globs accepted.
+        #[arg(short, long, num_args = ..)]
+        groups: Vec<String>,
+
+        /// List of names to filter for. Globs accepted.
         #[arg(short, long, num_args = ..)]
         names: Vec<String>,
 
-        /// Explicitly sets the list of profiles to filter for
+        /// Explicitly sets the list of profiles to filter for. Globs accepted.
         #[arg(short, long, num_args = ..)]
         profiles: Vec<String>,
     },
@@ -78,11 +82,15 @@ pub enum TendrilsSubcommands {
         #[arg(long)]
         path: Option<String>,
 
-        /// List of names to filter for
+        /// List of groups to filter for. Globs accepted.
+        #[arg(short, long, num_args = ..)]
+        groups: Vec<String>,
+
+        /// List of names to filter for. Globs accepted.
         #[arg(short, long, num_args = ..)]
         names: Vec<String>,
 
-        /// Explicitly sets the list of profiles to filter for
+        /// Explicitly sets the list of profiles to filter for. Globs accepted.
         #[arg(short, long, num_args = ..)]
         profiles: Vec<String>,
     },
@@ -103,11 +111,15 @@ pub enum TendrilsSubcommands {
         #[arg(long)]
         path: Option<String>,
 
-        /// List of names to filter for
+        /// List of groups to filter for. Globs accepted.
+        #[arg(short, long, num_args = ..)]
+        groups: Vec<String>,
+
+        /// List of names to filter for. Globs accepted.
         #[arg(short, long, num_args = ..)]
         names: Vec<String>,
 
-        /// Explicitly sets the list of profiles to filter for
+        /// Explicitly sets the list of profiles to filter for. Globs accepted.
         #[arg(short, long, num_args = ..)]
         profiles: Vec<String>,
     },
