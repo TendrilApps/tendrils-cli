@@ -11,8 +11,8 @@ use cli::{
 use std::path::PathBuf;
 use tendrils::{
     can_symlink,
-    filter_by_mode,
-    filter_by_profiles,
+    filter_tendrils,
+    FilterSpec,
     get_tendrils,
     get_tendrils_dir,
     init_tendrils_dir,
@@ -43,33 +43,81 @@ fn run(args: TendrilCliArgs, writer: &mut impl Writer) {
         TendrilsSubcommands::Path => {
             path(writer);
         },
-        TendrilsSubcommands::Pull { path, dry_run, force, profiles} => {
+        TendrilsSubcommands::Pull {
+            path,
+            dry_run,
+            force,
+            groups,
+            names,
+            parents,
+            profiles
+        } => {
+            let filter = FilterSpec {
+                mode: Some(ActionMode::Pull),
+                groups: &groups,
+                names: &names,
+                parents: &parents,
+                profiles: &profiles,
+            };
+
             tendril_action_subcommand(
                 ActionMode::Pull,
                 path,
                 dry_run,
                 force,
-                profiles,
+                filter,
                 writer,
             )
         },
-        TendrilsSubcommands::Push { path, dry_run , force, profiles} => {
+        TendrilsSubcommands::Push {
+            path,
+            dry_run,
+            force,
+            groups,
+            names,
+            parents,
+            profiles
+        } => {
+            let filter = FilterSpec {
+                mode: Some(ActionMode::Push),
+                groups: &groups,
+                names: &names,
+                parents: &parents,
+                profiles: &profiles,
+            };
+
             tendril_action_subcommand(
                 ActionMode::Push,
                 path,
                 dry_run,
                 force,
-                profiles,
+                filter,
                 writer,
             )
         },
-        TendrilsSubcommands::Link { path, dry_run, force, profiles } => {
+        TendrilsSubcommands::Link {
+            path,
+            dry_run,
+            force,
+            groups,
+            names,
+            parents,
+            profiles
+        } => {
+            let filter = FilterSpec {
+                mode: Some(ActionMode::Link),
+                groups: &groups,
+                names: &names,
+                parents: &parents,
+                profiles: &profiles,
+            };
+
             tendril_action_subcommand(
                 ActionMode::Link,
                 path,
                 dry_run,
                 force,
-                profiles,
+                filter,
                 writer,
             )
         },
@@ -143,7 +191,7 @@ fn tendril_action_subcommand(
     path: Option<String>,
     dry_run: bool,
     force: bool,
-    profiles: Vec<String>,
+    filter: FilterSpec,
     writer: &mut impl Writer,
 ) {
     let td_dir = match path {
@@ -208,8 +256,7 @@ fn tendril_action_subcommand(
     };
 
     let all_tendrils_is_empty = all_tendrils.is_empty();
-    let mut filtered_tendrils = filter_by_mode(all_tendrils, mode);
-    filtered_tendrils = filter_by_profiles(filtered_tendrils, &profiles);
+    let filtered_tendrils = filter_tendrils(all_tendrils, filter);
 
     if all_tendrils_is_empty {
         writer.writeln("No tendrils were found.");

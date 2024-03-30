@@ -92,6 +92,7 @@ td init
 - Some specific values are invalid to prevent interfering with other common files/folders that may also be in the [Tendrils folder](#tendrils-folder). These invalid values are not case sensitive:
     - `tendrils.json`
     - `.git`
+- See [Filtering by Group](#filtering-by-group)
 
 ### `names`
 - A list of file and/or folder names
@@ -106,6 +107,7 @@ td init
 "names": ["file.txt", "SomeFolder"]
 ```
 - Names cannot be empty strings, cannot contain line breaks, and cannot be paths (i.e cannot contain `/` or `\`)
+- See [Filtering by Name](#filtering-by-name)
 
 ### `parents`
 - A list of folder paths containing the files/subfolders in [`names`](#names) (i.e. their parent folder)
@@ -219,15 +221,53 @@ td push --path some/tendrils/folder
 ```
 
 ## Filtering Tendrils
-### Filtering by Profile
-- Using the `--profiles (-p)` argument
+- These filters are cumulative
+- For the filters below that support glob patterns, these are resolved using the [`glob-match`](https://crates.io/crates/glob-match) crate
+    - Consult this crate's documentation for the syntax
+
+### Filtering by Group
+- Using the `--group (-g)` argument
 - Available on all of the actions listed above
-- Only tendrils with one or more matching profiles will be included
+- Only tendrils who's [group](#group) matches any of the given filters will be included
+    - Glob patterns are supported
+``` bash
+td link -g App1 App2
+```
+- Will only include tendrils whose group is exactly `App1` or `App2`
+
+### Filtering by Name
+- Using the `--names (-n)` argument
+- Available on all of the actions listed above
+- Only includes tendril [names](#names) that match any of the given names
+    - Glob patterns are supported
+- Any tendril names that do not match are omitted, and any tendrils without any matching names are omitted entirely.
+``` bash
+td link -n file1.txt file2.txt *.json
+```
+- Will only include tendrils whose name is exactly `file1.txt` or `file2.txt`, and all JSON files
+
+### Filtering by Parents
+- Using the `--parents (-p)` argument
+- Available on all of the actions listed above
+- Only includes tendril [parents](#parents) that match any of the given parents
+    - Glob patterns are supported
+- Any tendril parents that do not match are omitted, and any tendrils without any matching parents are omitted entirely.
+- Note: Parents are filtered *before* they are [resolved](#path-resolving)
+``` bash
+td push -p ~/Library/** **/*OneDrive*/**
+```
+- Will only include tendrils whose parent is in the user's `Library` folder, or any path that contains `OneDrive`
+
+### Filtering by Profile
+- Using the `--profiles (-P)` argument
+- Available on all of the actions listed above
+- Only tendrils with one or more matching [profiles](#profiles) will be included
+    - Glob patterns are supported
 - Tendrils without any profiles specified will still be included
 ``` bash
-td push -p home mac
+td push -P home mac
 ```
-- The above example will include any tendrils with the `home` or `mac` profile, and any that don't have a profile
+- Will include any tendrils with the `home` or `mac` profile, and any that don't have a profile
 
 # Path Resolving
 ## Resolving Environment Variables
@@ -251,6 +291,7 @@ td push -p home mac
 - Are not officially supported and their behaviour is undefined
 
 # Developer Notes
+- Prior to running tests, run the [`setup-tendrils.nu`](./dev/setup-tendrils.nu) script
 - Running tests on Windows may require running in an elevated process due to Windows preventing the creation of symlinks without admin rights
     - Running the terminal as administrator will allow these tests to pass
     - Enabling developer mode will allow these tests to pass without running as administrator

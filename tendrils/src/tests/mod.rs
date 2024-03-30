@@ -1,8 +1,6 @@
 mod sample_tendrils;
 
 mod common_action_tests;
-mod filter_by_mode_tests;
-mod filter_by_profiles_tests;
 mod get_tendrils_dir_tests;
 mod get_tendrils_tests;
 mod init_tendrils_dir_tests;

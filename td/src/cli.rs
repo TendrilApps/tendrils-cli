@@ -53,8 +53,20 @@ pub enum TendrilsSubcommands {
         #[arg(long)]
         path: Option<String>,
 
-        /// Explicitly sets the list of profiles to include
+        /// List of groups to filter for. Globs accepted.
         #[arg(short, long, num_args = ..)]
+        groups: Vec<String>,
+
+        /// List of names to filter for. Globs accepted.
+        #[arg(short, long, num_args = ..)]
+        names: Vec<String>,
+
+        /// List of parents to filter for. Globs accepted.
+        #[arg(short, long, num_args = ..)]
+        parents: Vec<String>,
+        
+        /// Explicitly sets the list of profiles to filter for. Globs accepted.
+        #[arg(short='P', long, num_args = ..)]
         profiles: Vec<String>,
     },
 
@@ -74,8 +86,20 @@ pub enum TendrilsSubcommands {
         #[arg(long)]
         path: Option<String>,
 
-        /// Explicitly sets the list of profiles to include
+        /// List of groups to filter for. Globs accepted.
         #[arg(short, long, num_args = ..)]
+        groups: Vec<String>,
+
+        /// List of names to filter for. Globs accepted.
+        #[arg(short, long, num_args = ..)]
+        names: Vec<String>,
+
+        /// List of parents to filter for. Globs accepted.
+        #[arg(short, long, num_args = ..)]
+        parents: Vec<String>,
+        
+        /// Explicitly sets the list of profiles to filter for. Globs accepted.
+        #[arg(short='P', long, num_args = ..)]
         profiles: Vec<String>,
     },
 
@@ -95,8 +119,20 @@ pub enum TendrilsSubcommands {
         #[arg(long)]
         path: Option<String>,
 
-        /// Explicitly sets the list of profiles to include
+        /// List of groups to filter for. Globs accepted.
         #[arg(short, long, num_args = ..)]
+        groups: Vec<String>,
+
+        /// List of names to filter for. Globs accepted.
+        #[arg(short, long, num_args = ..)]
+        names: Vec<String>,
+
+        /// List of parents to filter for. Globs accepted.
+        #[arg(short, long, num_args = ..)]
+        parents: Vec<String>,
+        
+        /// Explicitly sets the list of profiles to filter for. Globs accepted.
+        #[arg(short='P', long, num_args = ..)]
         profiles: Vec<String>,
     },
 }

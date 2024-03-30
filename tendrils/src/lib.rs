@@ -11,6 +11,8 @@ pub use enums::{
     TendrilActionSuccess,
     TendrilMode,
 };
+mod filtering;
+pub use filtering::{filter_tendrils, FilterSpec};
 mod tendril;
 use tendril::Tendril;
 use std::ffi::OsString;
@@ -121,36 +123,6 @@ fn fso_types_mismatch(source: &Path, dest: &Path) -> bool {
         || (source.is_file() && dest.is_dir())
         || source.is_symlink()
         || dest.is_symlink()
-}
-
-/// Returns only link style tendrils if the action mode is `Link`, otherwise
-/// it returns only the push/pull style tendrils.
-///
-/// # Arguments
-/// - `tendrils` - List of tendrils to filter through.
-/// - `mode` - The action to be filtered for (link, push, pull, etc.)
-pub fn filter_by_mode(tendrils: Vec<TendrilBundle>, mode: ActionMode) -> Vec<TendrilBundle> {
-    tendrils.into_iter()
-        .filter(|t| t.link == (mode == ActionMode::Link))
-        .collect()
-}
-
-/// Returns only tendrils that match any of the given profiles, and those
-/// tendrils that belong to all profiles (i.e. those that do not have any
-/// profiles defined).
-///
-/// # Arguments
-/// - `tendrils` - List of tendrils to filter through.
-/// - `profiles` - The profiles to be filtered for.
-pub fn filter_by_profiles(tendrils: Vec<TendrilBundle>, profiles: &[String]) -> Vec<TendrilBundle> {
-    if profiles.is_empty() {
-        return tendrils;
-    }
-
-    tendrils.into_iter().filter(|t| -> bool {
-            t.profiles.is_empty()
-            || profiles.iter().any(|p| t.profiles.contains(p))
-        }).collect()
 }
 
 /// Parses the `tendrils.json` file in the given *Tendrils* folder
