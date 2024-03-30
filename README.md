@@ -4,11 +4,15 @@
     - They are all stored in a common [Tendrils folder](#tendrils-folder)
     - `td` is the CLI tool to manage these tendrils
 - Main uses include:
-    - Versioning/syncing configuration files that are expected to be in specific locations on the machine (`.bashrc`, `.vim`, etc)
+    - Versioning/syncing configuration files that are expected to be in specific locations on the machine (video game saves, application settings, `.bashrc`, `.vim`, etc)
     - Versioning/syncing small scripts that otherwise would not have their own repos
     - Quickly editing miscellaneous files in a common place rather than tracking them down individually
 
 # Getting Started
+## Supported Platforms
+- Mac
+- Windows
+
 ## Installation
 - Currently, *Tendrils* is only distributed through source code and must be built using the *Cargo* toolchain
 - To build the `td` CLI:
@@ -84,6 +88,7 @@ td init
     - One for each of the 3 names in each of the 2 parent folders
     - The profiles/tendril modes are applied to all of these tendrils
 - `null` is not valid in any of these fields
+- Must only contain valid UTF-8 characters
 
 ### `group`
 - The name of the group/app that the tendril belongs to
@@ -286,6 +291,11 @@ td push -P home mac
 "parents": "~/documents"
 ```
 - The above example will resolve to `your/home/path/documents`
+
+## Directory Separators
+- Directory separators (`\` and `/`) are replaced by the current platform's standard separators:
+    - `\` on Windows
+    - `/` on everything else
 
 ## Relative Paths
 - Are not officially supported and their behaviour is undefined
