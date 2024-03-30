@@ -49,12 +49,14 @@ fn run(args: TendrilCliArgs, writer: &mut impl Writer) {
             force,
             groups,
             names,
+            parents,
             profiles
         } => {
             let filter = FilterSpec {
                 mode: Some(ActionMode::Pull),
                 groups: &groups,
                 names: &names,
+                parents: &parents,
                 profiles: &profiles,
             };
 
@@ -73,12 +75,14 @@ fn run(args: TendrilCliArgs, writer: &mut impl Writer) {
             force,
             groups,
             names,
+            parents,
             profiles
         } => {
             let filter = FilterSpec {
                 mode: Some(ActionMode::Push),
                 groups: &groups,
                 names: &names,
+                parents: &parents,
                 profiles: &profiles,
             };
 
@@ -97,12 +101,14 @@ fn run(args: TendrilCliArgs, writer: &mut impl Writer) {
             force,
             groups,
             names,
+            parents,
             profiles
         } => {
             let filter = FilterSpec {
                 mode: Some(ActionMode::Link),
                 groups: &groups,
                 names: &names,
+                parents: &parents,
                 profiles: &profiles,
             };
 

@@ -33,7 +33,7 @@ fn tendril_with_empty_names_list_not_included(
 }
 
 #[apply(string_filter_match_tests)]
-fn tendril_name_only_included_if_matching_and_non_matching_names_are_omitted(
+fn tendril_name_only_included_if_it_matches_and_non_matching_names_are_omitted(
     #[case] filters: &[String],
     #[case] exp_matches: &[&str],
 ) {
@@ -129,7 +129,8 @@ fn filter_supports_weird_names(
     let t2 = TendrilBundle::new("SomeApp", vec!["n2"]);
     let tendrils = vec![t1.clone(), t2.clone()];
 
-    let actual = filter_by_names(tendrils, &[name]);
+    let filter = name.replace('\\', "\\\\");
+    let actual = filter_by_names(tendrils, &[filter]);
 
     assert_eq!(actual, vec![t1]);
 }

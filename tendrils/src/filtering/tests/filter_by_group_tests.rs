@@ -89,7 +89,8 @@ fn filter_supports_weird_groups(
     let t2 = TendrilBundle::new("g2", vec!["misc.txt"]);
     let tendrils = vec![t1.clone(), t2.clone()];
 
-    let actual = filter_by_group(tendrils, &[group]);
+    let filter = group.replace('\\', "\\\\");
+    let actual = filter_by_group(tendrils, &[filter]);
 
     assert_eq!(actual, vec![t1]);
 }

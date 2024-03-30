@@ -75,14 +75,14 @@ fn tendril_not_included_if_not_empty_and_no_profile_matches(
 #[test]
 fn duplicate_filter_profiles_only_returns_tendril_once() {
     let mut t1 = TendrilBundle::new("SomeApp", vec!["misc.txt"]);
-    t1.profiles = vec!["p1".to_string()];
+    t1.profiles = vec!["P1".to_string()];
     let mut t2 = TendrilBundle::new("SomeApp", vec!["misc2.txt"]);
-    t2.profiles = vec!["p2".to_string()];
+    t2.profiles = vec!["P2".to_string()];
     let tendrils = vec![t1.clone(), t2.clone()];
     let filters = [
-        "p1".to_string(),
-        "p1".to_string(),
-        "p1".to_string(),
+        "P1".to_string(),
+        "P1".to_string(),
+        "P1".to_string(),
     ];
 
     let actual = filter_by_profiles(tendrils, &filters);
@@ -94,14 +94,14 @@ fn duplicate_filter_profiles_only_returns_tendril_once() {
 fn duplicate_tendril_profiles_only_returns_tendril_once() {
     let mut t1 = TendrilBundle::new("SomeApp", vec!["misc.txt"]);
     t1.profiles = vec![
-        "p1".to_string(),
-        "p1".to_string(),
-        "p1".to_string(),
+        "P1".to_string(),
+        "P1".to_string(),
+        "P1".to_string(),
     ];
     let mut t2 = TendrilBundle::new("SomeApp", vec!["misc2.txt"]);
-    t2.profiles = vec!["p2".to_string()];
+    t2.profiles = vec!["P2".to_string()];
     let tendrils = vec![t1.clone(), t2.clone()];
-    let filters = ["p1".to_string()];
+    let filters = ["P1".to_string()];
 
     let actual = filter_by_profiles(tendrils, &filters);
 
@@ -111,11 +111,11 @@ fn duplicate_tendril_profiles_only_returns_tendril_once() {
 #[test]
 fn duplicate_tendrils_returns_all_instances() {
     let mut t1 = TendrilBundle::new("SomeApp", vec!["misc.txt"]);
-    t1.profiles = vec!["p1".to_string()];
+    t1.profiles = vec!["P1".to_string()];
     let mut t2 = TendrilBundle::new("SomeApp", vec!["misc2.txt"]);
-    t2.profiles = vec!["p2".to_string()];
+    t2.profiles = vec!["P2".to_string()];
     let tendrils = vec![t1.clone(), t1.clone(), t1.clone(), t2.clone()];
-    let filters = ["p1".to_string()];
+    let filters = ["P1".to_string()];
 
     let actual = filter_by_profiles(tendrils, &filters);
 
@@ -132,7 +132,8 @@ fn filter_supports_weird_profiles(
     t2.profiles = vec!["v2".to_string()];
     let tendrils = vec![t1.clone(), t2.clone()];
 
-    let actual = filter_by_profiles(tendrils, &[profile]);
+    let filter = profile.replace('\\', "\\\\");
+    let actual = filter_by_profiles(tendrils, &[filter]);
 
     assert_eq!(actual, vec![t1]);
 }
@@ -145,7 +146,7 @@ fn filter_supports_asterisk_literals(
     let mut t1 = TendrilBundle::new("SomeApp", vec!["misc.txt"]);
     t1.profiles = vec![profile];
     let mut t2 = TendrilBundle::new("SomeApp", vec!["misc2.txt"]);
-    t2.profiles = vec!["p2".to_string()];
+    t2.profiles = vec!["P2".to_string()];
     let tendrils = vec![t1.clone(), t2.clone()];
 
     let actual = filter_by_profiles(tendrils, &[filter]);
@@ -156,7 +157,7 @@ fn filter_supports_asterisk_literals(
 #[test]
 fn empty_filters_list_returns_all_tendrils() {
     let mut t1 = TendrilBundle::new("SomeApp", vec!["misc.txt"]);
-    t1.profiles = vec!["p1".to_string()];
+    t1.profiles = vec!["P1".to_string()];
     let mut t2 = TendrilBundle::new("SomeApp", vec!["misc2.txt"]);
     t2.profiles = vec![];
     let tendrils = vec![t1.clone(), t2.clone()];

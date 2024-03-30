@@ -246,14 +246,26 @@ td link -n file1.txt file2.txt *.json
 ```
 - Will only include tendrils whose name is exactly `file1.txt` or `file2.txt`, and all JSON files
 
+### Filtering by Parents
+- Using the `--parents (-p)` argument
+- Available on all of the actions listed above
+- Only includes tendril [parents](#parents) that match any of the given parents
+    - Glob patterns are supported
+- Any tendril parents that do not match are omitted, and any tendrils without any matching parents are omitted entirely.
+- Note: Parents are filtered *before* they are [resolved](#path-resolving)
+``` bash
+td push -p ~/Library/** **/*OneDrive*/**
+```
+- Will only include tendrils whose parent is in the user's `Library` folder, or any path that contains `OneDrive`
+
 ### Filtering by Profile
-- Using the `--profiles (-p)` argument
+- Using the `--profiles (-P)` argument
 - Available on all of the actions listed above
 - Only tendrils with one or more matching [profiles](#profiles) will be included
     - Glob patterns are supported
 - Tendrils without any profiles specified will still be included
 ``` bash
-td push -p home mac
+td push -P home mac
 ```
 - Will include any tendrils with the `home` or `mac` profile, and any that don't have a profile
 

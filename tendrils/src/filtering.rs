@@ -24,6 +24,12 @@ pub struct FilterSpec<'a> {
     /// are supported.
     pub names: &'a [String],
 
+    /// Matches only those tendril parents that match any of the given parents.
+    /// Any tendril parents that do not match are omitted, and any tendrils
+    /// without any matching parents are omitted entirely. Glob patterns
+    /// are supported.
+    pub parents: &'a [String],
+
     /// Matches only those tendrils that match any of the given profiles, and those
     /// that belong to all profiles (i.e. those that do not have any
     /// profiles defined). Glob patterns
@@ -44,7 +50,8 @@ pub fn filter_tendrils(
 
     filtered = filter_by_profiles(filtered, filter.profiles);
     filtered = filter_by_group(filtered, filter.groups);
-    filter_by_names(filtered, filter.names)
+    filtered = filter_by_names(filtered, filter.names);
+    filter_by_parents(filtered, filter.parents)
 }
 
 fn filter_by_mode(tendrils: Vec<TendrilBundle>, mode: ActionMode) -> Vec<TendrilBundle> {
@@ -94,4 +101,24 @@ fn filter_by_names(mut tendrils: Vec<TendrilBundle>, names: &[String]) -> Vec<Te
     }
 
     tendrils.into_iter().filter(|t| !t.names.is_empty()).collect()
+}
+
+fn filter_by_parents(mut tendrils: Vec<TendrilBundle>, parents: &[String]) -> Vec<TendrilBundle> {
+    if parents.is_empty() {
+        return tendrils;
+    }
+
+    for t in tendrils.iter_mut() {
+        let filtered_parents_iter = t.parents.iter().filter_map(|p| {
+            if parents.iter().any(|f| glob_match(f, p)) {
+                Some(p.to_owned())
+            }
+            else {
+                None
+            }
+        });
+        t.parents = filtered_parents_iter.collect();
+    }
+
+    tendrils.into_iter().filter(|t| !t.parents.is_empty()).collect()
 }
