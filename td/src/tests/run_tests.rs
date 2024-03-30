@@ -1,5 +1,5 @@
 use crate::{ERR_PREFIX, run};
-use crate::cli::{TendrilCliArgs, TendrilsSubcommands};
+use crate::cli::{ActionArgs, FilterArgs, TendrilCliArgs, TendrilsSubcommands};
 use crate::writer::Writer;
 use tendrils::{ActionMode, is_tendrils_dir};
 use tendrils::test_utils::{
@@ -29,6 +29,44 @@ impl MockWriter {
 
     fn all_output_lines(&self) -> Vec<String> {
         self.all_output.lines().map( |x| String::from(x) ).collect()
+    }
+}
+
+fn build_action_subcommand(
+    path: Option<String>,
+    mode: ActionMode,
+    dry_run: bool,
+    force: bool,
+    groups: Vec<String>,
+    names: Vec<String>,
+    parents: Vec<String>,
+    profiles: Vec<String>,
+) -> TendrilsSubcommands {
+    let action_args = ActionArgs {
+        path,
+        dry_run,
+        force,
+    };
+    let filter_args = FilterArgs {
+        groups,
+        names,
+        parents,
+        profiles,
+    };
+
+    match mode {
+        ActionMode::Pull => TendrilsSubcommands::Pull {
+            action_args,
+            filter_args,
+        },
+        ActionMode::Push => TendrilsSubcommands::Push {
+            action_args,
+            filter_args,
+        },
+        ActionMode::Link => TendrilsSubcommands::Link {
+            action_args,
+            filter_args,
+        }
     }
 }
 
@@ -350,24 +388,11 @@ fn tendril_action_no_path_given_and_no_cd_prints_message(
     std::fs::remove_dir_all(delete_me.path()).unwrap();
 
     let mut writer = MockWriter::new();
-    let tendrils_command = match mode {
-        ActionMode::Pull => TendrilsSubcommands::Pull {
-            path: None, dry_run, force, groups: vec![], names: vec![],
-            parents: vec![], profiles: vec![]
-        },
-        ActionMode::Push => TendrilsSubcommands::Push {
-            path: None, dry_run, force, groups: vec![], names: vec![],
-            parents: vec![], profiles: vec![]
-        },
-        ActionMode::Link => TendrilsSubcommands::Link {
-            path: None, dry_run, force, groups: vec![], names: vec![],
-            parents: vec![], profiles: vec![]
-        },
-    };
+    let tendrils_command = build_action_subcommand(
+        None, mode, dry_run, force, vec![], vec![], vec![], vec![]
+    );
+    let args = TendrilCliArgs {tendrils_command};
 
-    let args = TendrilCliArgs{
-        tendrils_command,
-    };
     let expected = format!(
         "{ERR_PREFIX}: Could not get the current directory.\n"
     );
@@ -400,24 +425,11 @@ fn tendril_action_given_path_is_not_tendrils_dir_but_cd_is_should_print_message(
 
     let mut writer = MockWriter::new();
     let path = Some(given_path.to_str().unwrap().to_string());
-    let tendrils_command = match mode {
-        ActionMode::Pull => TendrilsSubcommands::Pull {
-            path, dry_run, force, groups: vec![], names: vec![],
-            parents: vec![], profiles: vec![]
-        },
-        ActionMode::Push => TendrilsSubcommands::Push {
-            path, dry_run, force, groups: vec![], names: vec![],
-            parents: vec![], profiles: vec![]
-        },
-        ActionMode::Link => TendrilsSubcommands::Link {
-            path, dry_run, force, groups: vec![], names: vec![],
-            parents: vec![], profiles: vec![]
-        },
-    };
+    let tendrils_command = build_action_subcommand(
+        path, mode, dry_run, force, vec![], vec![], vec![], vec![]
+    );
+    let args = TendrilCliArgs {tendrils_command};
 
-    let args = TendrilCliArgs{
-        tendrils_command,
-    };
     let expected = format!(
         "{ERR_PREFIX}: The given path is not a Tendrils folder.\n"
     );
@@ -455,23 +467,10 @@ fn tendril_action_given_path_and_cd_are_both_tendrils_dirs_uses_given_path(
 
     let mut writer = MockWriter::new();
     let path = Some(given_path.to_str().unwrap().to_string());
-    let tendrils_command = match mode {
-        ActionMode::Pull => TendrilsSubcommands::Pull {
-            path, dry_run, force, groups: vec![], names: vec![],
-            parents: vec![], profiles: vec![]
-        },
-        ActionMode::Push => TendrilsSubcommands::Push {
-            path, dry_run, force, groups: vec![], names: vec![],
-            parents: vec![], profiles: vec![]
-        },
-        ActionMode::Link => TendrilsSubcommands::Link {
-            path, dry_run, force, groups: vec![], names: vec![],
-            parents: vec![], profiles: vec![]
-        },
-    };
-    let args = TendrilCliArgs{
-        tendrils_command,
-    };
+    let tendrils_command = build_action_subcommand(
+        path, mode, dry_run, force, vec![], vec![], vec![], vec![]
+    );
+    let args = TendrilCliArgs {tendrils_command};
 
     let expected = format!("{ERR_PREFIX}: Could not parse the tendrils.json \
     file.\nEOF while parsing a value at line 1 column 0\n");
@@ -515,23 +514,10 @@ fn tendril_action_dry_run_does_not_modify(
     let mut writer = MockWriter::new();
     let path = Some(setup.td_dir.to_str().unwrap().to_string());
     let dry_run = true;
-    let tendrils_command = match mode {
-        ActionMode::Pull => TendrilsSubcommands::Pull {
-            path, dry_run, force, groups: vec![], names: vec![],
-            parents: vec![], profiles: vec![]
-        },
-        ActionMode::Push => TendrilsSubcommands::Push {
-            path, dry_run, force, groups: vec![], names: vec![],
-            parents: vec![], profiles: vec![]
-        },
-        ActionMode::Link => TendrilsSubcommands::Link {
-            path, dry_run, force, groups: vec![], names: vec![],
-            parents: vec![], profiles: vec![]
-        },
-    };
-    let args = TendrilCliArgs{
-        tendrils_command,
-    };
+    let tendrils_command = build_action_subcommand(
+        path, mode, dry_run, force, vec![], vec![], vec![], vec![]
+    );
+    let args = TendrilCliArgs {tendrils_command};
 
     run(args, &mut writer);
 
@@ -578,23 +564,10 @@ fn tendril_action_tendrils_are_filtered_by_mode(
 
     let mut writer = MockWriter::new();
     let path = Some(setup.td_dir.to_str().unwrap().to_string());
-    let tendrils_command = match mode {
-        ActionMode::Pull => TendrilsSubcommands::Pull {
-            path, dry_run, force, groups: vec![], names: vec![],
-            parents: vec![], profiles: vec![]
-        },
-        ActionMode::Push => TendrilsSubcommands::Push {
-            path, dry_run, force, groups: vec![], names: vec![],
-            parents: vec![], profiles: vec![]
-        },
-        ActionMode::Link => TendrilsSubcommands::Link {
-            path, dry_run, force, groups: vec![], names: vec![],
-            parents: vec![], profiles: vec![]
-        },
-    };
-    let args = TendrilCliArgs{
-        tendrils_command,
-    };
+    let tendrils_command = build_action_subcommand(
+        path, mode, dry_run, force, vec![], vec![], vec![], vec![]
+    );
+    let args = TendrilCliArgs {tendrils_command};
 
     run(args, &mut writer);
 
@@ -646,23 +619,10 @@ fn tendril_action_tendrils_are_filtered_by_group(
 
     let mut writer = MockWriter::new();
     let path = Some(setup.td_dir.to_str().unwrap().to_string());
-    let tendrils_command = match mode {
-        ActionMode::Pull => TendrilsSubcommands::Pull {
-            path, dry_run, force, groups: group_filters, names: vec![],
-            parents: vec![], profiles: vec![]
-        },
-        ActionMode::Push => TendrilsSubcommands::Push {
-            path, dry_run, force, groups: group_filters, names: vec![],
-            parents: vec![], profiles: vec![]
-        },
-        ActionMode::Link => TendrilsSubcommands::Link {
-            path, dry_run, force, groups: group_filters, names: vec![],
-            parents: vec![], profiles: vec![]
-        },
-    };
-    let args = TendrilCliArgs{
-        tendrils_command,
-    };
+    let tendrils_command = build_action_subcommand(
+        path, mode, dry_run, force, group_filters, vec![], vec![], vec![]
+    );
+    let args = TendrilCliArgs {tendrils_command};
 
     run(args, &mut writer);
 
@@ -707,23 +667,10 @@ fn tendril_action_tendrils_are_filtered_by_names(
 
     let mut writer = MockWriter::new();
     let path = Some(setup.td_dir.to_str().unwrap().to_string());
-    let tendrils_command = match mode {
-        ActionMode::Pull => TendrilsSubcommands::Pull {
-            path, dry_run, force, groups: vec![], names: names_filter,
-            parents: vec![], profiles: vec![]
-        },
-        ActionMode::Push => TendrilsSubcommands::Push {
-            path, dry_run, force, groups: vec![], names: names_filter,
-            parents: vec![], profiles: vec![]
-        },
-        ActionMode::Link => TendrilsSubcommands::Link {
-            path, dry_run, force, groups: vec![], names: names_filter,
-            parents: vec![], profiles: vec![]
-        },
-    };
-    let args = TendrilCliArgs{
-        tendrils_command,
-    };
+    let tendrils_command = build_action_subcommand(
+        path, mode, dry_run, force, vec![], names_filter, vec![], vec![]
+    );
+    let args = TendrilCliArgs {tendrils_command};
 
     run(args, &mut writer);
 
@@ -765,23 +712,10 @@ fn tendril_action_tendrils_are_filtered_by_parents(
 
     let mut writer = MockWriter::new();
     let path = Some(setup.td_dir.to_str().unwrap().to_string());
-    let tendrils_command = match mode {
-        ActionMode::Pull => TendrilsSubcommands::Pull {
-            path, dry_run, force, groups: vec![], names: vec![],
-            parents: parents_filter, profiles: vec![]
-        },
-        ActionMode::Push => TendrilsSubcommands::Push {
-            path, dry_run, force, groups: vec![], names: vec![],
-            parents: parents_filter, profiles: vec![]
-        },
-        ActionMode::Link => TendrilsSubcommands::Link {
-            path, dry_run, force, groups: vec![], names: vec![],
-            parents: parents_filter, profiles: vec![]
-        },
-    };
-    let args = TendrilCliArgs{
-        tendrils_command,
-    };
+    let tendrils_command = build_action_subcommand(
+        path, mode, dry_run, force, vec![], vec![], parents_filter, vec![]
+    );
+    let args = TendrilCliArgs {tendrils_command};
 
     run(args, &mut writer);
 
@@ -830,23 +764,10 @@ fn tendril_action_tendrils_are_filtered_by_profile(
 
     let mut writer = MockWriter::new();
     let path = Some(setup.td_dir.to_str().unwrap().to_string());
-    let tendrils_command = match mode {
-        ActionMode::Pull => TendrilsSubcommands::Pull {
-            path, dry_run, force, groups: vec![], names: vec![],
-            parents: vec![], profiles: profiles_filter
-        },
-        ActionMode::Push => TendrilsSubcommands::Push {
-            path, dry_run, force, groups: vec![], names: vec![],
-            parents: vec![], profiles: profiles_filter
-        },
-        ActionMode::Link => TendrilsSubcommands::Link {
-            path, dry_run, force, groups: vec![], names: vec![],
-            parents: vec![], profiles: profiles_filter
-        },
-    };
-    let args = TendrilCliArgs{
-        tendrils_command,
-    };
+    let tendrils_command = build_action_subcommand(
+        path, mode, dry_run, force, vec![], vec![], vec![], profiles_filter
+    );
+    let args = TendrilCliArgs {tendrils_command};
 
     run(args, &mut writer);
 
@@ -877,23 +798,10 @@ fn tendril_action_empty_tendrils_array_should_print_message(
 
     let mut writer = MockWriter::new();
     let path = Some(setup.td_dir.to_str().unwrap().to_string());
-    let tendrils_command = match mode {
-        ActionMode::Pull => TendrilsSubcommands::Pull {
-            path, dry_run, force, groups: vec![], names: vec![],
-            parents: vec![], profiles: given_profiles
-        },
-        ActionMode::Push => TendrilsSubcommands::Push {
-            path, dry_run, force, groups: vec![], names: vec![],
-            parents: vec![], profiles: given_profiles
-        },
-        ActionMode::Link => TendrilsSubcommands::Link {
-            path, dry_run, force, groups: vec![], names: vec![],
-            parents: vec![], profiles: given_profiles
-        },
-    };
-    let args = TendrilCliArgs{
-        tendrils_command,
-    };
+    let tendrils_command = build_action_subcommand(
+        path, mode, dry_run, force, vec![], vec![], vec![], given_profiles
+    );
+    let args = TendrilCliArgs {tendrils_command};
 
     run(args, &mut writer);
 
@@ -925,23 +833,10 @@ fn tendril_action_empty_filtered_tendrils_array_should_print_message(
 
     let mut writer = MockWriter::new();
     let path = Some(setup.td_dir.to_str().unwrap().to_string());
-    let tendrils_command = match mode {
-        ActionMode::Pull => TendrilsSubcommands::Pull {
-            path, dry_run, force, groups: vec![], names: vec![],
-            parents: vec![], profiles: given_profiles
-        },
-        ActionMode::Push => TendrilsSubcommands::Push {
-            path, dry_run, force, groups: vec![], names: vec![],
-            parents: vec![], profiles: given_profiles
-        },
-        ActionMode::Link => TendrilsSubcommands::Link {
-            path, dry_run, force, groups: vec![], names: vec![],
-            parents: vec![], profiles: given_profiles
-        },
-    };
-    let args = TendrilCliArgs{
-        tendrils_command,
-    };
+    let tendrils_command = build_action_subcommand(
+        path, mode, dry_run, force, vec![], vec![], vec![], given_profiles
+    );
+    let args = TendrilCliArgs {tendrils_command};
 
     run(args, &mut writer);
 

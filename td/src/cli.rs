@@ -1,4 +1,4 @@
-use clap::{Parser, Subcommand};
+use clap::{Args, Parser, Subcommand};
 use crate::writer::Writer;
 use inline_colorization::{color_bright_green, color_bright_red, color_reset};
 mod td_table;
@@ -11,6 +11,7 @@ use tendrils::{
 };
 use std::path::PathBuf;
 
+/// A CLI tool for managing tendrils
 #[derive(Parser, Debug)]
 #[command(version)]
 pub struct TendrilCliArgs {
@@ -18,7 +19,6 @@ pub struct TendrilCliArgs {
     pub tendrils_command: TendrilsSubcommands,
 }
 
-/// A CLI tool for managing tendrils
 #[derive(Subcommand, Debug)]
 pub enum TendrilsSubcommands {
     /// Initializes a new Tendrils folder in the current directory
@@ -40,101 +40,67 @@ pub enum TendrilsSubcommands {
     /// Copies tendrils from their various locations on the computer
     /// to the Tendrils folder
     Pull {
-        /// Prints what the command would do without modifying
-        /// the file system
-        #[arg(short, long)]
-        dry_run: bool,
+        #[clap(flatten)]
+        action_args: ActionArgs,
 
-        /// Ignores type mismatches and forces the operation
-        #[arg(short, long)]
-        force: bool,
-
-        /// Explicitly sets the path to the Tendrils folder
-        #[arg(long)]
-        path: Option<String>,
-
-        /// List of groups to filter for. Globs accepted.
-        #[arg(short, long, num_args = ..)]
-        groups: Vec<String>,
-
-        /// List of names to filter for. Globs accepted.
-        #[arg(short, long, num_args = ..)]
-        names: Vec<String>,
-
-        /// List of parents to filter for. Globs accepted.
-        #[arg(short, long, num_args = ..)]
-        parents: Vec<String>,
-        
-        /// Explicitly sets the list of profiles to filter for. Globs accepted.
-        #[arg(short='P', long, num_args = ..)]
-        profiles: Vec<String>,
+        #[clap(flatten)]
+        filter_args: FilterArgs,
     },
 
     /// Copies tendrils from the Tendrils folder to their various
     /// locations on the computer
     Push {
-        /// Prints what the command would do without modifying
-        /// the file system
-        #[arg(short, long)]
-        dry_run: bool,
+        #[clap(flatten)]
+        action_args: ActionArgs,
 
-        /// Ignores type mismatches and forces the operation
-        #[arg(short, long)]
-        force: bool,
-
-        /// Explicitly sets the path to the Tendrils folder
-        #[arg(long)]
-        path: Option<String>,
-
-        /// List of groups to filter for. Globs accepted.
-        #[arg(short, long, num_args = ..)]
-        groups: Vec<String>,
-
-        /// List of names to filter for. Globs accepted.
-        #[arg(short, long, num_args = ..)]
-        names: Vec<String>,
-
-        /// List of parents to filter for. Globs accepted.
-        #[arg(short, long, num_args = ..)]
-        parents: Vec<String>,
-        
-        /// Explicitly sets the list of profiles to filter for. Globs accepted.
-        #[arg(short='P', long, num_args = ..)]
-        profiles: Vec<String>,
+        #[clap(flatten)]
+        filter_args: FilterArgs,
     },
 
     /// Creates symlinks at the various locations on the computer
     /// to the tendrils in the Tendrils folder
     Link {
-        /// Prints what the command would do without modifying
-        /// the file system
-        #[arg(short, long)]
-        dry_run: bool,
+        #[clap(flatten)]
+        action_args: ActionArgs,
 
-        /// Ignores type mismatches and forces the operation
-        #[arg(short, long)]
-        force: bool,
-
-        /// Explicitly sets the path to the Tendrils folder
-        #[arg(long)]
-        path: Option<String>,
-
-        /// List of groups to filter for. Globs accepted.
-        #[arg(short, long, num_args = ..)]
-        groups: Vec<String>,
-
-        /// List of names to filter for. Globs accepted.
-        #[arg(short, long, num_args = ..)]
-        names: Vec<String>,
-
-        /// List of parents to filter for. Globs accepted.
-        #[arg(short, long, num_args = ..)]
-        parents: Vec<String>,
-        
-        /// Explicitly sets the list of profiles to filter for. Globs accepted.
-        #[arg(short='P', long, num_args = ..)]
-        profiles: Vec<String>,
+        #[clap(flatten)]
+        filter_args: FilterArgs,
     },
+}
+
+#[derive(Args, Debug)]
+pub struct ActionArgs {
+    /// Explicitly sets the path to the Tendrils folder
+    #[arg(long)]
+    pub path: Option<String>,
+
+    /// Prints what the command would do without modifying
+    /// the file system
+    #[arg(short, long)]
+    pub dry_run: bool,
+
+    /// Ignores type mismatches and forces the operation
+    #[arg(short, long)]
+    pub force: bool,
+}
+
+#[derive(Args, Debug)]
+pub struct FilterArgs {
+    /// List of groups to filter for. Globs accepted.
+    #[arg(short, long, num_args = ..)]
+    pub groups: Vec<String>,
+
+    /// List of names to filter for. Globs accepted.
+    #[arg(short, long, num_args = ..)]
+    pub names: Vec<String>,
+
+    /// List of parents to filter for. Globs accepted.
+    #[arg(short, long, num_args = ..)]
+    pub parents: Vec<String>,
+
+    /// Explicitly sets the list of profiles to filter for. Globs accepted.
+    #[arg(short='P', long, num_args = ..)]
+    pub profiles: Vec<String>,
 }
 
 // Note: For ansi styling to render properly with 'tabled' tables,

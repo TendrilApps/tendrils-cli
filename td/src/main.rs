@@ -3,7 +3,9 @@
 use clap::Parser;
 mod cli;
 use cli::{
+    ActionArgs,
     ansi_hyperlink,
+    FilterArgs,
     print_reports,
     TendrilCliArgs,
     TendrilsSubcommands
@@ -43,81 +45,27 @@ fn run(args: TendrilCliArgs, writer: &mut impl Writer) {
         TendrilsSubcommands::Path => {
             path(writer);
         },
-        TendrilsSubcommands::Pull {
-            path,
-            dry_run,
-            force,
-            groups,
-            names,
-            parents,
-            profiles
-        } => {
-            let filter = FilterSpec {
-                mode: Some(ActionMode::Pull),
-                groups: &groups,
-                names: &names,
-                parents: &parents,
-                profiles: &profiles,
-            };
-
+        TendrilsSubcommands::Pull {action_args, filter_args} => {
             tendril_action_subcommand(
                 ActionMode::Pull,
-                path,
-                dry_run,
-                force,
-                filter,
+                action_args,
+                filter_args,
                 writer,
             )
         },
-        TendrilsSubcommands::Push {
-            path,
-            dry_run,
-            force,
-            groups,
-            names,
-            parents,
-            profiles
-        } => {
-            let filter = FilterSpec {
-                mode: Some(ActionMode::Push),
-                groups: &groups,
-                names: &names,
-                parents: &parents,
-                profiles: &profiles,
-            };
-
+        TendrilsSubcommands::Push {action_args, filter_args} => {
             tendril_action_subcommand(
                 ActionMode::Push,
-                path,
-                dry_run,
-                force,
-                filter,
+                action_args,
+                filter_args,
                 writer,
             )
         },
-        TendrilsSubcommands::Link {
-            path,
-            dry_run,
-            force,
-            groups,
-            names,
-            parents,
-            profiles
-        } => {
-            let filter = FilterSpec {
-                mode: Some(ActionMode::Link),
-                groups: &groups,
-                names: &names,
-                parents: &parents,
-                profiles: &profiles,
-            };
-
+        TendrilsSubcommands::Link {action_args, filter_args} => {
             tendril_action_subcommand(
                 ActionMode::Link,
-                path,
-                dry_run,
-                force,
-                filter,
+                action_args,
+                filter_args,
                 writer,
             )
         },
@@ -188,13 +136,11 @@ fn path(writer: &mut impl Writer) {
 
 fn tendril_action_subcommand(
     mode: ActionMode,
-    path: Option<String>,
-    dry_run: bool,
-    force: bool,
-    filter: FilterSpec,
+    action_args: ActionArgs,
+    filter_args: FilterArgs,
     writer: &mut impl Writer,
 ) {
-    let td_dir = match path {
+    let td_dir = match action_args.path {
         Some(v) => {
             let test_path = PathBuf::from(v);
             if is_tendrils_dir(&test_path) {
@@ -255,6 +201,13 @@ fn tendril_action_subcommand(
         },
     };
 
+    let filter = FilterSpec {
+        mode: Some(mode),
+        groups: &filter_args.groups,
+        names: &filter_args.names,
+        parents: &filter_args.parents,
+        profiles: &filter_args.profiles,
+    };
     let all_tendrils_is_empty = all_tendrils.is_empty();
     let filtered_tendrils = filter_tendrils(all_tendrils, filter);
 
@@ -269,8 +222,8 @@ fn tendril_action_subcommand(
         mode,
         &td_dir,
         &filtered_tendrils,
-        dry_run,
-        force,
+        action_args.dry_run,
+        action_args.force,
     );
 
     print_reports(&action_reports, writer);
