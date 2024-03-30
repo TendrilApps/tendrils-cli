@@ -37,8 +37,7 @@ pub enum TendrilsSubcommands {
     /// if it is set
     Path,
 
-    /// Copies tendrils from their various locations on the computer
-    /// to the Tendrils folder
+    /// Copies tendrils from their various locations to the Tendrils folder
     Pull {
         #[clap(flatten)]
         action_args: ActionArgs,
@@ -47,8 +46,7 @@ pub enum TendrilsSubcommands {
         filter_args: FilterArgs,
     },
 
-    /// Copies tendrils from the Tendrils folder to their various
-    /// locations on the computer
+    /// Copies tendrils from the Tendrils folder to their various locations
     Push {
         #[clap(flatten)]
         action_args: ActionArgs,
@@ -57,8 +55,8 @@ pub enum TendrilsSubcommands {
         filter_args: FilterArgs,
     },
 
-    /// Creates symlinks at the various locations on the computer
-    /// to the tendrils in the Tendrils folder
+    /// Creates symlinks at their various locations to the tendrils in the
+    /// Tendrils folder
     Link {
         #[clap(flatten)]
         action_args: ActionArgs,
