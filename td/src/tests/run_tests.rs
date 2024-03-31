@@ -1,6 +1,7 @@
 use crate::{ERR_PREFIX, run};
 use crate::cli::{ActionArgs, FilterArgs, TendrilCliArgs, TendrilsSubcommands};
 use crate::writer::Writer;
+use inline_colorization::{color_bright_green, color_bright_red, color_reset};
 use tendrils::{ActionMode, is_tendrils_dir};
 use tendrils::test_utils::{
     get_disposable_dir,
@@ -529,6 +530,12 @@ fn tendril_action_dry_run_does_not_modify(
     }
     assert_eq!(setup.local_file_contents(), "Local file contents");
     assert!(writer.all_output_lines()[3].contains("Skipped"));
+    assert_eq!(
+        writer.all_output_lines().last().unwrap(),
+        &format!("Total: 1, \
+        Successful: {color_bright_green}1{color_reset}, \
+        Failed: {color_bright_red}0{color_reset}")
+    );
     assert_eq!(setup.td_dir.read_dir().unwrap().into_iter().count(), 2);
 }
 
@@ -576,12 +583,24 @@ fn tendril_action_tendrils_are_filtered_by_mode(
         assert!(writer.all_output_lines()[3].contains("NotFound"));
         assert!(writer.all_output_lines()[5].contains("misc3.txt"));
         assert!(writer.all_output_lines()[5].contains("NotFound"));
-        assert_eq!(writer.all_output_lines().len(), 7);
+        assert_eq!(
+            writer.all_output_lines().last().unwrap(),
+            &format!("Total: 2, \
+            Successful: {color_bright_green}0{color_reset}, \
+            Failed: {color_bright_red}2{color_reset}")
+        );
+        assert_eq!(writer.all_output_lines().len(), 8);
     }
     else {
         assert!(writer.all_output_lines()[3].contains("misc1.txt"));
         assert!(writer.all_output_lines()[3].contains("NotFound"));
-        assert_eq!(writer.all_output_lines().len(), 5);
+        assert_eq!(
+            writer.all_output_lines().last().unwrap(),
+            &format!("Total: 1, \
+            Successful: {color_bright_green}0{color_reset}, \
+            Failed: {color_bright_red}1{color_reset}")
+        );
+        assert_eq!(writer.all_output_lines().len(), 6);
     }
 }
 
@@ -630,7 +649,13 @@ fn tendril_action_tendrils_are_filtered_by_group(
     assert!(writer.all_output_lines()[3].contains("NotFound"));
     assert!(writer.all_output_lines()[5].contains("App3"));
     assert!(writer.all_output_lines()[5].contains("NotFound"));
-    assert_eq!(writer.all_output_lines().len(), 7);
+    assert_eq!(
+        writer.all_output_lines().last().unwrap(),
+        &format!("Total: 2, \
+        Successful: {color_bright_green}0{color_reset}, \
+        Failed: {color_bright_red}2{color_reset}")
+    );
+    assert_eq!(writer.all_output_lines().len(), 8);
 }
 
 #[rstest]
@@ -678,7 +703,13 @@ fn tendril_action_tendrils_are_filtered_by_names(
     assert!(writer.all_output_lines()[3].contains("NotFound"));
     assert!(writer.all_output_lines()[5].contains("misc3.txt"));
     assert!(writer.all_output_lines()[5].contains("NotFound"));
-    assert_eq!(writer.all_output_lines().len(), 7);
+    assert_eq!(
+        writer.all_output_lines().last().unwrap(),
+        &format!("Total: 2, \
+        Successful: {color_bright_green}0{color_reset}, \
+        Failed: {color_bright_red}2{color_reset}")
+    );
+    assert_eq!(writer.all_output_lines().len(), 8);
 }
 
 #[rstest]
@@ -724,7 +755,13 @@ fn tendril_action_tendrils_are_filtered_by_parents(
     assert!(writer.all_output_lines()[3].contains("NotFound"));
     assert!(writer.all_output_lines()[5].contains(&format!("p{MAIN_SEPARATOR}3")));
     assert!(writer.all_output_lines()[5].contains("NotFound"));
-    assert_eq!(writer.all_output_lines().len(), 7);
+    assert_eq!(
+        writer.all_output_lines().last().unwrap(),
+        &format!("Total: 2, \
+        Successful: {color_bright_green}0{color_reset}, \
+        Failed: {color_bright_red}2{color_reset}")
+    );
+    assert_eq!(writer.all_output_lines().len(), 8);
 }
 
 #[rstest]
@@ -775,7 +812,13 @@ fn tendril_action_tendrils_are_filtered_by_profile(
     assert!(writer.all_output_lines()[3].contains("NotFound"));
     assert!(writer.all_output_lines()[5].contains("misc3.txt"));
     assert!(writer.all_output_lines()[5].contains("NotFound"));
-    assert_eq!(writer.all_output_lines().len(), 7);
+    assert_eq!(
+        writer.all_output_lines().last().unwrap(),
+        &format!("Total: 2, \
+        Successful: {color_bright_green}0{color_reset}, \
+        Failed: {color_bright_red}2{color_reset}")
+    );
+    assert_eq!(writer.all_output_lines().len(), 8);
 }
 
 #[rstest]

@@ -187,5 +187,30 @@ pub fn print_reports(reports: &[TendrilActionReport], writer: &mut impl Writer) 
             styled_result,
         ]);
     }
-    writer.writeln(&tbl.draw())
+    writer.writeln(&tbl.draw());
+
+    print_totals(reports, writer);
+}
+
+fn print_totals(reports: &[TendrilActionReport], writer: & mut impl Writer) {
+    let total_successes = reports.iter().filter(|r| {
+        match &r.action_result {
+            Some(v) => v.is_ok(),
+            _ => false,
+        }
+    })
+    .count();
+
+    let total = reports.len();
+    let total_failures = total - total_successes;
+
+    writer.writeln(&format!(
+        "Total: {total}, Successful: {}, Failed: {}",
+        ansi_style(
+            &total_successes.to_string(), color_bright_green.to_string(), color_reset
+        ),
+        ansi_style(
+             &total_failures.to_string(), color_bright_red.to_string(), color_reset
+        ),
+    ));
 }
