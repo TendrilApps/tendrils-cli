@@ -19,7 +19,7 @@ pub struct TendrilCliArgs {
     pub tendrils_command: TendrilsSubcommands,
 }
 
-#[derive(Subcommand, Debug)]
+#[derive(Subcommand, Clone, Debug, Eq, PartialEq)]
 pub enum TendrilsSubcommands {
     /// Initializes a new Tendrils folder in the current directory
     Init {
@@ -66,7 +66,7 @@ pub enum TendrilsSubcommands {
     },
 }
 
-#[derive(Args, Debug)]
+#[derive(Args, Clone, Debug, Eq, PartialEq)]
 pub struct ActionArgs {
     /// Explicitly sets the path to the Tendrils folder
     #[arg(long)]
@@ -82,7 +82,7 @@ pub struct ActionArgs {
     pub force: bool,
 }
 
-#[derive(Args, Debug)]
+#[derive(Args, Clone, Debug, Eq, PartialEq)]
 pub struct FilterArgs {
     /// List of groups to filter for. Globs accepted.
     #[arg(short, long, num_args = ..)]

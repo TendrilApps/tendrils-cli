@@ -516,7 +516,7 @@ fn tendril_action_dry_run_does_not_modify(
     let path = Some(setup.td_dir.to_str().unwrap().to_string());
     let dry_run = true;
     let tendrils_command = build_action_subcommand(
-        path, mode, dry_run, force, vec![], vec![], vec![], vec![]
+        path, mode.clone(), dry_run, force, vec![], vec![], vec![], vec![]
     );
     let args = TendrilCliArgs {tendrils_command};
 
@@ -572,7 +572,7 @@ fn tendril_action_tendrils_are_filtered_by_mode(
     let mut writer = MockWriter::new();
     let path = Some(setup.td_dir.to_str().unwrap().to_string());
     let tendrils_command = build_action_subcommand(
-        path, mode, dry_run, force, vec![], vec![], vec![], vec![]
+        path, mode.clone(), dry_run, force, vec![], vec![], vec![], vec![]
     );
     let args = TendrilCliArgs {tendrils_command};
 

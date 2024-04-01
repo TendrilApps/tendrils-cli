@@ -1,7 +1,7 @@
 use serde::Deserialize;
 
 /// Indicates the tendril action to be performed.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ActionMode {
     /// Copy tendrils from the *Tendrils* folder to their various locations
     /// on the computer.
@@ -18,10 +18,12 @@ pub enum ActionMode {
 
 /// Indicates an error while initializing a new
 /// *Tendrils* folder.
-#[derive(Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum InitError {
     /// A general file system error
-    IoError(std::io::Error),
+    IoError {
+        kind: std::io::ErrorKind,
+    },
 
     /// The folder to initialize is already a
     /// *Tendrils* folder
@@ -33,31 +35,35 @@ pub enum InitError {
 
 impl From<std::io::Error> for InitError {
     fn from(err: std::io::Error) -> Self {
-        InitError::IoError(err)
+        InitError::IoError {
+            kind: err.kind(),
+        }
     }
 }
 
 /// Indicates an error while reading/parsing the
 /// tendrils from file.
-#[derive(Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum GetTendrilsError {
     /// A general file system error while reading the
     /// `tendrils.json` file.
-    IoError(std::io::Error),
+    IoError {
+        kind: std::io::ErrorKind,
+    },
 
     /// An error while parsing the json from the file.
-    ParseError(serde_json::Error),
+    ParseError(String),
 }
 
 impl From<std::io::Error> for GetTendrilsError {
     fn from(err: std::io::Error) -> Self {
-        GetTendrilsError::IoError(err)
+        GetTendrilsError::IoError {kind: err.kind()}
     }
 }
 
 impl From<serde_json::Error> for GetTendrilsError {
     fn from(err: serde_json::Error) -> Self {
-        GetTendrilsError::ParseError(err)
+        GetTendrilsError::ParseError(err.to_string())
     }
 }
 
@@ -87,10 +93,12 @@ pub enum TendrilActionSuccess {
 }
 
 /// Indicates an unsuccessful tendril action.
-#[derive(Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum TendrilActionError {
     /// General file system errors
-    IoError(std::io::Error),
+    IoError {
+        kind: std::io::ErrorKind,
+    },
 
     /// The tendril mode does not match the attempted action, such as:
     /// - Attempting to pull a link tendril
@@ -113,13 +121,15 @@ pub enum TendrilActionError {
 
 impl From<std::io::Error> for TendrilActionError {
     fn from(err: std::io::Error) -> Self {
-        TendrilActionError::IoError(err)
+        TendrilActionError::IoError {
+            kind: err.kind(),
+        }
     }
 }
 
 /// Indicates the behaviour of this tendril, and determines whether it is
 /// a push/pull style, or a link style tendril.
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum TendrilMode {
     /// Overwrite any files/folders that are present in both the source and
     /// destination, but keep anything in the destination folder that is not
@@ -145,7 +155,7 @@ pub enum InvalidTendrilError {
     InvalidParent,
 }
 
-#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq)]
 #[serde(untagged)]
 pub enum OneOrMany<T> {
     // https://github.com/Mingun/ksc-rs/blob/8532f701e660b07b6d2c74963fdc0490be4fae4b/src/parser.rs#L29pub

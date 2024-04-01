@@ -210,8 +210,7 @@ r#"[
 /// - `force` - Ignores the [`InitError::NotEmpty`] error
 pub fn init_tendrils_dir(dir: &Path, force: bool) -> Result<(), InitError> {
     if !dir.exists() {
-        let std_io_err = std::io::Error::from(std::io::ErrorKind::NotFound);
-        return Err(InitError::IoError(std_io_err));
+        return Err(InitError::IoError {kind: std::io::ErrorKind::NotFound});
     }
     else if is_tendrils_dir(dir) {
         return Err(InitError::AlreadyInitialized);
@@ -254,8 +253,9 @@ fn link_tendril(
         return Err(TendrilActionError::Recursion);
     }
     if !dest.parent().unwrap_or(&dest).exists() {
-        let io_err = std::io::Error::from(std::io::ErrorKind::NotFound);
-        return Err(TendrilActionError::IoError(io_err));
+        return Err(TendrilActionError::IoError {
+            kind: std::io::ErrorKind::NotFound,
+        });
     }
 
     let target = td_dir.join(tendril.group()).join(tendril.name());
@@ -268,8 +268,8 @@ fn link_tendril(
     }
 
     match symlink(&dest, &target, dry_run, force) {
-        Err(TendrilActionError::IoError(ref io_e)) if dry_run
-            && io_e.kind() == std::io::ErrorKind::NotFound
+        Err(TendrilActionError::IoError {kind: e_kind}) if dry_run
+            && e_kind == std::io::ErrorKind::NotFound
             && dest.exists()
             && td_dir.exists() =>
         {
@@ -301,8 +301,9 @@ fn pull_tendril(
         return Err(TendrilActionError::Recursion);
     }
     else if !td_dir.exists() {
-        let io_err = std::io::Error::from(std::io::ErrorKind::NotFound);
-        return Err(TendrilActionError::IoError(io_err));
+        return Err(TendrilActionError::IoError {
+            kind: std::io::ErrorKind::NotFound,
+        });
     }
 
     let dest = td_dir.join(tendril.group()).join(tendril.name());
@@ -329,8 +330,9 @@ fn push_tendril(
         return Err(TendrilActionError::Recursion);
     }
     if !dest.parent().unwrap_or(&dest).exists() {
-        let io_err = std::io::Error::from(std::io::ErrorKind::NotFound);
-        return Err(TendrilActionError::IoError(io_err));
+        return Err(TendrilActionError::IoError {
+            kind: std::io::ErrorKind::NotFound,
+        });
     }
 
     let source = td_dir.join(tendril.group()).join(tendril.name());
@@ -458,7 +460,7 @@ fn resolve_tendril_bundle(
                 &td_bundle.group,
                 name,
                 parent,
-                mode,
+                mode.clone(),
             ));
         }
     }
@@ -521,8 +523,9 @@ fn symlink(
         return symlink_unix(create_at, target, dry_run);
     }
     else {
-        let io_err = std::io::Error::from(std::io::ErrorKind::NotFound);
-        Err(TendrilActionError::IoError(io_err))
+        return Err(TendrilActionError::IoError {
+            kind: std::io::ErrorKind::NotFound,
+        });
     }
 }
 
@@ -591,8 +594,9 @@ fn symlink_win(
         }
     }
     else {
-        let io_err = std::io::Error::from(std::io::ErrorKind::NotFound);
-        Err(TendrilActionError::IoError(io_err))
+        return Err(TendrilActionError::IoError {
+            kind: std::io::ErrorKind::NotFound,
+        });
     }
 }
 
@@ -656,7 +660,7 @@ pub fn tendril_action<'a>(
         };
 
         for (i, resolved_tendril) in resolved_tendrils.into_iter().enumerate() {
-            let action_result = match (&resolved_tendril, mode, can_symlink) {
+            let action_result = match (&resolved_tendril, &mode, can_symlink) {
                 (Ok(v), ActionMode::Pull, _) => {
                     Some(pull_tendril(&td_dir, &v, dry_run, force))
                 },
@@ -670,8 +674,9 @@ pub fn tendril_action<'a>(
                     // Do not attempt to symlink if it has already been determined
                     // that the process does not have the required permissions.
                     // This prevents deleting any of the remote files unnecessarily.
-                    let io_err = std::io::Error::from(std::io::ErrorKind::PermissionDenied);
-                    Some(Err(TendrilActionError::IoError(io_err)))
+                    Some(Err(TendrilActionError::IoError {
+                        kind: std::io::ErrorKind::PermissionDenied,
+                    }))
                 },
                 (Err(_), _, _) => None,
             };
