@@ -6,9 +6,11 @@ pub enum ActionMode {
     /// Copy tendrils from the *Tendrils* folder to their various locations
     /// on the computer.
     Push,
+
     /// Copy tendrils from their various locations on the computer to the
     /// *Tendrils* folder.
     Pull,
+
     /// Create symlinks at the various locations on the computer to the
     /// tendrils in the *Tendrils* folder.
     Link,
@@ -42,6 +44,7 @@ pub enum GetTendrilsError {
     /// A general file system error while reading the
     /// `tendrils.json` file.
     IoError(std::io::Error),
+
     /// An error while parsing the json from the file.
     ParseError(serde_json::Error),
 }
@@ -59,12 +62,28 @@ impl From<serde_json::Error> for GetTendrilsError {
 }
 
 /// Indicates a successful tendril action.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum TendrilActionSuccess {
-    /// A successful action
-    Ok,
-    /// An action that is expected to succeed but was skipped due to a dry-run
-    Skipped,
+    // To keep the memory size of this enum to a minimum, the new and overwrite
+    // variations are separated as their own invariants. If needed in the
+    // future this could become a nested enum, although this would
+    // increase the memory size
+
+    /// A successful action that created a new file system object at the
+    /// destination.
+    New,
+
+    /// A successful action that overwrote a file system object at the
+    /// destination.
+    Overwrite,
+
+    /// An action that was expected to succeed in creating a new file system
+    /// object at the destination but was skipped due to a dry-run.
+    NewSkipped,
+
+    /// An action that was expected to succeed in overwriting a file system
+    /// object at the destination but was skipped due to a dry-run.
+    OverwriteSkipped,
 }
 
 /// Indicates an unsuccessful tendril action.
@@ -72,15 +91,18 @@ pub enum TendrilActionSuccess {
 pub enum TendrilActionError {
     /// General file system errors
     IoError(std::io::Error),
+
     /// The tendril mode does not match the attempted action, such as:
     /// - Attempting to pull a link tendril
     /// - Attempting to link a push/pull tendril
     ModeMismatch,
+
     /// The tendril action would result in recursive copying/linking, such as:
     /// - Including the *Tendrils* folder as a tendril
     /// - A folder tendril that is an ancestor to the *Tendrils* folder
     /// - A tendril that is inside the *Tendrils* folder
     Recursion,
+
     /// The type of the remote and local file system objects do not match, or
     /// do not match the expected types, such as:
     /// - The source is a file but the destination is a folder
@@ -104,10 +126,12 @@ pub enum TendrilMode {
     /// in the source folder. This only applies to folder tendrils.
     /// Tendrils with this mode are considered push/pull.
     DirMerge,
+
     /// Completely overwrite the destination folder with the contents of
     /// the source folder. This only applies to folder tendrils.
     /// Tendrils with this mode are considered push/pull.
     DirOverwrite,
+
     /// Create a symlink at the remote location that points to local
     /// file/folder.
     Link,
@@ -127,6 +151,7 @@ pub enum OneOrMany<T> {
     // https://github.com/Mingun/ksc-rs/blob/8532f701e660b07b6d2c74963fdc0490be4fae4b/src/parser.rs#L29pub
     /// Single value
     One(T),
+
     /// Array of values
     Vec(Vec<T>),
 }

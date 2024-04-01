@@ -136,13 +136,15 @@ fn ansi_styled_resolved_path(
 fn ansi_styled_result(
     result: &Option<Result<TendrilActionSuccess, TendrilActionError>>
 ) -> String {
-    return match result {
+    match result {
         Some(Ok(r)) => {
-            ansi_style(
-                &format!("{:?}", r),
-                color_bright_green.to_owned(),
-                color_reset
-            )
+            let text = match r {
+                TendrilActionSuccess::New => "Created",
+                TendrilActionSuccess::NewSkipped => "Skipped Creation",
+                TendrilActionSuccess::Overwrite => "Overwritten",
+                TendrilActionSuccess::OverwriteSkipped => "Skipped Overwrite",
+            };
+            ansi_style(text, color_bright_green.to_owned(), color_reset)
         },
         Some(Err(e)) => {
             ansi_style(
@@ -151,7 +153,7 @@ fn ansi_styled_result(
                 color_reset
             )
         },
-        None => "".to_string()
+        None => return "".to_string()
     }
 }
 

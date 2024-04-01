@@ -185,6 +185,7 @@ fn remote_is_sibling_to_given_td_dir_proceeds_normally(
 ) {
     let setup = Setup::new();
     setup.make_local_dir();
+    setup.make_target_nested_file();
     assert_eq!( // Check they are siblings
         setup.remote_dir.parent().unwrap(),
         setup.td_dir.parent().unwrap()
@@ -193,6 +194,8 @@ fn remote_is_sibling_to_given_td_dir_proceeds_normally(
     let mut tendril = setup.dir_tendril();
     if action == link_tendril {
         tendril.mode = TendrilMode::Link;
+        symlink_expose(&setup.remote_dir, &setup.target_dir, false, true)
+            .unwrap();
     }
     else {
         setup.make_remote_dir();
@@ -201,10 +204,10 @@ fn remote_is_sibling_to_given_td_dir_proceeds_normally(
     let actual = action(&setup.td_dir, &tendril, dry_run, force);
 
     if dry_run {
-        assert!(matches!(actual, Ok(TendrilActionSuccess::Skipped)));
+        assert!(matches!(actual, Ok(TendrilActionSuccess::OverwriteSkipped)));
     }
     else {
-        assert!(matches!(actual, Ok(TendrilActionSuccess::Ok)));
+        assert!(matches!(actual, Ok(TendrilActionSuccess::Overwrite)));
     }
 }
 
@@ -239,10 +242,10 @@ fn remote_is_another_td_dir_proceeds_normally(
         assert!(matches!(actual, Err(TendrilActionError::TypeMismatch)))
     }
     else if dry_run {
-        assert!(matches!(actual, Ok(TendrilActionSuccess::Skipped)));
+        assert!(matches!(actual, Ok(TendrilActionSuccess::OverwriteSkipped)));
     }
     else {
-        assert!(matches!(actual, Ok(TendrilActionSuccess::Ok)));
+        assert!(matches!(actual, Ok(TendrilActionSuccess::Overwrite)));
     }
 }
 
@@ -282,6 +285,7 @@ fn var_in_any_field_exists_uses_raw_path_even_if_var_exists(
     setup.local_file = setup.group_dir.join(name);
     setup.make_parent_dir();
     setup.make_local_file();
+    setup.make_target_file();
     std::env::set_var("mut-testing", "NON-EXISTENT PATH");
 
     let mut tendril = Tendril::new(
@@ -292,6 +296,8 @@ fn var_in_any_field_exists_uses_raw_path_even_if_var_exists(
     ).unwrap();
     if action == link_tendril {
         tendril.mode = TendrilMode::Link;
+        symlink_expose(&setup.remote_file, &setup.target_file, false, true)
+            .unwrap();
     }
     else {
         setup.make_remote_file();
@@ -300,10 +306,10 @@ fn var_in_any_field_exists_uses_raw_path_even_if_var_exists(
     let actual = action(&setup.td_dir, &tendril, dry_run, force);
 
     if dry_run {
-        assert!(matches!(actual, Ok(TendrilActionSuccess::Skipped)));
+        assert!(matches!(actual, Ok(TendrilActionSuccess::OverwriteSkipped)));
     }
     else {
-        assert!(matches!(actual, Ok(TendrilActionSuccess::Ok)));
+        assert!(matches!(actual, Ok(TendrilActionSuccess::Overwrite)));
     }
 }
 
@@ -324,6 +330,8 @@ fn other_tendrils_in_same_group_dir_are_unchanged(
     let setup = Setup::new();
     setup.make_local_file();
     setup.make_local_dir();
+    setup.make_target_file();
+    setup.make_target_dir();
     let some_other_local_file= &setup.group_dir.join("other.txt");
     let some_other_local_dir= &setup.group_dir.join("other");
     let some_other_local_nested= &setup.group_dir.join("nested.txt");
@@ -336,6 +344,10 @@ fn other_tendrils_in_same_group_dir_are_unchanged(
     if action == link_tendril {
         file_tendril.mode = TendrilMode::Link;
         dir_tendril.mode = TendrilMode::Link;
+        symlink_expose(&setup.remote_file, &setup.target_file, false, true)
+            .unwrap();
+        symlink_expose(&setup.remote_dir, &setup.target_dir, false, true)
+            .unwrap();
     }
     else {
         setup.make_remote_file();
@@ -351,12 +363,12 @@ fn other_tendrils_in_same_group_dir_are_unchanged(
     assert_eq!(some_other_local_file_contents, "Another tendril from the same group");
     assert_eq!(some_other_local_nested_contents, "Another nested from the same group");
     if dry_run {
-        assert!(matches!(file_actual, Ok(TendrilActionSuccess::Skipped)));
-        assert!(matches!(dir_actual, Ok(TendrilActionSuccess::Skipped)));
+        assert!(matches!(file_actual, Ok(TendrilActionSuccess::OverwriteSkipped)));
+        assert!(matches!(dir_actual, Ok(TendrilActionSuccess::OverwriteSkipped)));
     }
     else {
-        assert!(matches!(file_actual, Ok(TendrilActionSuccess::Ok)));
-        assert!(matches!(dir_actual, Ok(TendrilActionSuccess::Ok)));
+        assert!(matches!(file_actual, Ok(TendrilActionSuccess::Overwrite)));
+        assert!(matches!(dir_actual, Ok(TendrilActionSuccess::Overwrite)));
     }
 }
 
@@ -503,12 +515,18 @@ pub(crate) fn local_is_unchanged(
     let setup = Setup::new();
     setup.make_local_file();
     setup.make_local_nested_file();
+    setup.make_target_file();
+    setup.make_target_nested_file();
 
     let mut file_tendril = setup.file_tendril();
     let mut dir_tendril = setup.dir_tendril();
     if action == link_tendril {
         file_tendril.mode = TendrilMode::Link;
         dir_tendril.mode = TendrilMode::Link;
+        symlink_expose(&setup.remote_file, &setup.target_file, false, true)
+            .unwrap();
+        symlink_expose(&setup.remote_dir, &setup.target_dir, false, true)
+            .unwrap();
     }
     else {
         setup.make_remote_file();
@@ -521,12 +539,12 @@ pub(crate) fn local_is_unchanged(
     assert_eq!(setup.local_file_contents(), "Local file contents");
     assert_eq!(setup.local_nested_file_contents(), "Local nested file contents");
     if dry_run {
-        assert!(matches!(file_actual, Ok(TendrilActionSuccess::Skipped)));
-        assert!(matches!(dir_actual, Ok(TendrilActionSuccess::Skipped)));
+        assert!(matches!(file_actual, Ok(TendrilActionSuccess::OverwriteSkipped)));
+        assert!(matches!(dir_actual, Ok(TendrilActionSuccess::OverwriteSkipped)));
     }
     else {
-        assert!(matches!(file_actual, Ok(TendrilActionSuccess::Ok)));
-        assert!(matches!(dir_actual, Ok(TendrilActionSuccess::Ok)));
+        assert!(matches!(file_actual, Ok(TendrilActionSuccess::Overwrite)));
+        assert!(matches!(dir_actual, Ok(TendrilActionSuccess::Overwrite)));
     }
 }
 
@@ -568,12 +586,12 @@ pub(crate) fn local_symlink_is_unchanged(
         assert!(matches!(dir_actual, Err(TendrilActionError::TypeMismatch)));
     }
     else if dry_run {
-        assert!(matches!(file_actual, Ok(TendrilActionSuccess::Skipped)));
-        assert!(matches!(dir_actual, Ok(TendrilActionSuccess::Skipped)));
+        assert!(matches!(file_actual, Ok(TendrilActionSuccess::OverwriteSkipped)));
+        assert!(matches!(dir_actual, Ok(TendrilActionSuccess::OverwriteSkipped)));
     }
     else {
-        assert!(matches!(file_actual, Ok(TendrilActionSuccess::Ok)));
-        assert!(matches!(dir_actual, Ok(TendrilActionSuccess::Ok)));
+        assert!(matches!(file_actual, Ok(TendrilActionSuccess::Overwrite)));
+        assert!(matches!(dir_actual, Ok(TendrilActionSuccess::Overwrite)));
     }
 }
 
@@ -623,12 +641,12 @@ pub(crate) fn remote_is_unchanged(
         assert!(matches!(dir_actual,  Err(TendrilActionError::TypeMismatch)));
     }
     else if dry_run {
-        assert!(matches!(file_actual, Ok(TendrilActionSuccess::Skipped)));
-        assert!(matches!(dir_actual, Ok(TendrilActionSuccess::Skipped)));
+        assert!(matches!(file_actual, Ok(TendrilActionSuccess::OverwriteSkipped)));
+        assert!(matches!(dir_actual, Ok(TendrilActionSuccess::OverwriteSkipped)));
     }
     else {
-        assert!(matches!(file_actual, Ok(TendrilActionSuccess::Ok)));
-        assert!(matches!(dir_actual, Ok(TendrilActionSuccess::Ok)));
+        assert!(matches!(file_actual, Ok(TendrilActionSuccess::Overwrite)));
+        assert!(matches!(dir_actual, Ok(TendrilActionSuccess::Overwrite)));
     }
 }
 
@@ -671,12 +689,12 @@ pub(crate) fn remote_symlink_is_unchanged(
         assert!(matches!(dir_actual,  Err(TendrilActionError::TypeMismatch)));
     }
     else if dry_run {
-        assert!(matches!(file_actual, Ok(TendrilActionSuccess::Skipped)));
-        assert!(matches!(dir_actual, Ok(TendrilActionSuccess::Skipped)));
+        assert!(matches!(file_actual, Ok(TendrilActionSuccess::OverwriteSkipped)));
+        assert!(matches!(dir_actual, Ok(TendrilActionSuccess::OverwriteSkipped)));
     }
     else {
-        assert!(matches!(file_actual, Ok(TendrilActionSuccess::Ok)));
-        assert!(matches!(dir_actual, Ok(TendrilActionSuccess::Ok)));
+        assert!(matches!(file_actual, Ok(TendrilActionSuccess::Overwrite)));
+        assert!(matches!(dir_actual, Ok(TendrilActionSuccess::Overwrite)));
     }
 }
 
@@ -730,7 +748,7 @@ fn current_dir_is_unchanged(
 #[case(push_tendril)]
 #[cfg_attr(not(windows), ignore)]
 #[serial("root")]
-fn parent_is_windows_root_returns_permission_error_unless_dry_run_or_dir(
+fn windows_platform_parent_is_root_returns_permission_error_unless_dry_run_or_dir(
     #[case] action: fn(&Path, &Tendril, bool, bool)
         -> Result<TendrilActionSuccess, TendrilActionError>,
 
@@ -787,17 +805,17 @@ fn parent_is_windows_root_returns_permission_error_unless_dry_run_or_dir(
             _ => panic!("Actual error: {:?}", file_actual),
         }
         if dry_run {
-            assert!(matches!(dir_actual, Ok(TendrilActionSuccess::Skipped)));
+            assert!(matches!(dir_actual, Ok(TendrilActionSuccess::OverwriteSkipped)));
             assert_eq!(setup.local_nested_file_contents(), "Local nested file contents");
         }
         else {
-            assert!(matches!(dir_actual, Ok(TendrilActionSuccess::Ok)));
+            assert!(matches!(dir_actual, Ok(TendrilActionSuccess::Overwrite)));
             assert_eq!(setup.local_nested_file_contents(), "Remote nested file contents");
         }
     }
     else if dry_run {
-        assert!(matches!(file_actual, Ok(TendrilActionSuccess::Skipped)));
-        assert!(matches!(dir_actual, Ok(TendrilActionSuccess::Skipped)));
+        assert!(matches!(file_actual, Ok(TendrilActionSuccess::NewSkipped)));
+        assert!(matches!(dir_actual, Ok(TendrilActionSuccess::NewSkipped)));
         assert!(!setup.remote_file.exists());
         assert!(!setup.remote_dir.exists());
     }
@@ -809,7 +827,7 @@ fn parent_is_windows_root_returns_permission_error_unless_dry_run_or_dir(
             },
             _ => panic!("Actual error: {:?}", file_actual),
         }
-        assert!(matches!(dir_actual, Ok(TendrilActionSuccess::Ok)));
+        assert!(matches!(dir_actual, Ok(TendrilActionSuccess::New)));
         assert!(!setup.remote_file.exists());
         assert_eq!(setup.remote_nested_file_contents(), "Local nested file contents");
     }
@@ -827,7 +845,7 @@ fn parent_is_windows_root_returns_permission_error_unless_dry_run_or_dir(
 #[cfg_attr(windows, ignore)]
 #[serial]
 #[serial("root")]
-fn parent_is_not_windows_root_returns_permission_error_unless_dry_run(
+fn non_windows_platform_parent_is_root_returns_permission_error_unless_dry_run(
     #[case] action: fn(&Path, &Tendril, bool, bool)
         -> Result<TendrilActionSuccess, TendrilActionError>,
 
@@ -886,8 +904,8 @@ fn parent_is_not_windows_root_returns_permission_error_unless_dry_run(
         assert_eq!(setup.local_nested_file_contents(), "Local nested file contents");
     }
     else if dry_run {
-        assert!(matches!(file_actual, Ok(TendrilActionSuccess::Skipped)));
-        assert!(matches!(dir_actual, Ok(TendrilActionSuccess::Skipped)));
+        assert!(matches!(file_actual, Ok(TendrilActionSuccess::NewSkipped)));
+        assert!(matches!(dir_actual, Ok(TendrilActionSuccess::NewSkipped)));
         assert!(!setup.remote_file.exists());
         assert!(!setup.remote_dir.exists());
     }

@@ -39,9 +39,14 @@ fn copy_fso(
     dry_run: bool,
 ) -> Result<TendrilActionSuccess, TendrilActionError> {
     let mut to = to;
+    let to_existed = to.exists();
 
     if from.is_dir() {
-        if dry_run { return Ok(TendrilActionSuccess::Skipped); }
+        match (dry_run, to_existed) {
+            (true, true) => return Ok(TendrilActionSuccess::OverwriteSkipped),
+            (true, false) => return Ok(TendrilActionSuccess::NewSkipped),
+            _ => {}
+        }
         if !dir_merge && to.is_dir() {
             std::fs::remove_dir_all(to)?;
             create_dir_all(to)?;
@@ -56,9 +61,10 @@ fn copy_fso(
         let mut copy_opts = fs_extra::dir::CopyOptions::new();
         copy_opts.overwrite = true;
         copy_opts.skip_exist = false;
-        match fs_extra::dir::copy(from, to, &copy_opts) {
-            Ok(_v) => Ok(TendrilActionSuccess::Ok),
-            Err(e) => match e.kind {
+        match (fs_extra::dir::copy(from, to, &copy_opts), to_existed) {
+            (Ok(_v), true) => Ok(TendrilActionSuccess::Overwrite),
+            (Ok(_v), false) => Ok(TendrilActionSuccess::New),
+            (Err(e), _) => match e.kind {
                 // Convert fs_extra::errors to PushPullErrors
                 fs_extra::error::ErrorKind::Io(e) => {
                     Err(TendrilActionError::from(e))
@@ -90,7 +96,11 @@ fn copy_fso(
             }
         };
 
-        if dry_run { return Ok(TendrilActionSuccess::Skipped); }
+        match (dry_run, to_existed) {
+            (true, true) => return Ok(TendrilActionSuccess::OverwriteSkipped),
+            (true, false) => return Ok(TendrilActionSuccess::NewSkipped),
+            _ => {}
+        }
 
         create_dir_all(to.parent().unwrap_or(to))?;
 
@@ -101,9 +111,10 @@ fn copy_fso(
             remove_file(&to)?;
         }
 
-        match std::fs::copy(from_str, to_str) {
-            Ok(_v) => Ok(TendrilActionSuccess::Ok),
-            Err(e) => Err(TendrilActionError::from(e))
+        match (std::fs::copy(from_str, to_str), to_existed) {
+            (Ok(_v), true) => Ok(TendrilActionSuccess::Overwrite),
+            (Ok(_v), false) => Ok(TendrilActionSuccess::New),
+            (Err(e), _) => Err(TendrilActionError::from(e))
         }
     }
     else {
@@ -264,7 +275,7 @@ fn link_tendril(
         {
             // Local does not exist and should be copied before link
             // in a non-dry run. Ignore this error here
-            Ok(TendrilActionSuccess::Skipped)
+            Ok(TendrilActionSuccess::OverwriteSkipped)
         }
         result => result,
     }
@@ -519,18 +530,24 @@ fn symlink(
 fn symlink_unix(
     create_at: &Path, target: &Path, dry_run: bool
 ) -> Result<TendrilActionSuccess, TendrilActionError> {
-    if dry_run {
-        Ok(TendrilActionSuccess::Skipped)
-    }
-    else {
-        if create_at.is_file() {
-            remove_file(create_at)?;
-        }
-        if create_at.is_dir() {
-            remove_dir_all(create_at)?;
-        }
-        std::os::unix::fs::symlink(target, create_at)?;
-        Ok(TendrilActionSuccess::Ok)
+    let create_at_existed = create_at.exists();
+    match (dry_run, create_at_existed) {
+        (true, true) => return Ok(TendrilActionSuccess::OverwriteSkipped),
+        (true, false) => return Ok(TendrilActionSuccess::NewSkipped),
+        (false, true) => {
+            if create_at.is_file() {
+                remove_file(create_at)?;
+            }
+            if create_at.is_dir() {
+                remove_dir_all(create_at)?;
+            }
+        },
+        _ => {}
+    };
+    match (std::os::unix::fs::symlink(target, create_at), create_at_existed) {
+        (Ok(_), true) => Ok(TendrilActionSuccess::Overwrite),
+        (Ok(_), false) => Ok(TendrilActionSuccess::New),
+        (Err(e), _) => Err(TendrilActionError::from(e)),
     }
 }
 
@@ -539,26 +556,39 @@ fn symlink_win(
     create_at: &Path, target: &Path, dry_run: bool
 ) -> Result<TendrilActionSuccess, TendrilActionError> {
     use std::os::windows::fs::{symlink_dir, symlink_file};
-    // TODO: Pattern match instead
+
+    let create_at_existed = create_at.exists();
+
+    // TODO: Simplify logic & eliminate repetition
     if target.is_dir() {
-        if dry_run {
-            return Ok(TendrilActionSuccess::Skipped);
+        match (dry_run, create_at_existed) {
+            (true, true) => return Ok(TendrilActionSuccess::OverwriteSkipped),
+            (true, false) => return Ok(TendrilActionSuccess::NewSkipped),
+            _ => {}
         }
-        else if create_at.exists() {
+        if create_at_existed {
             remove_dir_all(create_at)?;
         }
-        symlink_dir(target, create_at)?;
-        Ok(TendrilActionSuccess::Ok)
+        match (symlink_dir(target, create_at), create_at_existed) {
+            (Ok(_), true) => Ok(TendrilActionSuccess::Overwrite),
+            (Ok(_), false) => Ok(TendrilActionSuccess::New),
+            (Err(e), _) => Err(TendrilActionError::from(e))
+        }
     }
     else if target.is_file() {
-        if dry_run {
-            return Ok(TendrilActionSuccess::Skipped);
+        match (dry_run, create_at_existed) {
+            (true, true) => return Ok(TendrilActionSuccess::OverwriteSkipped),
+            (true, false) => return Ok(TendrilActionSuccess::NewSkipped),
+            _ => {}
         }
-        else if create_at.exists() {
+        if create_at.exists() {
             remove_file(create_at)?;
         }
-        symlink_file(target, create_at)?;
-        Ok(TendrilActionSuccess::Ok)
+        match (symlink_file(target, create_at), create_at_existed) {
+            (Ok(_), true) => Ok(TendrilActionSuccess::Overwrite),
+            (Ok(_), false) => Ok(TendrilActionSuccess::New),
+            (Err(e), _) => Err(TendrilActionError::from(e))
+        }
     }
     else {
         let io_err = std::io::Error::from(std::io::ErrorKind::NotFound);
@@ -577,10 +607,12 @@ fn symlink_win(
 ///     - `true` will perform the internal checks for the action but does not
 /// modify anything on the file system. If the action is expected to fail, the
 /// expected [`TendrilActionError`] is returned. If it's expected to succeed,
-/// it returns [`TendrilActionSuccess::Skipped`]. Note: It is still possible
+/// it returns [`TendrilActionSuccess::NewSkipped`] or 
+/// [`TendrilActionSuccess::OverwriteSkipped`]. Note: It is still possible
 /// for a successful dry run to fail in an actual run.
 ///     - `false` will perform the action normally (modifying the file system),
-/// and will return [`TendrilActionSuccess::Ok`] if successful.
+/// and will return [`TendrilActionSuccess::New`] or
+/// [`TendrilActionSuccess::Overwrite`] if successful.
 /// - `force`
 ///     - `true` will ignore any type mismatches and will force the operation.
 ///     - `false` will simply return [`TendrilActionError::TypeMismatch`] if there

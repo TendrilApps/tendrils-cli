@@ -100,19 +100,19 @@ fn pull_returns_tendril_and_result_for_each_given(
                     orig_tendril: &given[0],
                     name: &given[0].names[0],
                     resolved_path: Ok(remote_app1_file),
-                    action_result: Some(Ok(TendrilActionSuccess::Skipped)),
+                    action_result: Some(Ok(TendrilActionSuccess::NewSkipped)),
                 },
                 TendrilActionReport {
                     orig_tendril: &given[1],
                     name: &given[1].names[0],
                     resolved_path: Ok(remote_app2_file),
-                    action_result: Some(Ok(TendrilActionSuccess::Skipped)),
+                    action_result: Some(Ok(TendrilActionSuccess::NewSkipped)),
                 },
                 TendrilActionReport {
                     orig_tendril: &given[2],
                     name: &given[2].names[0],
                     resolved_path: Ok(remote_app1_dir),
-                    action_result: Some(Ok(TendrilActionSuccess::Skipped)),
+                    action_result: Some(Ok(TendrilActionSuccess::NewSkipped)),
                 },
                 TendrilActionReport {
                     orig_tendril: &given[3],
@@ -124,7 +124,7 @@ fn pull_returns_tendril_and_result_for_each_given(
                     orig_tendril: &given[3],
                     name: &given[3].names[1],
                     resolved_path: Ok(remote_app3_fileb_pa),
-                    action_result: Some(Ok(TendrilActionSuccess::Skipped)),
+                    action_result: Some(Ok(TendrilActionSuccess::NewSkipped)),
                 },
                 // The second path should not be considered since this is a pull action
             ]
@@ -135,19 +135,19 @@ fn pull_returns_tendril_and_result_for_each_given(
                     orig_tendril: &given[0],
                     name: &given[0].names[0],
                     resolved_path: Ok(remote_app1_file),
-                    action_result: Some(Ok(TendrilActionSuccess::Ok)),
+                    action_result: Some(Ok(TendrilActionSuccess::New)),
                 },
                 TendrilActionReport {
                     orig_tendril: &given[1],
                     name: &given[1].names[0],
                     resolved_path: Ok(remote_app2_file),
-                    action_result: Some(Ok(TendrilActionSuccess::Ok)),
+                    action_result: Some(Ok(TendrilActionSuccess::New)),
                 },
                 TendrilActionReport {
                     orig_tendril: &given[2],
                     name: &given[2].names[0],
                     resolved_path: Ok(remote_app1_dir),
-                    action_result: Some(Ok(TendrilActionSuccess::Ok)),
+                    action_result: Some(Ok(TendrilActionSuccess::New)),
                 },
                 TendrilActionReport {
                     orig_tendril: &given[3],
@@ -159,7 +159,7 @@ fn pull_returns_tendril_and_result_for_each_given(
                     orig_tendril: &given[3],
                     name: &given[3].names[1],
                     resolved_path: Ok(remote_app3_fileb_pa),
-                    action_result: Some(Ok(TendrilActionSuccess::Ok)),
+                    action_result: Some(Ok(TendrilActionSuccess::New)),
                 },
             ]
         }
@@ -181,10 +181,10 @@ fn pull_returns_tendril_and_result_for_each_given(
 
     // TendrilActionError is not equatable so must match manually
     if dry_run {
-        assert!(matches!(actual[0].action_result, Some(Ok(TendrilActionSuccess::Skipped))));
-        assert!(matches!(actual[1].action_result, Some(Ok(TendrilActionSuccess::Skipped))));
-        assert!(matches!(actual[2].action_result, Some(Ok(TendrilActionSuccess::Skipped))));
-        assert!(matches!(actual[4].action_result, Some(Ok(TendrilActionSuccess::Skipped))));
+        assert!(matches!(actual[0].action_result, Some(Ok(TendrilActionSuccess::NewSkipped))));
+        assert!(matches!(actual[1].action_result, Some(Ok(TendrilActionSuccess::NewSkipped))));
+        assert!(matches!(actual[2].action_result, Some(Ok(TendrilActionSuccess::NewSkipped))));
+        assert!(matches!(actual[4].action_result, Some(Ok(TendrilActionSuccess::NewSkipped))));
 
         assert!(!local_app1_file.exists());
         assert!(!local_app1_dir.exists());
@@ -193,10 +193,10 @@ fn pull_returns_tendril_and_result_for_each_given(
         assert!(!local_app1_nested_file.exists());
     }
     else {
-        assert!(matches!(actual[0].action_result, Some(Ok(TendrilActionSuccess::Ok))));
-        assert!(matches!(actual[1].action_result, Some(Ok(TendrilActionSuccess::Ok))));
-        assert!(matches!(actual[2].action_result, Some(Ok(TendrilActionSuccess::Ok))));
-        assert!(matches!(actual[4].action_result, Some(Ok(TendrilActionSuccess::Ok))));
+        assert!(matches!(actual[0].action_result, Some(Ok(TendrilActionSuccess::New))));
+        assert!(matches!(actual[1].action_result, Some(Ok(TendrilActionSuccess::New))));
+        assert!(matches!(actual[2].action_result, Some(Ok(TendrilActionSuccess::New))));
+        assert!(matches!(actual[4].action_result, Some(Ok(TendrilActionSuccess::New))));
 
         let local_app1_file_contents = read_to_string(local_app1_file).unwrap();
         let local_app2_file_contents = read_to_string(local_app2_file).unwrap();
@@ -282,19 +282,19 @@ fn push_returns_tendril_and_result_for_each_given(
                     orig_tendril: &given[0],
                     name: &given[0].names[0],
                     resolved_path: Ok(remote_app1_file.clone()),
-                    action_result: Some(Ok(TendrilActionSuccess::Skipped)),
+                    action_result: Some(Ok(TendrilActionSuccess::NewSkipped)),
                 },
                 TendrilActionReport {
                     orig_tendril: &given[1],
                     name: &given[1].names[0],
                     resolved_path: Ok(remote_app2_file.clone()),
-                    action_result: Some(Ok(TendrilActionSuccess::Skipped)),
+                    action_result: Some(Ok(TendrilActionSuccess::NewSkipped)),
                 },
                 TendrilActionReport {
                     orig_tendril: &given[2],
                     name: &given[2].names[0],
                     resolved_path: Ok(remote_app1_dir.clone()),
-                    action_result: Some(Ok(TendrilActionSuccess::Skipped)),
+                    action_result: Some(Ok(TendrilActionSuccess::NewSkipped)),
                 },
                 TendrilActionReport {
                     orig_tendril: &given[3],
@@ -312,13 +312,13 @@ fn push_returns_tendril_and_result_for_each_given(
                     orig_tendril: &given[3],
                     name: &given[3].names[1],
                     resolved_path: Ok(remote_app3_fileb_pa.clone()),
-                    action_result: Some(Ok(TendrilActionSuccess::Skipped)),
+                    action_result: Some(Ok(TendrilActionSuccess::NewSkipped)),
                 },
                 TendrilActionReport {
                     orig_tendril: &given[3],
                     name: &given[3].names[1],
                     resolved_path: Ok(remote_app3_fileb_pb.clone()),
-                    action_result: Some(Ok(TendrilActionSuccess::Skipped)),
+                    action_result: Some(Ok(TendrilActionSuccess::NewSkipped)),
                 },
             ]
         },
@@ -328,19 +328,19 @@ fn push_returns_tendril_and_result_for_each_given(
                     orig_tendril: &given[0],
                     name: &given[0].names[0],
                     resolved_path: Ok(remote_app1_file.clone()),
-                    action_result: Some(Ok(TendrilActionSuccess::Ok)),
+                    action_result: Some(Ok(TendrilActionSuccess::New)),
                 },
                 TendrilActionReport {
                     orig_tendril: &given[1],
                     name: &given[1].names[0],
                     resolved_path: Ok(remote_app2_file.clone()),
-                    action_result: Some(Ok(TendrilActionSuccess::Ok)),
+                    action_result: Some(Ok(TendrilActionSuccess::New)),
                 },
                 TendrilActionReport {
                     orig_tendril: &given[2],
                     name: &given[2].names[0],
                     resolved_path: Ok(remote_app1_dir.clone()),
-                    action_result: Some(Ok(TendrilActionSuccess::Ok)),
+                    action_result: Some(Ok(TendrilActionSuccess::New)),
                 },
                 TendrilActionReport {
                     orig_tendril: &given[3],
@@ -358,13 +358,13 @@ fn push_returns_tendril_and_result_for_each_given(
                     orig_tendril: &given[3],
                     name: &given[3].names[1],
                     resolved_path: Ok(remote_app3_fileb_pa.clone()),
-                    action_result: Some(Ok(TendrilActionSuccess::Ok)),
+                    action_result: Some(Ok(TendrilActionSuccess::New)),
                 },
                 TendrilActionReport {
                     orig_tendril: &given[3],
                     name: &given[3].names[1],
                     resolved_path: Ok(remote_app3_fileb_pb.clone()),
-                    action_result: Some(Ok(TendrilActionSuccess::Ok)),
+                    action_result: Some(Ok(TendrilActionSuccess::New)),
                 },
             ]
         }
@@ -386,11 +386,11 @@ fn push_returns_tendril_and_result_for_each_given(
 
     // TendrilActionError is not equatable so must match manually
     if dry_run {
-        assert!(matches!(actual[0].action_result, Some(Ok(TendrilActionSuccess::Skipped))));
-        assert!(matches!(actual[1].action_result, Some(Ok(TendrilActionSuccess::Skipped))));
-        assert!(matches!(actual[2].action_result, Some(Ok(TendrilActionSuccess::Skipped))));
-        assert!(matches!(actual[5].action_result, Some(Ok(TendrilActionSuccess::Skipped))));
-        assert!(matches!(actual[6].action_result, Some(Ok(TendrilActionSuccess::Skipped))));
+        assert!(matches!(actual[0].action_result, Some(Ok(TendrilActionSuccess::NewSkipped))));
+        assert!(matches!(actual[1].action_result, Some(Ok(TendrilActionSuccess::NewSkipped))));
+        assert!(matches!(actual[2].action_result, Some(Ok(TendrilActionSuccess::NewSkipped))));
+        assert!(matches!(actual[5].action_result, Some(Ok(TendrilActionSuccess::NewSkipped))));
+        assert!(matches!(actual[6].action_result, Some(Ok(TendrilActionSuccess::NewSkipped))));
 
         assert!(!remote_app1_file.exists());
         assert!(!remote_app2_file.exists());
@@ -399,11 +399,11 @@ fn push_returns_tendril_and_result_for_each_given(
         assert!(!remote_app1_nested_file.exists());
     }
     else {
-        assert!(matches!(actual[0].action_result, Some(Ok(TendrilActionSuccess::Ok))));
-        assert!(matches!(actual[1].action_result, Some(Ok(TendrilActionSuccess::Ok))));
-        assert!(matches!(actual[2].action_result, Some(Ok(TendrilActionSuccess::Ok))));
-        assert!(matches!(actual[5].action_result, Some(Ok(TendrilActionSuccess::Ok))));
-        assert!(matches!(actual[6].action_result, Some(Ok(TendrilActionSuccess::Ok))));
+        assert!(matches!(actual[0].action_result, Some(Ok(TendrilActionSuccess::New))));
+        assert!(matches!(actual[1].action_result, Some(Ok(TendrilActionSuccess::New))));
+        assert!(matches!(actual[2].action_result, Some(Ok(TendrilActionSuccess::New))));
+        assert!(matches!(actual[5].action_result, Some(Ok(TendrilActionSuccess::New))));
+        assert!(matches!(actual[6].action_result, Some(Ok(TendrilActionSuccess::New))));
 
         let remote_app1_file_contents = read_to_string(&remote_app1_file).unwrap();
         let remote_app2_file_contents = read_to_string(&remote_app2_file).unwrap();
@@ -506,19 +506,19 @@ fn link_returns_tendril_and_result_for_each_given(
                     orig_tendril: &given[0],
                     name: &given[0].names[0],
                     resolved_path: Ok(remote_app1_file.clone()),
-                    action_result: Some(Ok(TendrilActionSuccess::Skipped)),
+                    action_result: Some(Ok(TendrilActionSuccess::NewSkipped)),
                 },
                 TendrilActionReport {
                     orig_tendril: &given[1],
                     name: &given[1].names[0],
                     resolved_path: Ok(remote_app2_file.clone()),
-                    action_result: Some(Ok(TendrilActionSuccess::Skipped)),
+                    action_result: Some(Ok(TendrilActionSuccess::NewSkipped)),
                 },
                 TendrilActionReport {
                     orig_tendril: &given[2],
                     name: &given[2].names[0],
                     resolved_path: Ok(remote_app1_dir.clone()),
-                    action_result: Some(Ok(TendrilActionSuccess::Skipped)),
+                    action_result: Some(Ok(TendrilActionSuccess::NewSkipped)),
                 },
                 TendrilActionReport {
                     orig_tendril: &given[3],
@@ -536,13 +536,13 @@ fn link_returns_tendril_and_result_for_each_given(
                     orig_tendril: &given[3],
                     name: &given[3].names[1],
                     resolved_path: Ok(remote_app3_fileb_pa.clone()),
-                    action_result: Some(Ok(TendrilActionSuccess::Skipped)),
+                    action_result: Some(Ok(TendrilActionSuccess::NewSkipped)),
                 },
                 TendrilActionReport {
                     orig_tendril: &given[3],
                     name: &given[3].names[1],
                     resolved_path: Ok(remote_app3_fileb_pb.clone()),
-                    action_result: Some(Ok(TendrilActionSuccess::Skipped)),
+                    action_result: Some(Ok(TendrilActionSuccess::NewSkipped)),
                 },
             ]
         },
@@ -552,19 +552,19 @@ fn link_returns_tendril_and_result_for_each_given(
                     orig_tendril: &given[0],
                     name: &given[0].names[0],
                     resolved_path: Ok(remote_app1_file.clone()),
-                    action_result: Some(Ok(TendrilActionSuccess::Ok)),
+                    action_result: Some(Ok(TendrilActionSuccess::New)),
                 },
                 TendrilActionReport {
                     orig_tendril: &given[1],
                     name: &given[1].names[0],
                     resolved_path: Ok(remote_app2_file.clone()),
-                    action_result: Some(Ok(TendrilActionSuccess::Ok)),
+                    action_result: Some(Ok(TendrilActionSuccess::New)),
                 },
                 TendrilActionReport {
                     orig_tendril: &given[2],
                     name: &given[2].names[0],
                     resolved_path: Ok(remote_app1_dir.clone()),
-                    action_result: Some(Ok(TendrilActionSuccess::Ok)),
+                    action_result: Some(Ok(TendrilActionSuccess::New)),
                 },
                 TendrilActionReport {
                     orig_tendril: &given[3],
@@ -582,13 +582,13 @@ fn link_returns_tendril_and_result_for_each_given(
                     orig_tendril: &given[3],
                     name: &given[3].names[1],
                     resolved_path: Ok(remote_app3_fileb_pa.clone()),
-                    action_result: Some(Ok(TendrilActionSuccess::Ok)),
+                    action_result: Some(Ok(TendrilActionSuccess::New)),
                 },
                 TendrilActionReport {
                     orig_tendril: &given[3],
                     name: &given[3].names[1],
                     resolved_path: Ok(remote_app3_fileb_pb.clone()),
-                    action_result: Some(Ok(TendrilActionSuccess::Ok)),
+                    action_result: Some(Ok(TendrilActionSuccess::New)),
                 },
             ]
         }
@@ -610,11 +610,11 @@ fn link_returns_tendril_and_result_for_each_given(
 
     // TendrilActionError is not equatable so must match manually
     if dry_run {
-        assert!(matches!(actual[0].action_result, Some(Ok(TendrilActionSuccess::Skipped))));
-        assert!(matches!(actual[1].action_result, Some(Ok(TendrilActionSuccess::Skipped))));
-        assert!(matches!(actual[2].action_result, Some(Ok(TendrilActionSuccess::Skipped))));
-        assert!(matches!(actual[5].action_result, Some(Ok(TendrilActionSuccess::Skipped))));
-        assert!(matches!(actual[6].action_result, Some(Ok(TendrilActionSuccess::Skipped))));
+        assert!(matches!(actual[0].action_result, Some(Ok(TendrilActionSuccess::NewSkipped))));
+        assert!(matches!(actual[1].action_result, Some(Ok(TendrilActionSuccess::NewSkipped))));
+        assert!(matches!(actual[2].action_result, Some(Ok(TendrilActionSuccess::NewSkipped))));
+        assert!(matches!(actual[5].action_result, Some(Ok(TendrilActionSuccess::NewSkipped))));
+        assert!(matches!(actual[6].action_result, Some(Ok(TendrilActionSuccess::NewSkipped))));
 
         assert!(!remote_app1_file.exists());
         assert!(!remote_app2_file.exists());
@@ -623,11 +623,11 @@ fn link_returns_tendril_and_result_for_each_given(
         assert!(!remote_app1_nested_file.exists());
     }
     else {
-        assert!(matches!(actual[0].action_result, Some(Ok(TendrilActionSuccess::Ok))));
-        assert!(matches!(actual[1].action_result, Some(Ok(TendrilActionSuccess::Ok))));
-        assert!(matches!(actual[2].action_result, Some(Ok(TendrilActionSuccess::Ok))));
-        assert!(matches!(actual[5].action_result, Some(Ok(TendrilActionSuccess::Ok))));
-        assert!(matches!(actual[6].action_result, Some(Ok(TendrilActionSuccess::Ok))));
+        assert!(matches!(actual[0].action_result, Some(Ok(TendrilActionSuccess::New))));
+        assert!(matches!(actual[1].action_result, Some(Ok(TendrilActionSuccess::New))));
+        assert!(matches!(actual[2].action_result, Some(Ok(TendrilActionSuccess::New))));
+        assert!(matches!(actual[5].action_result, Some(Ok(TendrilActionSuccess::New))));
+        assert!(matches!(actual[6].action_result, Some(Ok(TendrilActionSuccess::New))));
 
         let remote_app1_file_contents = read_to_string(&remote_app1_file).unwrap();
         let remote_app2_file_contents = read_to_string(&remote_app2_file).unwrap();
