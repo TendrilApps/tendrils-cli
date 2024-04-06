@@ -7,7 +7,7 @@ use crate::tendril_bundle::TendrilBundle;
 use std::path::PathBuf;
 
 /// Contains the result of a single tendrils action.
-#[derive(Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct TendrilActionReport<'a> {
     /// The original tendril bundle that this action was expanded from & performed
     /// on.

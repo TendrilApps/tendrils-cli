@@ -100,8 +100,8 @@ fn init(path: Option<String>, force: bool, writer: &mut impl Writer) {
                 &td_dir.to_string_lossy()
             ));
         },
-        Err(InitError::IoError(e)) => {
-            writer.writeln(&format!("{ERR_PREFIX}: {e}."));
+        Err(InitError::IoError {kind: e_kind}) => {
+            writer.writeln(&format!("{ERR_PREFIX}: {e_kind}."));
         },
         Err(InitError::AlreadyInitialized) => {
             writer.writeln(&format!("{ERR_PREFIX}: This folder is already a Tendrils folder."));
@@ -186,7 +186,7 @@ fn tendril_action_subcommand(
 
     let all_tendrils = match get_tendrils(&td_dir) {
         Ok(v) => v,
-        Err(GetTendrilsError::IoError(_e)) => {
+        Err(GetTendrilsError::IoError {kind: _}) => {
             writer.writeln(&format!(
                 "{ERR_PREFIX}: Could not read the tendrils.json file."
             ));
@@ -202,7 +202,7 @@ fn tendril_action_subcommand(
     };
 
     let filter = FilterSpec {
-        mode: Some(mode),
+        mode: Some(mode.clone()),
         groups: &filter_args.groups,
         names: &filter_args.names,
         parents: &filter_args.parents,

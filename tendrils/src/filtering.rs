@@ -7,7 +7,7 @@ mod tests;
 
 /// Defines a series of filters that can be applied to a
 /// list of tendrils.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct FilterSpec<'a> {
     /// Matches only link style tendrils if the action mode is `Link`,
     /// otherwise it matches only the push/pull style tendrils. If

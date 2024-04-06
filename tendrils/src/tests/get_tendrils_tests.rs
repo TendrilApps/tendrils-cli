@@ -13,12 +13,9 @@ fn no_tendrils_json_file_returns_io_not_found_error() {
 
     let actual = get_tendrils(&temp.path());
 
-    match actual {
-        Err(GetTendrilsError::IoError(e)) => {
-            assert_eq!(e.kind(), std::io::ErrorKind::NotFound)
-        },
-        _ => panic!()
-    }
+    assert_eq!(actual, Err(GetTendrilsError::IoError {
+        kind: std::io::ErrorKind::NotFound,
+    }));
 }
 
 #[test]
@@ -33,11 +30,12 @@ fn invalid_json_returns_parse_error() {
 
     let actual = get_tendrils(&temp_td_dir.path());
 
-    // TODO: Test for proper ParseError variation
-    assert!(matches!(
-        actual.unwrap_err(),
-        GetTendrilsError::ParseError(_)
-    ));
+    assert_eq!(
+        actual,
+        Err(GetTendrilsError::ParseError(
+            "expected value at line 1 column 1".to_string()
+        ))
+    );
 }
 
 #[test]

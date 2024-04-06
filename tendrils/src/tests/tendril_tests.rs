@@ -47,7 +47,7 @@ fn group_is_invalid_returns_invalid_group_error(#[case] group: &str) {
         TendrilMode::DirOverwrite,
     ).unwrap_err();
 
-    assert!(matches!(actual, InvalidTendrilError::InvalidGroup));
+    assert_eq!(actual, InvalidTendrilError::InvalidGroup);
 }
 
 #[apply(forbidden_groups)]
@@ -64,7 +64,7 @@ fn name_is_invalid_returns_invalid_name_error(#[case] name: &str) {
         TendrilMode::DirOverwrite,
     ).unwrap_err();
 
-    assert!(matches!(actual, InvalidTendrilError::InvalidName));
+    assert_eq!(actual, InvalidTendrilError::InvalidName);
 }
 
 #[rstest]
@@ -79,7 +79,7 @@ fn parent_is_invalid_returns_invalid_parent_error(#[case] parent: &str) {
         TendrilMode::DirOverwrite,
     ).unwrap_err();
 
-    assert!(matches!(actual, InvalidTendrilError::InvalidParent));
+    assert_eq!(actual, InvalidTendrilError::InvalidParent);
 }
 
 #[apply(valid_groups_and_names)]
