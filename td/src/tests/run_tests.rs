@@ -108,6 +108,9 @@ fn init_no_path_given_uses_current_dir(#[case] force: bool) {
         "Created a Tendrils folder at: {}.\n",
         temp_dir.path().to_string_lossy()
     ));
+
+    // Cleanup
+    std::env::set_current_dir(temp_dir.path().parent().unwrap()).unwrap();
 }
 
 #[rstest]
@@ -141,6 +144,9 @@ fn init_path_given_uses_given_path_and_ignores_valid_current_dir(#[case] force: 
         "Created a Tendrils folder at: {}.\n",
         given_dir.to_string_lossy()
     ));
+
+    // Cleanup
+    std::env::set_current_dir(temp_dir.path().parent().unwrap()).unwrap();
 }
 
 #[rstest]
@@ -180,6 +186,9 @@ fn init_path_given_uses_given_path_and_ignores_invalid_current_dir(#[case] force
         "Created a Tendrils folder at: {}.\n",
         given_dir.to_string_lossy()
     ));
+
+    // Cleanup
+    std::env::set_current_dir(temp_dir.path().parent().unwrap()).unwrap();
 }
 
 #[rstest]
