@@ -5,6 +5,8 @@ mod td_table;
 use td_table::TdTable;
 use tendrils::{
     InvalidTendrilError,
+    FsoType,
+    Location,
     TendrilActionError,
     TendrilActionSuccess,
     TendrilActionReport,
@@ -136,22 +138,69 @@ fn ansi_styled_resolved_path(
 fn ansi_styled_result(
     result: &Option<Result<TendrilActionSuccess, TendrilActionError>>
 ) -> String {
+    use std::io::ErrorKind::NotFound;
+    use FsoType::{Dir, File, Symlink};
+    use Location::{Dest, Source, Unknown};
+
     match result {
         Some(Ok(r)) => {
             let text = match r {
                 TendrilActionSuccess::New => "Created",
-                TendrilActionSuccess::NewSkipped => "Skipped Creation",
+                TendrilActionSuccess::NewSkipped => "Skipped creation",
                 TendrilActionSuccess::Overwrite => "Overwritten",
-                TendrilActionSuccess::OverwriteSkipped => "Skipped Overwrite",
+                TendrilActionSuccess::OverwriteSkipped => "Skipped overwrite",
             };
             ansi_style(text, color_bright_green.to_owned(), color_reset)
         },
         Some(Err(e)) => {
-            ansi_style(
-                &format!("{:?}", e),
-                color_bright_red.to_owned(),
-                color_reset
-            )
+            let owned_str: String;
+            let text = match e {
+                TendrilActionError::IoError {kind: NotFound, loc: Source} => {
+                    "Source not found"
+                },
+                TendrilActionError::IoError {kind: NotFound, loc: Dest} => {
+                    "Destination not found"
+                },
+                TendrilActionError::IoError {kind: NotFound, loc: Unknown} => {
+                    "Not found"
+                },
+                TendrilActionError::IoError {kind: e_kind, loc: Source} => {
+                    owned_str = format!("{:?} error at source", e_kind);
+                    &owned_str
+                },
+                TendrilActionError::IoError {kind: e_kind, loc: Dest} => {
+                    owned_str = format!("{:?} error at destination", e_kind);
+                    &owned_str
+                },
+                TendrilActionError::IoError {kind: e_kind, loc: Unknown} => {
+                    owned_str = format!("{:?} error", e_kind);
+                    &owned_str
+                },
+                TendrilActionError::ModeMismatch => "Wrong tendril style",
+                TendrilActionError::Recursion => "Recursive tendril",
+                TendrilActionError::TypeMismatch {loc: Source, mistype: File} => {
+                    "Unexpected file at source"
+                },
+                TendrilActionError::TypeMismatch {loc: Source, mistype: Dir} => {
+                    "Unexpected directory at source"
+                },
+                TendrilActionError::TypeMismatch {loc: Source, mistype: Symlink} => {
+                    "Unexpected symlink at source"
+                },
+                TendrilActionError::TypeMismatch {loc: Dest, mistype: File} => {
+                    "Unexpected file at destination"
+                },
+                TendrilActionError::TypeMismatch {loc: Dest, mistype: Dir} => {
+                    "Unexpected directory at destination"
+                },
+                TendrilActionError::TypeMismatch {loc: Dest, mistype: Symlink} => {
+                    "Unexpected symlink at destination"
+                },
+                TendrilActionError::TypeMismatch {loc: Unknown, mistype: _} => {
+                    "Unexpected file system object"
+                },
+            };
+            ansi_style(text, color_bright_red.to_owned(), color_reset)
         },
         None => return "".to_string()
     }

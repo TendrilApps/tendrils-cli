@@ -1,5 +1,10 @@
-use crate::{tendril_action, TendrilActionError, TendrilActionSuccess};
-use crate::enums::ActionMode;
+use crate::{
+    ActionMode,
+    Location,
+    tendril_action,
+    TendrilActionError,
+    TendrilActionSuccess
+};
 use crate::tendril_bundle::TendrilBundle;
 use crate::tendril_action_report::TendrilActionReport;
 use crate::test_utils::{
@@ -92,81 +97,46 @@ fn pull_returns_tendril_and_result_for_each_given(
         &[given_parent_dir_a.clone(), given_parent_dir_b.clone()]
     );
 
-    let expected: Vec<TendrilActionReport> = match dry_run {
-        true => {
-            vec![
-                TendrilActionReport {
-                    orig_tendril: &given[0],
-                    name: &given[0].names[0],
-                    resolved_path: Ok(remote_app1_file),
-                    action_result: Some(Ok(TendrilActionSuccess::NewSkipped)),
-                },
-                TendrilActionReport {
-                    orig_tendril: &given[1],
-                    name: &given[1].names[0],
-                    resolved_path: Ok(remote_app2_file),
-                    action_result: Some(Ok(TendrilActionSuccess::NewSkipped)),
-                },
-                TendrilActionReport {
-                    orig_tendril: &given[2],
-                    name: &given[2].names[0],
-                    resolved_path: Ok(remote_app1_dir),
-                    action_result: Some(Ok(TendrilActionSuccess::NewSkipped)),
-                },
-                TendrilActionReport {
-                    orig_tendril: &given[3],
-                    name: &given[3].names[0],
-                    resolved_path: Ok(given_parent_dir_a.join("I don't exist")),
-                    action_result: Some(Err(TendrilActionError::IoError {
-                        kind: std::io::ErrorKind::NotFound,
-                    })),
-                },
-                TendrilActionReport {
-                    orig_tendril: &given[3],
-                    name: &given[3].names[1],
-                    resolved_path: Ok(remote_app3_fileb_pa),
-                    action_result: Some(Ok(TendrilActionSuccess::NewSkipped)),
-                },
-                // The second path should not be considered since this is a pull action
-            ]
-        },
-        false => {
-            vec![
-                TendrilActionReport {
-                    orig_tendril: &given[0],
-                    name: &given[0].names[0],
-                    resolved_path: Ok(remote_app1_file),
-                    action_result: Some(Ok(TendrilActionSuccess::New)),
-                },
-                TendrilActionReport {
-                    orig_tendril: &given[1],
-                    name: &given[1].names[0],
-                    resolved_path: Ok(remote_app2_file),
-                    action_result: Some(Ok(TendrilActionSuccess::New)),
-                },
-                TendrilActionReport {
-                    orig_tendril: &given[2],
-                    name: &given[2].names[0],
-                    resolved_path: Ok(remote_app1_dir),
-                    action_result: Some(Ok(TendrilActionSuccess::New)),
-                },
-                TendrilActionReport {
-                    orig_tendril: &given[3],
-                    name: &given[3].names[0],
-                    resolved_path: Ok(given_parent_dir_a.join("I don't exist")),
-                    action_result: Some(Err(TendrilActionError::IoError {
-                        kind: std::io::ErrorKind::NotFound,
-                    })),
-                },
-                TendrilActionReport {
-                    orig_tendril: &given[3],
-                    name: &given[3].names[1],
-                    resolved_path: Ok(remote_app3_fileb_pa),
-                    action_result: Some(Ok(TendrilActionSuccess::New)),
-                },
-            ]
-        }
+    let expected_success = match dry_run {
+        true => Some(Ok(TendrilActionSuccess::NewSkipped)),
+        false => Some(Ok(TendrilActionSuccess::New)),
     };
+    let expected  = vec![
+        TendrilActionReport {
+            orig_tendril: &given[0],
+            name: &given[0].names[0],
+            resolved_path: Ok(remote_app1_file),
+            action_result: expected_success.clone(),
+        },
+        TendrilActionReport {
+            orig_tendril: &given[1],
+            name: &given[1].names[0],
+            resolved_path: Ok(remote_app2_file),
+            action_result: expected_success.clone(),
+        },
+        TendrilActionReport {
+            orig_tendril: &given[2],
+            name: &given[2].names[0],
+            resolved_path: Ok(remote_app1_dir),
+            action_result: expected_success.clone(),
+        },
+        TendrilActionReport {
+            orig_tendril: &given[3],
+            name: &given[3].names[0],
+            resolved_path: Ok(given_parent_dir_a.join("I don't exist")),
+            action_result: Some(Err(TendrilActionError::IoError {
+                kind: std::io::ErrorKind::NotFound,
+                loc: Location::Source,
+            })),
+        },
+        TendrilActionReport {
+            orig_tendril: &given[3],
+            name: &given[3].names[1],
+            resolved_path: Ok(remote_app3_fileb_pa),
+            action_result: expected_success,
+        },
+        // The second path should not be considered since this is a pull action
+    ];
 
     let actual = tendril_action(
         ActionMode::Pull,
@@ -253,108 +223,60 @@ fn push_returns_tendril_and_result_for_each_given(
         &[given_parent_dir_a.clone(), given_parent_dir_b.clone()]
     );
 
-    let expected: Vec<TendrilActionReport> = match dry_run {
-        true => {
-            vec![
-                TendrilActionReport {
-                    orig_tendril: &given[0],
-                    name: &given[0].names[0],
-                    resolved_path: Ok(remote_app1_file.clone()),
-                    action_result: Some(Ok(TendrilActionSuccess::NewSkipped)),
-                },
-                TendrilActionReport {
-                    orig_tendril: &given[1],
-                    name: &given[1].names[0],
-                    resolved_path: Ok(remote_app2_file.clone()),
-                    action_result: Some(Ok(TendrilActionSuccess::NewSkipped)),
-                },
-                TendrilActionReport {
-                    orig_tendril: &given[2],
-                    name: &given[2].names[0],
-                    resolved_path: Ok(remote_app1_dir.clone()),
-                    action_result: Some(Ok(TendrilActionSuccess::NewSkipped)),
-                },
-                TendrilActionReport {
-                    orig_tendril: &given[3],
-                    name: &given[3].names[0],
-                    resolved_path: Ok(given_parent_dir_a.join("I don't exist")),
-                    action_result: Some(Err(TendrilActionError::IoError {
-                        kind: std::io::ErrorKind::NotFound,
-                    })),
-                },
-                TendrilActionReport {
-                    orig_tendril: &given[3],
-                    name: &given[3].names[0],
-                    resolved_path: Ok(given_parent_dir_b.join("I don't exist")),
-                    action_result: Some(Err(TendrilActionError::IoError {
-                        kind: std::io::ErrorKind::NotFound,
-                    })),
-                },
-                TendrilActionReport {
-                    orig_tendril: &given[3],
-                    name: &given[3].names[1],
-                    resolved_path: Ok(remote_app3_fileb_pa.clone()),
-                    action_result: Some(Ok(TendrilActionSuccess::NewSkipped)),
-                },
-                TendrilActionReport {
-                    orig_tendril: &given[3],
-                    name: &given[3].names[1],
-                    resolved_path: Ok(remote_app3_fileb_pb.clone()),
-                    action_result: Some(Ok(TendrilActionSuccess::NewSkipped)),
-                },
-            ]
-        },
-        false => {
-            vec![
-                TendrilActionReport {
-                    orig_tendril: &given[0],
-                    name: &given[0].names[0],
-                    resolved_path: Ok(remote_app1_file.clone()),
-                    action_result: Some(Ok(TendrilActionSuccess::New)),
-                },
-                TendrilActionReport {
-                    orig_tendril: &given[1],
-                    name: &given[1].names[0],
-                    resolved_path: Ok(remote_app2_file.clone()),
-                    action_result: Some(Ok(TendrilActionSuccess::New)),
-                },
-                TendrilActionReport {
-                    orig_tendril: &given[2],
-                    name: &given[2].names[0],
-                    resolved_path: Ok(remote_app1_dir.clone()),
-                    action_result: Some(Ok(TendrilActionSuccess::New)),
-                },
-                TendrilActionReport {
-                    orig_tendril: &given[3],
-                    name: &given[3].names[0],
-                    resolved_path: Ok(given_parent_dir_a.join("I don't exist")),
-                    action_result: Some(Err(TendrilActionError::IoError {
-                        kind: std::io::ErrorKind::NotFound,
-                    })),
-                },
-                TendrilActionReport {
-                    orig_tendril: &given[3],
-                    name: &given[3].names[0],
-                    resolved_path: Ok(given_parent_dir_b.join("I don't exist")),
-                    action_result: Some(Err(TendrilActionError::IoError {
-                        kind: std::io::ErrorKind::NotFound,
-                    })),
-                },
-                TendrilActionReport {
-                    orig_tendril: &given[3],
-                    name: &given[3].names[1],
-                    resolved_path: Ok(remote_app3_fileb_pa.clone()),
-                    action_result: Some(Ok(TendrilActionSuccess::New)),
-                },
-                TendrilActionReport {
-                    orig_tendril: &given[3],
-                    name: &given[3].names[1],
-                    resolved_path: Ok(remote_app3_fileb_pb.clone()),
-                    action_result: Some(Ok(TendrilActionSuccess::New)),
-                },
-            ]
-        }
+    let expected_success = match dry_run {
+        true => Some(Ok(TendrilActionSuccess::NewSkipped)),
+        false => Some(Ok(TendrilActionSuccess::New)),
     };
+    let expected = vec![
+        TendrilActionReport {
+            orig_tendril: &given[0],
+            name: &given[0].names[0],
+            resolved_path: Ok(remote_app1_file.clone()),
+            action_result: expected_success.clone(),
+        },
+        TendrilActionReport {
+            orig_tendril: &given[1],
+            name: &given[1].names[0],
+            resolved_path: Ok(remote_app2_file.clone()),
+            action_result: expected_success.clone(),
+        },
+        TendrilActionReport {
+            orig_tendril: &given[2],
+            name: &given[2].names[0],
+            resolved_path: Ok(remote_app1_dir.clone()),
+            action_result: expected_success.clone(),
+        },
+        TendrilActionReport {
+            orig_tendril: &given[3],
+            name: &given[3].names[0],
+            resolved_path: Ok(given_parent_dir_a.join("I don't exist")),
+            action_result: Some(Err(TendrilActionError::IoError {
+                kind: std::io::ErrorKind::NotFound,
+                loc: Location::Source,
+            })),
+        },
+        TendrilActionReport {
+            orig_tendril: &given[3],
+            name: &given[3].names[0],
+            resolved_path: Ok(given_parent_dir_b.join("I don't exist")),
+            action_result: Some(Err(TendrilActionError::IoError {
+                kind: std::io::ErrorKind::NotFound,
+                loc: Location::Source,
+            })),
+        },
+        TendrilActionReport {
+            orig_tendril: &given[3],
+            name: &given[3].names[1],
+            resolved_path: Ok(remote_app3_fileb_pa.clone()),
+            action_result: expected_success.clone(),
+        },
+        TendrilActionReport {
+            orig_tendril: &given[3],
+            name: &given[3].names[1],
+            resolved_path: Ok(remote_app3_fileb_pb.clone()),
+            action_result: expected_success,
+        },
+    ];
 
     let actual = tendril_action(
         ActionMode::Push,
@@ -452,108 +374,60 @@ fn link_returns_tendril_and_result_for_each_given(
         &[given_parent_dir_a.clone(), given_parent_dir_b.clone()]
     );
 
-    let expected: Vec<TendrilActionReport> = match dry_run {
-        true => {
-            vec![
-                TendrilActionReport {
-                    orig_tendril: &given[0],
-                    name: &given[0].names[0],
-                    resolved_path: Ok(remote_app1_file.clone()),
-                    action_result: Some(Ok(TendrilActionSuccess::NewSkipped)),
-                },
-                TendrilActionReport {
-                    orig_tendril: &given[1],
-                    name: &given[1].names[0],
-                    resolved_path: Ok(remote_app2_file.clone()),
-                    action_result: Some(Ok(TendrilActionSuccess::NewSkipped)),
-                },
-                TendrilActionReport {
-                    orig_tendril: &given[2],
-                    name: &given[2].names[0],
-                    resolved_path: Ok(remote_app1_dir.clone()),
-                    action_result: Some(Ok(TendrilActionSuccess::NewSkipped)),
-                },
-                TendrilActionReport {
-                    orig_tendril: &given[3],
-                    name: &given[3].names[0],
-                    resolved_path: Ok(given_parent_dir_a.join("I don't exist")),
-                    action_result: Some(Err(TendrilActionError::IoError {
-                        kind: std::io::ErrorKind::NotFound,
-                    })),
-                },
-                TendrilActionReport {
-                    orig_tendril: &given[3],
-                    name: &given[3].names[0],
-                    resolved_path: Ok(given_parent_dir_b.join("I don't exist")),
-                    action_result: Some(Err(TendrilActionError::IoError {
-                        kind: std::io::ErrorKind::NotFound,
-                    })),
-                },
-                TendrilActionReport {
-                    orig_tendril: &given[3],
-                    name: &given[3].names[1],
-                    resolved_path: Ok(remote_app3_fileb_pa.clone()),
-                    action_result: Some(Ok(TendrilActionSuccess::NewSkipped)),
-                },
-                TendrilActionReport {
-                    orig_tendril: &given[3],
-                    name: &given[3].names[1],
-                    resolved_path: Ok(remote_app3_fileb_pb.clone()),
-                    action_result: Some(Ok(TendrilActionSuccess::NewSkipped)),
-                },
-            ]
-        },
-        false => {
-            vec![
-                TendrilActionReport {
-                    orig_tendril: &given[0],
-                    name: &given[0].names[0],
-                    resolved_path: Ok(remote_app1_file.clone()),
-                    action_result: Some(Ok(TendrilActionSuccess::New)),
-                },
-                TendrilActionReport {
-                    orig_tendril: &given[1],
-                    name: &given[1].names[0],
-                    resolved_path: Ok(remote_app2_file.clone()),
-                    action_result: Some(Ok(TendrilActionSuccess::New)),
-                },
-                TendrilActionReport {
-                    orig_tendril: &given[2],
-                    name: &given[2].names[0],
-                    resolved_path: Ok(remote_app1_dir.clone()),
-                    action_result: Some(Ok(TendrilActionSuccess::New)),
-                },
-                TendrilActionReport {
-                    orig_tendril: &given[3],
-                    name: &given[3].names[0],
-                    resolved_path: Ok(given_parent_dir_a.join("I don't exist")),
-                    action_result: Some(Err(TendrilActionError::IoError {
-                        kind: std::io::ErrorKind::NotFound,
-                    })),
-                },
-                TendrilActionReport {
-                    orig_tendril: &given[3],
-                    name: &given[3].names[0],
-                    resolved_path: Ok(given_parent_dir_b.join("I don't exist")),
-                    action_result: Some(Err(TendrilActionError::IoError {
-                        kind: std::io::ErrorKind::NotFound,
-                    })),
-                },
-                TendrilActionReport {
-                    orig_tendril: &given[3],
-                    name: &given[3].names[1],
-                    resolved_path: Ok(remote_app3_fileb_pa.clone()),
-                    action_result: Some(Ok(TendrilActionSuccess::New)),
-                },
-                TendrilActionReport {
-                    orig_tendril: &given[3],
-                    name: &given[3].names[1],
-                    resolved_path: Ok(remote_app3_fileb_pb.clone()),
-                    action_result: Some(Ok(TendrilActionSuccess::New)),
-                },
-            ]
-        }
+    let expected_success = match dry_run {
+        true => Some(Ok(TendrilActionSuccess::NewSkipped)),
+        false => Some(Ok(TendrilActionSuccess::New)),
     };
+    let expected = vec![
+        TendrilActionReport {
+            orig_tendril: &given[0],
+            name: &given[0].names[0],
+            resolved_path: Ok(remote_app1_file.clone()),
+            action_result: expected_success.clone(),
+        },
+        TendrilActionReport {
+            orig_tendril: &given[1],
+            name: &given[1].names[0],
+            resolved_path: Ok(remote_app2_file.clone()),
+            action_result: expected_success.clone(),
+        },
+        TendrilActionReport {
+            orig_tendril: &given[2],
+            name: &given[2].names[0],
+            resolved_path: Ok(remote_app1_dir.clone()),
+            action_result: expected_success.clone(),
+        },
+        TendrilActionReport {
+            orig_tendril: &given[3],
+            name: &given[3].names[0],
+            resolved_path: Ok(given_parent_dir_a.join("I don't exist")),
+            action_result: Some(Err(TendrilActionError::IoError {
+                kind: std::io::ErrorKind::NotFound,
+                loc: Location::Source,
+            })),
+        },
+        TendrilActionReport {
+            orig_tendril: &given[3],
+            name: &given[3].names[0],
+            resolved_path: Ok(given_parent_dir_b.join("I don't exist")),
+            action_result: Some(Err(TendrilActionError::IoError {
+                kind: std::io::ErrorKind::NotFound,
+                loc: Location::Source,
+            })),
+        },
+        TendrilActionReport {
+            orig_tendril: &given[3],
+            name: &given[3].names[1],
+            resolved_path: Ok(remote_app3_fileb_pa.clone()),
+            action_result: expected_success.clone(),
+        },
+        TendrilActionReport {
+            orig_tendril: &given[3],
+            name: &given[3].names[1],
+            resolved_path: Ok(remote_app3_fileb_pb.clone()),
+            action_result: expected_success.clone(),
+        },
+    ];
 
     let actual = tendril_action(
         ActionMode::Link,
@@ -594,7 +468,6 @@ fn link_returns_tendril_and_result_for_each_given(
     }
 }
 
-
 #[rstest]
 #[serial("mut-env-var-testing")]
 fn parent_path_vars_are_resolved(
@@ -608,6 +481,7 @@ fn parent_path_vars_are_resolved(
     force: bool,
 ) {
     let setup = Setup::new();
+    setup.make_td_dir();
     let mut tendril = setup.file_tendril_bundle();
     tendril.link = mode == ActionMode::Link;
     set_parents(
@@ -621,12 +495,17 @@ fn parent_path_vars_are_resolved(
     let expected_resolved_path = format!(
         "My{MAIN_SEPARATOR}Home{MAIN_SEPARATOR}I_do_not_exist{MAIN_SEPARATOR}value{MAIN_SEPARATOR}misc.txt"
     );
+    let expected_loc = match mode {
+        ActionMode::Pull => Location::Source,
+        _ => Location::Dest,
+    };
     let expected = vec![TendrilActionReport {
         orig_tendril: &tendril,
         name: "misc.txt",
         resolved_path: Ok(PathBuf::from(expected_resolved_path.clone())),
         action_result: Some(Err(TendrilActionError::IoError {
             kind: std::io::ErrorKind::NotFound,
+            loc: expected_loc,
         })),
     }];
 

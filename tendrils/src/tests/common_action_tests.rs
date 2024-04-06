@@ -11,7 +11,13 @@ use crate::{
     pull_tendril,
     push_tendril,
 };
-use crate::enums::{TendrilActionError, TendrilActionSuccess, TendrilMode};
+use crate::enums::{
+    FsoType,
+    Location,
+    TendrilActionError,
+    TendrilActionSuccess,
+    TendrilMode
+};
 use crate::tendril::Tendril;
 use crate::test_utils::{get_disposable_dir, symlink_expose, Setup};
 use rstest::rstest;
@@ -239,7 +245,10 @@ fn remote_is_another_td_dir_proceeds_normally(
     let actual = action(&setup.td_dir, &tendril, dry_run, force);
 
     if action == link_tendril && !force {
-        assert_eq!(actual, Err(TendrilActionError::TypeMismatch))
+        assert_eq!(actual, Err(TendrilActionError::TypeMismatch {
+                loc: Location::Dest,
+                mistype: FsoType::Dir,
+            }))
     }
     else if dry_run {
         assert_eq!(actual, Ok(TendrilActionSuccess::OverwriteSkipped));
@@ -403,11 +412,17 @@ fn remote_parent_doesnt_exist_returns_io_error_not_found(
     let file_actual = action(&setup.td_dir, &file_tendril, dry_run, force);
     let dir_actual = action(&setup.td_dir, &dir_tendril, dry_run, force);
 
+    let exp_loc = match action == pull_tendril {
+        true => Location::Source,
+        false => Location::Dest,
+    };
     assert_eq!(file_actual, Err(TendrilActionError::IoError {
         kind: std::io::ErrorKind::NotFound,
+        loc: exp_loc.clone(),
     }));
     assert_eq!(dir_actual, Err(TendrilActionError::IoError {
         kind: std::io::ErrorKind::NotFound,
+        loc: exp_loc,
     }));
     assert_eq!(setup.local_file_contents(), "Local file contents");
     assert_eq!(setup.local_nested_file_contents(), "Local nested file contents");
@@ -448,8 +463,13 @@ fn td_dir_doesnt_exist_returns_io_error_not_found(
 
     let actual = action(&setup.td_dir, &file_tendril, dry_run, force);
 
+    let exp_loc = match action == pull_tendril {
+        true => Location::Dest,
+        false => Location::Source,
+    };
     assert_eq!(actual, Err(TendrilActionError::IoError {
         kind: std::io::ErrorKind::NotFound,
+        loc: exp_loc,
     }));
     assert!(!setup.td_dir.exists());
 }
@@ -565,6 +585,10 @@ pub(crate) fn local_symlink_is_unchanged(
     if action == link_tendril {
         file_tendril.mode = TendrilMode::Link;
         dir_tendril.mode = TendrilMode::Link;
+        // Setup symlinks at remote to prevent unintended
+        // type mismatch here during links
+        symlink_expose(&setup.remote_file, &setup.target_file, false, true).unwrap();
+        symlink_expose(&setup.remote_dir, &setup.target_dir, false, true).unwrap();
     }
 
     let file_actual = action(&setup.td_dir, &file_tendril, dry_run, force);
@@ -574,9 +598,19 @@ pub(crate) fn local_symlink_is_unchanged(
     assert!(setup.local_dir.is_symlink());
     assert_eq!(setup.local_file_contents(), "Target file contents");
     assert_eq!(setup.local_nested_file_contents(), "Target nested file contents");
+    let exp_loc = match action == pull_tendril {
+        true => Location::Dest,
+        false => Location::Source,
+    };
     if !force {
-        assert_eq!(file_actual, Err(TendrilActionError::TypeMismatch));
-        assert_eq!(dir_actual, Err(TendrilActionError::TypeMismatch));
+        assert_eq!(file_actual, Err(TendrilActionError::TypeMismatch {
+            loc: exp_loc.clone(),
+            mistype: FsoType::Symlink,
+        }));
+        assert_eq!(dir_actual, Err(TendrilActionError::TypeMismatch {
+            loc: exp_loc,
+            mistype: FsoType::Symlink,
+        }));
     }
     else if dry_run {
         assert_eq!(file_actual, Ok(TendrilActionSuccess::OverwriteSkipped));
@@ -630,8 +664,14 @@ pub(crate) fn remote_is_unchanged(
     assert_eq!(setup.remote_file_contents(), "Remote file contents");
     assert_eq!(setup.remote_nested_file_contents(), "Remote nested file contents");
     if !force && action == link_tendril {
-        assert_eq!(file_actual, Err(TendrilActionError::TypeMismatch));
-        assert_eq!(dir_actual,  Err(TendrilActionError::TypeMismatch));
+        assert_eq!(file_actual, Err(TendrilActionError::TypeMismatch {
+                loc: Location::Dest,
+                mistype: FsoType::File,
+            }));
+        assert_eq!(dir_actual,  Err(TendrilActionError::TypeMismatch {
+                loc: Location::Dest,
+                mistype: FsoType::Dir,
+            }));
     }
     else if dry_run {
         assert_eq!(file_actual, Ok(TendrilActionSuccess::OverwriteSkipped));
@@ -678,8 +718,18 @@ pub(crate) fn remote_symlink_is_unchanged(
     assert_eq!(setup.remote_file_contents(), "Target file contents");
     assert_eq!(setup.remote_nested_file_contents(), "Target nested file contents");
     if !force && action != link_tendril {
-        assert_eq!(file_actual, Err(TendrilActionError::TypeMismatch));
-        assert_eq!(dir_actual,  Err(TendrilActionError::TypeMismatch));
+        let exp_loc = match action == pull_tendril {
+            true => Location::Source,
+            false => Location::Dest,
+        };
+        assert_eq!(file_actual, Err(TendrilActionError::TypeMismatch {
+            loc: exp_loc.clone(),
+            mistype: FsoType::Symlink,
+        }));
+        assert_eq!(dir_actual,  Err(TendrilActionError::TypeMismatch {
+            loc: exp_loc,
+            mistype: FsoType::Symlink,
+        }));
     }
     else if dry_run {
         assert_eq!(file_actual, Ok(TendrilActionSuccess::OverwriteSkipped));
@@ -706,6 +756,7 @@ fn current_dir_is_unchanged(
     force: bool,
 ) {
     let setup = Setup::new();
+    setup.make_td_dir();
 
     let orig_cd = std::env::current_dir().unwrap();
 
@@ -722,12 +773,13 @@ fn current_dir_is_unchanged(
     assert_eq!(std::env::current_dir().unwrap(), orig_cd);
     assert_eq!(file_actual, Err(TendrilActionError::IoError {
         kind: std::io::ErrorKind::NotFound,
+        loc: Location::Source,
     }));
     assert_eq!(dir_actual, Err(TendrilActionError::IoError {
         kind: std::io::ErrorKind::NotFound,
+        loc: Location::Source,
     }));
 }
-
 
 #[rstest]
 #[case(link_tendril)]
@@ -787,6 +839,7 @@ fn windows_platform_parent_is_root_returns_permission_error_unless_dry_run_or_di
         // pointed to an existing file at the root this would return successfully
         assert_eq!(file_actual, Err(TendrilActionError::IoError {
             kind: std::io::ErrorKind::NotFound,
+            loc: Location::Source,
         }));
         if dry_run {
             assert_eq!(dir_actual, Ok(TendrilActionSuccess::OverwriteSkipped));
@@ -807,7 +860,10 @@ fn windows_platform_parent_is_root_returns_permission_error_unless_dry_run_or_di
         // File creation at root fails but directory creation is successful
         assert_eq!(file_actual, Err(TendrilActionError::IoError {
             kind: std::io::ErrorKind::PermissionDenied,
+            loc: Location::Dest,
         }));
+        // If getting "Overwrite", check whether the temp folder exists in the
+        // root folder. It may not have been cleaned up properly if previous tests runs failed
         assert_eq!(dir_actual, Ok(TendrilActionSuccess::New));
         assert!(!setup.remote_file.exists());
         assert_eq!(setup.remote_nested_file_contents(), "Local nested file contents");
@@ -824,7 +880,6 @@ fn windows_platform_parent_is_root_returns_permission_error_unless_dry_run_or_di
 #[case(pull_tendril)]
 #[case(push_tendril)]
 #[cfg_attr(windows, ignore)]
-#[serial]
 #[serial("root")]
 fn non_windows_platform_parent_is_root_returns_permission_error_unless_dry_run(
     #[case] action: fn(&Path, &Tendril, bool, bool)
@@ -871,9 +926,11 @@ fn non_windows_platform_parent_is_root_returns_permission_error_unless_dry_run(
     if action == pull_tendril {
         assert_eq!(file_actual, Err(TendrilActionError::IoError {
             kind: std::io::ErrorKind::NotFound,
+            loc: Location::Source,
         }));
         assert_eq!(dir_actual, Err(TendrilActionError::IoError {
             kind: std::io::ErrorKind::NotFound,
+            loc: Location::Source,
         }));
         assert_eq!(setup.local_file_contents(), "Local file contents");
         assert_eq!(setup.local_nested_file_contents(), "Local nested file contents");
@@ -886,7 +943,10 @@ fn non_windows_platform_parent_is_root_returns_permission_error_unless_dry_run(
     }
     else {
         match file_actual {
-            Err(TendrilActionError::IoError {kind: e_kind}) => {
+            Err(TendrilActionError::IoError {
+                kind: e_kind, 
+                loc: Location::Unknown,
+            }) => {
                 // Possible bug where the std::io::ErrorKind::ReadOnlyFilesystem
                 // is only available in nightly but is being returned on Mac
                 assert!(format!("{:?}", e_kind).contains("ReadOnlyFilesystem"));
@@ -894,7 +954,10 @@ fn non_windows_platform_parent_is_root_returns_permission_error_unless_dry_run(
             _ => panic!("Actual error: {:?}", file_actual),
         }
         match dir_actual {
-            Err(TendrilActionError::IoError {kind: e_kind}) => {
+            Err(TendrilActionError::IoError {
+                kind: e_kind, 
+                loc: Location::Unknown,
+            }) => {
                 assert!(format!("{:?}", e_kind).contains("ReadOnlyFilesystem"));
             },
             _ => panic!("Actual error: {:?}", dir_actual),

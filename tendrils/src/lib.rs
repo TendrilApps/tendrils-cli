@@ -4,9 +4,11 @@
 mod enums;
 pub use enums::{
     ActionMode,
+    FsoType,
     GetTendrilsError,
     InitError,
     InvalidTendrilError,
+    Location,
     TendrilActionError,
     TendrilActionSuccess,
     TendrilMode,
@@ -38,6 +40,7 @@ fn copy_fso(
     dir_merge: bool,
     dry_run: bool,
 ) -> Result<TendrilActionSuccess, TendrilActionError> {
+    use std::io::ErrorKind::{InvalidInput, NotFound, PermissionDenied};
     let mut to = to;
     let to_existed = to.exists();
 
@@ -48,15 +51,45 @@ fn copy_fso(
             _ => {}
         }
         if !dir_merge && to.is_dir() {
-            std::fs::remove_dir_all(to)?;
-            create_dir_all(to)?;
+            match remove_dir_all(to) {
+                Err(e) => {
+                    return Err(TendrilActionError::IoError {
+                        kind: e.kind(),
+                        loc: Location::Dest, 
+                    });
+                },
+                _ => {}
+            };
+            // TODO: Should not be required since to's parent is already is known
+            // to be a directory. Remove create_dir_all call
+            match create_dir_all(to) {
+                Err(e) => return Err(TendrilActionError::IoError {
+                    kind: e.kind(),
+                    loc: Location::Dest,
+                }),
+                _ => {}
+            }
         }
         else if to.is_file() {
-            remove_file(&to)?;
+            match remove_file(&to) {
+                Err(e) => return Err(TendrilActionError::IoError {
+                    kind: e.kind(),
+                    loc: Location::Dest,
+                }),
+                _ => {}
+            }
         }
 
         to = to.parent().unwrap_or(to);
-        create_dir_all(to)?;
+        match create_dir_all(to) {
+            Err(e) => return Err(
+                TendrilActionError::IoError {
+                    kind: e.kind(),
+                    loc: Location::Dest,
+                }
+            ),
+            _ => {}
+        }
 
         let mut copy_opts = fs_extra::dir::CopyOptions::new();
         copy_opts.overwrite = true;
@@ -65,34 +98,38 @@ fn copy_fso(
             (Ok(_v), true) => Ok(TendrilActionSuccess::Overwrite),
             (Ok(_v), false) => Ok(TendrilActionSuccess::New),
             (Err(e), _) => match e.kind {
-                // Convert fs_extra::errors to PushPullErrors
+                // Convert fs_extra::errors
                 fs_extra::error::ErrorKind::Io(e) => {
                     Err(TendrilActionError::from(e))
                 },
                 fs_extra::error::ErrorKind::PermissionDenied => {
-                    let e = std::io::Error::from(std::io::ErrorKind::PermissionDenied);
-                    Err(TendrilActionError::from(e))
+                    Err(TendrilActionError::IoError {
+                        kind: PermissionDenied,
+                        loc: Location::Source,
+                    })
                 },
-                _ => {
-                    let e = std::io::Error::from(std::io::ErrorKind::Other);
-                    Err(TendrilActionError::from(e))
-                }
+                _ => Err(TendrilActionError::from(std::io::ErrorKind::Other))
             }
         }
     }
     else if from.is_file() {
+        // TODO: Remove unnecessary? conversion to string
         let from_str = match from.to_str() {
             Some(v) => v,
             None => {
-                let e = std::io::Error::from(std::io::ErrorKind::InvalidInput);
-                return Err(TendrilActionError::from(e))
+                return Err(TendrilActionError::IoError {
+                    kind: InvalidInput,
+                    loc: Location::Source,
+                })
             }
         };
         let to_str = match to.to_str() {
             Some(v) => v,
             None => {
-                let e = std::io::Error::from(std::io::ErrorKind::InvalidInput);
-                return Err(TendrilActionError::from(e))
+                return Err(TendrilActionError::IoError {
+                    kind: InvalidInput,
+                    loc: Location::Dest,
+                })
             }
         };
 
@@ -102,38 +139,109 @@ fn copy_fso(
             _ => {}
         }
 
-        create_dir_all(to.parent().unwrap_or(to))?;
-
-        if to.is_dir() {
-            remove_dir_all(&to)?;
+        match create_dir_all(to.parent().unwrap_or(to)) {
+            Err(e) => return Err(TendrilActionError::IoError {
+                kind: e.kind(),
+                loc: Location::Dest,
+            }),
+            _ => {}
         }
-        else if to.is_symlink() {
-            remove_file(&to)?;
+
+        match create_dir_all(to.parent().unwrap_or(to)) {
+            Err(e) => return Err(TendrilActionError::IoError {
+                kind: e.kind(),
+                loc: Location::Dest,
+            }),
+            _ => {}
+        }
+
+        // TODO: Extract a cleanup dest method?
+        if to.is_dir() {
+            match remove_dir_all(&to) {
+                Err(e) => return Err(TendrilActionError::IoError {
+                    kind: e.kind(),
+                    loc: Location::Dest,
+                }),
+                _ => {}
+            }
+        }
+        else if to.is_file() {
+            // TODO: Should not be required as copy overwrites the
+            // existing file?
+            match remove_file(&to) {
+                Err(e) => return Err(TendrilActionError::IoError {
+                    kind: e.kind(),
+                    loc: Location::Dest,
+                }),
+                _ => {}
+            }
         }
 
         match (std::fs::copy(from_str, to_str), to_existed) {
             (Ok(_v), true) => Ok(TendrilActionSuccess::Overwrite),
             (Ok(_v), false) => Ok(TendrilActionSuccess::New),
-            (Err(e), _) => Err(TendrilActionError::from(e))
+            (Err(e), _) if e.kind() == PermissionDenied => {
+                // TODO: Extract a which_copy_perm_failed or something similar
+                let loc = match to.parent() {
+                    Some(p) if p.parent().is_none() => Location::Dest, // Is root
+                    Some(p) => match p.metadata() {
+                        Ok(md) if md.permissions().readonly() => Location::Dest,
+                        Ok(_) => Location::Source,
+                        _ => Location::Unknown,
+                    },
+                    None => Location::Dest,
+                };
+                Err(TendrilActionError::IoError {kind: PermissionDenied, loc})
+            },
+            (Err(e), _) => Err(TendrilActionError::from(e)),
         }
     }
     else {
-        let e = std::io::Error::from(std::io::ErrorKind::NotFound);
-        Err(TendrilActionError::from(e))
+        Err(TendrilActionError::IoError {
+            kind: NotFound,
+            loc: Location::Source
+        })
     }
 }
 
-/// Returns `true` if the type (file vs folder) of the source and
-/// destination are mismatched.
-/// - Returns `false` if the source or destination do not exist.
-/// - Returns `true` if either the source or destination are symlinks.
+/// Returns [`Err(TendrilActionError::TypeMismatch)`](TendrilActionError::TypeMismatch)
+/// if the type (file vs folder) of the source and destination are mismatched,
+/// otherwise returns `Ok(())`.
+/// No other invariants of [`TendrilActionError`] are returned.
+/// - Returns error if the source or destination do not exist.
+/// - Returns error if either the source or destination are symlinks.
 ///
-/// Note: This is not useful in link mode.
-fn fso_types_mismatch(source: &Path, dest: &Path) -> bool {
-    (source.is_dir() && dest.is_file())
-        || (source.is_file() && dest.is_dir())
-        || source.is_symlink()
-        || dest.is_symlink()
+/// Note: This is not applicable in link mode.
+fn check_copy_types(
+    source: &Path, dest: &Path
+) -> Result<(), TendrilActionError> {
+    if source.is_dir() && dest.is_file() {
+        Err(TendrilActionError::TypeMismatch {
+            loc: Location::Dest,
+            mistype: FsoType::File,
+        })
+    }
+    else if source.is_file() && dest.is_dir() {
+        Err(TendrilActionError::TypeMismatch {
+            loc: Location::Dest,
+            mistype: FsoType::Dir,
+        })
+    }
+    else if dest.is_symlink() {
+        Err(TendrilActionError::TypeMismatch {
+            loc: Location::Dest,
+            mistype: FsoType::Symlink,
+        })
+    }
+    else if source.is_symlink() {
+        Err(TendrilActionError::TypeMismatch {
+            loc: Location::Source,
+            mistype: FsoType::Symlink,
+        })
+    }
+    else {
+        Ok(())
+    }
 }
 
 /// Parses the `tendrils.json` file in the given *Tendrils* folder
@@ -255,6 +363,7 @@ fn link_tendril(
     if !dest.parent().unwrap_or(&dest).exists() {
         return Err(TendrilActionError::IoError {
             kind: std::io::ErrorKind::NotFound,
+            loc: Location::Dest
         });
     }
 
@@ -263,12 +372,23 @@ fn link_tendril(
         // Local does not exist - copy it first
         copy_fso(&dest, &target, false, dry_run)?;
     }
-    else if !force && dest.exists() && !dest.is_symlink() {
-        return Err(TendrilActionError::TypeMismatch);
+    else if !force && !dest.is_symlink() {
+        if dest.is_file() {
+            return Err(TendrilActionError::TypeMismatch {
+                loc: Location::Dest,
+                mistype: FsoType::File,
+            });
+        }
+        else if dest.is_dir() {
+            return Err(TendrilActionError::TypeMismatch {
+                loc: Location::Dest,
+                mistype: FsoType::Dir,
+            });
+        }
     }
 
     match symlink(&dest, &target, dry_run, force) {
-        Err(TendrilActionError::IoError {kind: e_kind}) if dry_run
+        Err(TendrilActionError::IoError {kind: e_kind, loc: _}) if dry_run
             && e_kind == std::io::ErrorKind::NotFound
             && dest.exists()
             && td_dir.exists() =>
@@ -303,17 +423,18 @@ fn pull_tendril(
     else if !td_dir.exists() {
         return Err(TendrilActionError::IoError {
             kind: std::io::ErrorKind::NotFound,
+            loc: Location::Dest
         });
     }
 
     let dest = td_dir.join(tendril.group()).join(tendril.name());
 
-    if !force && fso_types_mismatch(&source, &dest){
-        return Err(TendrilActionError::TypeMismatch);
+    if !force {
+        check_copy_types(&source, &dest)?;
     }
 
     let dir_merge = tendril.mode == TendrilMode::DirMerge;
-    Ok(copy_fso(&source, &dest, dir_merge, dry_run)?)
+    copy_fso(&source, &dest, dir_merge, dry_run)
 }
 
 fn push_tendril(
@@ -332,17 +453,18 @@ fn push_tendril(
     if !dest.parent().unwrap_or(&dest).exists() {
         return Err(TendrilActionError::IoError {
             kind: std::io::ErrorKind::NotFound,
+            loc: Location::Dest,
         });
     }
 
     let source = td_dir.join(tendril.group()).join(tendril.name());
 
-    if !force && fso_types_mismatch(&dest, &source) {
-        return Err(TendrilActionError::TypeMismatch);
+    if !force {
+        check_copy_types(&source, &dest)?;
     }
 
     let dir_merge = tendril.mode == TendrilMode::DirMerge;
-    Ok(copy_fso(&source, &dest, dir_merge, dry_run)?)
+    copy_fso(&source, &dest, dir_merge, dry_run)
 }
 
 /// Replaces all environment variables in the format `<varname>` in the
@@ -514,7 +636,10 @@ fn symlink(
     create_at: &Path, target: &Path, dry_run: bool, force: bool
 ) -> Result<TendrilActionSuccess, TendrilActionError> {
     if !force && target.is_symlink() {
-        Err(TendrilActionError::TypeMismatch)
+        Err(TendrilActionError::TypeMismatch {
+            loc: Location::Source,
+            mistype: FsoType::Symlink,
+        })
     }
     else if target.exists() {
         #[cfg(windows)]
@@ -525,6 +650,7 @@ fn symlink(
     else {
         return Err(TendrilActionError::IoError {
             kind: std::io::ErrorKind::NotFound,
+            loc: Location::Source,
         });
     }
 }
@@ -541,7 +667,7 @@ fn symlink_unix(
             if create_at.is_file() {
                 remove_file(create_at)?;
             }
-            if create_at.is_dir() {
+            else if create_at.is_dir() {
                 remove_dir_all(create_at)?;
             }
         },
@@ -550,7 +676,10 @@ fn symlink_unix(
     match (std::os::unix::fs::symlink(target, create_at), create_at_existed) {
         (Ok(_), true) => Ok(TendrilActionSuccess::Overwrite),
         (Ok(_), false) => Ok(TendrilActionSuccess::New),
-        (Err(e), _) => Err(TendrilActionError::from(e)),
+        (Err(e), _) => Err(TendrilActionError::from_io_err(
+            e,
+            Location::Unknown,
+        )),
     }
 }
 
@@ -575,7 +704,10 @@ fn symlink_win(
         match (symlink_dir(target, create_at), create_at_existed) {
             (Ok(_), true) => Ok(TendrilActionSuccess::Overwrite),
             (Ok(_), false) => Ok(TendrilActionSuccess::New),
-            (Err(e), _) => Err(TendrilActionError::from(e))
+            (Err(e), _) => Err(TendrilActionError::IoError {
+                kind: e.kind(),
+                loc: Location::Dest,
+            })
         }
     }
     else if target.is_file() {
@@ -585,17 +717,29 @@ fn symlink_win(
             _ => {}
         }
         if create_at.exists() {
-            remove_file(create_at)?;
+            match remove_file(create_at) {
+                Err(e) => return Err(
+                    TendrilActionError::IoError {
+                        kind: e.kind(),
+                        loc: Location::Dest,
+                    }
+                ),
+                _ => {}
+            };
         }
         match (symlink_file(target, create_at), create_at_existed) {
             (Ok(_), true) => Ok(TendrilActionSuccess::Overwrite),
             (Ok(_), false) => Ok(TendrilActionSuccess::New),
-            (Err(e), _) => Err(TendrilActionError::from(e))
+            (Err(e), _) => Err(TendrilActionError::IoError {
+                kind: e.kind(),
+                loc: Location::Dest,
+            })
         }
     }
     else {
         return Err(TendrilActionError::IoError {
             kind: std::io::ErrorKind::NotFound,
+            loc: Location::Source,
         });
     }
 }
@@ -676,6 +820,7 @@ pub fn tendril_action<'a>(
                     // This prevents deleting any of the remote files unnecessarily.
                     Some(Err(TendrilActionError::IoError {
                         kind: std::io::ErrorKind::PermissionDenied,
+                        loc: Location::Dest,
                     }))
                 },
                 (Err(_), _, _) => None,

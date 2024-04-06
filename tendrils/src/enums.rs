@@ -96,8 +96,13 @@ pub enum TendrilActionSuccess {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum TendrilActionError {
     /// General file system errors
+    /// `loc` indicates which side of the action had the unexpected type,
+    /// as indicated by `mistype`
     IoError {
+        /// The type of error that occured
         kind: std::io::ErrorKind,
+        /// Where the error occured
+        loc: Location,
     },
 
     /// The tendril mode does not match the attempted action, such as:
@@ -116,15 +121,55 @@ pub enum TendrilActionError {
     /// - The source is a file but the destination is a folder
     /// - The local or remote are symlinks (during a push/pull action)
     /// - The remote is *not* a symlink (during a link action)
-    TypeMismatch,
+    TypeMismatch {
+        /// The unexpected type that was found
+        mistype: FsoType,
+        /// Where the unexpected type was found
+        loc: Location,
+    },
 }
 
 impl From<std::io::Error> for TendrilActionError {
     fn from(err: std::io::Error) -> Self {
         TendrilActionError::IoError {
             kind: err.kind(),
+            loc: Location::Unknown,
         }
     }
+}
+
+impl From<std::io::ErrorKind> for TendrilActionError {
+    fn from(e_kind: std::io::ErrorKind) -> Self {
+        TendrilActionError::IoError {
+            kind: e_kind,
+            loc: Location::Unknown,
+        }
+    }
+}
+
+impl TendrilActionError {
+    pub fn from_io_err(err: std::io::Error, loc: Location) -> Self {
+        TendrilActionError::IoError {
+            kind: err.kind(),
+            loc
+        }
+    }
+}
+
+/// Indicates a side of a file system transaction
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum Location {
+    Source,
+    Dest,
+    Unknown,
+}
+
+/// Indicates a type of file system object
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum FsoType {
+    File,
+    Dir,
+    Symlink,
 }
 
 /// Indicates the behaviour of this tendril, and determines whether it is

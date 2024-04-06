@@ -580,9 +580,9 @@ fn tendril_action_tendrils_are_filtered_by_mode(
 
     if mode == ActionMode::Link {
         assert!(writer.all_output_lines()[3].contains("misc2.txt"));
-        assert!(writer.all_output_lines()[3].contains("NotFound"));
+        assert!(writer.all_output_lines()[3].contains(" not found"));
         assert!(writer.all_output_lines()[5].contains("misc3.txt"));
-        assert!(writer.all_output_lines()[5].contains("NotFound"));
+        assert!(writer.all_output_lines()[5].contains(" not found"));
         assert_eq!(
             writer.all_output_lines().last().unwrap(),
             &format!("Total: 2, \
@@ -593,7 +593,7 @@ fn tendril_action_tendrils_are_filtered_by_mode(
     }
     else {
         assert!(writer.all_output_lines()[3].contains("misc1.txt"));
-        assert!(writer.all_output_lines()[3].contains("NotFound"));
+        assert!(writer.all_output_lines()[3].contains(" not found"));
         assert_eq!(
             writer.all_output_lines().last().unwrap(),
             &format!("Total: 1, \
@@ -646,9 +646,9 @@ fn tendril_action_tendrils_are_filtered_by_group(
     run(args, &mut writer);
 
     assert!(writer.all_output_lines()[3].contains("App2"));
-    assert!(writer.all_output_lines()[3].contains("NotFound"));
+    assert!(writer.all_output_lines()[3].contains(" not found"));
     assert!(writer.all_output_lines()[5].contains("App3"));
-    assert!(writer.all_output_lines()[5].contains("NotFound"));
+    assert!(writer.all_output_lines()[5].contains(" not found"));
     assert_eq!(
         writer.all_output_lines().last().unwrap(),
         &format!("Total: 2, \
@@ -700,9 +700,9 @@ fn tendril_action_tendrils_are_filtered_by_names(
     run(args, &mut writer);
 
     assert!(writer.all_output_lines()[3].contains("misc2.txt"));
-    assert!(writer.all_output_lines()[3].contains("NotFound"));
+    assert!(writer.all_output_lines()[3].contains(" not found"));
     assert!(writer.all_output_lines()[5].contains("misc3.txt"));
-    assert!(writer.all_output_lines()[5].contains("NotFound"));
+    assert!(writer.all_output_lines()[5].contains(" not found"));
     assert_eq!(
         writer.all_output_lines().last().unwrap(),
         &format!("Total: 2, \
@@ -752,9 +752,9 @@ fn tendril_action_tendrils_are_filtered_by_parents(
 
     use std::path::MAIN_SEPARATOR;
     assert!(writer.all_output_lines()[3].contains(&format!("p{MAIN_SEPARATOR}2")));
-    assert!(writer.all_output_lines()[3].contains("NotFound"));
+    assert!(writer.all_output_lines()[3].contains(" not found"));
     assert!(writer.all_output_lines()[5].contains(&format!("p{MAIN_SEPARATOR}3")));
-    assert!(writer.all_output_lines()[5].contains("NotFound"));
+    assert!(writer.all_output_lines()[5].contains(" not found"));
     assert_eq!(
         writer.all_output_lines().last().unwrap(),
         &format!("Total: 2, \
@@ -809,9 +809,9 @@ fn tendril_action_tendrils_are_filtered_by_profile(
     run(args, &mut writer);
 
     assert!(writer.all_output_lines()[3].contains("misc2.txt"));
-    assert!(writer.all_output_lines()[3].contains("NotFound"));
+    assert!(writer.all_output_lines()[3].contains(" not found"));
     assert!(writer.all_output_lines()[5].contains("misc3.txt"));
-    assert!(writer.all_output_lines()[5].contains("NotFound"));
+    assert!(writer.all_output_lines()[5].contains(" not found"));
     assert_eq!(
         writer.all_output_lines().last().unwrap(),
         &format!("Total: 2, \

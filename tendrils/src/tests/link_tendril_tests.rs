@@ -2,7 +2,13 @@
 //! See also [`crate::tests::common_action_tests`].
 
 use crate::{link_tendril, symlink};
-use crate::enums::{TendrilActionError, TendrilActionSuccess, TendrilMode};
+use crate::enums::{
+    FsoType,
+    Location,
+    TendrilActionError,
+    TendrilActionSuccess,
+    TendrilMode
+};
 use crate::tendril::Tendril;
 use crate::test_utils::{
     get_disposable_dir,
@@ -137,8 +143,14 @@ fn remote_exists_and_is_not_symlink_returns_type_mismatch_error_unless_forced(
 
     match (dry_run, force) {
         (_, false) => {
-            assert_eq!(file_actual, Err(TendrilActionError::TypeMismatch));
-            assert_eq!(dir_actual, Err(TendrilActionError::TypeMismatch));
+            assert_eq!(file_actual, Err(TendrilActionError::TypeMismatch {
+                loc: Location::Dest,
+                mistype: FsoType::File,
+            }));
+            assert_eq!(dir_actual, Err(TendrilActionError::TypeMismatch {
+                loc: Location::Dest,
+                mistype: FsoType::Dir,
+            }));
         },
         (false, true) => {
             assert_eq!(file_actual, Ok(TendrilActionSuccess::Overwrite));
@@ -207,8 +219,14 @@ fn local_is_symlink_returns_type_mismatch_error_unless_forced(
 
     match (dry_run, force) {
         (_, false) => {
-            assert_eq!(file_actual, Err(TendrilActionError::TypeMismatch));
-            assert_eq!(dir_actual, Err(TendrilActionError::TypeMismatch));
+            assert_eq!(file_actual, Err(TendrilActionError::TypeMismatch {
+                loc: Location::Source,
+                mistype: FsoType::Symlink,
+            }));
+            assert_eq!(dir_actual, Err(TendrilActionError::TypeMismatch {
+                loc: Location::Source,
+                mistype: FsoType::Symlink,
+            }));
         },
         (false, true) => {
             assert_eq!(file_actual, Ok(TendrilActionSuccess::New));
@@ -405,6 +423,7 @@ fn no_write_access_at_remote_symfile_returns_io_error_permission_denied_unless_d
     else {
         assert_eq!(actual, Err(TendrilActionError::IoError {
             kind: std::io::ErrorKind::PermissionDenied,
+            loc: Location::Dest,
         }));
     }
 }
