@@ -109,9 +109,12 @@ td init
 # Or
 "names": ["file.txt"]
 # Or
-"names": ["file.txt", "SomeFolder"]
+"names": ["file.txt", "SomeFolder", "Subdirectory/file.txt"]
 ```
-- Names cannot be empty strings, cannot contain line breaks, and cannot be paths (i.e cannot contain `/` or `\`)
+- If a name is a path with one or more subdirectory levels, it will append this
+structure to [parent](#parents)
+    - This structure will also be maintained within the [Tendrils folder](#tendrils-folder)
+- Names cannot be empty strings and cannot contain line breaks
 - See [Filtering by Name](#filtering-by-name)
 
 ### `parents`

@@ -1,5 +1,5 @@
 use crate::enums::{InvalidTendrilError, TendrilMode};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// A Tendril that is prepared for use with Tendril actions
 /// and always exists in a valid state.
@@ -30,7 +30,6 @@ impl<'a> Tendril<'a> {
         }
 
         if name.is_empty()
-            || Tendril::is_path(&name)
             || name.contains('\n')
             || name.contains('\r') {
             return Err(InvalidTendrilError::InvalidName);
@@ -59,15 +58,30 @@ impl<'a> Tendril<'a> {
         &self.name
     }
 
+    pub fn parent(&self) -> &Path {
+        &self.parent
+    }
+
     pub fn full_path(&self) -> PathBuf {
-        use std::path::MAIN_SEPARATOR_STR;
+        use std::path::{MAIN_SEPARATOR, MAIN_SEPARATOR_STR};
 
-        let parent_str = String::from(self.parent.to_string_lossy());
+        let mut full_path_str = self.parent.to_string_lossy().to_string();
+        if !full_path_str.ends_with('/') && !full_path_str.ends_with('\\') {
+            full_path_str.push(MAIN_SEPARATOR);
+        }
 
-        PathBuf::from(parent_str
-            .replace('\\', MAIN_SEPARATOR_STR)
-            .replace('/', MAIN_SEPARATOR_STR)
-        ).join(&self.name)
+        if self.name.starts_with('/') || self.name.starts_with('\\') {
+            full_path_str.push_str(&self.name[1..]);
+        }
+        else {
+            full_path_str.push_str(&self.name);
+        }
+
+        #[cfg(windows)]
+        return PathBuf::from(full_path_str.replace('/', MAIN_SEPARATOR_STR));
+
+        #[cfg(not(windows))]
+        return PathBuf::from(full_path_str.replace('\\', MAIN_SEPARATOR_STR));
     }
 
     fn is_path(x: &str) -> bool {

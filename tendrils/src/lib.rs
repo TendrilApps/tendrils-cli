@@ -299,7 +299,7 @@ fn link_tendril(
     if is_recursive_tendril(td_dir, &dest) {
         return Err(TendrilActionError::Recursion);
     }
-    if !dest.parent().unwrap_or(&dest).exists() {
+    if !tendril.parent().exists() {
         return Err(TendrilActionError::IoError {
             kind: std::io::ErrorKind::NotFound,
             loc: Location::Dest
@@ -389,7 +389,7 @@ fn push_tendril(
     if is_recursive_tendril(td_dir, &dest) {
         return Err(TendrilActionError::Recursion);
     }
-    if !dest.parent().unwrap_or(&dest).exists() {
+    if !tendril.parent().exists() {
         return Err(TendrilActionError::IoError {
             kind: std::io::ErrorKind::NotFound,
             loc: Location::Dest,
@@ -581,16 +581,24 @@ fn symlink(
         })
     }
     else if target.exists() {
+        match create_dir_all(create_at.parent().unwrap_or(create_at)) {
+            Err(e) => return Err(TendrilActionError::IoError {
+                kind: e.kind(),
+                loc: Location::Dest,
+            }),
+            _ => {},
+        };
+
         #[cfg(windows)]
         return symlink_win(create_at, target, dry_run);
         #[cfg(unix)]
         return symlink_unix(create_at, target, dry_run);
     }
     else {
-        return Err(TendrilActionError::IoError {
+        Err(TendrilActionError::IoError {
             kind: std::io::ErrorKind::NotFound,
             loc: Location::Source,
-        });
+        })
     }
 }
 

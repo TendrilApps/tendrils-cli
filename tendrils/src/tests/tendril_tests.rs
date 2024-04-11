@@ -2,7 +2,8 @@ use crate::{Tendril, TendrilMode};
 use crate::enums::InvalidTendrilError;
 use rstest::rstest;
 use rstest_reuse::{self, apply, template};
-use std::path::{MAIN_SEPARATOR, PathBuf};
+use std::path::PathBuf;
+use std::path::MAIN_SEPARATOR as SEP;
 
 #[template]
 #[rstest]
@@ -17,15 +18,19 @@ fn valid_groups_and_names(#[case] value: &str) {}
 
 #[template]
 #[rstest]
-#[case("")]
-#[case("New\nLine")]
-#[case("Carriage\rReturn")]
 #[case("some/path")]
 #[case("some\\path")]
 #[case("/somePath")]
 #[case("\\somePath")]
 #[case("somePath/")]
 #[case("somePath\\")]
+fn valid_names_but_invalid_groups(#[case] value: &str) {}
+
+#[template]
+#[rstest]
+#[case("")]
+#[case("New\nLine")]
+#[case("Carriage\rReturn")]
 fn invalid_groups_and_names(#[case] value: &str) {}
 
 #[template]
@@ -48,6 +53,11 @@ fn group_is_invalid_returns_invalid_group_error(#[case] group: &str) {
     ).unwrap_err();
 
     assert_eq!(actual, InvalidTendrilError::InvalidGroup);
+}
+
+#[apply(valid_names_but_invalid_groups)]
+fn group_is_invalid_returns_invalid_group_error_2(#[case] group: &str) {
+    group_is_invalid_returns_invalid_group_error(group);
 }
 
 #[apply(forbidden_groups)]
@@ -102,9 +112,24 @@ fn name_is_valid_returns_ok(#[case] name: &str) {
     ).unwrap();
 }
 
+#[apply(valid_names_but_invalid_groups)]
+fn name_is_valid_returns_ok_2(#[case] name: &str) {
+    name_is_valid_returns_ok(name);
+}
+
 #[apply(forbidden_groups)]
 fn name_is_forbidden_group_returns_ok(#[case] name: &str) {
     name_is_valid_returns_ok(name);
+}
+
+#[apply(forbidden_groups)]
+fn name_subdir_is_forbidden_group_returns_ok(#[case] subdir_name: &str) {
+    Tendril::new(
+        "SomeApp",
+        &format!("{subdir_name}/misc.txt"),
+        PathBuf::from("SomePath"),
+        TendrilMode::DirOverwrite,
+    ).unwrap();
 }
 
 #[apply(valid_groups_and_names)]
@@ -123,35 +148,52 @@ fn parent_is_valid_returns_ok(#[case] parent: &str) {
 }
 
 #[rstest]
-#[case("Plain", &format!("Plain{MAIN_SEPARATOR}misc.txt"))]
-#[case("TrailingSep/",  &format!("TrailingSep{MAIN_SEPARATOR}misc.txt"))]
-#[case("TrailingSep\\", &format!("TrailingSep{MAIN_SEPARATOR}misc.txt"))]
-#[case("/LeadingSep",  &format!("{MAIN_SEPARATOR}LeadingSep{MAIN_SEPARATOR}misc.txt"))]
-#[case("\\LeadingSep", &format!("{MAIN_SEPARATOR}LeadingSep{MAIN_SEPARATOR}misc.txt"))]
-#[case("/Both/",   &format!("{MAIN_SEPARATOR}Both{MAIN_SEPARATOR}misc.txt"))]
-#[case("\\Both\\", &format!("{MAIN_SEPARATOR}Both{MAIN_SEPARATOR}misc.txt"))]
+#[case("Plain", &format!("Plain{SEP}"))]
+#[case("TrailingSep/", &format!("TrailingSep{SEP}"))]
+#[case("TrailingSep\\", &format!("TrailingSep{SEP}"))]
+#[case("DblTrailingSep//", &format!("DblTrailingSep{SEP}{SEP}"))]
+#[case("DblTrailingSep\\\\", &format!("DblTrailingSep{SEP}{SEP}"))]
+#[case("/LeadingSep",  &format!("{SEP}LeadingSep{SEP}"))]
+#[case("\\LeadingSep", &format!("{SEP}LeadingSep{SEP}"))]
+#[case("/Both/",   &format!("{SEP}Both{SEP}"))]
+#[case("\\Both\\", &format!("{SEP}Both{SEP}"))]
+#[case("\\Mixed/Style", &format!("{SEP}Mixed{SEP}Style{SEP}"))]
+#[case("/Mixed\\Style", &format!("{SEP}Mixed{SEP}Style{SEP}"))]
 #[case(
-    "\\Mixed/Style",
-    &format!("{MAIN_SEPARATOR}Mixed{MAIN_SEPARATOR}Style{MAIN_SEPARATOR}misc.txt")
-)]
-#[case(
-    "/Mixed\\Style",
-    &format!("{MAIN_SEPARATOR}Mixed{MAIN_SEPARATOR}Style{MAIN_SEPARATOR}misc.txt")
-)]
-#[case(
-    "Crazy`~!@#$%^&*()-_=+|\\[]{}'\";:/?.,<>Symbols/", 
-    &format!("Crazy`~!@#$%^&*()-_=+|{MAIN_SEPARATOR}[]{{}}'\";:{MAIN_SEPARATOR}?.,<>Symbols{MAIN_SEPARATOR}misc.txt")
+    "Crazy`~!@#$%^&*()-_=+|\\[]{}'\";:/?.,<>Symbols/",
+    &format!("Crazy`~!@#$%^&*()-_=+|{SEP}[]{{}}'\";:{SEP}?.,<>Symbols{SEP}")
 )]
 fn full_path_appends_name_to_parent_using_platform_dir_sep_for_all_slashes(
     #[case] parent: PathBuf,
-    #[case] expected: &str,
+
+    // (given, expected after appending to parent)
+    #[values(
+        ("misc.txt", "misc.txt".to_string()),
+        ("misc/nested.txt",  format!("misc{SEP}nested.txt")),
+        ("misc\\nested.txt", format!("misc{SEP}nested.txt")),
+        ("trailingSep/",  format!("trailingSep{SEP}")),
+        ("trailingSep\\", format!("trailingSep{SEP}")),
+        ("/leadingSep.txt",  "leadingSep.txt".to_string()),
+        ("\\leadingSep.txt", "leadingSep.txt".to_string()),
+        ("//dblLeadingSep.txt",  format!("{SEP}dblLeadingSep.txt")),
+        ("\\\\dblLeadingSep.txt", format!("{SEP}dblLeadingSep.txt")),
+        ("/Both/",   format!("Both{SEP}")),
+        ("\\Both\\", format!("Both{SEP}")),
+        ("/Mixed\\misc.txt", format!("Mixed{SEP}misc.txt")),
+        ("\\Mixed/misc.txt", format!("Mixed{SEP}misc.txt")),
+        ("C:\\Absolute\\Path", format!("C:{SEP}Absolute{SEP}Path")),
+    )]
+    name_given_and_exp: (&str, String),
+
+    #[case] expected_prefix: &str,
 ) {
     let tendril = Tendril::new(
         "SomeApp",
-        "misc.txt",
+        name_given_and_exp.0,
         parent,
         TendrilMode::DirOverwrite,
     ).unwrap();
+    let expected = format!("{expected_prefix}{}", name_given_and_exp.1);
 
     let actual = tendril.full_path();
 

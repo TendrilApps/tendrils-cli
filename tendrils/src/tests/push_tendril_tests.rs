@@ -390,6 +390,72 @@ fn dir_merge_w_dir_tendril_merges_w_local_dir_recursively(
 #[rstest]
 #[case(true)]
 #[case(false)]
+fn dir_overwrite_w_subdir_dir_tendril_replaces_remote_dir_recursively(
+    #[case] force: bool,
+) {
+    let setup = Setup::new();
+    let remote_nested_dir = &setup.remote_subdir_dir.join("NestedDir");
+    let remote_new_2nested_file = remote_nested_dir.join("new_nested.txt");
+    let remote_extra_2nested_file = remote_nested_dir.join("extra_nested.txt");
+    let local_nested_dir = &setup.local_subdir_dir.join("NestedDir");
+    let local_new_2nested_file = local_nested_dir.join("new_nested.txt");
+    setup.make_remote_subdir_nested_file();
+    setup.make_local_subdir_nested_file();
+    create_dir_all(&remote_nested_dir).unwrap();
+    create_dir_all(&local_nested_dir).unwrap();
+    write(&local_new_2nested_file, "I'm not in the remote dir").unwrap();
+    write(&remote_extra_2nested_file, "I'm not in the local dir").unwrap();
+
+    let mut tendril = setup.subdir_dir_tendril();
+    tendril.mode = TendrilMode::DirOverwrite;
+
+    let actual = push_tendril(&setup.td_dir, &tendril, false, force);
+
+    assert_eq!(actual, Ok(TendrilActionSuccess::Overwrite));
+    let remote_new_2nested_file_contents =
+        read_to_string(remote_new_2nested_file).unwrap();
+    assert_eq!(setup.remote_subdir_nested_file_contents(), "Local subdir nested file contents");
+    assert_eq!(remote_new_2nested_file_contents, "I'm not in the remote dir");
+    assert!(!remote_extra_2nested_file.exists());
+}
+
+#[rstest]
+#[case(true)]
+#[case(false)]
+fn dir_merge_w_subdir_dir_tendril_merges_w_local_dir_recursively(
+    #[case] force: bool,
+) {
+    let setup = Setup::new();
+    let remote_nested_dir = &setup.remote_subdir_dir.join("NestedDir");
+    let remote_new_2nested_file = remote_nested_dir.join("new_nested.txt");
+    let remote_extra_2nested_file = remote_nested_dir.join("extra_nested.txt");
+    let local_nested_dir = &setup.local_subdir_dir.join("NestedDir");
+    let local_new_2nested_file = local_nested_dir.join("new_nested.txt");
+    setup.make_remote_subdir_nested_file();
+    setup.make_local_subdir_nested_file();
+    create_dir_all(&remote_nested_dir).unwrap();
+    create_dir_all(&local_nested_dir).unwrap();
+    write(&local_new_2nested_file, "I'm not in the remote dir").unwrap();
+    write(&remote_extra_2nested_file, "I'm not in the local dir").unwrap();
+
+    let mut tendril = setup.subdir_dir_tendril();
+    tendril.mode = TendrilMode::DirMerge;
+
+    let actual = push_tendril(&setup.td_dir, &tendril, false, force);
+
+    assert_eq!(actual, Ok(TendrilActionSuccess::Overwrite));
+    let remote_new_2nested_file_contents =
+        read_to_string(remote_new_2nested_file).unwrap();
+    let remote_extra_2nested_file_contents =
+        read_to_string(remote_extra_2nested_file).unwrap();
+    assert_eq!(setup.remote_subdir_nested_file_contents(), "Local subdir nested file contents");
+    assert_eq!(remote_new_2nested_file_contents, "I'm not in the remote dir");
+    assert_eq!(remote_extra_2nested_file_contents, "I'm not in the local dir");
+}
+
+#[rstest]
+#[case(true)]
+#[case(false)]
 fn no_read_access_from_local_file_returns_io_error_permission_denied_unless_dry_run(
     #[case] dry_run: bool,
 

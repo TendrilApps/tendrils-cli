@@ -19,7 +19,11 @@ use crate::enums::{
     TendrilMode
 };
 use crate::tendril::Tendril;
-use crate::test_utils::{get_disposable_dir, symlink_expose, Setup};
+use crate::test_utils::{
+    get_disposable_dir,
+    symlink_expose,
+    Setup
+};
 use rstest::rstest;
 use rstest_reuse::{self, apply, template};
 use serial_test::serial;
@@ -385,6 +389,74 @@ fn other_tendrils_in_same_group_dir_are_unchanged(
 #[case(link_tendril)]
 #[case(pull_tendril)]
 #[case(push_tendril)]
+fn other_files_in_subdir_are_unchanged(
+    #[case] action: fn(&Path, &Tendril, bool, bool)
+        -> Result<TendrilActionSuccess, TendrilActionError>,
+
+    #[values(true, false)]
+    dry_run: bool,
+
+    #[values(true, false)]
+    force: bool,
+) {
+    let setup = Setup::new();
+    let other_local_file = setup.local_subdir_file.parent().unwrap()
+        .join("other.txt");
+    let other_remote_file = setup.remote_subdir_file.parent().unwrap()
+        .join("other.txt");
+    setup.make_local_file();
+    setup.make_local_dir();
+    setup.make_local_subdir_file();
+    setup.make_local_subdir_nested_file();
+    create_dir_all(setup.parent_dir.join("SubDir")).unwrap();
+    write(&other_local_file, "Other local file contents").unwrap();
+    write(&other_remote_file, "Other remote file contents").unwrap();
+
+    let mut subdir_file_tendril = setup.subdir_file_tendril();
+    let mut subdir_dir_tendril = setup.subdir_dir_tendril();
+    if action == link_tendril {
+        subdir_file_tendril.mode = TendrilMode::Link;
+        subdir_dir_tendril.mode = TendrilMode::Link;
+    }
+    else if action != link_tendril {
+        setup.make_remote_subdir_file();
+        setup.make_remote_subdir_nested_file();
+    }
+    let subdir_file_actual = action(
+        &setup.td_dir, &subdir_file_tendril, dry_run, force
+    );
+    let subdir_dir_actual = action(
+        &setup.td_dir, &subdir_dir_tendril, dry_run, force
+    );
+
+    let expected;
+    if action == link_tendril {
+        if dry_run {
+        expected = Ok(TendrilActionSuccess::NewSkipped);
+        }
+        else {
+            expected = Ok(TendrilActionSuccess::New);
+        }
+    }
+    else if dry_run {
+        expected = Ok(TendrilActionSuccess::OverwriteSkipped);
+    }
+    else {
+        expected = Ok(TendrilActionSuccess::Overwrite);
+    }
+
+    let other_local_file_contents = read_to_string(other_local_file).unwrap();
+    let other_remote_file_contents = read_to_string(other_remote_file).unwrap();
+    assert_eq!(subdir_file_actual, expected);
+    assert_eq!(subdir_dir_actual, expected);
+    assert_eq!(other_local_file_contents, "Other local file contents");
+    assert_eq!(other_remote_file_contents, "Other remote file contents");
+}
+
+#[rstest]
+#[case(link_tendril)]
+#[case(pull_tendril)]
+#[case(push_tendril)]
 fn remote_parent_doesnt_exist_returns_io_error_not_found(
     #[case] action: fn(&Path, &Tendril, bool, bool)
         -> Result<TendrilActionSuccess, TendrilActionError>,
@@ -399,33 +471,128 @@ fn remote_parent_doesnt_exist_returns_io_error_not_found(
     setup.parent_dir = setup.parent_dir.join("IDoNotExist");
     setup.make_local_file();
     setup.make_local_nested_file();
+    setup.make_local_subdir_file();
+    setup.make_local_subdir_nested_file();
 
     let mut file_tendril = setup.file_tendril();
     let mut dir_tendril = setup.dir_tendril();
+    let mut subdir_file_tendril = setup.subdir_file_tendril();
+    let mut subdir_dir_tendril = setup.subdir_dir_tendril();
     if action == link_tendril {
         file_tendril.mode = TendrilMode::Link;
         dir_tendril.mode = TendrilMode::Link;
+        subdir_file_tendril.mode = TendrilMode::Link;
+        subdir_dir_tendril.mode = TendrilMode::Link;
     }
-    assert!(!file_tendril.full_path().parent().unwrap().exists());
-    assert!(!dir_tendril.full_path().parent().unwrap().exists());
+    assert!(!file_tendril.parent().exists());
+    assert!(!dir_tendril.parent().exists());
+    assert!(!subdir_file_tendril.parent().exists());
+    assert!(!subdir_dir_tendril.parent().exists());
 
     let file_actual = action(&setup.td_dir, &file_tendril, dry_run, force);
     let dir_actual = action(&setup.td_dir, &dir_tendril, dry_run, force);
+    let subdir_file_actual = action(
+        &setup.td_dir, &subdir_file_tendril, dry_run, force
+    );
+    let subdir_dir_actual = action(
+        &setup.td_dir, &subdir_dir_tendril, dry_run, force
+    );
 
     let exp_loc = match action == pull_tendril {
         true => Location::Source,
         false => Location::Dest,
     };
-    assert_eq!(file_actual, Err(TendrilActionError::IoError {
+    let expected = Err(TendrilActionError::IoError {
         kind: std::io::ErrorKind::NotFound,
         loc: exp_loc.clone(),
-    }));
-    assert_eq!(dir_actual, Err(TendrilActionError::IoError {
-        kind: std::io::ErrorKind::NotFound,
-        loc: exp_loc,
-    }));
+    });
+    assert_eq!(file_actual, expected);
+    assert_eq!(dir_actual, expected);
+    assert_eq!(subdir_file_actual, expected);
+    assert_eq!(subdir_dir_actual, expected);
     assert_eq!(setup.local_file_contents(), "Local file contents");
     assert_eq!(setup.local_nested_file_contents(), "Local nested file contents");
+    assert_eq!(setup.local_subdir_file_contents(), "Local subdir file contents");
+    assert_eq!(setup.local_subdir_nested_file_contents(), "Local subdir nested file contents");
+}
+
+#[rstest]
+#[case(link_tendril)]
+#[case(pull_tendril)]
+#[case(push_tendril)]
+fn remote_direct_parent_doesnt_exist_but_parent_does_should_create_subdirs_then_succeed(
+    #[case] action: fn(&Path, &Tendril, bool, bool)
+        -> Result<TendrilActionSuccess, TendrilActionError>,
+
+    #[values(true, false)]
+    dry_run: bool,
+
+    #[values(true, false)]
+    force: bool,
+) {
+    let subdir_file_setup = Setup::new();
+    let subdir_dir_setup = Setup::new();
+    subdir_file_setup.make_local_subdir_file();
+    subdir_dir_setup.make_local_subdir_nested_file();
+
+    let mut subdir_file_tendril = subdir_file_setup.subdir_file_tendril();
+    let mut subdir_dir_tendril = subdir_dir_setup.subdir_dir_tendril();
+    if action == link_tendril {
+        subdir_file_tendril.mode = TendrilMode::Link;
+        subdir_dir_tendril.mode = TendrilMode::Link;
+    }
+    assert!(!subdir_file_tendril.full_path().parent().unwrap().exists());
+    assert!(!subdir_dir_tendril.full_path().parent().unwrap().exists());
+
+    let subdir_file_actual = action(
+        &subdir_file_setup.td_dir, &subdir_file_tendril, dry_run, force
+    );
+    let subdir_dir_actual = action(
+        &subdir_dir_setup.td_dir, &subdir_dir_tendril, dry_run, force
+    );
+
+    if action == pull_tendril {
+        let expected = Err(TendrilActionError::IoError {
+            kind: std::io::ErrorKind::NotFound,
+            loc: Location::Source,
+        });
+        assert_eq!(subdir_file_actual, expected);
+        assert_eq!(subdir_dir_actual, expected);
+    }
+    else if dry_run {
+        assert_eq!(subdir_file_actual, Ok(TendrilActionSuccess::NewSkipped));
+        assert_eq!(subdir_dir_actual, Ok(TendrilActionSuccess::NewSkipped));
+        assert_eq!(
+            subdir_file_setup.local_subdir_file_contents(),
+            "Local subdir file contents"
+        );
+        assert_eq!(
+            subdir_dir_setup.local_subdir_nested_file_contents(),
+            "Local subdir nested file contents"
+        );
+        assert!(!subdir_file_setup.remote_subdir_file.exists());
+        assert!(!subdir_dir_setup.remote_subdir_dir.exists());
+    }
+    else {
+        assert_eq!(subdir_file_actual, Ok(TendrilActionSuccess::New));
+        assert_eq!(subdir_dir_actual, Ok(TendrilActionSuccess::New));
+        assert_eq!(
+            subdir_file_setup.local_subdir_file_contents(),
+            "Local subdir file contents"
+        );
+        assert_eq!(
+            subdir_dir_setup.local_subdir_nested_file_contents(),
+            "Local subdir nested file contents"
+        );
+        assert_eq!(
+            subdir_file_setup.remote_subdir_file_contents(),
+            "Local subdir file contents"
+        );
+        assert_eq!(
+            subdir_dir_setup.remote_subdir_nested_file_contents(),
+            "Local subdir nested file contents"
+        );
+    }
 }
 
 #[rstest]
