@@ -7,6 +7,7 @@
     - Versioning/syncing configuration files that are expected to be in specific locations on the machine (video game saves, application settings, `.bashrc`, `.vim`, etc)
     - Versioning/syncing small scripts that otherwise would not have their own repos
     - Quickly editing miscellaneous files in a common place rather than tracking them down individually
+    - Multiple settings profiles within one user
 
 # Getting Started
 ## Supported Platforms
