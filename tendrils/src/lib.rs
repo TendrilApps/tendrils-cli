@@ -513,14 +513,18 @@ fn resolve_tendril_bundle(
     let mut resolve_results = 
         Vec::with_capacity(td_bundle.names.len() * td_bundle.parents.len());
 
-    for name in td_bundle.names.iter() {
-        for raw_path in raw_paths.iter() {
-            let parent = resolve_path_variables(String::from(raw_path));
+    // Resolve parents early to prevent doing this on
+    // each iteration
+    let resolved_parents: Vec<PathBuf> = raw_paths.iter().map(|p| {
+        resolve_path_variables(String::from(p))
+    }).collect();
 
+    for name in td_bundle.names.iter() {
+        for resolved_parent in resolved_parents.iter() {
             resolve_results.push(Tendril::new(
                 &td_bundle.group,
                 name,
-                parent,
+                resolved_parent.clone(),
                 mode.clone(),
             ));
         }
