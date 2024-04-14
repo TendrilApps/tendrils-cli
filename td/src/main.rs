@@ -10,6 +10,7 @@ use cli::{
     TendrilCliArgs,
     TendrilsSubcommands
 };
+use exitcode;
 use std::path::PathBuf;
 use tendrils::{
     can_symlink,
@@ -34,16 +35,19 @@ fn main() {
     let mut stdout_writer = writer::StdOutWriter {};
     let args = cli::TendrilCliArgs::parse();
 
-    run(args, &mut stdout_writer);
+    let exit_code = run(args, &mut stdout_writer);
+    std::process::exit(exit_code)
 }
 
-fn run(args: TendrilCliArgs, writer: &mut impl Writer) {
+/// Returns, but does not set, the suggested exit code for the process.
+/// It is up to the calling function to handle exiting with this code.
+fn run(args: TendrilCliArgs, writer: &mut impl Writer) -> i32 {
     match args.tendrils_command {
         TendrilsSubcommands::Init { path, force } => {
-            init(path, force, writer);
+            init(path, force, writer)
         }
         TendrilsSubcommands::Path => {
-            path(writer);
+            path(writer)
         },
         TendrilsSubcommands::Pull {action_args, filter_args} => {
             tendril_action_subcommand(
@@ -69,13 +73,15 @@ fn run(args: TendrilCliArgs, writer: &mut impl Writer) {
                 writer,
             )
         },
-    };
+    }
 }
 
 /// `Error` in bright red font
 const ERR_PREFIX: &str = "\u{1b}[91mError\u{1b}[39m";
 
-fn init(path: Option<String>, force: bool, writer: &mut impl Writer) {
+/// Returns, but does not set, the suggested exit code for the process.
+/// It is up to the calling function to handle exiting with this code.
+fn init(path: Option<String>, force: bool, writer: &mut impl Writer) -> i32 {
     let td_dir = match path {
         Some(v) => {
             PathBuf::from(v)
@@ -87,7 +93,7 @@ fn init(path: Option<String>, force: bool, writer: &mut impl Writer) {
                     writer.writeln(&format!(
                         "{ERR_PREFIX}: Could not get the current directory."
                     ));
-                    return;
+                    return exitcode::OSERR;
                 }
             }
         }
@@ -102,19 +108,26 @@ fn init(path: Option<String>, force: bool, writer: &mut impl Writer) {
         },
         Err(InitError::IoError {kind: e_kind}) => {
             writer.writeln(&format!("{ERR_PREFIX}: {e_kind}."));
+            return exitcode::IOERR;
         },
         Err(InitError::AlreadyInitialized) => {
             writer.writeln(&format!("{ERR_PREFIX}: This folder is already a Tendrils folder."));
+            return exitcode::DATAERR;
         },
         Err(InitError::NotEmpty) => {
             writer.writeln(&format!("{ERR_PREFIX}: This folder is not empty. Creating a Tendrils folder here may interfere with the existing contents."));
             writer.writeln("Consider running with the 'force' flag to ignore this error:\n");
             writer.writeln("td init --force");
+            return exitcode::DATAERR;
         }
     };
+
+    return 0;
 }
 
-fn path(writer: &mut impl Writer) {
+/// Returns, but does not set, the suggested exit code for the process.
+/// It is up to the calling function to handle exiting with this code.
+fn path(writer: &mut impl Writer) -> i32 {
     const ENV_NAME: &str = "TENDRILS_FOLDER";
     match std::env::var(ENV_NAME) {
         Ok(v) => {
@@ -124,22 +137,26 @@ fn path(writer: &mut impl Writer) {
         Err(std::env::VarError::NotPresent) => {
             writer.writeln(&format!(
                 "The '{ENV_NAME}' environment variable is not set."
-            ))
+            ));
         },
         Err(std::env::VarError::NotUnicode(_v)) => {
             writer.writeln(&format!(
                 "{ERR_PREFIX}: The '{ENV_NAME}' environment variable is not valid UTF-8."
-            ))
+            ));
+            return exitcode::DATAERR;
         }
     } 
+    return 0;
 }
 
+/// Returns, but does not set, the suggested exit code for the process.
+/// It is up to the calling function to handle exiting with this code.
 fn tendril_action_subcommand(
     mode: ActionMode,
     action_args: ActionArgs,
     filter_args: FilterArgs,
     writer: &mut impl Writer,
-) {
+) -> i32 {
     let td_dir = match action_args.path {
         Some(v) => {
             let test_path = PathBuf::from(v);
@@ -150,7 +167,7 @@ fn tendril_action_subcommand(
                 writer.writeln(&format!(
                     "{ERR_PREFIX}: The given path is not a Tendrils folder."
                 ));
-                return;
+                return exitcode::NOINPUT;
             }
         }
         None => {
@@ -160,7 +177,7 @@ fn tendril_action_subcommand(
                     writer.writeln(&format!(
                         "{ERR_PREFIX}: Could not get the current directory."
                     ));
-                    return;
+                    return exitcode::OSERR;
                 }
             };
             match get_tendrils_dir(&starting_dir) {
@@ -169,7 +186,7 @@ fn tendril_action_subcommand(
                     writer.writeln(&format!(
                         "{ERR_PREFIX}: Could not find a Tendrils folder."
                     ));
-                    return;
+                    return exitcode::NOINPUT;
                 }
             }
         }
@@ -181,7 +198,7 @@ fn tendril_action_subcommand(
         writer.writeln("    - Running this command in an elevated terminal");
         writer.writeln("    - Enabling developer mode (this allows creating symlinks without requiring administrator priviledges)");
         writer.writeln("    - Changing these tendrils to non-link modes instead");
-        return;
+        return exitcode::CANTCREAT;
     }
 
     let all_tendrils = match get_tendrils(&td_dir) {
@@ -190,14 +207,14 @@ fn tendril_action_subcommand(
             writer.writeln(&format!(
                 "{ERR_PREFIX}: Could not read the tendrils.json file."
             ));
-            return;
+            return exitcode::NOINPUT;
         },
         Err(GetTendrilsError::ParseError(e)) => {
             writer.writeln(&format!(
                 "{ERR_PREFIX}: Could not parse the tendrils.json file."
             ));
             writer.writeln(&format!("{e}"));
-            return;
+            return exitcode::DATAERR;
         },
     };
 
@@ -227,4 +244,12 @@ fn tendril_action_subcommand(
     );
 
     print_reports(&action_reports, writer);
+
+    if action_reports.iter().any(|r| match r.action_result { 
+        None | Some(Err(_)) => true,
+        _ => false,
+    }) {
+        return exitcode::SOFTWARE;
+    }
+    return 0;
 }

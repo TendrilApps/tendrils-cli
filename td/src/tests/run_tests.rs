@@ -101,8 +101,9 @@ fn init_no_path_given_uses_current_dir(#[case] force: bool) {
         }
     };
 
-    run(args, &mut writer);
+    let actual_exit_code = run(args, &mut writer);
 
+    assert_eq!(actual_exit_code, 0);
     assert!(temp_dir.path().join("tendrils.json").exists());
     assert_eq!(writer.all_output, format!(
         "Created a Tendrils folder at: {}.\n",
@@ -137,8 +138,9 @@ fn init_path_given_uses_given_path_and_ignores_valid_current_dir(#[case] force: 
         }
     };
 
-    run(args, &mut writer);
+    let actual_exit_code = run(args, &mut writer);
 
+    assert_eq!(actual_exit_code, 0);
     assert!(given_dir.join("tendrils.json").exists());
     assert_eq!(writer.all_output, format!(
         "Created a Tendrils folder at: {}.\n",
@@ -179,8 +181,9 @@ fn init_path_given_uses_given_path_and_ignores_invalid_current_dir(#[case] force
         }
     };
 
-    run(args, &mut writer);
+    let actual_exit_code = run(args, &mut writer);
 
+    assert_eq!(actual_exit_code, 0);
     assert!(given_dir.join("tendrils.json").exists());
     assert_eq!(writer.all_output, format!(
         "Created a Tendrils folder at: {}.\n",
@@ -216,8 +219,9 @@ fn init_path_given_uses_given_path_and_ignores_missing_current_dir(#[case] force
         }
     };
 
-    run(args, &mut writer);
+    let actual_exit_code = run(args, &mut writer);
 
+    assert_eq!(actual_exit_code, 0);
     assert!(given_dir.join("tendrils.json").exists());
     assert_eq!(writer.all_output, format!(
         "Created a Tendrils folder at: {}.\n",
@@ -247,8 +251,9 @@ fn init_no_path_given_and_no_cd_prints_error_message(#[case] force: bool) {
         }
     };
 
-    run(args, &mut writer);
+    let actual_exit_code = run(args, &mut writer);
 
+    assert_eq!(actual_exit_code, exitcode::OSERR);
     assert!(!cd.exists());
     assert_eq!(
         writer.all_output,
@@ -275,9 +280,10 @@ fn init_non_empty_dir_prints_error_message_unless_forced(#[case] force: bool) {
         }
     };
 
-    run(args, &mut writer);
+    let actual_exit_code = run(args, &mut writer);
 
     if force {
+        assert_eq!(actual_exit_code, 0);
         assert!(given_dir.join("tendrils.json").exists());
         assert_eq!(writer.all_output, format!(
             "Created a Tendrils folder at: {}.\n",
@@ -285,6 +291,7 @@ fn init_non_empty_dir_prints_error_message_unless_forced(#[case] force: bool) {
         ));
     }
     else {
+        assert_eq!(actual_exit_code, exitcode::DATAERR);
         assert!(!given_dir.join("tendrils.json").exists());
         let expected = format!("{ERR_PREFIX}: This folder is not empty. \
         Creating a Tendrils folder here may interfere with the existing \
@@ -316,8 +323,9 @@ fn init_dir_is_already_tendrils_dir_prints_error_message(#[case] force: bool) {
         }
     };
 
-    run(args, &mut writer);
+    let actual_exit_code = run(args, &mut writer);
 
+    assert_eq!(actual_exit_code, exitcode::DATAERR);
     assert_eq!(
         writer.all_output, 
         format!("{ERR_PREFIX}: This folder is already a Tendrils folder.\n"),
@@ -327,7 +335,7 @@ fn init_dir_is_already_tendrils_dir_prints_error_message(#[case] force: bool) {
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn init_dir_does_exists_prints_io_error_message(#[case] force: bool) {
+fn init_dir_does_not_exist_prints_io_error_message(#[case] force: bool) {
     let mut writer = MockWriter::new();
     let given_dir = PathBuf::from("I do not exist");
 
@@ -338,8 +346,9 @@ fn init_dir_does_exists_prints_io_error_message(#[case] force: bool) {
         }
     };
 
-    run(args, &mut writer);
+    let actual_exit_code = run(args, &mut writer);
 
+    assert_eq!(actual_exit_code, exitcode::IOERR);
     assert_eq!(writer.all_output, format!("{ERR_PREFIX}: entity not found.\n"));
 }
 
@@ -355,8 +364,9 @@ fn path_with_env_var_unset_prints_message() {
         "The '{}' environment variable is not set.\n", TENDRILS_VAR_NAME
     );
 
-    run(args, &mut writer);
+    let actual_exit_code = run(args, &mut writer);
 
+    assert_eq!(actual_exit_code, 0);
     assert_eq!(writer.all_output, expected);
 }
 
@@ -372,8 +382,9 @@ fn path_with_env_var_set_prints_path() {
     // Formatted as hyperlink
     let expected = "\u{1b}]8;;SomePath\u{1b}\\SomePath\u{1b}]8;;\u{1b}\\\n";
 
-    run(args, &mut writer);
+    let actual_exit_code = run(args, &mut writer);
 
+    assert_eq!(actual_exit_code, 0);
     assert_eq!(writer.all_output, expected);
 }
 
@@ -407,8 +418,9 @@ fn tendril_action_no_path_given_and_no_cd_prints_message(
         "{ERR_PREFIX}: Could not get the current directory.\n"
     );
 
-    run(args, &mut writer);
+    let actual_exit_code = run(args, &mut writer);
 
+    assert_eq!(actual_exit_code, exitcode::OSERR);
     assert_eq!(writer.all_output, expected);
 }
 
@@ -444,11 +456,12 @@ fn tendril_action_given_path_is_not_tendrils_dir_but_cd_is_should_print_message(
         "{ERR_PREFIX}: The given path is not a Tendrils folder.\n"
     );
 
-    run(args, &mut writer);
+    let actual_exit_code = run(args, &mut writer);
 
     // To free the TempDir from use
     std::env::set_current_dir(setup.temp_dir.path().parent().unwrap()).unwrap();
 
+    assert_eq!(actual_exit_code, exitcode::NOINPUT);
     assert!(is_tendrils_dir(&setup.td_dir));
     assert!(!is_tendrils_dir(&given_path));
     assert_eq!(writer.all_output, expected);
@@ -485,11 +498,12 @@ fn tendril_action_given_path_and_cd_are_both_tendrils_dirs_uses_given_path(
     let expected = format!("{ERR_PREFIX}: Could not parse the tendrils.json \
     file.\nEOF while parsing a value at line 1 column 0\n");
 
-    run(args, &mut writer);
+    let actual_exit_code = run(args, &mut writer);
 
     // To free the TempDir from use
     std::env::set_current_dir(setup.temp_dir.path().parent().unwrap()).unwrap();
 
+    assert_eq!(actual_exit_code, exitcode::DATAERR);
     assert!(is_tendrils_dir(&setup.td_dir));
     assert!(is_tendrils_dir(&given_path));
     assert_eq!(writer.all_output, expected);
@@ -529,8 +543,9 @@ fn tendril_action_dry_run_does_not_modify(
     );
     let args = TendrilCliArgs {tendrils_command};
 
-    run(args, &mut writer);
+    let actual_exit_code = run(args, &mut writer);
 
+    assert_eq!(actual_exit_code, 0);
     if mode == ActionMode::Link {
         assert_eq!(setup.remote_file_contents(), "Target file contents");
     }
@@ -585,8 +600,9 @@ fn tendril_action_tendrils_are_filtered_by_mode(
     );
     let args = TendrilCliArgs {tendrils_command};
 
-    run(args, &mut writer);
+    let actual_exit_code = run(args, &mut writer);
 
+    assert_eq!(actual_exit_code, exitcode::SOFTWARE);
     if mode == ActionMode::Link {
         assert!(writer.all_output_lines()[3].contains("misc2.txt"));
         assert!(writer.all_output_lines()[3].contains(" not found"));
@@ -652,8 +668,9 @@ fn tendril_action_tendrils_are_filtered_by_group(
     );
     let args = TendrilCliArgs {tendrils_command};
 
-    run(args, &mut writer);
+    let actual_exit_code = run(args, &mut writer);
 
+    assert_eq!(actual_exit_code, exitcode::SOFTWARE);
     assert!(writer.all_output_lines()[3].contains("App2"));
     assert!(writer.all_output_lines()[3].contains(" not found"));
     assert!(writer.all_output_lines()[5].contains("App3"));
@@ -706,8 +723,9 @@ fn tendril_action_tendrils_are_filtered_by_names(
     );
     let args = TendrilCliArgs {tendrils_command};
 
-    run(args, &mut writer);
+    let actual_exit_code = run(args, &mut writer);
 
+    assert_eq!(actual_exit_code, exitcode::SOFTWARE);
     assert!(writer.all_output_lines()[3].contains("misc2.txt"));
     assert!(writer.all_output_lines()[3].contains(" not found"));
     assert!(writer.all_output_lines()[5].contains("misc3.txt"));
@@ -757,8 +775,9 @@ fn tendril_action_tendrils_are_filtered_by_parents(
     );
     let args = TendrilCliArgs {tendrils_command};
 
-    run(args, &mut writer);
+    let actual_exit_code = run(args, &mut writer);
 
+    assert_eq!(actual_exit_code, exitcode::SOFTWARE);
     use std::path::MAIN_SEPARATOR;
     assert!(writer.all_output_lines()[3].contains(&format!("p{MAIN_SEPARATOR}2")));
     assert!(writer.all_output_lines()[3].contains(" not found"));
@@ -815,8 +834,9 @@ fn tendril_action_tendrils_are_filtered_by_profile(
     );
     let args = TendrilCliArgs {tendrils_command};
 
-    run(args, &mut writer);
+    let actual_exit_code = run(args, &mut writer);
 
+    assert_eq!(actual_exit_code, exitcode::SOFTWARE);
     assert!(writer.all_output_lines()[3].contains("misc2.txt"));
     assert!(writer.all_output_lines()[3].contains(" not found"));
     assert!(writer.all_output_lines()[5].contains("misc3.txt"));
@@ -855,8 +875,9 @@ fn tendril_action_empty_tendrils_array_should_print_message(
     );
     let args = TendrilCliArgs {tendrils_command};
 
-    run(args, &mut writer);
+    let actual_exit_code = run(args, &mut writer);
 
+    assert_eq!(actual_exit_code, 0);
     assert_eq!(writer.all_output, "No tendrils were found.\n");
 }
 
@@ -890,8 +911,9 @@ fn tendril_action_empty_filtered_tendrils_array_should_print_message(
     );
     let args = TendrilCliArgs {tendrils_command};
 
-    run(args, &mut writer);
+    let actual_exit_code = run(args, &mut writer);
 
+    assert_eq!(actual_exit_code, 0);
     assert_eq!(writer.all_output, "No tendrils matched the given filter(s).\n");
 }
 

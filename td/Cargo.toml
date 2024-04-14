@@ -5,6 +5,7 @@ edition = "2018"
 
 [dependencies]
 clap = { version = "4.4.11", features = ["derive"] }
+exitcode = "1.1.2"
 inline_colorization = "0.1.6"
 tabled = { version = "0.15.0", features = ["ansi"] }
 tendrils = { path = "../tendrils" } # See also the usage in dev-dependencies
