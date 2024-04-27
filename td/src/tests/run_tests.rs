@@ -67,7 +67,11 @@ fn build_action_subcommand(
         ActionMode::Link => TendrilsSubcommands::Link {
             action_args,
             filter_args,
-        }
+        },
+        ActionMode::Out => TendrilsSubcommands::Out {
+            action_args,
+            filter_args,
+        },
     }
 }
 

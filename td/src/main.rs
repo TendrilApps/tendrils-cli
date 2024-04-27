@@ -73,6 +73,14 @@ fn run(args: TendrilCliArgs, writer: &mut impl Writer) -> i32 {
                 writer,
             )
         },
+        TendrilsSubcommands::Out {action_args, filter_args} => {
+            tendril_action_subcommand(
+                ActionMode::Out,
+                action_args,
+                filter_args,
+                writer,
+            )
+        },
     }
 }
 
@@ -218,8 +226,15 @@ fn tendril_action_subcommand(
         },
     };
 
+    let mode_filter;
+    if mode == ActionMode::Out {
+        mode_filter = None;
+    }
+    else {
+        mode_filter = Some(mode.clone());
+    }
     let filter = FilterSpec {
-        mode: Some(mode.clone()),
+        mode: mode_filter,
         groups: &filter_args.groups,
         names: &filter_args.names,
         parents: &filter_args.parents,

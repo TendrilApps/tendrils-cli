@@ -469,6 +469,157 @@ fn link_returns_tendril_and_result_for_each_given(
 }
 
 #[rstest]
+#[case(true)]
+#[case(false)]
+fn out_returns_tendril_and_result_for_each_given_link_or_push_style(
+    #[case] dry_run: bool,
+
+    #[values(true, false)]
+    force: bool,
+) {
+    let temp_grandparent_dir = TempDir::new_in(
+        get_disposable_dir(),
+        "ParentDir"
+    ).unwrap();
+    let given_td_dir = temp_grandparent_dir.path().join("TendrilsDir");
+    let given_parent_dir_a = temp_grandparent_dir.path().join("ParentA");
+    let given_parent_dir_b = temp_grandparent_dir.path().join("ParentB");
+    let remote_app1_file = given_parent_dir_a.join("misc1.txt");
+    let remote_app1_dir = given_parent_dir_a.join("App1 Dir");
+    let remote_app1_nested_file = remote_app1_dir.join("nested1.txt");
+    let remote_app2_file = given_parent_dir_a.join("misc2.txt");
+    let remote_app3_fileb_pa = given_parent_dir_a.join("misc3.txt");
+    let remote_app3_fileb_pb = given_parent_dir_b.join("misc3.txt");
+    let local_app1_file = given_td_dir.join("App1").join("misc1.txt");
+    let local_app1_dir = given_td_dir.join("App1").join("App1 Dir");
+    let local_nested_app1_file= local_app1_dir.join("nested1.txt");
+    let local_app2_file = given_td_dir.join("App2").join("misc2.txt");
+    let local_app3_file_b = given_td_dir.join("App3").join("misc3.txt");
+    create_dir_all(given_parent_dir_a.clone()).unwrap();
+    create_dir_all(given_parent_dir_b.clone()).unwrap();
+    create_dir_all(&local_app1_dir).unwrap();
+    create_dir_all(&given_td_dir.join("App2")).unwrap();
+    create_dir_all(&given_td_dir.join("App3")).unwrap();
+    write(&local_app1_file, "Local app 1 file contents").unwrap();
+    write(&local_app2_file, "Local app 2 file contents").unwrap();
+    write(&local_app3_file_b, "Local app 3 file b contents").unwrap();
+    write(&local_nested_app1_file, "Local app 1 nested file contents").unwrap();
+
+    let mut given = [
+        TendrilBundle::new("App1", vec!["misc1.txt"]),
+        TendrilBundle::new("App2", vec!["misc2.txt"]),
+        TendrilBundle::new("App1", vec!["App1 Dir"]),
+        TendrilBundle::new("App3", vec!["I don't exist", "misc3.txt"]),
+    ];
+
+    given[0].link = true;
+    given[1].link = false;
+    given[2].link = true;
+    given[3].link = false;
+
+    set_parents(&mut given[0], &[given_parent_dir_a.clone()]);
+    set_parents(&mut given[1], &[given_parent_dir_a.clone()]);
+    set_parents(&mut given[2], &[given_parent_dir_a.clone()]);
+    set_parents(
+        &mut given[3],
+        &[given_parent_dir_a.clone(), given_parent_dir_b.clone()]
+    );
+
+    let expected_success = match dry_run {
+        true => Some(Ok(TendrilActionSuccess::NewSkipped)),
+        false => Some(Ok(TendrilActionSuccess::New)),
+    };
+    let expected = vec![
+        TendrilActionReport {
+            orig_tendril: &given[0],
+            name: &given[0].names[0],
+            resolved_path: Ok(remote_app1_file.clone()),
+            action_result: expected_success.clone(),
+        },
+        TendrilActionReport {
+            orig_tendril: &given[1],
+            name: &given[1].names[0],
+            resolved_path: Ok(remote_app2_file.clone()),
+            action_result: expected_success.clone(),
+        },
+        TendrilActionReport {
+            orig_tendril: &given[2],
+            name: &given[2].names[0],
+            resolved_path: Ok(remote_app1_dir.clone()),
+            action_result: expected_success.clone(),
+        },
+        TendrilActionReport {
+            orig_tendril: &given[3],
+            name: &given[3].names[0],
+            resolved_path: Ok(given_parent_dir_a.join("I don't exist")),
+            action_result: Some(Err(TendrilActionError::IoError {
+                kind: std::io::ErrorKind::NotFound,
+                loc: Location::Source,
+            })),
+        },
+        TendrilActionReport {
+            orig_tendril: &given[3],
+            name: &given[3].names[0],
+            resolved_path: Ok(given_parent_dir_b.join("I don't exist")),
+            action_result: Some(Err(TendrilActionError::IoError {
+                kind: std::io::ErrorKind::NotFound,
+                loc: Location::Source,
+            })),
+        },
+        TendrilActionReport {
+            orig_tendril: &given[3],
+            name: &given[3].names[1],
+            resolved_path: Ok(remote_app3_fileb_pa.clone()),
+            action_result: expected_success.clone(),
+        },
+        TendrilActionReport {
+            orig_tendril: &given[3],
+            name: &given[3].names[1],
+            resolved_path: Ok(remote_app3_fileb_pb.clone()),
+            action_result: expected_success.clone(),
+        },
+    ];
+
+    let actual = tendril_action(
+        ActionMode::Out,
+        &given_td_dir,
+        &given,
+        dry_run,
+        force,
+    );
+
+    assert_eq!(actual, expected);
+
+    if dry_run {
+        assert!(!remote_app1_file.exists());
+        assert!(!remote_app2_file.exists());
+        assert!(!remote_app3_fileb_pa.exists());
+        assert!(!remote_app3_fileb_pb.exists());
+        assert!(!remote_app1_nested_file.exists());
+    }
+    else {
+        let remote_app1_file_contents = read_to_string(&remote_app1_file).unwrap();
+        let remote_app2_file_contents = read_to_string(&remote_app2_file).unwrap();
+        let remote_app3_fileb_pa_contents = read_to_string(&remote_app3_fileb_pa).unwrap();
+        let remote_app3_fileb_pb_contents = read_to_string(&remote_app3_fileb_pb).unwrap();
+        let remote_app1_nested_file_contents = read_to_string(
+            &remote_app1_nested_file
+        ).unwrap();
+
+        assert_eq!(remote_app1_file_contents, "Local app 1 file contents");
+        assert_eq!(remote_app2_file_contents, "Local app 2 file contents");
+        assert_eq!(remote_app3_fileb_pa_contents, "Local app 3 file b contents");
+        assert_eq!(remote_app3_fileb_pb_contents, "Local app 3 file b contents");
+        assert_eq!(remote_app1_nested_file_contents, "Local app 1 nested file contents");
+        assert!(remote_app1_file.is_symlink());
+        assert!(!remote_app2_file.is_symlink());
+        assert!(!remote_app3_fileb_pa.is_symlink());
+        assert!(!remote_app3_fileb_pb.is_symlink());
+        assert!(remote_app1_dir.is_symlink());
+    }
+}
+
+#[rstest]
 #[serial("mut-env-var-testing")]
 fn parent_path_vars_are_resolved(
     #[values(ActionMode::Push, ActionMode::Pull, ActionMode::Link)]

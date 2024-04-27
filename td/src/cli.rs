@@ -66,6 +66,15 @@ pub enum TendrilsSubcommands {
         #[clap(flatten)]
         filter_args: FilterArgs,
     },
+
+    /// Performs all outward bound operations (link and push)
+    Out {
+        #[clap(flatten)]
+        action_args: ActionArgs,
+
+        #[clap(flatten)]
+        filter_args: FilterArgs,
+    }
 }
 
 #[derive(Args, Clone, Debug, Eq, PartialEq)]

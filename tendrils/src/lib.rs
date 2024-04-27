@@ -728,7 +728,9 @@ pub fn tendril_action<'a>(
 ) -> Vec<TendrilActionReport<'a>> {
     let mut action_reports: Vec<TendrilActionReport> = vec![];
     let first_only = mode == ActionMode::Pull;
-    let can_symlink = mode == ActionMode::Link && can_symlink();
+    let can_symlink = mode == ActionMode::Link
+        || mode == ActionMode::Out
+        && can_symlink();
 
     for tendril in td_bundles.iter() {
         let resolved_tendrils = resolve_tendril_bundle(&tendril, first_only);
@@ -751,14 +753,27 @@ pub fn tendril_action<'a>(
                 (Ok(v), ActionMode::Link, true) => {
                     Some(link_tendril(&td_dir, &v, dry_run, force))
                 },
-                (Ok(_v), ActionMode::Link, false) => {
-                    // Do not attempt to symlink if it has already been determined
-                    // that the process does not have the required permissions.
-                    // This prevents deleting any of the remote files unnecessarily.
-                    Some(Err(TendrilActionError::IoError {
-                        kind: std::io::ErrorKind::PermissionDenied,
-                        loc: Location::Dest,
-                    }))
+                (Ok(v), ActionMode::Out, true) => {
+                    if v.mode == TendrilMode::Link {
+                        Some(link_tendril(&td_dir, &v, dry_run, force))
+                    }
+                    else {
+                        Some(push_tendril(&td_dir, &v, dry_run, force))
+                    }
+                },
+                (Ok(v), ActionMode::Link | ActionMode::Out, false) => {
+                    if v.mode == TendrilMode::Link {
+                        // Do not attempt to symlink if it has already been determined
+                        // that the process does not have the required permissions.
+                        // This prevents deleting any of the remote files unnecessarily.
+                        Some(Err(TendrilActionError::IoError {
+                            kind: std::io::ErrorKind::PermissionDenied,
+                            loc: Location::Dest,
+                        }))
+                    }
+                    else {
+                        Some(push_tendril(&td_dir, &v, dry_run, force))
+                    }
                 },
                 (Err(_), _, _) => None,
             };

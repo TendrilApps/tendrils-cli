@@ -196,6 +196,14 @@ td push
 td link
 ```
 
+## "Out" Action
+- Performs all outward bound actions
+- Will [link](#linking) all [link style](#link-style) tendrils
+- Will [push](#pushing) all [push/style style](#pushpull-style) tendrils
+``` bash
+td out
+```
+
 ## Dry Run Modifier
 - Uses the `--dry-run (-d)` flag
 - Available on all of the actions listed above

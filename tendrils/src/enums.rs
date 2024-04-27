@@ -14,6 +14,9 @@ pub enum ActionMode {
     /// Create symlinks at the various locations on the computer to the
     /// tendrils in the *Tendrils* folder.
     Link,
+
+    /// Perform all outward bound actions (link & push)
+    Out,
 }
 
 /// Indicates an error while initializing a new
