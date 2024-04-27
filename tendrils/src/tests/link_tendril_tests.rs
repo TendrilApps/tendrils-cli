@@ -1,7 +1,7 @@
 //! Contains tests specific to link actions.
 //! See also [`crate::tests::common_action_tests`].
 
-use crate::{link_tendril, symlink};
+use crate::{link_tendril, TendrilActionMetadata, symlink};
 use crate::enums::{
     FsoType,
     Location,
@@ -61,7 +61,6 @@ fn remote_parent_and_local_exist_symlink_to_local_is_created(
 
     use std::env::consts::FAMILY;
     let expected_target: PathBuf;
-    assert_eq!(actual, Ok(TendrilActionSuccess::New));
     if as_dir {
         assert_eq!(
             setup.remote_nested_file_contents(),
@@ -103,6 +102,10 @@ fn remote_parent_and_local_exist_symlink_to_local_is_created(
             expected_target
         );
     }
+    assert_eq!(actual, TendrilActionMetadata {
+        resolved_path: setup.parent_dir.join(name),
+        action_result: Ok(TendrilActionSuccess::New),
+    });
 }
 
 /// Note: This doesn't apply if the local doesn't exist.
@@ -141,26 +144,28 @@ fn remote_exists_and_is_not_symlink_returns_type_mismatch_error_unless_forced(
         force,
     );
 
+    let exp_file_result;
+    let exp_dir_result;
     match (dry_run, force) {
         (_, false) => {
-            assert_eq!(file_actual, Err(TendrilActionError::TypeMismatch {
+            exp_file_result = Err(TendrilActionError::TypeMismatch {
                 loc: Location::Dest,
                 mistype: FsoType::File,
-            }));
-            assert_eq!(dir_actual, Err(TendrilActionError::TypeMismatch {
+            });
+            exp_dir_result = Err(TendrilActionError::TypeMismatch {
                 loc: Location::Dest,
                 mistype: FsoType::Dir,
-            }));
+            });
         },
         (false, true) => {
-            assert_eq!(file_actual, Ok(TendrilActionSuccess::Overwrite));
-            assert_eq!(dir_actual, Ok(TendrilActionSuccess::Overwrite));
+            exp_file_result = Ok(TendrilActionSuccess::Overwrite);
+            exp_dir_result = Ok(TendrilActionSuccess::Overwrite);
         },
         (true, true) => {
-            assert_eq!(file_actual, Ok(TendrilActionSuccess::OverwriteSkipped));
-            assert_eq!(dir_actual, Ok(TendrilActionSuccess::OverwriteSkipped));
+            exp_file_result = Ok(TendrilActionSuccess::OverwriteSkipped);
+            exp_dir_result = Ok(TendrilActionSuccess::OverwriteSkipped);
         },
-    }
+    };
 
     if force && !dry_run {
         assert!(setup.remote_file.is_symlink());
@@ -180,6 +185,14 @@ fn remote_exists_and_is_not_symlink_returns_type_mismatch_error_unless_forced(
             "Remote nested file contents"
         );
     }
+    assert_eq!(file_actual, TendrilActionMetadata {
+        resolved_path: setup.remote_file,
+        action_result: exp_file_result,
+    });
+    assert_eq!(dir_actual, TendrilActionMetadata {
+        resolved_path: setup.remote_dir,
+        action_result: exp_dir_result, 
+    });
 }
 
 #[rstest]
@@ -217,27 +230,29 @@ fn local_is_symlink_returns_type_mismatch_error_unless_forced(
         force,
     );
 
-    match (dry_run, force) {
+    let exp_result = match (dry_run, force) {
         (_, false) => {
-            assert_eq!(file_actual, Err(TendrilActionError::TypeMismatch {
+            Err(TendrilActionError::TypeMismatch {
                 loc: Location::Source,
                 mistype: FsoType::Symlink,
-            }));
-            assert_eq!(dir_actual, Err(TendrilActionError::TypeMismatch {
-                loc: Location::Source,
-                mistype: FsoType::Symlink,
-            }));
+            })
         },
         (false, true) => {
-            assert_eq!(file_actual, Ok(TendrilActionSuccess::New));
-            assert_eq!(dir_actual, Ok(TendrilActionSuccess::New));
+            Ok(TendrilActionSuccess::New)
         },
         (true, true) => {
-            assert_eq!(file_actual, Ok(TendrilActionSuccess::NewSkipped));
-            assert_eq!(dir_actual, Ok(TendrilActionSuccess::NewSkipped));
+            Ok(TendrilActionSuccess::NewSkipped)
         },
-    }
+    };
 
+    assert_eq!(file_actual, TendrilActionMetadata {
+        resolved_path: setup.remote_file.clone(),
+        action_result: exp_result.clone(),
+    });
+    assert_eq!(dir_actual, TendrilActionMetadata {
+        resolved_path: setup.remote_dir.clone(),
+        action_result: exp_result,
+    });
     assert_eq!(setup.local_file_contents(), "Target file contents");
     assert_eq!(
         setup.local_nested_file_contents(),
@@ -282,8 +297,14 @@ fn existing_symlinks_at_remote_are_overwritten(#[case] force: bool) {
     let file_actual = link_tendril(&setup.td_dir, &file_tendril, false, force);
     let dir_actual = link_tendril(&setup.td_dir, &dir_tendril, false, force);
 
-    assert_eq!(file_actual, Ok(TendrilActionSuccess::Overwrite));
-    assert_eq!(dir_actual, Ok(TendrilActionSuccess::Overwrite));
+    assert_eq!(file_actual, TendrilActionMetadata {
+        resolved_path: setup.remote_file.clone(),
+        action_result: Ok(TendrilActionSuccess::Overwrite),
+    });
+    assert_eq!(dir_actual, TendrilActionMetadata {
+        resolved_path: setup.remote_dir.clone(),
+        action_result: Ok(TendrilActionSuccess::Overwrite),
+    });
     assert!(setup.remote_file.is_symlink());
     assert!(setup.remote_dir.is_symlink());
     assert_eq!(setup.remote_file_contents(), "Local file contents");
@@ -330,16 +351,23 @@ fn no_read_access_from_local_file_returns_success(
         force,
     );
 
+    let exp_result;
+    if dry_run {
+        exp_result = Ok(TendrilActionSuccess::NewSkipped);
+    }
+    else {
+        exp_result = Ok(TendrilActionSuccess::New);
+    }
+    assert_eq!(actual, TendrilActionMetadata {
+        resolved_path: temp_parent_dir
+            .path()
+            .join("no_read_access.txt"),
+        action_result: exp_result,
+    });
     assert_eq!(
         temp_parent_dir.path().join("no_read_access.txt").exists(),
         !dry_run
     );
-    if dry_run {
-        assert_eq!(actual, Ok(TendrilActionSuccess::NewSkipped));
-    }
-    else {
-        assert_eq!(actual, Ok(TendrilActionSuccess::New));
-    }
 }
 
 #[rstest]
@@ -374,16 +402,23 @@ fn no_read_access_from_local_dir_returns_success(
         force,
     );
 
+    let exp_result;
+    if dry_run {
+        exp_result = Ok(TendrilActionSuccess::NewSkipped);
+    }
+    else {
+        exp_result = Ok(TendrilActionSuccess::New);
+    }
+    assert_eq!(actual, TendrilActionMetadata {
+        resolved_path: temp_parent_dir
+            .path()
+            .join("no_read_access_dir"),
+        action_result: exp_result,
+    });
     assert_eq!(
         temp_parent_dir.path().join("no_read_access_dir").exists(),
         !dry_run
     );
-    if dry_run {
-        assert_eq!(actual, Ok(TendrilActionSuccess::NewSkipped));
-    }
-    else {
-        assert_eq!(actual, Ok(TendrilActionSuccess::New));
-    }
 }
 
 // The symdir equivalent test is not included as both Windows and Unix
@@ -416,16 +451,21 @@ fn no_write_access_at_remote_symfile_returns_io_error_permission_denied_unless_d
 
     let actual = link_tendril(&setup.td_dir, &tendril, dry_run, force);
 
-    assert_eq!(setup.remote_file_contents(), "Target file contents");
+    let exp_result;
     if dry_run {
-        assert_eq!(actual, Ok(TendrilActionSuccess::OverwriteSkipped));
+        exp_result = Ok(TendrilActionSuccess::OverwriteSkipped);
     }
     else {
-        assert_eq!(actual, Err(TendrilActionError::IoError {
+        exp_result = Err(TendrilActionError::IoError {
             kind: std::io::ErrorKind::PermissionDenied,
             loc: Location::Dest,
-        }));
+        });
     }
+    assert_eq!(actual, TendrilActionMetadata {
+        resolved_path: setup.remote_file.clone(),
+        action_result: exp_result,
+    });
+    assert_eq!(setup.remote_file_contents(), "Target file contents");
 }
 
 #[rstest]
@@ -445,7 +485,10 @@ fn non_link_mode_tendril_returns_mode_mismatch_error(
 
     let actual = link_tendril(&setup.td_dir, &tendril, dry_run, force);
 
-    assert_eq!(actual, Err(TendrilActionError::ModeMismatch));
+    assert_eq!(actual, TendrilActionMetadata {
+        resolved_path: setup.remote_file,
+        action_result: Err(TendrilActionError::ModeMismatch),
+    });
 }
 
 /// This is an exception to [`remote_exists_and_is_not_symlink_returns_type_mismatch_error_unless_forced`]
@@ -473,16 +516,23 @@ fn local_doesnt_exist_but_td_dir_does_copies_remote_to_local_then_links_unless_d
     let file_actual = link_tendril(&setup.td_dir, &file_tendril, dry_run, force);
     let dir_actual = link_tendril(&setup.td_dir, &dir_tendril, dry_run, force);
 
+    let exp_result;
     if dry_run {
-        assert_eq!(file_actual, Ok(TendrilActionSuccess::OverwriteSkipped));
-        assert_eq!(dir_actual, Ok(TendrilActionSuccess::OverwriteSkipped));
+        exp_result = Ok(TendrilActionSuccess::OverwriteSkipped);
         assert!(!setup.local_file.exists());
         assert!(!setup.local_dir.exists());
     }
     else {
-        assert_eq!(file_actual, Ok(TendrilActionSuccess::Overwrite));
-        assert_eq!(dir_actual, Ok(TendrilActionSuccess::Overwrite));
+        exp_result = Ok(TendrilActionSuccess::Overwrite);
         assert_eq!(setup.local_file_contents(), "Remote file contents");
         assert_eq!(setup.local_nested_file_contents(), "Remote nested file contents");
     }
+    assert_eq!(file_actual, TendrilActionMetadata {
+        resolved_path: setup.remote_file,
+        action_result: exp_result.clone(),
+    });
+    assert_eq!(dir_actual, TendrilActionMetadata {
+        resolved_path: setup.remote_dir,
+        action_result: exp_result,
+    });
 }

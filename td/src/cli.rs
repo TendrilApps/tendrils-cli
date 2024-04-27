@@ -145,14 +145,14 @@ fn ansi_styled_resolved_path(
 }
 
 fn ansi_styled_result(
-    result: &Option<Result<TendrilActionSuccess, TendrilActionError>>
+    result: &Result<TendrilActionSuccess, TendrilActionError>
 ) -> String {
     use std::io::ErrorKind::NotFound;
     use FsoType::{Dir, File, Symlink};
     use Location::{Dest, Source, Unknown};
 
     match result {
-        Some(Ok(r)) => {
+        Ok(r) => {
             let text = match r {
                 TendrilActionSuccess::New => "Created",
                 TendrilActionSuccess::NewSkipped => "Skipped creation",
@@ -161,7 +161,7 @@ fn ansi_styled_result(
             };
             ansi_style(text, color_bright_green.to_owned(), color_reset)
         },
-        Some(Err(e)) => {
+        Err(e) => {
             let owned_str: String;
             let text = match e {
                 TendrilActionError::IoError {kind: NotFound, loc: Source} => {
@@ -211,7 +211,6 @@ fn ansi_styled_result(
             };
             ansi_style(text, color_bright_red.to_owned(), color_reset)
         },
-        None => return "".to_string()
     }
 }
 
@@ -229,14 +228,15 @@ pub fn print_reports(reports: &[TendrilActionReport], writer: &mut impl Writer) 
     ]);
 
     for report in reports {
-        let (styled_path, styled_result) = match &report.resolved_path {
-            Ok(_) => {(
-                ansi_styled_resolved_path(&report.resolved_path),
-                ansi_styled_result(&report.action_result)
+        let (styled_path, styled_result) = match &report.metadata {
+            Ok(md) => {(
+                ansi_styled_resolved_path(&Ok(md.resolved_path.clone())),
+                ansi_styled_result(&md.action_result)
             )},
-            Err(_) => {(
+            Err(e) => {(
+                // Print the resolving error in the result column
                 "".to_string(),
-                ansi_styled_resolved_path(&report.resolved_path),
+                ansi_styled_resolved_path(&Err(e.clone())),
             )},
         };
 
@@ -254,8 +254,8 @@ pub fn print_reports(reports: &[TendrilActionReport], writer: &mut impl Writer) 
 
 fn print_totals(reports: &[TendrilActionReport], writer: & mut impl Writer) {
     let total_successes = reports.iter().filter(|r| {
-        match &r.action_result {
-            Some(v) => v.is_ok(),
+        match &r.metadata {
+            Ok(md) => md.action_result.is_ok(),
             _ => false,
         }
     })

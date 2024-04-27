@@ -1,10 +1,8 @@
-use crate::enums::{
+use crate::{
     InvalidTendrilError,
-    TendrilActionError,
-    TendrilActionSuccess,
+    TendrilActionMetadata,
+    TendrilBundle,
 };
-use crate::tendril_bundle::TendrilBundle;
-use std::path::PathBuf;
 
 /// Contains the result of a single tendrils action.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -15,9 +13,8 @@ pub struct TendrilActionReport<'a> {
     /// The name of the tendril that this action was performed on. If the
     /// `orig_tendril` contains multiple names, this indicates which was used.
     pub name: &'a str,
-    /// The full path to the remote that was used for the action. This shows
-    /// the result after resolving all environment/other variables in the path.
-    pub resolved_path: Result<PathBuf, InvalidTendrilError>,
-    /// Result of this individual action.
-    pub action_result: Option<Result<TendrilActionSuccess, TendrilActionError>>,
+    /// Result containing the [metadata](`TendrilActionMetadata`) from the
+    /// action, provided the `orig_tendril` was valid.
+    /// Otherwise, it contains the [`InvalidTendrilError`].
+    pub metadata: Result<TendrilActionMetadata, InvalidTendrilError>,
 }
