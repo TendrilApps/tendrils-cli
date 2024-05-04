@@ -40,14 +40,14 @@ pub mod test_utils;
 
 fn copy_fso(
     from: &Path,
+    from_type: &Option<FsoType>,
     mut to: &Path,
+    to_type: &Option<FsoType>,
     dir_merge: bool,
     dry_run: bool,
     force: bool,
 ) -> Result<TendrilActionSuccess, TendrilActionError> {
     use std::io::ErrorKind::{NotFound, PermissionDenied};
-    let from_type = from.get_type();
-    let to_type = to.get_type();
     let to_existed = to_type.is_some();
 
     check_copy_types(&from_type, &to_type, force)?;
@@ -354,8 +354,13 @@ fn link_tendril(
     dry_run: bool,
     mut force: bool,
 ) -> TendrilActionMetadata {
+    let target = td_dir.join(tendril.group()).join(tendril.name());
+    let create_at = tendril.full_path();
+
     let tendril_md = TendrilMetadata {
-        resolved_path: tendril.full_path(),
+        local_type: target.get_type(),
+        remote_type: create_at.get_type(),
+        resolved_path: create_at,
     };
     let mut action_md = TendrilActionMetadata {
         md: tendril_md,
@@ -377,20 +382,39 @@ fn link_tendril(
         return action_md;
     }
 
-    let target = td_dir.join(tendril.group()).join(tendril.name());
-    if td_dir.exists() && !target.exists() {
+    let local_type;
+    if td_dir.exists() && action_md.md.local_type.is_none() {
         // Local does not exist - copy it first
-        match copy_fso(&action_md.md.resolved_path, &target, false, dry_run, false) {
+        match copy_fso(
+            &action_md.md.resolved_path,
+            &action_md.md.remote_type,
+            &target,
+            &None,
+            false,
+            dry_run,
+            false
+        ) {
             Err(e) =>  {
                 action_md.action_result = Err(e);
                 return action_md;
             },
             _ => {}
         };
+        local_type = &action_md.md.remote_type;
         force = true;
     }
+    else {
+        local_type = &action_md.md.local_type;
+    }
 
-    action_md.action_result = match symlink(&action_md.md.resolved_path, &target, dry_run, force) {
+    action_md.action_result = match symlink(
+        &action_md.md.resolved_path,
+        &action_md.md.remote_type,
+        &target,
+        local_type,
+        dry_run,
+        force,
+    ) {
         Err(TendrilActionError::IoError {kind: e_kind, loc: _}) if dry_run
             && e_kind == std::io::ErrorKind::NotFound
             && action_md.md.resolved_path.exists()
@@ -418,8 +442,13 @@ fn pull_tendril(
     dry_run: bool,
     force: bool,
 ) -> TendrilActionMetadata {
+    let dest = td_dir.join(tendril.group()).join(tendril.name());
+    let source = tendril.full_path();
+
     let tendril_md = TendrilMetadata {
-        resolved_path: tendril.full_path(),
+        local_type: dest.get_type(),
+        remote_type: source.get_type(),
+        resolved_path: source,
     };
     let mut action_md = TendrilActionMetadata {
         md: tendril_md,
@@ -442,12 +471,12 @@ fn pull_tendril(
         return action_md;
     }
 
-    let dest = td_dir.join(tendril.group()).join(tendril.name());
-
     let dir_merge = tendril.mode == TendrilMode::DirMerge;
     action_md.action_result = copy_fso(
         &action_md.md.resolved_path,
+        &action_md.md.remote_type,
         &dest,
+        &action_md.md.local_type,
         dir_merge,
         dry_run,
         force
@@ -462,8 +491,13 @@ fn push_tendril(
     dry_run: bool,
     force: bool,
 ) -> TendrilActionMetadata {
+    let source = td_dir.join(tendril.group()).join(tendril.name());
+    let dest = tendril.full_path();
+
     let tendril_md = TendrilMetadata {
-        resolved_path: tendril.full_path(),
+        local_type: source.get_type(),
+        remote_type: dest.get_type(),
+        resolved_path: dest,
     };
     let mut action_md = TendrilActionMetadata {
         md: tendril_md,
@@ -485,12 +519,12 @@ fn push_tendril(
         return action_md;
     }
 
-    let source = td_dir.join(tendril.group()).join(tendril.name());
-
     let dir_merge = tendril.mode == TendrilMode::DirMerge;
     action_md.action_result = copy_fso(
         &source,
+        &action_md.md.local_type,
         &action_md.md.resolved_path,
+        &action_md.md.remote_type,
         dir_merge,
         dry_run,
         force,
@@ -717,11 +751,13 @@ fn check_symlink_types(
 }
 
 fn symlink(
-    create_at: &Path, target: &Path, dry_run: bool, force: bool
+    create_at: &Path,
+    create_at_type: &Option<FsoType>,
+    target: &Path,
+    target_type: &Option<FsoType>,
+    dry_run: bool,
+    force: bool,
 ) -> Result<TendrilActionSuccess, TendrilActionError> {
-    let target_type = target.get_type();
-    let create_at_type = create_at.get_type();
-
     check_symlink_types(&target_type, &create_at_type, force)?;
 
     let del_result = match (dry_run, &create_at_type) {
@@ -885,9 +921,12 @@ pub fn tendril_action<'a>(
                         // Do not attempt to symlink if it has already been determined
                         // that the process does not have the required permissions.
                         // This prevents deleting any of the remote files unnecessarily.
+                        let remote = v.full_path();
                         Ok(TendrilActionMetadata {
                             md: TendrilMetadata {
-                                resolved_path: v.full_path(),
+                                local_type: td_dir.join(v.group()).join(v.name()).get_type(),
+                                remote_type: remote.get_type(),
+                                resolved_path: remote,
                             },
                             action_result: Err(TendrilActionError::IoError {
                                 kind: std::io::ErrorKind::PermissionDenied,

@@ -3,7 +3,6 @@
 
 use crate::{
     pull_tendril,
-    symlink,
     FsoType,
     Location,
     TendrilActionError,
@@ -18,6 +17,7 @@ use crate::test_utils::{
     get_samples_dir,
     is_empty,
     Setup,
+    symlink_expose,
 };
 use rstest::rstest;
 use rstest_reuse::apply;
@@ -51,13 +51,16 @@ fn remote_exists_copies_to_local(
     setup.local_nested_file = setup.local_dir.join("nested.txt");
     setup.make_td_dir();
     let exp_res_path;
+    let exp_remote_type;
     if as_dir {
         setup.make_remote_nested_file();
         exp_res_path = setup.remote_dir.clone();
+        exp_remote_type = Some(FsoType::Dir);
     }
     else {
         setup.make_remote_file();
         exp_res_path = setup.remote_file.clone();
+        exp_remote_type = Some(FsoType::File);
     }
 
     let tendril = Tendril::new(
@@ -71,6 +74,8 @@ fn remote_exists_copies_to_local(
 
     assert_eq!(actual, TendrilActionMetadata {
         md: TendrilMetadata {
+            local_type: None,
+            remote_type: exp_remote_type,
             resolved_path: exp_res_path,
         },
         action_result: Ok(TendrilActionSuccess::New),
@@ -97,8 +102,8 @@ fn remote_is_symlink_returns_type_mismatch_error_unless_forced_then_copies_symli
     setup.make_td_dir();
     setup.make_target_file();
     setup.make_target_nested_file();
-    symlink(&setup.remote_file, &setup.target_file, false, false).unwrap();
-    symlink(&setup.remote_dir, &setup.target_dir, false, false).unwrap();
+    symlink_expose(&setup.remote_file, &setup.target_file, false, false).unwrap();
+    symlink_expose(&setup.remote_dir, &setup.target_dir, false, false).unwrap();
 
     let file_tendril = setup.file_tendril();
     let dir_tendril = setup.dir_tendril();
@@ -141,12 +146,16 @@ fn remote_is_symlink_returns_type_mismatch_error_unless_forced_then_copies_symli
 
     assert_eq!(file_actual, TendrilActionMetadata {
         md: TendrilMetadata {
+            local_type: None,
+            remote_type: Some(FsoType::SymFile),
             resolved_path: setup.remote_file.clone(),
         },
         action_result: exp_file_result,
     });
     assert_eq!(dir_actual, TendrilActionMetadata {
         md: TendrilMetadata {
+            local_type: None,
+            remote_type: Some(FsoType::SymDir),
             resolved_path: setup.remote_dir.clone(),
         },
         action_result: exp_dir_result,
@@ -184,8 +193,8 @@ fn local_is_symlink_returns_type_mismatch_error_unless_forced(
     setup.make_target_file();
     setup.make_target_nested_file();
     setup.make_group_dir();
-    symlink(&setup.local_file, &setup.target_file, false, true).unwrap();
-    symlink(&setup.local_dir, &setup.target_dir, false, true).unwrap();
+    symlink_expose(&setup.local_file, &setup.target_file, false, true).unwrap();
+    symlink_expose(&setup.local_dir, &setup.target_dir, false, true).unwrap();
 
     let file_tendril = setup.file_tendril();
     let dir_tendril = setup.dir_tendril();
@@ -228,12 +237,16 @@ fn local_is_symlink_returns_type_mismatch_error_unless_forced(
 
     assert_eq!(file_actual, TendrilActionMetadata {
         md: TendrilMetadata {
+            local_type: Some(FsoType::SymFile),
+            remote_type: Some(FsoType::File),
             resolved_path: setup.remote_file.clone(),
         },
         action_result: exp_file_result,
     });
     assert_eq!(dir_actual, TendrilActionMetadata {
         md: TendrilMetadata {
+            local_type: Some(FsoType::SymDir),
+            remote_type: Some(FsoType::Dir),
             resolved_path: setup.remote_dir.clone(),
         },
         action_result: exp_dir_result,
@@ -291,6 +304,8 @@ fn remote_is_file_and_local_is_dir_returns_type_mismatch_error_unless_forced(
 
     assert_eq!(actual, TendrilActionMetadata {
         md: TendrilMetadata {
+            local_type: Some(FsoType::Dir),
+            remote_type: Some(FsoType::File),
             resolved_path: setup.remote_file.clone(),
         },
         action_result: exp_result,
@@ -346,6 +361,8 @@ fn remote_is_dir_and_local_is_file_returns_type_mismatch_error_unless_forced(
 
     assert_eq!(actual, TendrilActionMetadata {
         md: TendrilMetadata {
+            local_type: Some(FsoType::File),
+            remote_type: Some(FsoType::Dir),
             resolved_path: setup.remote_dir.clone(),
         },
         action_result: exp_result,
@@ -384,6 +401,8 @@ fn file_tendril_overwrites_local_file_regardless_of_dir_merge_mode(
 
     assert_eq!(actual, TendrilActionMetadata {
         md: TendrilMetadata {
+            local_type: Some(FsoType::File),
+            remote_type: Some(FsoType::File),
             resolved_path: setup.remote_file.clone(),
         },
         action_result: Ok(TendrilActionSuccess::Overwrite),
@@ -417,6 +436,8 @@ fn dir_overwrite_w_dir_tendril_replaces_local_dir_recursively(
 
     assert_eq!(actual, TendrilActionMetadata {
         md: TendrilMetadata {
+            local_type: Some(FsoType::Dir),
+            remote_type: Some(FsoType::Dir),
             resolved_path: setup.remote_dir.clone(),
         },
         action_result: Ok(TendrilActionSuccess::Overwrite)
@@ -454,6 +475,8 @@ fn dir_merge_w_dir_tendril_merges_w_local_dir_recursively(
 
     assert_eq!(actual, TendrilActionMetadata {
         md: TendrilMetadata {
+            local_type: Some(FsoType::Dir),
+            remote_type: Some(FsoType::Dir),
             resolved_path: setup.remote_dir.clone(),
         },
         action_result: Ok(TendrilActionSuccess::Overwrite),
@@ -493,6 +516,8 @@ fn dir_overwrite_w_subdir_dir_tendril_replaces_local_subdir_dir_recursively(
 
     assert_eq!(actual, TendrilActionMetadata {
         md: TendrilMetadata {
+            local_type: Some(FsoType::Dir),
+            remote_type: Some(FsoType::Dir),
             resolved_path: setup.remote_subdir_dir.clone(),
         },
         action_result: Ok(TendrilActionSuccess::Overwrite),
@@ -530,6 +555,8 @@ fn dir_merge_w_subdir_dir_tendril_merges_w_local_subdir_dir_recursively(
 
     assert_eq!(actual, TendrilActionMetadata {
         md: TendrilMetadata {
+            local_type: Some(FsoType::Dir),
+            remote_type: Some(FsoType::Dir),
             resolved_path: setup.remote_subdir_dir.clone(),
         },
         action_result: Ok(TendrilActionSuccess::Overwrite),
@@ -588,6 +615,8 @@ fn no_read_access_from_remote_file_returns_io_error_permission_denied_unless_dry
     }
     assert_eq!(actual, TendrilActionMetadata {
         md: TendrilMetadata {
+            local_type: None,
+            remote_type: Some(FsoType::File),
             resolved_path: given_parent_dir.join("no_read_access.txt"),
         },
         action_result: exp_result,
@@ -638,6 +667,8 @@ fn no_read_access_from_remote_dir_returns_io_error_permission_denied_unless_dry_
     }
     assert_eq!(actual, TendrilActionMetadata {
         md: TendrilMetadata {
+            local_type: None,
+            remote_type: Some(FsoType::Dir),
             resolved_path: given_parent_dir.join("no_read_access_dir"),
         },
         action_result: exp_result,
@@ -691,6 +722,8 @@ fn no_write_access_at_local_file_returns_io_error_permission_denied_unless_dry_r
     }
     assert_eq!(actual, TendrilActionMetadata {
         md: TendrilMetadata {
+            local_type: Some(FsoType::File),
+            remote_type: Some(FsoType::File),
             resolved_path: setup.remote_file,
         },
         action_result: exp_result,
@@ -739,6 +772,8 @@ fn no_write_access_at_local_dir_returns_io_error_permission_denied_unless_dry_ru
     }
     assert_eq!(actual, TendrilActionMetadata {
         md: TendrilMetadata {
+            local_type: Some(FsoType::Dir),
+            remote_type: Some(FsoType::Dir),
             resolved_path: setup.remote_dir,
         },
         action_result: exp_result,
@@ -766,6 +801,8 @@ fn remote_doesnt_exist_but_parent_does_returns_io_error_not_found(
 
     assert_eq!(actual, TendrilActionMetadata {
         md: TendrilMetadata {
+            local_type: None,
+            remote_type: None,
             resolved_path: setup.remote_file,
         },
         action_result: Err(TendrilActionError::IoError {
@@ -849,24 +886,32 @@ fn group_dir_is_created_if_it_doesnt_exist(
     }
     assert_eq!(file_actual, TendrilActionMetadata {
         md: TendrilMetadata {
+            local_type: None,
+            remote_type: Some(FsoType::File),
             resolved_path: file_setup.remote_file,
         },
         action_result: exp_result.clone(),
     });
     assert_eq!(dir_actual, TendrilActionMetadata {
         md: TendrilMetadata {
+            local_type: None,
+            remote_type: Some(FsoType::Dir),
             resolved_path: dir_setup.remote_dir,
         },
         action_result: exp_result.clone(),
     });
     assert_eq!(subdir_file_actual, TendrilActionMetadata {
         md: TendrilMetadata {
+            local_type: None,
+            remote_type: Some(FsoType::File),
             resolved_path: subdir_file_setup.remote_subdir_file,
         },
         action_result: exp_result.clone(),
     });
     assert_eq!(subdir_dir_actual, TendrilActionMetadata {
         md: TendrilMetadata {
+            local_type: None,
+            remote_type: Some(FsoType::Dir),
             resolved_path: subdir_dir_setup.remote_subdir_dir,
         },
         action_result: exp_result,
@@ -891,13 +936,16 @@ fn group_dir_is_file_returns_io_error_already_exists_unless_dry_run(
 
     let tendril: Tendril;
     let exp_resolved_path;
+    let exp_remote_type;
     if as_dir {
         exp_resolved_path = setup.remote_dir.clone();
+        exp_remote_type = Some(FsoType::Dir);
         setup.make_remote_nested_file();
         tendril = setup.dir_tendril();
     }
     else {
         exp_resolved_path = setup.remote_file.clone();
+        exp_remote_type = Some(FsoType::File);
         setup.make_remote_file();
         tendril = setup.file_tendril();
     }
@@ -922,6 +970,8 @@ fn group_dir_is_file_returns_io_error_already_exists_unless_dry_run(
     }
     assert_eq!(actual, TendrilActionMetadata {
         md: TendrilMetadata {
+            local_type: None,
+            remote_type: exp_remote_type,
             resolved_path: exp_resolved_path,
         },
         action_result: exp_result,

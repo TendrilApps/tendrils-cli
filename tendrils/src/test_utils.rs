@@ -1,5 +1,5 @@
 use crate::tendril::Tendril;
-use crate::{parse_tendrils, symlink, TendrilBundle, TendrilMode};
+use crate::{FSO, parse_tendrils, symlink, TendrilBundle, TendrilMode};
 use std::fs::{create_dir_all, read_to_string, write};
 use std::path::{Path, PathBuf};
 use tempdir::TempDir;
@@ -53,7 +53,14 @@ pub fn set_parents(tendril: &mut TendrilBundle, paths: &[PathBuf]) {
 pub fn symlink_expose(
     create_at: &Path, target: &Path, dry_run: bool, force: bool
 ) -> Result<crate::TendrilActionSuccess, crate::TendrilActionError> {
-    symlink(create_at, target, dry_run, force)
+    symlink(
+        create_at,
+        &create_at.get_type(),
+        target,
+        &target.get_type(),
+        dry_run,
+        force,
+    )
 }
 
 pub struct Setup {

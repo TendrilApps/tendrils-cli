@@ -3,7 +3,6 @@
 
 use crate::{
     push_tendril,
-    symlink,
     FsoType,
     Location,
     TendrilActionError,
@@ -12,7 +11,7 @@ use crate::{
     TendrilMetadata,
     TendrilMode,
 };
-use crate::test_utils::{get_disposable_dir, get_samples_dir, is_empty, Setup};
+use crate::test_utils::{get_disposable_dir, get_samples_dir, is_empty, symlink_expose, Setup};
 use crate::tendril::Tendril;
 use rstest::rstest;
 use rstest_reuse::{self, apply};
@@ -38,11 +37,14 @@ fn remote_parent_and_local_exist_copies_to_remote(
     setup.local_file = setup.group_dir.join(&name);
     setup.local_dir = setup.group_dir.join(&name);
     setup.local_nested_file = setup.local_dir.join("nested.txt");
+    let exp_local_type;
     if as_dir {
         setup.make_local_nested_file();
+        exp_local_type = Some(FsoType::Dir);
     }
     else {
         setup.make_local_file();
+        exp_local_type = Some(FsoType::File);
     }
 
     let tendril = Tendril::new(
@@ -56,6 +58,8 @@ fn remote_parent_and_local_exist_copies_to_remote(
 
     assert_eq!(actual, TendrilActionMetadata {
         md: TendrilMetadata {
+            local_type: exp_local_type,
+            remote_type: None,
             resolved_path: setup.remote_file.clone(),
         },
         action_result: Ok(TendrilActionSuccess::New),
@@ -82,8 +86,8 @@ fn local_is_symlink_returns_type_mismatch_error_unless_forced_then_copies_symlin
     setup.make_target_file();
     setup.make_target_nested_file();
     setup.make_group_dir();
-    symlink(&setup.local_file, &setup.target_file, false, false).unwrap();
-    symlink(&setup.local_dir, &setup.target_dir, false, false).unwrap();
+    symlink_expose(&setup.local_file, &setup.target_file, false, false).unwrap();
+    symlink_expose(&setup.local_dir, &setup.target_dir, false, false).unwrap();
 
     let file_tendril = setup.file_tendril();
     let dir_tendril = setup.dir_tendril();
@@ -126,12 +130,16 @@ fn local_is_symlink_returns_type_mismatch_error_unless_forced_then_copies_symlin
 
     assert_eq!(file_actual, TendrilActionMetadata {
         md: TendrilMetadata {
+            local_type: Some(FsoType::SymFile),
+            remote_type: None,
             resolved_path: setup.remote_file.clone(),
         },
         action_result: exp_file_result,
     });
     assert_eq!(dir_actual, TendrilActionMetadata {
         md: TendrilMetadata {
+            local_type: Some(FsoType::SymDir),
+            remote_type: None,
             resolved_path: setup.remote_dir.clone(),
         },
         action_result: exp_dir_result,
@@ -169,8 +177,8 @@ fn remote_is_symlink_returns_type_mismatch_error_unless_forced(
     setup.make_local_nested_file();
     setup.make_target_file();
     setup.make_target_nested_file();
-    symlink(&setup.remote_file, &setup.target_file, false, true).unwrap();
-    symlink(&setup.remote_dir, &setup.target_dir, false, true).unwrap();
+    symlink_expose(&setup.remote_file, &setup.target_file, false, true).unwrap();
+    symlink_expose(&setup.remote_dir, &setup.target_dir, false, true).unwrap();
 
     let file_tendril = setup.file_tendril();
     let dir_tendril = setup.dir_tendril();
@@ -213,12 +221,16 @@ fn remote_is_symlink_returns_type_mismatch_error_unless_forced(
 
     assert_eq!(file_actual, TendrilActionMetadata {
         md: TendrilMetadata {
+            local_type: Some(FsoType::File),
+            remote_type: Some(FsoType::SymFile),
             resolved_path: setup.remote_file.clone(),
         },
         action_result: exp_file_result,
     });
     assert_eq!(dir_actual, TendrilActionMetadata {
         md: TendrilMetadata {
+            local_type: Some(FsoType::Dir),
+            remote_type: Some(FsoType::SymDir),
             resolved_path: setup.remote_dir.clone(),
         },
         action_result: exp_dir_result,
@@ -276,6 +288,8 @@ fn local_is_file_and_remote_is_dir_returns_type_mismatch_error_unless_forced(
 
     assert_eq!(actual, TendrilActionMetadata {
         md: TendrilMetadata {
+            local_type: Some(FsoType::File),
+            remote_type: Some(FsoType::Dir),
             resolved_path: setup.remote_file.clone(),
         },
         action_result: exp_result,
@@ -329,6 +343,8 @@ fn local_is_dir_and_remote_is_file_returns_type_mismatch_error_unless_forced(
 
     assert_eq!(actual, TendrilActionMetadata {
         md: TendrilMetadata {
+            local_type: Some(FsoType::Dir),
+            remote_type: Some(FsoType::File),
             resolved_path: setup.remote_dir.clone(),
         },
         action_result: exp_result,
@@ -366,6 +382,8 @@ fn file_tendril_overwrites_remote_file_regardless_of_dir_merge_mode(
 
     assert_eq!(actual, TendrilActionMetadata {
         md: TendrilMetadata {
+            local_type: Some(FsoType::File),
+            remote_type: Some(FsoType::File),
             resolved_path: setup.remote_file.clone(),
         },
         action_result: Ok(TendrilActionSuccess::Overwrite),
@@ -399,6 +417,8 @@ fn dir_overwrite_w_dir_tendril_replaces_remote_dir_recursively(
 
     assert_eq!(actual, TendrilActionMetadata {
         md: TendrilMetadata {
+            local_type: Some(FsoType::Dir),
+            remote_type: Some(FsoType::Dir),
             resolved_path: setup.remote_dir.clone(),
         },
         action_result: Ok(TendrilActionSuccess::Overwrite),
@@ -436,6 +456,8 @@ fn dir_merge_w_dir_tendril_merges_w_local_dir_recursively(
 
     assert_eq!(actual, TendrilActionMetadata {
         md: TendrilMetadata {
+            local_type: Some(FsoType::Dir),
+            remote_type: Some(FsoType::Dir),
             resolved_path: setup.remote_dir.clone(),
         },
         action_result: Ok(TendrilActionSuccess::Overwrite),
@@ -475,6 +497,8 @@ fn dir_overwrite_w_subdir_dir_tendril_replaces_remote_dir_recursively(
 
     assert_eq!(actual, TendrilActionMetadata {
         md: TendrilMetadata {
+            local_type: Some(FsoType::Dir),
+            remote_type: Some(FsoType::Dir),
             resolved_path: setup.remote_subdir_dir.clone(),
         },
         action_result: Ok(TendrilActionSuccess::Overwrite),
@@ -512,6 +536,8 @@ fn dir_merge_w_subdir_dir_tendril_merges_w_local_dir_recursively(
 
     assert_eq!(actual, TendrilActionMetadata {
         md: TendrilMetadata {
+            local_type: Some(FsoType::Dir),
+            remote_type: Some(FsoType::Dir),
             resolved_path: setup.remote_subdir_dir.clone(),
         },
         action_result: Ok(TendrilActionSuccess::Overwrite),
@@ -569,6 +595,8 @@ fn no_read_access_from_local_file_returns_io_error_permission_denied_unless_dry_
     }
     assert_eq!(actual, TendrilActionMetadata {
         md: TendrilMetadata {
+            local_type: Some(FsoType::File),
+            remote_type: None,
             resolved_path: temp_parent_dir
                 .path()
                 .join("no_read_access.txt"),
@@ -622,6 +650,8 @@ fn no_read_access_from_local_dir_returns_io_error_permission_denied_unless_dry_r
     }
     assert_eq!(actual, TendrilActionMetadata {
         md: TendrilMetadata {
+            local_type: Some(FsoType::Dir),
+            remote_type: None,
             resolved_path: temp_parent_dir
                 .path()
                 .join("no_read_access_dir"),
@@ -677,6 +707,8 @@ fn no_write_access_at_remote_file_returns_io_error_permission_denied_unless_dry_
     }
     assert_eq!(actual, TendrilActionMetadata {
         md: TendrilMetadata {
+            local_type: Some(FsoType::File),
+            remote_type: Some(FsoType::File),
             resolved_path: setup.remote_file.clone(),
         },
         action_result: exp_result,
@@ -725,6 +757,8 @@ fn no_write_access_at_remote_dir_returns_io_error_permission_denied_unless_dry_r
     }
     assert_eq!(actual, TendrilActionMetadata {
         md: TendrilMetadata {
+            local_type: Some(FsoType::Dir),
+            remote_type: Some(FsoType::Dir),
             resolved_path: setup.remote_dir.clone(),
         },
         action_result: exp_result,

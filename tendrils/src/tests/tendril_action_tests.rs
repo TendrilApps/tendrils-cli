@@ -1,5 +1,6 @@
 use crate::{
     ActionMode,
+    FsoType,
     Location,
     tendril_action,
     TendrilActionError,
@@ -109,6 +110,8 @@ fn pull_returns_tendril_and_result_for_each_given(
             name: &given[0].names[0],
             metadata: Ok(TendrilActionMetadata {
                 md: TendrilMetadata {
+                    local_type: None,
+                    remote_type: Some(FsoType::File),
                     resolved_path: remote_app1_file,
                 },
                 action_result: expected_success.clone(),
@@ -119,6 +122,8 @@ fn pull_returns_tendril_and_result_for_each_given(
             name: &given[1].names[0],
             metadata: Ok(TendrilActionMetadata {
                 md: TendrilMetadata {
+                    local_type: None,
+                    remote_type: Some(FsoType::File),
                     resolved_path: remote_app2_file,
                 },
                 action_result: expected_success.clone(),
@@ -129,6 +134,8 @@ fn pull_returns_tendril_and_result_for_each_given(
             name: &given[2].names[0],
             metadata: Ok(TendrilActionMetadata {
                 md: TendrilMetadata {
+                    local_type: None,
+                    remote_type: Some(FsoType::Dir),
                     resolved_path: remote_app1_dir,
                 },
                 action_result: expected_success.clone(),
@@ -139,6 +146,8 @@ fn pull_returns_tendril_and_result_for_each_given(
             name: &given[3].names[0],
             metadata: Ok(TendrilActionMetadata {
                 md: TendrilMetadata {
+                    local_type: None,
+                    remote_type: None,
                     resolved_path: given_parent_dir_a.join("I don't exist"),
                 },
                 action_result: Err(TendrilActionError::IoError {
@@ -152,6 +161,8 @@ fn pull_returns_tendril_and_result_for_each_given(
             name: &given[3].names[1],
             metadata: Ok(TendrilActionMetadata {
                 md: TendrilMetadata {
+                    local_type: None,
+                    remote_type: Some(FsoType::File),
                     resolved_path: remote_app3_fileb_pa,
                 },
                 action_result: expected_success,
@@ -255,6 +266,8 @@ fn push_returns_tendril_and_result_for_each_given(
             name: &given[0].names[0],
             metadata: Ok(TendrilActionMetadata {
                 md: TendrilMetadata {
+                    local_type: Some(FsoType::File),
+                    remote_type: None,
                     resolved_path: remote_app1_file.clone(),
                 },
                 action_result: expected_success.clone(),
@@ -265,6 +278,8 @@ fn push_returns_tendril_and_result_for_each_given(
             name: &given[1].names[0],
             metadata: Ok(TendrilActionMetadata {
                 md: TendrilMetadata {
+                    local_type: Some(FsoType::File),
+                    remote_type: None,
                     resolved_path: remote_app2_file.clone(),
                 },
                 action_result: expected_success.clone(),
@@ -275,6 +290,8 @@ fn push_returns_tendril_and_result_for_each_given(
             name: &given[2].names[0],
             metadata: Ok(TendrilActionMetadata {
                 md: TendrilMetadata {
+                    local_type: Some(FsoType::Dir),
+                    remote_type: None,
                     resolved_path: remote_app1_dir.clone(),
                 },
                 action_result: expected_success.clone(),
@@ -285,6 +302,8 @@ fn push_returns_tendril_and_result_for_each_given(
             name: &given[3].names[0],
             metadata: Ok(TendrilActionMetadata {
                 md: TendrilMetadata {
+                    local_type: None,
+                    remote_type: None,
                     resolved_path: given_parent_dir_a.join("I don't exist"),
                 },
                 action_result: Err(TendrilActionError::IoError {
@@ -298,6 +317,8 @@ fn push_returns_tendril_and_result_for_each_given(
             name: &given[3].names[0],
             metadata: Ok(TendrilActionMetadata {
                 md: TendrilMetadata {
+                    local_type: None,
+                    remote_type: None,
                     resolved_path: given_parent_dir_b.join("I don't exist"),
                 },
                 action_result: Err(TendrilActionError::IoError {
@@ -311,6 +332,8 @@ fn push_returns_tendril_and_result_for_each_given(
             name: &given[3].names[1],
             metadata: Ok(TendrilActionMetadata {
                 md: TendrilMetadata {
+                    local_type: Some(FsoType::File),
+                    remote_type: None,
                     resolved_path: remote_app3_fileb_pa.clone(),
                 },
                 action_result: expected_success.clone(),
@@ -321,6 +344,8 @@ fn push_returns_tendril_and_result_for_each_given(
             name: &given[3].names[1],
             metadata: Ok(TendrilActionMetadata {
                 md: TendrilMetadata {
+                    local_type: Some(FsoType::File),
+                    remote_type: None,
                     resolved_path: remote_app3_fileb_pb.clone(),
                 },
                 action_result: expected_success,
@@ -434,6 +459,8 @@ fn link_returns_tendril_and_result_for_each_given(
             name: &given[0].names[0],
             metadata: Ok(TendrilActionMetadata {
                 md: TendrilMetadata {
+                    local_type: Some(FsoType::File),
+                    remote_type: None,
                     resolved_path: remote_app1_file.clone(),
                 },
                 action_result: expected_success.clone(),
@@ -444,6 +471,8 @@ fn link_returns_tendril_and_result_for_each_given(
             name: &given[1].names[0],
             metadata: Ok(TendrilActionMetadata {
                 md: TendrilMetadata {
+                    local_type: Some(FsoType::File),
+                    remote_type: None,
                     resolved_path: remote_app2_file.clone(),
                 },
                 action_result: expected_success.clone(),
@@ -454,6 +483,8 @@ fn link_returns_tendril_and_result_for_each_given(
             name: &given[2].names[0],
             metadata: Ok(TendrilActionMetadata {
                 md: TendrilMetadata {
+                    local_type: Some(FsoType::Dir),
+                    remote_type: None,
                     resolved_path: remote_app1_dir.clone(),
                 },
                 action_result: expected_success.clone(),
@@ -464,6 +495,8 @@ fn link_returns_tendril_and_result_for_each_given(
             name: &given[3].names[0],
             metadata: Ok(TendrilActionMetadata {
                 md: TendrilMetadata {
+                    local_type: None,
+                    remote_type: None,
                     resolved_path: given_parent_dir_a.join("I don't exist"),
                 },
                 action_result: Err(TendrilActionError::IoError {
@@ -477,6 +510,8 @@ fn link_returns_tendril_and_result_for_each_given(
             name: &given[3].names[0],
             metadata: Ok(TendrilActionMetadata {
                 md: TendrilMetadata {
+                    local_type: None,
+                    remote_type: None,
                     resolved_path: given_parent_dir_b.join("I don't exist"),
                 },
                 action_result: Err(TendrilActionError::IoError {
@@ -490,6 +525,8 @@ fn link_returns_tendril_and_result_for_each_given(
             name: &given[3].names[1],
             metadata: Ok(TendrilActionMetadata {
                 md: TendrilMetadata {
+                    local_type: Some(FsoType::File),
+                    remote_type: None,
                     resolved_path: remote_app3_fileb_pa.clone(),
                 },
                 action_result: expected_success.clone(),
@@ -500,6 +537,8 @@ fn link_returns_tendril_and_result_for_each_given(
             name: &given[3].names[1],
             metadata: Ok(TendrilActionMetadata {
                 md: TendrilMetadata {
+                    local_type: Some(FsoType::File),
+                    remote_type: None,
                     resolved_path: remote_app3_fileb_pb.clone(),
                 },
                 action_result: expected_success,
@@ -613,6 +652,8 @@ fn out_returns_tendril_and_result_for_each_given_link_or_push_style(
             name: &given[0].names[0],
             metadata: Ok(TendrilActionMetadata {
                 md: TendrilMetadata {
+                    local_type: Some(FsoType::File),
+                    remote_type: None,
                     resolved_path: remote_app1_file.clone(),
                 },
                 action_result: expected_success.clone(),
@@ -623,6 +664,8 @@ fn out_returns_tendril_and_result_for_each_given_link_or_push_style(
             name: &given[1].names[0],
             metadata: Ok(TendrilActionMetadata {
                 md: TendrilMetadata {
+                    local_type: Some(FsoType::File),
+                    remote_type: None,
                     resolved_path: remote_app2_file.clone(),
                 },
                 action_result: expected_success.clone(),
@@ -633,6 +676,8 @@ fn out_returns_tendril_and_result_for_each_given_link_or_push_style(
             name: &given[2].names[0],
             metadata: Ok(TendrilActionMetadata {
                 md: TendrilMetadata {
+                    local_type: Some(FsoType::Dir),
+                    remote_type: None,
                     resolved_path: remote_app1_dir.clone(),
                 },
                 action_result: expected_success.clone(),
@@ -643,6 +688,8 @@ fn out_returns_tendril_and_result_for_each_given_link_or_push_style(
             name: &given[3].names[0],
             metadata: Ok(TendrilActionMetadata {
                 md: TendrilMetadata {
+                    local_type: None,
+                    remote_type: None,
                     resolved_path: given_parent_dir_a.join("I don't exist"),
                 },
                 action_result: Err(TendrilActionError::IoError {
@@ -656,6 +703,8 @@ fn out_returns_tendril_and_result_for_each_given_link_or_push_style(
             name: &given[3].names[0],
             metadata: Ok(TendrilActionMetadata {
                 md: TendrilMetadata {
+                    local_type: None,
+                    remote_type: None,
                     resolved_path: given_parent_dir_b.join("I don't exist"),
                 },
                 action_result: Err(TendrilActionError::IoError {
@@ -669,6 +718,8 @@ fn out_returns_tendril_and_result_for_each_given_link_or_push_style(
             name: &given[3].names[1],
             metadata: Ok(TendrilActionMetadata {
                 md: TendrilMetadata {
+                    local_type: Some(FsoType::File),
+                    remote_type: None,
                     resolved_path: remote_app3_fileb_pa.clone(),
                 },
                 action_result: expected_success.clone(),
@@ -679,6 +730,8 @@ fn out_returns_tendril_and_result_for_each_given_link_or_push_style(
             name: &given[3].names[1],
             metadata: Ok(TendrilActionMetadata {
                 md: TendrilMetadata {
+                    local_type: Some(FsoType::File),
+                    remote_type: None,
                     resolved_path: remote_app3_fileb_pb.clone(),
                 },
                 action_result: expected_success,
@@ -761,6 +814,8 @@ fn parent_path_vars_are_resolved(
         name: "misc.txt",
         metadata: Ok(TendrilActionMetadata {
             md: TendrilMetadata {
+                local_type: None,
+                remote_type: None,
                 resolved_path: PathBuf::from(expected_resolved_path.clone()),
             },
             action_result: Err(TendrilActionError::IoError {
