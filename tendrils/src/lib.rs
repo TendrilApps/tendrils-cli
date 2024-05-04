@@ -26,6 +26,8 @@ mod tendril_action_report;
 pub use tendril_action_report::TendrilActionReport;
 mod tendril_bundle;
 pub use tendril_bundle::TendrilBundle;
+mod tendril_metadata;
+pub use tendril_metadata::TendrilMetadata;
 
 #[cfg(test)]
 mod tests;
@@ -352,43 +354,46 @@ fn link_tendril(
     dry_run: bool,
     mut force: bool,
 ) -> TendrilActionMetadata {
-    let mut md = TendrilActionMetadata {
+    let tendril_md = TendrilMetadata {
         resolved_path: tendril.full_path(),
+    };
+    let mut action_md = TendrilActionMetadata {
+        md: tendril_md,
         action_result: Ok(TendrilActionSuccess::New) // Init only value
     };
     if tendril.mode != TendrilMode::Link {
-        md.action_result = Err(TendrilActionError::ModeMismatch);
-        return md;
+        action_md.action_result = Err(TendrilActionError::ModeMismatch);
+        return action_md;
     }
-    if is_recursive_tendril(td_dir, &md.resolved_path) {
-        md.action_result = Err(TendrilActionError::Recursion);
-        return md;
+    if is_recursive_tendril(td_dir, &action_md.md.resolved_path) {
+        action_md.action_result = Err(TendrilActionError::Recursion);
+        return action_md;
     }
     if !tendril.parent().exists() {
-        md.action_result = Err(TendrilActionError::IoError {
+        action_md.action_result = Err(TendrilActionError::IoError {
             kind: std::io::ErrorKind::NotFound,
             loc: Location::Dest
         });
-        return md;
+        return action_md;
     }
 
     let target = td_dir.join(tendril.group()).join(tendril.name());
     if td_dir.exists() && !target.exists() {
         // Local does not exist - copy it first
-        match copy_fso(&md.resolved_path, &target, false, dry_run, false) {
+        match copy_fso(&action_md.md.resolved_path, &target, false, dry_run, false) {
             Err(e) =>  {
-                md.action_result = Err(e);
-                return md;
+                action_md.action_result = Err(e);
+                return action_md;
             },
             _ => {}
         };
         force = true;
     }
 
-    md.action_result = match symlink(&md.resolved_path, &target, dry_run, force) {
+    action_md.action_result = match symlink(&action_md.md.resolved_path, &target, dry_run, force) {
         Err(TendrilActionError::IoError {kind: e_kind, loc: _}) if dry_run
             && e_kind == std::io::ErrorKind::NotFound
-            && md.resolved_path.exists()
+            && action_md.md.resolved_path.exists()
             && td_dir.exists() =>
         {
             // Local does not exist and should be copied before link
@@ -398,7 +403,7 @@ fn link_tendril(
         r => r
     };
 
-    md
+    action_md
 }
 
 /// # Arguments
@@ -413,39 +418,42 @@ fn pull_tendril(
     dry_run: bool,
     force: bool,
 ) -> TendrilActionMetadata {
-    let mut md = TendrilActionMetadata {
+    let tendril_md = TendrilMetadata {
         resolved_path: tendril.full_path(),
+    };
+    let mut action_md = TendrilActionMetadata {
+        md: tendril_md,
         action_result: Ok(TendrilActionSuccess::New) // Init only value
     };
 
     if tendril.mode == TendrilMode::Link {
-        md.action_result = Err(TendrilActionError::ModeMismatch);
-        return md;
+        action_md.action_result = Err(TendrilActionError::ModeMismatch);
+        return action_md;
     }
-    else if is_recursive_tendril(td_dir, &md.resolved_path) {
-        md.action_result = Err(TendrilActionError::Recursion);
-        return md;
+    else if is_recursive_tendril(td_dir, &action_md.md.resolved_path) {
+        action_md.action_result = Err(TendrilActionError::Recursion);
+        return action_md;
     }
     else if !td_dir.exists() {
-        md.action_result = Err(TendrilActionError::IoError {
+        action_md.action_result = Err(TendrilActionError::IoError {
             kind: std::io::ErrorKind::NotFound,
             loc: Location::Dest
         });
-        return md;
+        return action_md;
     }
 
     let dest = td_dir.join(tendril.group()).join(tendril.name());
 
     let dir_merge = tendril.mode == TendrilMode::DirMerge;
-    md.action_result = copy_fso(
-        &md.resolved_path,
+    action_md.action_result = copy_fso(
+        &action_md.md.resolved_path,
         &dest,
         dir_merge,
         dry_run,
         force
     );
 
-    md
+    action_md
 }
 
 fn push_tendril(
@@ -454,38 +462,41 @@ fn push_tendril(
     dry_run: bool,
     force: bool,
 ) -> TendrilActionMetadata {
-    let mut md = TendrilActionMetadata {
+    let tendril_md = TendrilMetadata {
         resolved_path: tendril.full_path(),
+    };
+    let mut action_md = TendrilActionMetadata {
+        md: tendril_md,
         action_result: Ok(TendrilActionSuccess::New), // Init only value
     };
     if tendril.mode == TendrilMode::Link {
-        md.action_result = Err(TendrilActionError::ModeMismatch);
-        return md;
+        action_md.action_result = Err(TendrilActionError::ModeMismatch);
+        return action_md;
     }
-    if is_recursive_tendril(td_dir, &md.resolved_path) {
-        md.action_result = Err(TendrilActionError::Recursion);
-        return md;
+    if is_recursive_tendril(td_dir, &action_md.md.resolved_path) {
+        action_md.action_result = Err(TendrilActionError::Recursion);
+        return action_md;
     }
     if !tendril.parent().exists() {
-        md.action_result = Err(TendrilActionError::IoError {
+        action_md.action_result = Err(TendrilActionError::IoError {
             kind: std::io::ErrorKind::NotFound,
             loc: Location::Dest,
         });
-        return md;
+        return action_md;
     }
 
     let source = td_dir.join(tendril.group()).join(tendril.name());
 
     let dir_merge = tendril.mode == TendrilMode::DirMerge;
-    md.action_result = copy_fso(
+    action_md.action_result = copy_fso(
         &source,
-        &md.resolved_path,
+        &action_md.md.resolved_path,
         dir_merge,
         dry_run,
         force,
     );
 
-    md
+    action_md
 }
 
 /// Replaces all environment variables in the format `<varname>` in the
@@ -875,7 +886,9 @@ pub fn tendril_action<'a>(
                         // that the process does not have the required permissions.
                         // This prevents deleting any of the remote files unnecessarily.
                         Ok(TendrilActionMetadata {
-                            resolved_path: v.full_path(),
+                            md: TendrilMetadata {
+                                resolved_path: v.full_path(),
+                            },
                             action_result: Err(TendrilActionError::IoError {
                                 kind: std::io::ErrorKind::PermissionDenied,
                                 loc: Location::Dest,

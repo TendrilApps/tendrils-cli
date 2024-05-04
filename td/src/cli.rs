@@ -229,9 +229,11 @@ pub fn print_reports(reports: &[TendrilActionReport], writer: &mut impl Writer) 
 
     for report in reports {
         let (styled_path, styled_result) = match &report.metadata {
-            Ok(md) => {(
-                ansi_styled_resolved_path(&Ok(md.resolved_path.clone())),
-                ansi_styled_result(&md.action_result)
+            Ok(action_md) => {(
+                ansi_styled_resolved_path(
+                    &Ok(action_md.md.resolved_path.clone())
+                ),
+                ansi_styled_result(&action_md.action_result)
             )},
             Err(e) => {(
                 // Print the resolving error in the result column
@@ -255,7 +257,7 @@ pub fn print_reports(reports: &[TendrilActionReport], writer: &mut impl Writer) 
 fn print_totals(reports: &[TendrilActionReport], writer: & mut impl Writer) {
     let total_successes = reports.iter().filter(|r| {
         match &r.metadata {
-            Ok(md) => md.action_result.is_ok(),
+            Ok(action_md) => action_md.action_result.is_ok(),
             _ => false,
         }
     })
