@@ -148,7 +148,7 @@ fn ansi_styled_result(
     result: &Result<TendrilActionSuccess, TendrilActionError>
 ) -> String {
     use std::io::ErrorKind::NotFound;
-    use FsoType::{Dir, File, Symlink};
+    use FsoType::{Dir, File, SymFile, SymDir};
     use Location::{Dest, Source, Unknown};
 
     match result {
@@ -193,7 +193,7 @@ fn ansi_styled_result(
                 TendrilActionError::TypeMismatch {loc: Source, mistype: Dir} => {
                     "Unexpected directory at source"
                 },
-                TendrilActionError::TypeMismatch {loc: Source, mistype: Symlink} => {
+                TendrilActionError::TypeMismatch {loc: Source, mistype: SymFile | SymDir} => {
                     "Unexpected symlink at source"
                 },
                 TendrilActionError::TypeMismatch {loc: Dest, mistype: File} => {
@@ -202,7 +202,7 @@ fn ansi_styled_result(
                 TendrilActionError::TypeMismatch {loc: Dest, mistype: Dir} => {
                     "Unexpected directory at destination"
                 },
-                TendrilActionError::TypeMismatch {loc: Dest, mistype: Symlink} => {
+                TendrilActionError::TypeMismatch {loc: Dest, mistype: SymFile | SymDir} => {
                     "Unexpected symlink at destination"
                 },
                 TendrilActionError::TypeMismatch {loc: Unknown, mistype: _} => {

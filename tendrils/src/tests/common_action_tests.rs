@@ -6,6 +6,7 @@
 //! - [`crate::tests::push_tendril_tests`]
 
 use crate::{
+    is_rofs_err,
     is_tendrils_dir,
     link_tendril,
     pull_tendril,
@@ -848,26 +849,33 @@ pub(crate) fn local_symlink_is_unchanged(
         true => Location::Dest,
         false => Location::Source,
     };
-    let exp_result;
+    let exp_file_result;
+    let exp_dir_result;
     if !force {
-        exp_result = Err(TendrilActionError::TypeMismatch {
+        exp_file_result = Err(TendrilActionError::TypeMismatch {
+            loc: exp_loc.clone(),
+            mistype: FsoType::SymFile,
+        });
+        exp_dir_result = Err(TendrilActionError::TypeMismatch {
             loc: exp_loc,
-            mistype: FsoType::Symlink,
+            mistype: FsoType::SymDir,
         });
     }
     else if dry_run {
-        exp_result = Ok(TendrilActionSuccess::OverwriteSkipped);
+        exp_file_result = Ok(TendrilActionSuccess::OverwriteSkipped);
+        exp_dir_result = Ok(TendrilActionSuccess::OverwriteSkipped);
     }
     else {
-        exp_result = Ok(TendrilActionSuccess::Overwrite);
+        exp_file_result = Ok(TendrilActionSuccess::Overwrite);
+        exp_dir_result = Ok(TendrilActionSuccess::Overwrite);
     }
     assert_eq!(file_actual, TendrilActionMetadata {
         resolved_path: setup.remote_file.clone(),
-        action_result: exp_result.clone(),
+        action_result: exp_file_result,
     });
     assert_eq!(dir_actual, TendrilActionMetadata {
         resolved_path: setup.remote_dir.clone(),
-        action_result: exp_result,
+        action_result: exp_dir_result,
     });
     assert!(setup.local_file.is_symlink());
     assert!(setup.local_dir.is_symlink());
@@ -976,30 +984,37 @@ pub(crate) fn remote_symlink_is_unchanged(
     let file_actual = action(&setup.td_dir, &file_tendril, dry_run, force);
     let dir_actual = action(&setup.td_dir, &dir_tendril, dry_run, force);
 
-    let exp_result;
+    let exp_file_result;
+    let exp_dir_result;
     if !force && action != link_tendril {
         let exp_loc = match action == pull_tendril {
             true => Location::Source,
             false => Location::Dest,
         };
-        exp_result = Err(TendrilActionError::TypeMismatch {
+        exp_file_result = Err(TendrilActionError::TypeMismatch {
             loc: exp_loc.clone(),
-            mistype: FsoType::Symlink,
+            mistype: FsoType::SymFile,
+        });
+        exp_dir_result = Err(TendrilActionError::TypeMismatch {
+            loc: exp_loc.clone(),
+            mistype: FsoType::SymDir,
         });
     }
     else if dry_run {
-        exp_result = Ok(TendrilActionSuccess::OverwriteSkipped);
+        exp_file_result = Ok(TendrilActionSuccess::OverwriteSkipped);
+        exp_dir_result = Ok(TendrilActionSuccess::OverwriteSkipped);
     }
     else {
-        exp_result = Ok(TendrilActionSuccess::Overwrite);
+        exp_file_result = Ok(TendrilActionSuccess::Overwrite);
+        exp_dir_result = Ok(TendrilActionSuccess::Overwrite);
     }
     assert_eq!(file_actual, TendrilActionMetadata {
         resolved_path: setup.remote_file.clone(),
-        action_result: exp_result.clone(),
+        action_result: exp_file_result,
     });
     assert_eq!(dir_actual, TendrilActionMetadata {
         resolved_path: setup.remote_dir.clone(),
-        action_result: exp_result,
+        action_result: exp_dir_result,
     });
     assert!(setup.remote_file.is_symlink());
     assert!(setup.remote_dir.is_symlink());
@@ -1237,22 +1252,20 @@ fn non_windows_platform_parent_is_root_returns_permission_error_unless_dry_run(
         match file_actual.action_result {
             Err(TendrilActionError::IoError {
                 kind: e_kind, 
-                loc: Location::Unknown,
+                loc: Location::Dest,
             }) => {
-                // Possible bug where the std::io::ErrorKind::ReadOnlyFilesystem
-                // is only available in nightly but is being returned on Mac
-                assert!(format!("{:?}", e_kind).contains("ReadOnlyFilesystem"));
+                assert!(is_rofs_err(&e_kind));
             },
-            _ => panic!("Actual error: {:?}", file_actual),
+            _ => panic!("Actual error: {:?}", file_actual.action_result),
         }
         match dir_actual.action_result {
             Err(TendrilActionError::IoError {
                 kind: e_kind, 
-                loc: Location::Unknown,
+                loc: Location::Dest,
             }) => {
-                assert!(format!("{:?}", e_kind).contains("ReadOnlyFilesystem"));
+                assert!(is_rofs_err(&e_kind));
             },
-            _ => panic!("Actual error: {:?}", dir_actual),
+            _ => panic!("Actual error: {:?}", dir_actual.action_result),
         }
         assert!(!setup.remote_file.exists());
         assert!(!setup.remote_dir.exists());

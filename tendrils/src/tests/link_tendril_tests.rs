@@ -230,28 +230,36 @@ fn local_is_symlink_returns_type_mismatch_error_unless_forced(
         force,
     );
 
-    let exp_result = match (dry_run, force) {
+    let exp_file_result;
+    let exp_dir_result;
+    match (dry_run, force) {
         (_, false) => {
-            Err(TendrilActionError::TypeMismatch {
+            exp_file_result = Err(TendrilActionError::TypeMismatch {
                 loc: Location::Source,
-                mistype: FsoType::Symlink,
-            })
+                mistype: FsoType::SymFile,
+            });
+            exp_dir_result = Err(TendrilActionError::TypeMismatch {
+                loc: Location::Source,
+                mistype: FsoType::SymDir,
+            });
         },
         (false, true) => {
-            Ok(TendrilActionSuccess::New)
+            exp_file_result = Ok(TendrilActionSuccess::New);
+            exp_dir_result = Ok(TendrilActionSuccess::New);
         },
         (true, true) => {
-            Ok(TendrilActionSuccess::NewSkipped)
+            exp_file_result = Ok(TendrilActionSuccess::NewSkipped);
+            exp_dir_result = Ok(TendrilActionSuccess::NewSkipped);
         },
     };
 
     assert_eq!(file_actual, TendrilActionMetadata {
         resolved_path: setup.remote_file.clone(),
-        action_result: exp_result.clone(),
+        action_result: exp_file_result,
     });
     assert_eq!(dir_actual, TendrilActionMetadata {
         resolved_path: setup.remote_dir.clone(),
-        action_result: exp_result,
+        action_result: exp_dir_result,
     });
     assert_eq!(setup.local_file_contents(), "Target file contents");
     assert_eq!(
