@@ -9,7 +9,7 @@ use crate::{
     TendrilMetadata,
 };
 use crate::tendril_bundle::TendrilBundle;
-use crate::tendril_action_report::TendrilActionReport;
+use crate::tendril_report::TendrilActionReport;
 use crate::test_utils::{
     get_disposable_dir,
     is_empty,
