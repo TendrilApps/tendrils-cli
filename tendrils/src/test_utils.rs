@@ -1,10 +1,10 @@
 use crate::{
     parse_tendrils,
     symlink,
+    Fso,
     Tendril,
     TendrilBundle,
     TendrilMode,
-    FSO,
 };
 use std::fs::{create_dir_all, read_to_string, write};
 use std::path::{Path, PathBuf};
@@ -91,6 +91,12 @@ pub struct Setup {
     pub target_file: PathBuf,
     pub target_dir: PathBuf,
     pub target_nested_file: PathBuf,
+}
+
+impl Default for Setup {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Setup {
@@ -219,7 +225,7 @@ impl Setup {
     }
 
     pub fn make_local_subdir_file(&self) {
-        create_dir_all(&self.group_dir.join("SubDir")).unwrap();
+        create_dir_all(self.group_dir.join("SubDir")).unwrap();
         write(&self.local_subdir_file, "Local subdir file contents").unwrap();
     }
 
@@ -250,7 +256,7 @@ impl Setup {
     }
 
     pub fn make_remote_subdir_file(&self) {
-        create_dir_all(&self.parent_dir.join("SubDir")).unwrap();
+        create_dir_all(self.parent_dir.join("SubDir")).unwrap();
         write(&self.remote_subdir_file, "Remote subdir file contents").unwrap();
     }
 

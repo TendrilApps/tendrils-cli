@@ -21,7 +21,7 @@ impl<'a> Tendril<'a> {
         mode: TendrilMode,
     ) -> Result<Tendril<'a>, InvalidTendrilError> {
         if group.is_empty()
-            || Tendril::is_path(&group)
+            || Tendril::is_path(group)
             || group.to_lowercase() == "tendrils.json"
             || group.to_lowercase() == ".git"
             || group.contains('\n')
@@ -46,11 +46,11 @@ impl<'a> Tendril<'a> {
     }
 
     pub fn group(&self) -> &str {
-        &self.group
+        self.group
     }
 
     pub fn name(&self) -> &str {
-        &self.name
+        self.name
     }
 
     pub fn parent(&self) -> &Path {
@@ -69,7 +69,7 @@ impl<'a> Tendril<'a> {
             full_path_str.push_str(&self.name[1..]);
         }
         else {
-            full_path_str.push_str(&self.name);
+            full_path_str.push_str(self.name);
         }
 
         #[cfg(windows)]

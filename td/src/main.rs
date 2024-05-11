@@ -10,7 +10,6 @@ use cli::{
     TendrilCliArgs,
     TendrilsSubcommands,
 };
-use exitcode;
 use std::path::PathBuf;
 use tendrils::{
     can_symlink,
@@ -130,7 +129,7 @@ fn init(path: Option<String>, force: bool, writer: &mut impl Writer) -> i32 {
         }
     };
 
-    return 0;
+    0
 }
 
 /// Returns, but does not set, the suggested exit code for the process.
@@ -155,7 +154,7 @@ fn path(writer: &mut impl Writer) -> i32 {
             return exitcode::DATAERR;
         }
     }
-    return 0;
+    0
 }
 
 /// Returns, but does not set, the suggested exit code for the process.
@@ -229,18 +228,17 @@ fn tendril_action_subcommand(
             writer.writeln(&format!(
                 "{ERR_PREFIX}: Could not parse the tendrils.json file."
             ));
-            writer.writeln(&format!("{e}"));
+            writer.writeln(&e);
             return exitcode::DATAERR;
         }
     };
 
-    let mode_filter;
-    if mode == ActionMode::Out {
-        mode_filter = None;
+    let mode_filter = if mode == ActionMode::Out {
+        None
     }
     else {
-        mode_filter = Some(mode.clone());
-    }
+        Some(mode.clone())
+    };
     let filter = FilterSpec {
         mode: mode_filter,
         groups: &filter_args.groups,
@@ -274,5 +272,5 @@ fn tendril_action_subcommand(
     }) {
         return exitcode::SOFTWARE;
     }
-    return 0;
+    0
 }

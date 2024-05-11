@@ -27,7 +27,7 @@ impl MockWriter {
     }
 
     fn all_output_lines(&self) -> Vec<String> {
-        self.all_output.lines().map(|x| String::from(x)).collect()
+        self.all_output.lines().map(String::from).collect()
     }
 }
 
@@ -235,8 +235,8 @@ fn init_no_path_given_and_no_cd_prints_error_message(#[case] force: bool) {
     let temp_dir =
         tempdir::TempDir::new_in(get_disposable_dir(), "CurrentDir").unwrap();
     let cd = temp_dir.path();
-    std::env::set_current_dir(&cd).unwrap();
-    std::fs::remove_dir(&cd).unwrap();
+    std::env::set_current_dir(cd).unwrap();
+    std::fs::remove_dir(cd).unwrap();
 
     let args = TendrilCliArgs {
         tendrils_command: TendrilsSubcommands::Init { force, path: None },
@@ -304,7 +304,7 @@ fn init_dir_is_already_tendrils_dir_prints_error_message(#[case] force: bool) {
         tempdir::TempDir::new_in(get_disposable_dir(), "TempDir").unwrap();
     let given_dir = temp_dir.path();
     write(given_dir.join("tendrils.json"), "").unwrap();
-    assert!(is_tendrils_dir(&given_dir));
+    assert!(is_tendrils_dir(given_dir));
 
     let args = TendrilCliArgs {
         tendrils_command: TendrilsSubcommands::Init {
@@ -563,7 +563,7 @@ fn tendril_action_dry_run_does_not_modify(
              Failed: {color_bright_red}0{color_reset}"
         )
     );
-    assert_eq!(setup.td_dir.read_dir().unwrap().into_iter().count(), 2);
+    assert_eq!(setup.td_dir.read_dir().unwrap().count(), 2);
 }
 
 #[rstest]
