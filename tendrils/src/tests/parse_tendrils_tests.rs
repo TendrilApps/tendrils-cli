@@ -29,9 +29,8 @@ fn json_missing_group_returns_error() {
         original_tendril_json.replace(r#""group": "MyApp","#, "");
     assert_ne!(&original_tendril_json, &partial_tendril_json);
 
-    let given = SampleTendrils::build_tendrils_json(
-        &[partial_tendril_json].to_vec(),
-    );
+    let given =
+        SampleTendrils::build_tendrils_json(&[partial_tendril_json].to_vec());
 
     let actual = parse_tendrils(&given);
 
@@ -45,9 +44,8 @@ fn json_missing_name_returns_error() {
         original_tendril_json.replace(r#""names": "settings.json","#, "");
     assert_ne!(&original_tendril_json, &partial_tendril_json);
 
-    let given = SampleTendrils::build_tendrils_json(
-        &[partial_tendril_json].to_vec(),
-    );
+    let given =
+        SampleTendrils::build_tendrils_json(&[partial_tendril_json].to_vec());
 
     let actual = parse_tendrils(&given);
 
@@ -61,9 +59,8 @@ fn json_missing_parents_returns_error() {
         .replace(r#""parents": ["some/parent/path"],"#, "");
     assert_ne!(&original_tendril_json, &partial_tendril_json);
 
-    let given = SampleTendrils::build_tendrils_json(
-        &[partial_tendril_json].to_vec(),
-    );
+    let given =
+        SampleTendrils::build_tendrils_json(&[partial_tendril_json].to_vec());
 
     let actual = parse_tendrils(&given);
 
@@ -73,13 +70,12 @@ fn json_missing_parents_returns_error() {
 #[test]
 fn json_missing_dir_merge_defaults_to_false() {
     let original_tendril_json = SampleTendrils::tendril_1_json();
-    let partial_tendril_json = original_tendril_json
-        .replace(r#""dir-merge": false,"#, "");
+    let partial_tendril_json =
+        original_tendril_json.replace(r#""dir-merge": false,"#, "");
     assert_ne!(&original_tendril_json, &partial_tendril_json);
 
-    let given = SampleTendrils::build_tendrils_json(
-        &[partial_tendril_json].to_vec(),
-    );
+    let given =
+        SampleTendrils::build_tendrils_json(&[partial_tendril_json].to_vec());
     let expected = [SampleTendrils::tendril_1()].to_vec();
     assert!(!expected[0].dir_merge);
 
@@ -91,13 +87,12 @@ fn json_missing_dir_merge_defaults_to_false() {
 #[test]
 fn json_missing_link_defaults_to_false() {
     let original_tendril_json = SampleTendrils::tendril_1_json();
-    let partial_tendril_json = original_tendril_json
-        .replace(r#""link": false,"#, "");
+    let partial_tendril_json =
+        original_tendril_json.replace(r#""link": false,"#, "");
     assert_ne!(&original_tendril_json, &partial_tendril_json);
 
-    let given = SampleTendrils::build_tendrils_json(
-        &[partial_tendril_json].to_vec(),
-    );
+    let given =
+        SampleTendrils::build_tendrils_json(&[partial_tendril_json].to_vec());
     let expected = [SampleTendrils::tendril_1()].to_vec();
     assert!(!expected[0].dir_merge);
 
@@ -109,16 +104,14 @@ fn json_missing_link_defaults_to_false() {
 #[test]
 fn json_missing_profiles_defaults_to_empty() {
     let original_tendril_json = SampleTendrils::tendril_1_json();
+    // Remove trailing comma and remove profiles field
     let partial_tendril_json = original_tendril_json
-        // Remove trailing comma
         .replace(r#""link": false,"#, r#""link": false"#)
-        // Remove field field
         .replace(r#""profiles": []"#, "");
     assert_ne!(&original_tendril_json, &partial_tendril_json);
 
-    let given = SampleTendrils::build_tendrils_json(
-        &[partial_tendril_json].to_vec(),
-    );
+    let given =
+        SampleTendrils::build_tendrils_json(&[partial_tendril_json].to_vec());
     let expected = [SampleTendrils::tendril_1()].to_vec();
     assert!(expected[0].profiles.is_empty());
 
@@ -134,9 +127,8 @@ fn json_group_is_null_returns_error() {
         .replace(r#""group": "MyApp","#, r#""group": null,"#);
     assert_ne!(&original_tendril_json, &partial_tendril_json);
 
-    let given = SampleTendrils::build_tendrils_json(
-        &[partial_tendril_json].to_vec(),
-    );
+    let given =
+        SampleTendrils::build_tendrils_json(&[partial_tendril_json].to_vec());
 
     let actual = parse_tendrils(&given);
 
@@ -150,9 +142,8 @@ fn json_names_is_null_returns_error() {
         .replace(r#""names": "settings.json","#, r#""names": null,"#);
     assert_ne!(&original_tendril_json, &partial_tendril_json);
 
-    let given = SampleTendrils::build_tendrils_json(
-        &[partial_tendril_json].to_vec(),
-    );
+    let given =
+        SampleTendrils::build_tendrils_json(&[partial_tendril_json].to_vec());
 
     let actual = parse_tendrils(&given);
 
@@ -163,13 +154,13 @@ fn json_names_is_null_returns_error() {
 fn json_individual_name_is_null_returns_error() {
     let original_tendril_json = SampleTendrils::tendril_1_json();
     let partial_tendril_json = original_tendril_json.replace(
-        r#""names": "settings.json","#, r#""names": ["settings.json", null],"#
+        r#""names": "settings.json","#,
+        r#""names": ["settings.json", null],"#,
     );
     assert_ne!(&original_tendril_json, &partial_tendril_json);
 
-    let given = SampleTendrils::build_tendrils_json(
-        &[partial_tendril_json].to_vec(),
-    );
+    let given =
+        SampleTendrils::build_tendrils_json(&[partial_tendril_json].to_vec());
 
     let actual = parse_tendrils(&given);
 
@@ -183,9 +174,8 @@ fn json_parents_is_null_returns_error() {
         .replace(r#""parents": ["some/parent/path"],"#, r#""parents": null,"#);
     assert_ne!(&original_tendril_json, &partial_tendril_json);
 
-    let given = SampleTendrils::build_tendrils_json(
-        &[partial_tendril_json].to_vec(),
-    );
+    let given =
+        SampleTendrils::build_tendrils_json(&[partial_tendril_json].to_vec());
 
     let actual = parse_tendrils(&given);
 
@@ -197,13 +187,12 @@ fn json_individual_parent_is_null_returns_error() {
     let original_tendril_json = SampleTendrils::tendril_2_json();
     let partial_tendril_json = original_tendril_json.replace(
         r#""parents": ["some/parent/path"],"#,
-        r#""parents": ["some/parent/path", null],"#
+        r#""parents": ["some/parent/path", null],"#,
     );
     assert_ne!(&original_tendril_json, &partial_tendril_json);
 
-    let given = SampleTendrils::build_tendrils_json(
-        &[partial_tendril_json].to_vec(),
-    );
+    let given =
+        SampleTendrils::build_tendrils_json(&[partial_tendril_json].to_vec());
 
     let actual = parse_tendrils(&given);
 
@@ -217,9 +206,8 @@ fn json_dir_merge_is_null_returns_error() {
         .replace(r#""dir-merge": false,"#, r#""dir-merge": null,"#);
     assert_ne!(&original_tendril_json, &partial_tendril_json);
 
-    let given = SampleTendrils::build_tendrils_json(
-        &[partial_tendril_json].to_vec(),
-    );
+    let given =
+        SampleTendrils::build_tendrils_json(&[partial_tendril_json].to_vec());
 
     let actual = parse_tendrils(&given);
 
@@ -229,13 +217,12 @@ fn json_dir_merge_is_null_returns_error() {
 #[test]
 fn json_link_is_null_returns_error() {
     let original_tendril_json = SampleTendrils::tendril_1_json();
-    let partial_tendril_json = original_tendril_json
-        .replace(r#""link": false,"#, r#""link": null,"#);
+    let partial_tendril_json =
+        original_tendril_json.replace(r#""link": false,"#, r#""link": null,"#);
     assert_ne!(&original_tendril_json, &partial_tendril_json);
 
-    let given = SampleTendrils::build_tendrils_json(
-        &[partial_tendril_json].to_vec(),
-    );
+    let given =
+        SampleTendrils::build_tendrils_json(&[partial_tendril_json].to_vec());
 
     let actual = parse_tendrils(&given);
 
@@ -249,9 +236,8 @@ fn json_profiles_is_null_returns_error() {
         .replace(r#""profiles": []"#, r#""profiles": null"#);
     assert_ne!(&original_tendril_json, &partial_tendril_json);
 
-    let given = SampleTendrils::build_tendrils_json(
-        &[partial_tendril_json].to_vec(),
-    );
+    let given =
+        SampleTendrils::build_tendrils_json(&[partial_tendril_json].to_vec());
 
     let actual = parse_tendrils(&given);
 
@@ -262,12 +248,11 @@ fn json_profiles_is_null_returns_error() {
 fn json_individual_profile_is_null_returns_error() {
     let original_tendril_json = SampleTendrils::tendril_1_json();
     let partial_tendril_json = original_tendril_json
-        .replace( r#""profiles": []"#, r#""profiles": ["mac", null]"#);
+        .replace(r#""profiles": []"#, r#""profiles": ["mac", null]"#);
     assert_ne!(&original_tendril_json, &partial_tendril_json);
 
-    let given = SampleTendrils::build_tendrils_json(
-        &[partial_tendril_json].to_vec(),
-    );
+    let given =
+        SampleTendrils::build_tendrils_json(&[partial_tendril_json].to_vec());
 
     let actual = parse_tendrils(&given);
 
@@ -334,9 +319,8 @@ fn non_list_single_name_returns_list_of_len_1() {
     let original_tendril_json = SampleTendrils::tendril_1_json();
     assert!(original_tendril_json.contains(r#""names": "settings.json","#));
 
-    let given = SampleTendrils::build_tendrils_json(
-        &[original_tendril_json].to_vec(),
-    );
+    let given =
+        SampleTendrils::build_tendrils_json(&[original_tendril_json].to_vec());
 
     let expected = [SampleTendrils::tendril_1()].to_vec();
 
@@ -355,9 +339,7 @@ fn non_list_single_parent_returns_list_of_len_1() {
     );
     assert_ne!(original_tendril_json, modified_json);
 
-    let given = SampleTendrils::build_tendrils_json(
-        &[modified_json].to_vec(),
-    );
+    let given = SampleTendrils::build_tendrils_json(&[modified_json].to_vec());
 
     let expected = [SampleTendrils::tendril_2()].to_vec();
 
@@ -370,15 +352,11 @@ fn non_list_single_parent_returns_list_of_len_1() {
 #[test]
 fn non_list_single_profile_returns_list_of_len_1() {
     let original_tendril_json = SampleTendrils::tendril_2_json();
-    let modified_json = original_tendril_json.replace(
-        r#""profiles": ["win"]"#,
-        r#""profiles": "win""#,
-    );
+    let modified_json = original_tendril_json
+        .replace(r#""profiles": ["win"]"#, r#""profiles": "win""#);
     assert_ne!(original_tendril_json, modified_json);
 
-    let given = SampleTendrils::build_tendrils_json(
-        &[modified_json].to_vec(),
-    );
+    let given = SampleTendrils::build_tendrils_json(&[modified_json].to_vec());
 
     let expected = [SampleTendrils::tendril_2()].to_vec();
 

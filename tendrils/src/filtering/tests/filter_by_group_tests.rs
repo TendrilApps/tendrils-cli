@@ -1,4 +1,3 @@
-use crate::TendrilBundle;
 use crate::filtering::filter_by_group;
 use crate::filtering::tests::filter_tendrils_tests::{
     string_filter_empty_tests,
@@ -7,6 +6,7 @@ use crate::filtering::tests::filter_tendrils_tests::{
     supported_asterisk_literals,
     supported_weird_values,
 };
+use crate::TendrilBundle;
 use rstest::rstest;
 use rstest_reuse::{self, apply};
 
@@ -41,9 +41,7 @@ fn tendril_only_included_if_any_group_matches(
 }
 
 #[apply(string_filter_non_match_tests)]
-fn tendril_not_included_if_no_group_matches(
-    #[case] filters: &[String]
-) {
+fn tendril_not_included_if_no_group_matches(#[case] filters: &[String]) {
     let t1 = TendrilBundle::new("v1", vec!["misc.txt"]);
     let t2 = TendrilBundle::new("v2", vec!["misc.txt"]);
     let tendrils = vec![t1.clone(), t2.clone()];
@@ -58,11 +56,7 @@ fn duplicate_filter_groups_only_returns_tendril_once() {
     let t1 = TendrilBundle::new("g1", vec!["misc.txt"]);
     let t2 = TendrilBundle::new("g2", vec!["misc.txt"]);
     let tendrils = vec![t1.clone(), t2.clone()];
-    let filters = [
-        "g1".to_string(),
-        "g1".to_string(),
-        "g1".to_string(),
-    ];
+    let filters = ["g1".to_string(), "g1".to_string(), "g1".to_string()];
 
     let actual = filter_by_group(tendrils, &filters);
 
@@ -82,9 +76,7 @@ fn duplicate_tendrils_returns_all_instances() {
 }
 
 #[apply(supported_weird_values)]
-fn filter_supports_weird_groups(
-    #[case] group: String
-) {
+fn filter_supports_weird_groups(#[case] group: String) {
     let t1 = TendrilBundle::new(&group, vec!["misc.txt"]);
     let t2 = TendrilBundle::new("g2", vec!["misc.txt"]);
     let tendrils = vec![t1.clone(), t2.clone()];

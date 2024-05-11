@@ -1,5 +1,11 @@
-use crate::tendril::Tendril;
-use crate::{FSO, parse_tendrils, symlink, TendrilBundle, TendrilMode};
+use crate::{
+    parse_tendrils,
+    symlink,
+    Tendril,
+    TendrilBundle,
+    TendrilMode,
+    FSO,
+};
 use std::fs::{create_dir_all, read_to_string, write};
 use std::path::{Path, PathBuf};
 use tempdir::TempDir;
@@ -28,30 +34,31 @@ pub fn is_empty(dir: &Path) -> bool {
         if !dir.is_dir() {
             panic!("Expected a folder")
         }
-        return dir.read_dir().unwrap().count() == 0
+        return dir.read_dir().unwrap().count() == 0;
     }
     true
 }
 
 /// Exposes the otherwise private function
 pub fn parse_tendrils_expose(
-    json: &str
+    json: &str,
 ) -> Result<Vec<TendrilBundle>, serde_json::Error> {
     parse_tendrils(json)
 }
 
 pub fn set_parents(tendril: &mut TendrilBundle, paths: &[PathBuf]) {
-    let path_strings:Vec<String> = paths
-        .iter()
-        .map(|x| String::from(x.to_str().unwrap()))
-        .collect();
+    let path_strings: Vec<String> =
+        paths.iter().map(|x| String::from(x.to_str().unwrap())).collect();
 
     tendril.parents = path_strings;
 }
 
 /// Exposes the otherwise private function
 pub fn symlink_expose(
-    create_at: &Path, target: &Path, dry_run: bool, force: bool
+    create_at: &Path,
+    target: &Path,
+    dry_run: bool,
+    force: bool,
 ) -> Result<crate::TendrilActionSuccess, crate::TendrilActionError> {
     symlink(
         create_at,
@@ -89,10 +96,8 @@ pub struct Setup {
 impl Setup {
     /// Create a new temporary test folder setup
     pub fn new() -> Setup {
-        let temp_dir = TempDir::new_in(
-            get_disposable_dir(),
-            "ParentDir",
-        ).unwrap();
+        let temp_dir =
+            TempDir::new_in(get_disposable_dir(), "ParentDir").unwrap();
         let parent_dir = temp_dir.path().to_owned();
         let td_dir = temp_dir.path().join("TendrilsDir");
         let td_json_file = td_dir.join("tendrils.json");
@@ -138,10 +143,7 @@ impl Setup {
     }
 
     pub fn file_tendril_bundle(&self) -> TendrilBundle {
-        TendrilBundle::new(
-            "SomeApp",
-            vec!["misc.txt"],
-        )
+        TendrilBundle::new("SomeApp", vec!["misc.txt"])
     }
 
     pub fn file_tendril(&self) -> Tendril {
@@ -150,7 +152,8 @@ impl Setup {
             "misc.txt",
             self.parent_dir.clone(),
             TendrilMode::DirOverwrite,
-        ).unwrap()
+        )
+        .unwrap()
     }
 
     pub fn dir_tendril(&self) -> Tendril {
@@ -159,7 +162,8 @@ impl Setup {
             "misc",
             self.parent_dir.clone(),
             TendrilMode::DirOverwrite,
-        ).unwrap()
+        )
+        .unwrap()
     }
 
     pub fn subdir_file_tendril(&self) -> Tendril {
@@ -168,7 +172,8 @@ impl Setup {
             "SubDir/misc.txt",
             self.parent_dir.clone(),
             TendrilMode::DirOverwrite,
-        ).unwrap()
+        )
+        .unwrap()
     }
 
     pub fn subdir_dir_tendril(&self) -> Tendril {
@@ -177,7 +182,8 @@ impl Setup {
             "SubDir/misc",
             self.parent_dir.clone(),
             TendrilMode::DirOverwrite,
-        ).unwrap()
+        )
+        .unwrap()
     }
 
     pub fn make_parent_dir(&self) {
@@ -223,7 +229,11 @@ impl Setup {
 
     pub fn make_local_subdir_nested_file(&self) {
         self.make_local_subdir_dir();
-        write(&self.local_subdir_nested_file, "Local subdir nested file contents").unwrap();
+        write(
+            &self.local_subdir_nested_file,
+            "Local subdir nested file contents",
+        )
+        .unwrap();
     }
 
     pub fn make_remote_file(&self) {
@@ -250,7 +260,11 @@ impl Setup {
 
     pub fn make_remote_subdir_nested_file(&self) {
         self.make_remote_subdir_dir();
-        write(&self.remote_subdir_nested_file, "Remote subdir nested file contents").unwrap();
+        write(
+            &self.remote_subdir_nested_file,
+            "Remote subdir nested file contents",
+        )
+        .unwrap();
     }
 
     pub fn make_target_file(&self) {

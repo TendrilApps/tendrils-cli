@@ -12,5 +12,5 @@ mod pull_tendril_tests;
 mod push_tendril_tests;
 mod resolve_path_variable_tests;
 mod resolve_tendril_bundle_tests;
-mod tendril_tests;
 mod tendril_action_tests;
+mod tendril_tests;

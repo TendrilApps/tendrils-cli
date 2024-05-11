@@ -20,16 +20,18 @@ pub struct TendrilBundle {
     #[serde(deserialize_with = "one_or_many_to_vec")]
     pub parents: Vec<String>,
 
-    /// `true` indicates that each tendril will have [`crate::TendrilMode::DirMerge`].
-    /// `false` indicates [`crate::TendrilMode::DirOverwrite`]. Note: this field
+    /// `true` indicates that each tendril will have
+    /// [`crate::TendrilMode::DirMerge`]. `false` indicates
+    /// [`crate::TendrilMode::DirOverwrite`]. Note: this field
     /// may be overriden depending on the value of `link`.
     #[serde(rename = "dir-merge")]
     #[serde(default)]
     pub dir_merge: bool,
 
-    /// `true` indicates that each tendril will have [`crate::TendrilMode::Link`],
-    /// regardless of what the `dir_merge` setting is.
-    /// `false` indicates that the `dir_merge` setting will be used.
+    /// `true` indicates that each tendril will have
+    /// [`crate::TendrilMode::Link`], regardless of what the `dir_merge`
+    /// setting is. `false` indicates that the `dir_merge` setting will be
+    /// used.
     #[serde(default)]
     pub link: bool,
 
@@ -37,7 +39,7 @@ pub struct TendrilBundle {
     /// this tendril is considered to be included in *all* profiles.
     #[serde(default)]
     #[serde(deserialize_with = "one_or_many_to_vec")]
-    pub profiles: Vec<String>
+    pub profiles: Vec<String>,
 }
 
 impl TendrilBundle {
@@ -55,8 +57,10 @@ impl TendrilBundle {
 }
 
 fn one_or_many_to_vec<'de, D>(deserializer: D) -> Result<Vec<String>, D::Error>
-    where D: Deserializer<'de>
+where
+    D: Deserializer<'de>,
 {
-    let one_or_many: OneOrMany<String> = de::Deserialize::deserialize(deserializer)?;
+    let one_or_many: OneOrMany<String> =
+        de::Deserialize::deserialize(deserializer)?;
     Ok(one_or_many.into())
 }

@@ -1,15 +1,12 @@
-use crate::TendrilBundle;
-use crate::enums::ActionMode;
 use crate::filtering::filter_by_mode;
+use crate::{ActionMode, TendrilBundle};
 use rstest::rstest;
 
 #[rstest]
 #[case(ActionMode::Link)]
 #[case(ActionMode::Push)]
 #[case(ActionMode::Pull)]
-fn empty_tendril_list_returns_empty(
-    #[case] action_mode: ActionMode,
-) {
+fn empty_tendril_list_returns_empty(#[case] action_mode: ActionMode) {
     let tendrils = vec![];
 
     let actual = filter_by_mode(tendrils, action_mode);

@@ -1,4 +1,3 @@
-use crate::TendrilBundle;
 use crate::filtering::filter_by_parents;
 use crate::filtering::tests::filter_tendrils_tests::{
     string_filter_empty_tests,
@@ -7,6 +6,7 @@ use crate::filtering::tests::filter_tendrils_tests::{
     supported_asterisk_literals,
     supported_weird_values,
 };
+use crate::TendrilBundle;
 use rstest::rstest;
 use rstest_reuse::{self, apply};
 
@@ -20,9 +20,7 @@ fn empty_tendril_list_returns_empty(#[case] filters: &[String]) {
 }
 
 #[apply(string_filter_empty_tests)]
-fn tendril_with_empty_parents_list_not_included(
-    #[case] filters: &[String]
-) {
+fn tendril_with_empty_parents_list_not_included(#[case] filters: &[String]) {
     let mut t1 = TendrilBundle::new("SomeApp", vec!["misc.txt"]);
     t1.parents = vec![];
     let mut t2 = TendrilBundle::new("SomeApp", vec!["misc.txt"]);
@@ -58,7 +56,9 @@ fn parent_included_if_any_pattern_matches() {
     t1.parents = vec!["p/1".to_string(), "p/2".to_string()];
     let tendrils = vec![t1.clone()];
     let filters = vec![
-        "I don't match".to_string(), "me neither".to_string(), "p/1".to_string()
+        "I don't match".to_string(),
+        "me neither".to_string(),
+        "p/1".to_string(),
     ];
 
     let actual = filter_by_parents(tendrils, &filters);
@@ -69,9 +69,7 @@ fn parent_included_if_any_pattern_matches() {
 }
 
 #[apply(string_filter_non_match_tests)]
-fn tendril_not_included_if_no_parent_matches(
-    #[case] filters: &[String]
-) {
+fn tendril_not_included_if_no_parent_matches(#[case] filters: &[String]) {
     let mut t1 = TendrilBundle::new("SomeApp", vec!["misc.txt"]);
     t1.parents = vec!["v1".to_string(), "v2".to_string()];
     let mut t2 = TendrilBundle::new("SomeApp", vec!["misc.txt"]);
@@ -90,11 +88,7 @@ fn duplicate_filter_parents_only_returns_tendril_once() {
     let mut t2 = TendrilBundle::new("SomeApp", vec!["misc.txt"]);
     t2.parents = vec!["p/2".to_string()];
     let tendrils = vec![t1.clone(), t2.clone()];
-    let filters = [
-        "p/1".to_string(),
-        "p/1".to_string(),
-        "p/1".to_string(),
-    ];
+    let filters = ["p/1".to_string(), "p/1".to_string(), "p/1".to_string()];
 
     let actual = filter_by_parents(tendrils, &filters);
 
@@ -104,11 +98,7 @@ fn duplicate_filter_parents_only_returns_tendril_once() {
 #[test]
 fn duplicate_tendril_parents_only_returns_tendril_once() {
     let mut t1 = TendrilBundle::new("SomeApp", vec!["misc.txt"]);
-    t1.parents = vec![
-        "p/1".to_string(),
-        "p/1".to_string(),
-        "p/1".to_string(),
-    ];
+    t1.parents = vec!["p/1".to_string(), "p/1".to_string(), "p/1".to_string()];
     let mut t2 = TendrilBundle::new("SomeApp", vec!["misc.txt"]);
     t2.parents = vec!["p/2".to_string()];
     let tendrils = vec![t1.clone(), t2.clone()];
@@ -134,11 +124,9 @@ fn duplicate_tendrils_returns_all_instances() {
 }
 
 #[apply(supported_weird_values)]
-fn filter_supports_weird_parents(
-    #[case] parent: String
-) {
+fn filter_supports_weird_parents(#[case] parent: String) {
     let mut t1 = TendrilBundle::new("SomeApp", vec!["misc.txt"]);
-    t1.parents  = vec![parent.clone()];
+    t1.parents = vec![parent.clone()];
     let mut t2 = TendrilBundle::new("SomeApp", vec!["misc.txt"]);
     t2.parents = vec!["p/2".to_string()];
     let tendrils = vec![t1.clone(), t2.clone()];
@@ -155,7 +143,7 @@ fn filter_supports_asterisk_literals(
     #[case] filter: String,
 ) {
     let mut t1 = TendrilBundle::new("SomeApp", vec!["misc.txt"]);
-    t1.parents  = vec![parent];
+    t1.parents = vec![parent];
     let mut t2 = TendrilBundle::new("SomeApp", vec!["misc.txt"]);
     t2.parents = vec!["p/2".to_string()];
     let tendrils = vec![t1.clone(), t2.clone()];

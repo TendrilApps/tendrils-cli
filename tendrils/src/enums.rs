@@ -24,9 +24,7 @@ pub enum ActionMode {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum InitError {
     /// A general file system error
-    IoError {
-        kind: std::io::ErrorKind,
-    },
+    IoError { kind: std::io::ErrorKind },
 
     /// The folder to initialize is already a
     /// *Tendrils* folder
@@ -38,9 +36,7 @@ pub enum InitError {
 
 impl From<std::io::Error> for InitError {
     fn from(err: std::io::Error) -> Self {
-        InitError::IoError {
-            kind: err.kind(),
-        }
+        InitError::IoError { kind: err.kind() }
     }
 }
 
@@ -50,9 +46,7 @@ impl From<std::io::Error> for InitError {
 pub enum GetTendrilsError {
     /// A general file system error while reading the
     /// `tendrils.json` file.
-    IoError {
-        kind: std::io::ErrorKind,
-    },
+    IoError { kind: std::io::ErrorKind },
 
     /// An error while parsing the json from the file.
     ParseError(String),
@@ -60,7 +54,7 @@ pub enum GetTendrilsError {
 
 impl From<std::io::Error> for GetTendrilsError {
     fn from(err: std::io::Error) -> Self {
-        GetTendrilsError::IoError {kind: err.kind()}
+        GetTendrilsError::IoError { kind: err.kind() }
     }
 }
 
@@ -73,11 +67,10 @@ impl From<serde_json::Error> for GetTendrilsError {
 /// Indicates a successful tendril action.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum TendrilActionSuccess {
-    // To keep the memory size of this enum to a minimum, the new and overwrite
-    // variations are separated as their own invariants. If needed in the
-    // future this could become a nested enum, although this would
-    // increase the memory size
-
+    // To keep the memory size of this enum to a minimum, the new and
+    // overwrite variations are separated as their own invariants. If
+    // needed in the future this could become a nested enum, although this
+    // would increase the memory size
     /// A successful action that created a new file system object at the
     /// destination.
     New,
@@ -101,7 +94,9 @@ impl ToString for TendrilActionSuccess {
             TendrilActionSuccess::New => "Created".to_string(),
             TendrilActionSuccess::NewSkipped => "Skipped creation".to_string(),
             TendrilActionSuccess::Overwrite => "Overwritten".to_string(),
-            TendrilActionSuccess::OverwriteSkipped => "Skipped overwrite".to_string(),
+            TendrilActionSuccess::OverwriteSkipped => {
+                "Skipped overwrite".to_string()
+            }
         }
     }
 }
@@ -145,69 +140,67 @@ pub enum TendrilActionError {
 
 impl From<std::io::Error> for TendrilActionError {
     fn from(err: std::io::Error) -> Self {
-        TendrilActionError::IoError {
-            kind: err.kind(),
-            loc: Location::Unknown,
-        }
+        TendrilActionError::IoError { kind: err.kind(), loc: Location::Unknown }
     }
 }
 
 impl From<std::io::ErrorKind> for TendrilActionError {
     fn from(e_kind: std::io::ErrorKind) -> Self {
-        TendrilActionError::IoError {
-            kind: e_kind,
-            loc: Location::Unknown,
-        }
+        TendrilActionError::IoError { kind: e_kind, loc: Location::Unknown }
     }
 }
 
 impl ToString for TendrilActionError {
     fn to_string(&self) -> String {
         use std::io::ErrorKind::NotFound;
-        use FsoType::{Dir, File, SymFile, SymDir};
+        use FsoType::{Dir, File, SymDir, SymFile};
         use Location::{Dest, Source, Unknown};
         match self {
-            TendrilActionError::IoError {kind: NotFound, loc: Source} => {
+            TendrilActionError::IoError { kind: NotFound, loc: Source } => {
                 "Source not found".to_string()
-            },
-            TendrilActionError::IoError {kind: NotFound, loc: Dest} => {
+            }
+            TendrilActionError::IoError { kind: NotFound, loc: Dest } => {
                 "Destination not found".to_string()
-            },
-            TendrilActionError::IoError {kind: NotFound, loc: Unknown} => {
+            }
+            TendrilActionError::IoError { kind: NotFound, loc: Unknown } => {
                 "Not found".to_string()
-            },
-            TendrilActionError::IoError {kind: e_kind, loc: Source} => {
+            }
+            TendrilActionError::IoError { kind: e_kind, loc: Source } => {
                 format!("{:?} error at source", e_kind)
-            },
-            TendrilActionError::IoError {kind: e_kind, loc: Dest} => {
+            }
+            TendrilActionError::IoError { kind: e_kind, loc: Dest } => {
                 format!("{:?} error at destination", e_kind)
-            },
-            TendrilActionError::IoError {kind: e_kind, loc: Unknown} => {
+            }
+            TendrilActionError::IoError { kind: e_kind, loc: Unknown } => {
                 format!("{:?} error", e_kind)
-            },
-            TendrilActionError::ModeMismatch => "Wrong tendril style".to_string(),
+            }
+            TendrilActionError::ModeMismatch => {
+                "Wrong tendril style".to_string()
+            }
             TendrilActionError::Recursion => "Recursive tendril".to_string(),
-            TendrilActionError::TypeMismatch {loc: Source, mistype: File} => {
+            TendrilActionError::TypeMismatch { loc: Source, mistype: File } => {
                 "Unexpected file at source".to_string()
-            },
-            TendrilActionError::TypeMismatch {loc: Source, mistype: Dir} => {
+            }
+            TendrilActionError::TypeMismatch { loc: Source, mistype: Dir } => {
                 "Unexpected directory at source".to_string()
-            },
-            TendrilActionError::TypeMismatch {loc: Source, mistype: SymFile | SymDir} => {
-                "Unexpected symlink at source".to_string()
-            },
-            TendrilActionError::TypeMismatch {loc: Dest, mistype: File} => {
+            }
+            TendrilActionError::TypeMismatch {
+                loc: Source,
+                mistype: SymFile | SymDir,
+            } => "Unexpected symlink at source".to_string(),
+            TendrilActionError::TypeMismatch { loc: Dest, mistype: File } => {
                 "Unexpected file at destination".to_string()
-            },
-            TendrilActionError::TypeMismatch {loc: Dest, mistype: Dir} => {
+            }
+            TendrilActionError::TypeMismatch { loc: Dest, mistype: Dir } => {
                 "Unexpected directory at destination".to_string()
-            },
-            TendrilActionError::TypeMismatch {loc: Dest, mistype: SymFile | SymDir} => {
-                "Unexpected symlink at destination".to_string()
-            },
-            TendrilActionError::TypeMismatch {loc: Unknown, mistype: _} => {
+            }
+            TendrilActionError::TypeMismatch {
+                loc: Dest,
+                mistype: SymFile | SymDir,
+            } => "Unexpected symlink at destination".to_string(),
+            TendrilActionError::TypeMismatch { loc: Unknown, mistype: _ } => {
                 "Unexpected file system object".to_string()
-            },
+            }
         }
     }
 }
@@ -285,7 +278,7 @@ impl<T> From<Vec<T>> for OneOrMany<T> {
     fn from(mut from: Vec<T>) -> Self {
         match from.len() {
             1 => OneOrMany::One(from.remove(0)),
-            _ => OneOrMany::Vec(from)
+            _ => OneOrMany::Vec(from),
         }
     }
 }

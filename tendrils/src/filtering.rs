@@ -1,5 +1,4 @@
-use crate::tendril_bundle::TendrilBundle;
-use crate::enums::ActionMode;
+use crate::{ActionMode, TendrilBundle};
 use glob_match::glob_match;
 
 #[cfg(test)]
@@ -14,8 +13,8 @@ pub struct FilterSpec<'a> {
     /// `None`, all tendrils will match.
     pub mode: Option<ActionMode>,
 
-    /// Matches only those tendrils whose group matches any of the given groups.
-    /// Glob patterns are supported.
+    /// Matches only those tendrils whose group matches any of the given
+    /// groups. Glob patterns are supported.
     pub groups: &'a [String],
 
     /// Matches only those tendril names that match any of the given names.
@@ -30,8 +29,8 @@ pub struct FilterSpec<'a> {
     /// are supported.
     pub parents: &'a [String],
 
-    /// Matches only those tendrils that match any of the given profiles, and those
-    /// that belong to all profiles (i.e. those that do not have any
+    /// Matches only those tendrils that match any of the given profiles, and
+    /// those that belong to all profiles (i.e. those that do not have any
     /// profiles defined). Glob patterns
     /// are supported.
     pub profiles: &'a [String],
@@ -41,11 +40,12 @@ pub struct FilterSpec<'a> {
 /// The filters are cumulative (i.e. the tendril must match all filters to
 /// be included in the final result).
 pub fn filter_tendrils(
-    tendrils: Vec<TendrilBundle>, filter: FilterSpec
+    tendrils: Vec<TendrilBundle>,
+    filter: FilterSpec,
 ) -> Vec<TendrilBundle> {
     let mut filtered = match filter.mode {
         Some(v) => filter_by_mode(tendrils.to_vec(), v),
-        None => tendrils.to_vec()
+        None => tendrils.to_vec(),
     };
 
     filtered = filter_by_profiles(filtered, filter.profiles);
@@ -54,36 +54,53 @@ pub fn filter_tendrils(
     filter_by_parents(filtered, filter.parents)
 }
 
-fn filter_by_mode(tendrils: Vec<TendrilBundle>, mode: ActionMode) -> Vec<TendrilBundle> {
-    tendrils.into_iter()
+fn filter_by_mode(
+    tendrils: Vec<TendrilBundle>,
+    mode: ActionMode,
+) -> Vec<TendrilBundle> {
+    tendrils
+        .into_iter()
         .filter(|t| t.link == (mode == ActionMode::Link))
         .collect()
 }
 
-fn filter_by_profiles(tendrils: Vec<TendrilBundle>, profiles: &[String]) -> Vec<TendrilBundle> {
+fn filter_by_profiles(
+    tendrils: Vec<TendrilBundle>,
+    profiles: &[String],
+) -> Vec<TendrilBundle> {
     if profiles.is_empty() {
         return tendrils;
     }
 
-    tendrils.into_iter().filter(|t| -> bool {
-        t.profiles.is_empty()
-        || t.profiles.iter().any(|p| {
-            profiles.iter().any(|f| glob_match(f, p))
+    tendrils
+        .into_iter()
+        .filter(|t| -> bool {
+            t.profiles.is_empty()
+                || t.profiles
+                    .iter()
+                    .any(|p| profiles.iter().any(|f| glob_match(f, p)))
         })
-    }).collect()
+        .collect()
 }
 
-fn filter_by_group(tendrils: Vec<TendrilBundle>, groups: &[String]) -> Vec<TendrilBundle> {
+fn filter_by_group(
+    tendrils: Vec<TendrilBundle>,
+    groups: &[String],
+) -> Vec<TendrilBundle> {
     if groups.is_empty() {
         return tendrils;
     }
 
-    tendrils.into_iter().filter(|t| groups.iter().any(|f| {
-        glob_match(f, &t.group)
-    })).collect()
+    tendrils
+        .into_iter()
+        .filter(|t| groups.iter().any(|f| glob_match(f, &t.group)))
+        .collect()
 }
 
-fn filter_by_names(mut tendrils: Vec<TendrilBundle>, names: &[String]) -> Vec<TendrilBundle> {
+fn filter_by_names(
+    mut tendrils: Vec<TendrilBundle>,
+    names: &[String],
+) -> Vec<TendrilBundle> {
     if names.is_empty() {
         return tendrils;
     }
@@ -103,7 +120,10 @@ fn filter_by_names(mut tendrils: Vec<TendrilBundle>, names: &[String]) -> Vec<Te
     tendrils.into_iter().filter(|t| !t.names.is_empty()).collect()
 }
 
-fn filter_by_parents(mut tendrils: Vec<TendrilBundle>, parents: &[String]) -> Vec<TendrilBundle> {
+fn filter_by_parents(
+    mut tendrils: Vec<TendrilBundle>,
+    parents: &[String],
+) -> Vec<TendrilBundle> {
     if parents.is_empty() {
         return tendrils;
     }

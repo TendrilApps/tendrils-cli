@@ -1,8 +1,8 @@
-use crate::{get_tendrils_dir, is_tendrils_dir};
 use crate::test_utils::get_disposable_dir;
+use crate::{get_tendrils_dir, is_tendrils_dir};
 use serial_test::serial;
-use std::fs::{create_dir_all, File};
 use std::env::{remove_var, set_var};
+use std::fs::{create_dir_all, File};
 use std::path::PathBuf;
 use tempdir::TempDir;
 
@@ -54,7 +54,7 @@ fn starting_dir_valid_env_var_not_set_returns_starting_dir() {
 #[test]
 #[serial("mut-env-var-td-folder")]
 fn starting_dir_valid_env_var_valid_returns_starting_dir() {
-    let temp = TempDir::new_in( get_disposable_dir(), "Temp").unwrap();
+    let temp = TempDir::new_in(get_disposable_dir(), "Temp").unwrap();
     let starting_td_dir = temp.path().join("StartingTendrilsDir");
     let env_var_td_dir = temp.path().join("EnvVarTendrilsDir");
     create_dir_all(&starting_td_dir).unwrap();

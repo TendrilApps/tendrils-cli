@@ -1,4 +1,3 @@
-use crate::TendrilBundle;
 use crate::filtering::filter_by_profiles;
 use crate::filtering::tests::filter_tendrils_tests::{
     string_filter_empty_tests,
@@ -7,6 +6,7 @@ use crate::filtering::tests::filter_tendrils_tests::{
     supported_asterisk_literals,
     supported_weird_values,
 };
+use crate::TendrilBundle;
 use rstest::rstest;
 use rstest_reuse::{self, apply};
 
@@ -22,7 +22,7 @@ fn empty_tendril_list_returns_empty(#[case] filters: &[String]) {
 #[apply(string_filter_empty_tests)]
 #[case(&[])]
 fn tendril_with_empty_profiles_list_included_in_all(
-    #[case] filters: &[String]
+    #[case] filters: &[String],
 ) {
     let t1 = TendrilBundle::new("SomeApp", vec!["misc.txt"]);
     assert!(t1.profiles.is_empty());
@@ -50,16 +50,12 @@ fn tendril_only_included_if_any_profile_matches(
     // Check that at least one of the expected profile
     // matches is included. Non-matching profiles are still
     // included in the list (unlike name filtering).
-    assert!(
-        t1.profiles.iter().any(|p| {
-            exp_matches.contains(&p.as_str())
-        })
-    );
+    assert!(t1.profiles.iter().any(|p| { exp_matches.contains(&p.as_str()) }));
 }
 
 #[apply(string_filter_non_match_tests)]
 fn tendril_not_included_if_not_empty_and_no_profile_matches(
-    #[case] filters: &[String]
+    #[case] filters: &[String],
 ) {
     let mut t1 = TendrilBundle::new("SomeApp", vec!["misc.txt"]);
     t1.profiles = vec!["v1".to_string(), "v2".to_string()];
@@ -79,11 +75,7 @@ fn duplicate_filter_profiles_only_returns_tendril_once() {
     let mut t2 = TendrilBundle::new("SomeApp", vec!["misc2.txt"]);
     t2.profiles = vec!["P2".to_string()];
     let tendrils = vec![t1.clone(), t2.clone()];
-    let filters = [
-        "P1".to_string(),
-        "P1".to_string(),
-        "P1".to_string(),
-    ];
+    let filters = ["P1".to_string(), "P1".to_string(), "P1".to_string()];
 
     let actual = filter_by_profiles(tendrils, &filters);
 
@@ -93,11 +85,7 @@ fn duplicate_filter_profiles_only_returns_tendril_once() {
 #[test]
 fn duplicate_tendril_profiles_only_returns_tendril_once() {
     let mut t1 = TendrilBundle::new("SomeApp", vec!["misc.txt"]);
-    t1.profiles = vec![
-        "P1".to_string(),
-        "P1".to_string(),
-        "P1".to_string(),
-    ];
+    t1.profiles = vec!["P1".to_string(), "P1".to_string(), "P1".to_string()];
     let mut t2 = TendrilBundle::new("SomeApp", vec!["misc2.txt"]);
     t2.profiles = vec!["P2".to_string()];
     let tendrils = vec![t1.clone(), t2.clone()];
@@ -123,9 +111,7 @@ fn duplicate_tendrils_returns_all_instances() {
 }
 
 #[apply(supported_weird_values)]
-fn filter_supports_weird_profiles(
-    #[case] profile: String
-) {
+fn filter_supports_weird_profiles(#[case] profile: String) {
     let mut t1 = TendrilBundle::new("SomeApp", vec!["misc.txt"]);
     t1.profiles = vec![profile.clone()];
     let mut t2 = TendrilBundle::new("SomeApp", vec!["misc2.txt"]);
