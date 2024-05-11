@@ -1,7 +1,8 @@
-use clap::{Args, Parser, Subcommand};
 use crate::writer::Writer;
+use clap::{Args, Parser, Subcommand};
 use inline_colorization::{color_bright_green, color_bright_red, color_reset};
 mod td_table;
+use std::path::PathBuf;
 use td_table::TdTable;
 use tendrils::{
     ActionLog,
@@ -11,7 +12,6 @@ use tendrils::{
     TendrilLog,
     TendrilReport,
 };
-use std::path::PathBuf;
 
 /// A CLI tool for managing tendrils
 #[derive(Parser, Debug)]
@@ -74,7 +74,7 @@ pub enum TendrilsSubcommands {
 
         #[clap(flatten)]
         filter_args: FilterArgs,
-    }
+    },
 }
 
 #[derive(Args, Clone, Debug, Eq, PartialEq)]
@@ -114,7 +114,11 @@ pub struct FilterArgs {
 
 // Note: For ansi styling to render properly with 'tabled' tables,
 // its 'ansi' feature must be enabled
-pub fn ansi_style(text: &str, ansi_prefix: String, ansi_suffix: &str) -> String {
+pub fn ansi_style(
+    text: &str,
+    ansi_prefix: String,
+    ansi_suffix: &str,
+) -> String {
     ansi_prefix + text + ansi_suffix
 }
 
@@ -127,42 +131,39 @@ pub fn ansi_hyperlink(url: &str, display: &str) -> String {
 }
 
 fn ansi_styled_resolved_path(
-    path: &Result<PathBuf, InvalidTendrilError>
+    path: &Result<PathBuf, InvalidTendrilError>,
 ) -> String {
     match path {
         Ok(p) => {
             let raw_path_text = p.to_string_lossy().to_string();
             ansi_hyperlink(&raw_path_text, &raw_path_text)
-        },
-        Err(e) => {
-            ansi_style(
-                &format!("{:?}", e),
-                color_bright_red.to_owned(),
-                color_reset
-            )
         }
+        Err(e) => ansi_style(
+            &format!("{:?}", e),
+            color_bright_red.to_owned(),
+            color_reset,
+        ),
     }
 }
 
 fn ansi_styled_result(
-    result: &Result<TendrilActionSuccess, TendrilActionError>
+    result: &Result<TendrilActionSuccess, TendrilActionError>,
 ) -> String {
-
     match result {
         Ok(r) => {
             let text = r.to_string();
             ansi_style(&text, color_bright_green.to_owned(), color_reset)
-        },
+        }
         Err(e) => {
             let text = e.to_string();
             ansi_style(&text, color_bright_red.to_owned(), color_reset)
-        },
+        }
     }
 }
 
 pub fn print_reports(
     reports: &[TendrilReport<ActionLog>],
-    writer: &mut impl Writer
+    writer: &mut impl Writer,
 ) {
     if reports.is_empty() {
         return;
@@ -178,17 +179,15 @@ pub fn print_reports(
 
     for report in reports {
         let (styled_path, styled_result) = match &report.log {
-            Ok(log) => {(
-                ansi_styled_resolved_path(
-                    &Ok(log.resolved_path().clone())
-                ),
-                ansi_styled_result(&log.result)
-            )},
-            Err(e) => {(
+            Ok(log) => (
+                ansi_styled_resolved_path(&Ok(log.resolved_path().clone())),
+                ansi_styled_result(&log.result),
+            ),
+            Err(e) => (
                 // Print the resolving error in the result column
                 "".to_string(),
                 ansi_styled_resolved_path(&Err(e.clone())),
-            )},
+            ),
         };
 
         tbl.push_row(&[
@@ -203,14 +202,17 @@ pub fn print_reports(
     print_totals(reports, writer);
 }
 
-fn print_totals(reports: &[TendrilReport<ActionLog>], writer: & mut impl Writer) {
-    let total_successes = reports.iter().filter(|r| {
-        match &r.log {
+fn print_totals(
+    reports: &[TendrilReport<ActionLog>],
+    writer: &mut impl Writer,
+) {
+    let total_successes = reports
+        .iter()
+        .filter(|r| match &r.log {
             Ok(log) => log.result.is_ok(),
             _ => false,
-        }
-    })
-    .count();
+        })
+        .count();
 
     let total = reports.len();
     let total_failures = total - total_successes;
@@ -218,10 +220,14 @@ fn print_totals(reports: &[TendrilReport<ActionLog>], writer: & mut impl Writer)
     writer.writeln(&format!(
         "Total: {total}, Successful: {}, Failed: {}",
         ansi_style(
-            &total_successes.to_string(), color_bright_green.to_string(), color_reset
+            &total_successes.to_string(),
+            color_bright_green.to_string(),
+            color_reset
         ),
         ansi_style(
-             &total_failures.to_string(), color_bright_red.to_string(), color_reset
+            &total_failures.to_string(),
+            color_bright_red.to_string(),
+            color_reset
         ),
     ));
 }

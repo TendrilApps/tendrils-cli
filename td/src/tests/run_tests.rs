@@ -1,8 +1,10 @@
-use crate::{ERR_PREFIX, run};
 use crate::cli::{ActionArgs, FilterArgs, TendrilCliArgs, TendrilsSubcommands};
-use crate::writer::Writer;
+use crate::{run, Writer, ERR_PREFIX};
 use inline_colorization::{color_bright_green, color_bright_red, color_reset};
-use tendrils::{ActionMode, is_tendrils_dir};
+use rstest::rstest;
+use serial_test::serial;
+use std::fs::{create_dir_all, write};
+use std::path::PathBuf;
 use tendrils::test_utils::{
     get_disposable_dir,
     is_empty,
@@ -11,10 +13,8 @@ use tendrils::test_utils::{
     symlink_expose,
     Setup,
 };
-use rstest::rstest;
-use serial_test::serial;
-use std::fs::{create_dir_all, write};
-use std::path::PathBuf;
+use tendrils::{is_tendrils_dir, ActionMode};
+
 const TENDRILS_VAR_NAME: &str = "TENDRILS_FOLDER";
 
 struct MockWriter {
@@ -23,13 +23,11 @@ struct MockWriter {
 
 impl MockWriter {
     fn new() -> MockWriter {
-        MockWriter {
-            all_output: "".to_string(),
-        }
+        MockWriter { all_output: "".to_string() }
     }
 
     fn all_output_lines(&self) -> Vec<String> {
-        self.all_output.lines().map( |x| String::from(x) ).collect()
+        self.all_output.lines().map(|x| String::from(x)).collect()
     }
 }
 
@@ -43,35 +41,22 @@ fn build_action_subcommand(
     parents: Vec<String>,
     profiles: Vec<String>,
 ) -> TendrilsSubcommands {
-    let action_args = ActionArgs {
-        path,
-        dry_run,
-        force,
-    };
-    let filter_args = FilterArgs {
-        groups,
-        names,
-        parents,
-        profiles,
-    };
+    let action_args = ActionArgs { path, dry_run, force };
+    let filter_args = FilterArgs { groups, names, parents, profiles };
 
     match mode {
-        ActionMode::Pull => TendrilsSubcommands::Pull {
-            action_args,
-            filter_args,
-        },
-        ActionMode::Push => TendrilsSubcommands::Push {
-            action_args,
-            filter_args,
-        },
-        ActionMode::Link => TendrilsSubcommands::Link {
-            action_args,
-            filter_args,
-        },
-        ActionMode::Out => TendrilsSubcommands::Out {
-            action_args,
-            filter_args,
-        },
+        ActionMode::Pull => {
+            TendrilsSubcommands::Pull { action_args, filter_args }
+        }
+        ActionMode::Push => {
+            TendrilsSubcommands::Push { action_args, filter_args }
+        }
+        ActionMode::Link => {
+            TendrilsSubcommands::Link { action_args, filter_args }
+        }
+        ActionMode::Out => {
+            TendrilsSubcommands::Out { action_args, filter_args }
+        }
     }
 }
 
@@ -92,27 +77,25 @@ impl Writer for MockWriter {
 #[serial("cd")]
 fn init_no_path_given_uses_current_dir(#[case] force: bool) {
     let mut writer = MockWriter::new();
-    let temp_dir = tempdir::TempDir::new_in(
-        get_disposable_dir(),
-        "InitFolder",
-    ).unwrap();
+    let temp_dir =
+        tempdir::TempDir::new_in(get_disposable_dir(), "InitFolder").unwrap();
     std::env::set_current_dir(temp_dir.path()).unwrap();
 
-    let args = TendrilCliArgs{
-        tendrils_command: TendrilsSubcommands::Init {
-            force,
-            path: None,
-        }
+    let args = TendrilCliArgs {
+        tendrils_command: TendrilsSubcommands::Init { force, path: None },
     };
 
     let actual_exit_code = run(args, &mut writer);
 
     assert_eq!(actual_exit_code, 0);
     assert!(temp_dir.path().join("tendrils.json").exists());
-    assert_eq!(writer.all_output, format!(
-        "Created a Tendrils folder at: {}.\n",
-        temp_dir.path().to_string_lossy()
-    ));
+    assert_eq!(
+        writer.all_output,
+        format!(
+            "Created a Tendrils folder at: {}.\n",
+            temp_dir.path().to_string_lossy()
+        )
+    );
 
     // Cleanup
     std::env::set_current_dir(temp_dir.path().parent().unwrap()).unwrap();
@@ -122,12 +105,12 @@ fn init_no_path_given_uses_current_dir(#[case] force: bool) {
 #[case(true)]
 #[case(false)]
 #[serial("cd")]
-fn init_path_given_uses_given_path_and_ignores_valid_current_dir(#[case] force: bool) {
+fn init_path_given_uses_given_path_and_ignores_valid_current_dir(
+    #[case] force: bool,
+) {
     let mut writer = MockWriter::new();
-    let temp_dir = tempdir::TempDir::new_in(
-        get_disposable_dir(),
-        "TempDir",
-    ).unwrap();
+    let temp_dir =
+        tempdir::TempDir::new_in(get_disposable_dir(), "TempDir").unwrap();
     let cd = temp_dir.path().join("CurrentDir");
     let given_dir = temp_dir.path().join("GivenDir");
     create_dir_all(&cd).unwrap();
@@ -135,21 +118,24 @@ fn init_path_given_uses_given_path_and_ignores_valid_current_dir(#[case] force: 
     std::env::set_current_dir(&cd).unwrap();
     assert!(is_empty(&cd));
 
-    let args = TendrilCliArgs{
+    let args = TendrilCliArgs {
         tendrils_command: TendrilsSubcommands::Init {
             force,
             path: Some(given_dir.to_string_lossy().into()),
-        }
+        },
     };
 
     let actual_exit_code = run(args, &mut writer);
 
     assert_eq!(actual_exit_code, 0);
     assert!(given_dir.join("tendrils.json").exists());
-    assert_eq!(writer.all_output, format!(
-        "Created a Tendrils folder at: {}.\n",
-        given_dir.to_string_lossy()
-    ));
+    assert_eq!(
+        writer.all_output,
+        format!(
+            "Created a Tendrils folder at: {}.\n",
+            given_dir.to_string_lossy()
+        )
+    );
 
     // Cleanup
     std::env::set_current_dir(temp_dir.path().parent().unwrap()).unwrap();
@@ -159,12 +145,12 @@ fn init_path_given_uses_given_path_and_ignores_valid_current_dir(#[case] force: 
 #[case(true)]
 #[case(false)]
 #[serial("cd")]
-fn init_path_given_uses_given_path_and_ignores_invalid_current_dir(#[case] force: bool) {
+fn init_path_given_uses_given_path_and_ignores_invalid_current_dir(
+    #[case] force: bool,
+) {
     let mut writer = MockWriter::new();
-    let temp_dir = tempdir::TempDir::new_in(
-        get_disposable_dir(),
-        "TempDir",
-    ).unwrap();
+    let temp_dir =
+        tempdir::TempDir::new_in(get_disposable_dir(), "TempDir").unwrap();
     let cd = temp_dir.path().join("CurrentDir");
     let given_dir = temp_dir.path().join("GivenDir");
     create_dir_all(&cd).unwrap();
@@ -178,21 +164,24 @@ fn init_path_given_uses_given_path_and_ignores_invalid_current_dir(#[case] force
     create_dir_all(cd.join("misc")).unwrap();
     assert!(is_tendrils_dir(&cd));
 
-    let args = TendrilCliArgs{
+    let args = TendrilCliArgs {
         tendrils_command: TendrilsSubcommands::Init {
             force,
             path: Some(given_dir.to_string_lossy().into()),
-        }
+        },
     };
 
     let actual_exit_code = run(args, &mut writer);
 
     assert_eq!(actual_exit_code, 0);
     assert!(given_dir.join("tendrils.json").exists());
-    assert_eq!(writer.all_output, format!(
-        "Created a Tendrils folder at: {}.\n",
-        given_dir.to_string_lossy()
-    ));
+    assert_eq!(
+        writer.all_output,
+        format!(
+            "Created a Tendrils folder at: {}.\n",
+            given_dir.to_string_lossy()
+        )
+    );
 
     // Cleanup
     std::env::set_current_dir(temp_dir.path().parent().unwrap()).unwrap();
@@ -203,12 +192,12 @@ fn init_path_given_uses_given_path_and_ignores_invalid_current_dir(#[case] force
 #[case(false)]
 #[cfg_attr(windows, ignore)]
 #[serial("cd")]
-fn init_path_given_uses_given_path_and_ignores_missing_current_dir(#[case] force: bool) {
+fn init_path_given_uses_given_path_and_ignores_missing_current_dir(
+    #[case] force: bool,
+) {
     let mut writer = MockWriter::new();
-    let temp_dir = tempdir::TempDir::new_in(
-        get_disposable_dir(),
-        "TempDir",
-    ).unwrap();
+    let temp_dir =
+        tempdir::TempDir::new_in(get_disposable_dir(), "TempDir").unwrap();
     let cd = temp_dir.path().join("CurrentDir");
     let given_dir = temp_dir.path().join("GivenDir");
     create_dir_all(&cd).unwrap();
@@ -216,21 +205,24 @@ fn init_path_given_uses_given_path_and_ignores_missing_current_dir(#[case] force
     std::env::set_current_dir(&cd).unwrap();
     std::fs::remove_dir(&cd).unwrap();
 
-    let args = TendrilCliArgs{
+    let args = TendrilCliArgs {
         tendrils_command: TendrilsSubcommands::Init {
             force,
             path: Some(given_dir.to_string_lossy().into()),
-        }
+        },
     };
 
     let actual_exit_code = run(args, &mut writer);
 
     assert_eq!(actual_exit_code, 0);
     assert!(given_dir.join("tendrils.json").exists());
-    assert_eq!(writer.all_output, format!(
-        "Created a Tendrils folder at: {}.\n",
-        given_dir.to_string_lossy()
-    ));
+    assert_eq!(
+        writer.all_output,
+        format!(
+            "Created a Tendrils folder at: {}.\n",
+            given_dir.to_string_lossy()
+        )
+    );
 }
 
 #[rstest]
@@ -240,19 +232,14 @@ fn init_path_given_uses_given_path_and_ignores_missing_current_dir(#[case] force
 #[serial("cd")]
 fn init_no_path_given_and_no_cd_prints_error_message(#[case] force: bool) {
     let mut writer = MockWriter::new();
-    let temp_dir = tempdir::TempDir::new_in(
-        get_disposable_dir(),
-        "CurrentDir",
-    ).unwrap();
+    let temp_dir =
+        tempdir::TempDir::new_in(get_disposable_dir(), "CurrentDir").unwrap();
     let cd = temp_dir.path();
     std::env::set_current_dir(&cd).unwrap();
     std::fs::remove_dir(&cd).unwrap();
 
-    let args = TendrilCliArgs{
-        tendrils_command: TendrilsSubcommands::Init {
-            force,
-            path: None,
-        }
+    let args = TendrilCliArgs {
+        tendrils_command: TendrilsSubcommands::Init { force, path: None },
     };
 
     let actual_exit_code = run(args, &mut writer);
@@ -270,18 +257,16 @@ fn init_no_path_given_and_no_cd_prints_error_message(#[case] force: bool) {
 #[case(false)]
 fn init_non_empty_dir_prints_error_message_unless_forced(#[case] force: bool) {
     let mut writer = MockWriter::new();
-    let temp_dir = tempdir::TempDir::new_in(
-        get_disposable_dir(),
-        "TempDir",
-    ).unwrap();
+    let temp_dir =
+        tempdir::TempDir::new_in(get_disposable_dir(), "TempDir").unwrap();
     let given_dir = temp_dir.path();
     write(given_dir.join("misc.txt"), "").unwrap();
 
-    let args = TendrilCliArgs{
+    let args = TendrilCliArgs {
         tendrils_command: TendrilsSubcommands::Init {
             force,
             path: Some(given_dir.to_string_lossy().into()),
-        }
+        },
     };
 
     let actual_exit_code = run(args, &mut writer);
@@ -289,20 +274,23 @@ fn init_non_empty_dir_prints_error_message_unless_forced(#[case] force: bool) {
     if force {
         assert_eq!(actual_exit_code, 0);
         assert!(given_dir.join("tendrils.json").exists());
-        assert_eq!(writer.all_output, format!(
-            "Created a Tendrils folder at: {}.\n",
-            given_dir.to_string_lossy()
-        ));
+        assert_eq!(
+            writer.all_output,
+            format!(
+                "Created a Tendrils folder at: {}.\n",
+                given_dir.to_string_lossy()
+            )
+        );
     }
     else {
         assert_eq!(actual_exit_code, exitcode::DATAERR);
         assert!(!given_dir.join("tendrils.json").exists());
-        let expected = format!("{ERR_PREFIX}: This folder is not empty. \
-        Creating a Tendrils folder here may interfere with the existing \
-        contents.\n\
-        Consider running with the 'force' flag to ignore this error:\n\
-        \n\
-        td init --force\n");
+        let expected = format!(
+            "{ERR_PREFIX}: This folder is not empty. Creating a Tendrils \
+             folder here may interfere with the existing contents.\nConsider \
+             running with the 'force' flag to ignore this error:\n\ntd init \
+             --force\n"
+        );
         assert_eq!(writer.all_output, expected);
     }
 }
@@ -312,26 +300,24 @@ fn init_non_empty_dir_prints_error_message_unless_forced(#[case] force: bool) {
 #[case(false)]
 fn init_dir_is_already_tendrils_dir_prints_error_message(#[case] force: bool) {
     let mut writer = MockWriter::new();
-    let temp_dir = tempdir::TempDir::new_in(
-        get_disposable_dir(),
-        "TempDir",
-    ).unwrap();
+    let temp_dir =
+        tempdir::TempDir::new_in(get_disposable_dir(), "TempDir").unwrap();
     let given_dir = temp_dir.path();
     write(given_dir.join("tendrils.json"), "").unwrap();
     assert!(is_tendrils_dir(&given_dir));
 
-    let args = TendrilCliArgs{
+    let args = TendrilCliArgs {
         tendrils_command: TendrilsSubcommands::Init {
             force,
             path: Some(given_dir.to_string_lossy().into()),
-        }
+        },
     };
 
     let actual_exit_code = run(args, &mut writer);
 
     assert_eq!(actual_exit_code, exitcode::DATAERR);
     assert_eq!(
-        writer.all_output, 
+        writer.all_output,
         format!("{ERR_PREFIX}: This folder is already a Tendrils folder.\n"),
     );
 }
@@ -343,11 +329,11 @@ fn init_dir_does_not_exist_prints_io_error_message(#[case] force: bool) {
     let mut writer = MockWriter::new();
     let given_dir = PathBuf::from("I do not exist");
 
-    let args = TendrilCliArgs{
+    let args = TendrilCliArgs {
         tendrils_command: TendrilsSubcommands::Init {
             force,
             path: Some(given_dir.to_string_lossy().into()),
-        }
+        },
     };
 
     let actual_exit_code = run(args, &mut writer);
@@ -360,12 +346,11 @@ fn init_dir_does_not_exist_prints_io_error_message(#[case] force: bool) {
 #[serial("mut-env-var-td-folder")]
 fn path_with_env_var_unset_prints_message() {
     let mut writer = MockWriter::new();
-    let args = TendrilCliArgs{
-        tendrils_command: TendrilsSubcommands::Path
-    };
+    let args = TendrilCliArgs { tendrils_command: TendrilsSubcommands::Path };
     std::env::remove_var(TENDRILS_VAR_NAME);
     let expected = format!(
-        "The '{}' environment variable is not set.\n", TENDRILS_VAR_NAME
+        "The '{}' environment variable is not set.\n",
+        TENDRILS_VAR_NAME
     );
 
     let actual_exit_code = run(args, &mut writer);
@@ -378,9 +363,7 @@ fn path_with_env_var_unset_prints_message() {
 #[serial("mut-env-var-td-folder")]
 fn path_with_env_var_set_prints_path() {
     let mut writer = MockWriter::new();
-    let args = TendrilCliArgs{
-        tendrils_command: TendrilsSubcommands::Path
-    };
+    let args = TendrilCliArgs { tendrils_command: TendrilsSubcommands::Path };
     std::env::set_var(TENDRILS_VAR_NAME, "SomePath");
 
     // Formatted as hyperlink
@@ -399,28 +382,30 @@ fn tendril_action_no_path_given_and_no_cd_prints_message(
     #[values(ActionMode::Pull, ActionMode::Push, ActionMode::Link)]
     mode: ActionMode,
 
-    #[values(true, false)]
-    dry_run: bool,
+    #[values(true, false)] dry_run: bool,
 
-    #[values(true, false)]
-    force: bool,
+    #[values(true, false)] force: bool,
 ) {
-    let delete_me = tempdir::TempDir::new_in(
-        get_disposable_dir(),
-        "DeleteMe"
-    ).unwrap();
+    let delete_me =
+        tempdir::TempDir::new_in(get_disposable_dir(), "DeleteMe").unwrap();
     std::env::set_current_dir(delete_me.path()).unwrap();
     std::fs::remove_dir_all(delete_me.path()).unwrap();
 
     let mut writer = MockWriter::new();
     let tendrils_command = build_action_subcommand(
-        None, mode, dry_run, force, vec![], vec![], vec![], vec![]
+        None,
+        mode,
+        dry_run,
+        force,
+        vec![],
+        vec![],
+        vec![],
+        vec![],
     );
-    let args = TendrilCliArgs {tendrils_command};
+    let args = TendrilCliArgs { tendrils_command };
 
-    let expected = format!(
-        "{ERR_PREFIX}: Could not get the current directory.\n"
-    );
+    let expected =
+        format!("{ERR_PREFIX}: Could not get the current directory.\n");
 
     let actual_exit_code = run(args, &mut writer);
 
@@ -436,12 +421,8 @@ fn tendril_action_no_path_given_and_no_cd_prints_message(
 fn tendril_action_given_path_is_not_tendrils_dir_but_cd_is_should_print_message(
     #[values(ActionMode::Pull, ActionMode::Push, ActionMode::Link)]
     mode: ActionMode,
-
-    #[values(true, false)]
-    dry_run: bool,
-
-    #[values(true, false)]
-    force: bool,
+    #[values(true, false)] dry_run: bool,
+    #[values(true, false)] force: bool,
 ) {
     let setup = Setup::new();
     let given_path = PathBuf::from("SomePathThatDoesn'tExist");
@@ -452,13 +433,19 @@ fn tendril_action_given_path_is_not_tendrils_dir_but_cd_is_should_print_message(
     let mut writer = MockWriter::new();
     let path = Some(given_path.to_str().unwrap().to_string());
     let tendrils_command = build_action_subcommand(
-        path, mode, dry_run, force, vec![], vec![], vec![], vec![]
+        path,
+        mode,
+        dry_run,
+        force,
+        vec![],
+        vec![],
+        vec![],
+        vec![],
     );
-    let args = TendrilCliArgs {tendrils_command};
+    let args = TendrilCliArgs { tendrils_command };
 
-    let expected = format!(
-        "{ERR_PREFIX}: The given path is not a Tendrils folder.\n"
-    );
+    let expected =
+        format!("{ERR_PREFIX}: The given path is not a Tendrils folder.\n");
 
     let actual_exit_code = run(args, &mut writer);
 
@@ -476,12 +463,8 @@ fn tendril_action_given_path_is_not_tendrils_dir_but_cd_is_should_print_message(
 fn tendril_action_given_path_and_cd_are_both_tendrils_dirs_uses_given_path(
     #[values(ActionMode::Pull, ActionMode::Push, ActionMode::Link)]
     mode: ActionMode,
-
-    #[values(true, false)]
-    dry_run: bool,
-
-    #[values(true, false)]
-    force: bool,
+    #[values(true, false)] dry_run: bool,
+    #[values(true, false)] force: bool,
 ) {
     let setup = Setup::new();
     let given_path = setup.parent_dir.join("GivenDir");
@@ -495,12 +478,21 @@ fn tendril_action_given_path_and_cd_are_both_tendrils_dirs_uses_given_path(
     let mut writer = MockWriter::new();
     let path = Some(given_path.to_str().unwrap().to_string());
     let tendrils_command = build_action_subcommand(
-        path, mode, dry_run, force, vec![], vec![], vec![], vec![]
+        path,
+        mode,
+        dry_run,
+        force,
+        vec![],
+        vec![],
+        vec![],
+        vec![],
     );
-    let args = TendrilCliArgs {tendrils_command};
+    let args = TendrilCliArgs { tendrils_command };
 
-    let expected = format!("{ERR_PREFIX}: Could not parse the tendrils.json \
-    file.\nEOF while parsing a value at line 1 column 0\n");
+    let expected = format!(
+        "{ERR_PREFIX}: Could not parse the tendrils.json file.\nEOF while \
+         parsing a value at line 1 column 0\n"
+    );
 
     let actual_exit_code = run(args, &mut writer);
 
@@ -519,16 +511,15 @@ fn tendril_action_given_path_and_cd_are_both_tendrils_dirs_uses_given_path(
 #[case(ActionMode::Link)]
 fn tendril_action_dry_run_does_not_modify(
     #[case] mode: ActionMode,
-
-    #[values(true, false)]
-    force: bool,
+    #[values(true, false)] force: bool,
 ) {
     let setup = Setup::new();
     setup.make_local_file();
     setup.make_target_file();
     if mode == ActionMode::Link {
         // Setup remote file as symlink to some random (non-tendril) file
-        symlink_expose(&setup.remote_file, &setup.target_file, false, false).unwrap();
+        symlink_expose(&setup.remote_file, &setup.target_file, false, false)
+            .unwrap();
     }
     else {
         setup.make_remote_file();
@@ -543,9 +534,16 @@ fn tendril_action_dry_run_does_not_modify(
     let path = Some(setup.td_dir.to_str().unwrap().to_string());
     let dry_run = true;
     let tendrils_command = build_action_subcommand(
-        path, mode.clone(), dry_run, force, vec![], vec![], vec![], vec![]
+        path,
+        mode.clone(),
+        dry_run,
+        force,
+        vec![],
+        vec![],
+        vec![],
+        vec![],
     );
-    let args = TendrilCliArgs {tendrils_command};
+    let args = TendrilCliArgs { tendrils_command };
 
     let actual_exit_code = run(args, &mut writer);
 
@@ -560,9 +558,10 @@ fn tendril_action_dry_run_does_not_modify(
     assert!(writer.all_output_lines()[3].contains("Skipped"));
     assert_eq!(
         writer.all_output_lines().last().unwrap(),
-        &format!("Total: 1, \
-        Successful: {color_bright_green}1{color_reset}, \
-        Failed: {color_bright_red}0{color_reset}")
+        &format!(
+            "Total: 1, Successful: {color_bright_green}1{color_reset}, \
+             Failed: {color_bright_red}0{color_reset}"
+        )
     );
     assert_eq!(setup.td_dir.read_dir().unwrap().into_iter().count(), 2);
 }
@@ -573,12 +572,8 @@ fn tendril_action_dry_run_does_not_modify(
 #[case(ActionMode::Link)]
 fn tendril_action_tendrils_are_filtered_by_mode(
     #[case] mode: ActionMode,
-
-    #[values(true, false)]
-    dry_run: bool,
-
-    #[values(true, false)]
-    force: bool,
+    #[values(true, false)] dry_run: bool,
+    #[values(true, false)] force: bool,
 ) {
     let setup = Setup::new();
 
@@ -600,9 +595,16 @@ fn tendril_action_tendrils_are_filtered_by_mode(
     let mut writer = MockWriter::new();
     let path = Some(setup.td_dir.to_str().unwrap().to_string());
     let tendrils_command = build_action_subcommand(
-        path, mode.clone(), dry_run, force, vec![], vec![], vec![], vec![]
+        path,
+        mode.clone(),
+        dry_run,
+        force,
+        vec![],
+        vec![],
+        vec![],
+        vec![],
     );
-    let args = TendrilCliArgs {tendrils_command};
+    let args = TendrilCliArgs { tendrils_command };
 
     let actual_exit_code = run(args, &mut writer);
 
@@ -614,9 +616,10 @@ fn tendril_action_tendrils_are_filtered_by_mode(
         assert!(writer.all_output_lines()[5].contains(" not found"));
         assert_eq!(
             writer.all_output_lines().last().unwrap(),
-            &format!("Total: 2, \
-            Successful: {color_bright_green}0{color_reset}, \
-            Failed: {color_bright_red}2{color_reset}")
+            &format!(
+                "Total: 2, Successful: {color_bright_green}0{color_reset}, \
+                 Failed: {color_bright_red}2{color_reset}"
+            )
         );
         assert_eq!(writer.all_output_lines().len(), 8);
     }
@@ -625,9 +628,10 @@ fn tendril_action_tendrils_are_filtered_by_mode(
         assert!(writer.all_output_lines()[3].contains(" not found"));
         assert_eq!(
             writer.all_output_lines().last().unwrap(),
-            &format!("Total: 1, \
-            Successful: {color_bright_green}0{color_reset}, \
-            Failed: {color_bright_red}1{color_reset}")
+            &format!(
+                "Total: 1, Successful: {color_bright_green}0{color_reset}, \
+                 Failed: {color_bright_red}1{color_reset}"
+            )
         );
         assert_eq!(writer.all_output_lines().len(), 6);
     }
@@ -639,12 +643,8 @@ fn tendril_action_tendrils_are_filtered_by_mode(
 #[case(ActionMode::Link)]
 fn tendril_action_tendrils_are_filtered_by_group(
     #[case] mode: ActionMode,
-
-    #[values(true, false)]
-    dry_run: bool,
-
-    #[values(true, false)]
-    force: bool,
+    #[values(true, false)] dry_run: bool,
+    #[values(true, false)] force: bool,
 ) {
     let setup = Setup::new();
 
@@ -668,9 +668,16 @@ fn tendril_action_tendrils_are_filtered_by_group(
     let mut writer = MockWriter::new();
     let path = Some(setup.td_dir.to_str().unwrap().to_string());
     let tendrils_command = build_action_subcommand(
-        path, mode, dry_run, force, group_filters, vec![], vec![], vec![]
+        path,
+        mode,
+        dry_run,
+        force,
+        group_filters,
+        vec![],
+        vec![],
+        vec![],
     );
-    let args = TendrilCliArgs {tendrils_command};
+    let args = TendrilCliArgs { tendrils_command };
 
     let actual_exit_code = run(args, &mut writer);
 
@@ -681,9 +688,10 @@ fn tendril_action_tendrils_are_filtered_by_group(
     assert!(writer.all_output_lines()[5].contains(" not found"));
     assert_eq!(
         writer.all_output_lines().last().unwrap(),
-        &format!("Total: 2, \
-        Successful: {color_bright_green}0{color_reset}, \
-        Failed: {color_bright_red}2{color_reset}")
+        &format!(
+            "Total: 2, Successful: {color_bright_green}0{color_reset}, \
+             Failed: {color_bright_red}2{color_reset}"
+        )
     );
     assert_eq!(writer.all_output_lines().len(), 8);
 }
@@ -694,12 +702,8 @@ fn tendril_action_tendrils_are_filtered_by_group(
 #[case(ActionMode::Link)]
 fn tendril_action_tendrils_are_filtered_by_names(
     #[case] mode: ActionMode,
-
-    #[values(true, false)]
-    dry_run: bool,
-
-    #[values(true, false)]
-    force: bool,
+    #[values(true, false)] dry_run: bool,
+    #[values(true, false)] force: bool,
 ) {
     let setup = Setup::new();
 
@@ -723,9 +727,16 @@ fn tendril_action_tendrils_are_filtered_by_names(
     let mut writer = MockWriter::new();
     let path = Some(setup.td_dir.to_str().unwrap().to_string());
     let tendrils_command = build_action_subcommand(
-        path, mode, dry_run, force, vec![], names_filter, vec![], vec![]
+        path,
+        mode,
+        dry_run,
+        force,
+        vec![],
+        names_filter,
+        vec![],
+        vec![],
     );
-    let args = TendrilCliArgs {tendrils_command};
+    let args = TendrilCliArgs { tendrils_command };
 
     let actual_exit_code = run(args, &mut writer);
 
@@ -736,9 +747,10 @@ fn tendril_action_tendrils_are_filtered_by_names(
     assert!(writer.all_output_lines()[5].contains(" not found"));
     assert_eq!(
         writer.all_output_lines().last().unwrap(),
-        &format!("Total: 2, \
-        Successful: {color_bright_green}0{color_reset}, \
-        Failed: {color_bright_red}2{color_reset}")
+        &format!(
+            "Total: 2, Successful: {color_bright_green}0{color_reset}, \
+             Failed: {color_bright_red}2{color_reset}"
+        )
     );
     assert_eq!(writer.all_output_lines().len(), 8);
 }
@@ -749,12 +761,8 @@ fn tendril_action_tendrils_are_filtered_by_names(
 #[case(ActionMode::Link)]
 fn tendril_action_tendrils_are_filtered_by_parents(
     #[case] mode: ActionMode,
-
-    #[values(true, false)]
-    dry_run: bool,
-
-    #[values(true, false)]
-    force: bool,
+    #[values(true, false)] dry_run: bool,
+    #[values(true, false)] force: bool,
 ) {
     let setup = Setup::new();
 
@@ -775,23 +783,35 @@ fn tendril_action_tendrils_are_filtered_by_parents(
     let mut writer = MockWriter::new();
     let path = Some(setup.td_dir.to_str().unwrap().to_string());
     let tendrils_command = build_action_subcommand(
-        path, mode, dry_run, force, vec![], vec![], parents_filter, vec![]
+        path,
+        mode,
+        dry_run,
+        force,
+        vec![],
+        vec![],
+        parents_filter,
+        vec![],
     );
-    let args = TendrilCliArgs {tendrils_command};
+    let args = TendrilCliArgs { tendrils_command };
 
     let actual_exit_code = run(args, &mut writer);
 
     assert_eq!(actual_exit_code, exitcode::SOFTWARE);
     use std::path::MAIN_SEPARATOR;
-    assert!(writer.all_output_lines()[3].contains(&format!("p{MAIN_SEPARATOR}2")));
+    assert!(
+        writer.all_output_lines()[3].contains(&format!("p{MAIN_SEPARATOR}2"))
+    );
     assert!(writer.all_output_lines()[3].contains(" not found"));
-    assert!(writer.all_output_lines()[5].contains(&format!("p{MAIN_SEPARATOR}3")));
+    assert!(
+        writer.all_output_lines()[5].contains(&format!("p{MAIN_SEPARATOR}3"))
+    );
     assert!(writer.all_output_lines()[5].contains(" not found"));
     assert_eq!(
         writer.all_output_lines().last().unwrap(),
-        &format!("Total: 2, \
-        Successful: {color_bright_green}0{color_reset}, \
-        Failed: {color_bright_red}2{color_reset}")
+        &format!(
+            "Total: 2, Successful: {color_bright_green}0{color_reset}, \
+             Failed: {color_bright_red}2{color_reset}"
+        )
     );
     assert_eq!(writer.all_output_lines().len(), 8);
 }
@@ -802,12 +822,8 @@ fn tendril_action_tendrils_are_filtered_by_parents(
 #[case(ActionMode::Link)]
 fn tendril_action_tendrils_are_filtered_by_profile(
     #[case] mode: ActionMode,
-
-    #[values(true, false)]
-    dry_run: bool,
-
-    #[values(true, false)]
-    force: bool,
+    #[values(true, false)] dry_run: bool,
+    #[values(true, false)] force: bool,
 ) {
     let setup = Setup::new();
 
@@ -834,9 +850,16 @@ fn tendril_action_tendrils_are_filtered_by_profile(
     let mut writer = MockWriter::new();
     let path = Some(setup.td_dir.to_str().unwrap().to_string());
     let tendrils_command = build_action_subcommand(
-        path, mode, dry_run, force, vec![], vec![], vec![], profiles_filter
+        path,
+        mode,
+        dry_run,
+        force,
+        vec![],
+        vec![],
+        vec![],
+        profiles_filter,
     );
-    let args = TendrilCliArgs {tendrils_command};
+    let args = TendrilCliArgs { tendrils_command };
 
     let actual_exit_code = run(args, &mut writer);
 
@@ -847,9 +870,10 @@ fn tendril_action_tendrils_are_filtered_by_profile(
     assert!(writer.all_output_lines()[5].contains(" not found"));
     assert_eq!(
         writer.all_output_lines().last().unwrap(),
-        &format!("Total: 2, \
-        Successful: {color_bright_green}0{color_reset}, \
-        Failed: {color_bright_red}2{color_reset}")
+        &format!(
+            "Total: 2, Successful: {color_bright_green}0{color_reset}, \
+             Failed: {color_bright_red}2{color_reset}"
+        )
     );
     assert_eq!(writer.all_output_lines().len(), 8);
 }
@@ -860,12 +884,8 @@ fn tendril_action_tendrils_are_filtered_by_profile(
 #[case(ActionMode::Link)]
 fn tendril_action_empty_tendrils_array_should_print_message(
     #[case] mode: ActionMode,
-
-    #[values(true, false)]
-    dry_run: bool,
-
-    #[values(true, false)]
-    force: bool,
+    #[values(true, false)] dry_run: bool,
+    #[values(true, false)] force: bool,
 ) {
     let setup = Setup::new();
     setup.make_td_json_file(&[]);
@@ -875,9 +895,16 @@ fn tendril_action_empty_tendrils_array_should_print_message(
     let mut writer = MockWriter::new();
     let path = Some(setup.td_dir.to_str().unwrap().to_string());
     let tendrils_command = build_action_subcommand(
-        path, mode, dry_run, force, vec![], vec![], vec![], given_profiles
+        path,
+        mode,
+        dry_run,
+        force,
+        vec![],
+        vec![],
+        vec![],
+        given_profiles,
     );
-    let args = TendrilCliArgs {tendrils_command};
+    let args = TendrilCliArgs { tendrils_command };
 
     let actual_exit_code = run(args, &mut writer);
 
@@ -891,12 +918,8 @@ fn tendril_action_empty_tendrils_array_should_print_message(
 #[case(ActionMode::Link)]
 fn tendril_action_empty_filtered_tendrils_array_should_print_message(
     #[case] mode: ActionMode,
-
-    #[values(true, false)]
-    dry_run: bool,
-
-    #[values(true, false)]
-    force: bool,
+    #[values(true, false)] dry_run: bool,
+    #[values(true, false)] force: bool,
 ) {
     let setup = Setup::new();
     let mut t1 = setup.file_tendril_bundle();
@@ -911,9 +934,16 @@ fn tendril_action_empty_filtered_tendrils_array_should_print_message(
     let mut writer = MockWriter::new();
     let path = Some(setup.td_dir.to_str().unwrap().to_string());
     let tendrils_command = build_action_subcommand(
-        path, mode, dry_run, force, vec![], vec![], vec![], given_profiles
+        path,
+        mode,
+        dry_run,
+        force,
+        vec![],
+        vec![],
+        vec![],
+        given_profiles,
     );
-    let args = TendrilCliArgs {tendrils_command};
+    let args = TendrilCliArgs { tendrils_command };
 
     let actual_exit_code = run(args, &mut writer);
 
@@ -921,6 +951,9 @@ fn tendril_action_empty_filtered_tendrils_array_should_print_message(
     assert_eq!(writer.all_output, "No tendrils matched the given filter(s).\n");
 }
 
-// TODO: Test multiple_paths_only_copies_first for pull (see old commits in pull_tendril_tests)
-// TODO: Test multiple_paths_first_is_missing_returns_not_found_error (see old commits in pull_tendril_tests)
-// TODO: Test duplicate_tendrils_returns_duplicate_error_for_second_occurence_onward (see old pull_tests)
+// TODO: Test multiple_paths_only_copies_first for pull (see old commits in
+// pull_tendril_tests) TODO: Test
+// multiple_paths_first_is_missing_returns_not_found_error (see old commits in
+// pull_tendril_tests) TODO: Test
+// duplicate_tendrils_returns_duplicate_error_for_second_occurence_onward (see
+// old pull_tests)

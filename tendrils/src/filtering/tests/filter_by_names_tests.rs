@@ -1,4 +1,3 @@
-use crate::TendrilBundle;
 use crate::filtering::filter_by_names;
 use crate::filtering::tests::filter_tendrils_tests::{
     string_filter_empty_tests,
@@ -7,6 +6,7 @@ use crate::filtering::tests::filter_tendrils_tests::{
     supported_asterisk_literals,
     supported_weird_values,
 };
+use crate::TendrilBundle;
 use rstest::rstest;
 use rstest_reuse::{self, apply};
 
@@ -20,9 +20,7 @@ fn empty_tendril_list_returns_empty(#[case] filters: &[String]) {
 }
 
 #[apply(string_filter_empty_tests)]
-fn tendril_with_empty_names_list_not_included(
-    #[case] filters: &[String]
-) {
+fn tendril_with_empty_names_list_not_included(#[case] filters: &[String]) {
     let t1 = TendrilBundle::new("SomeApp", vec![]);
     let t2 = TendrilBundle::new("SomeApp", vec![]);
     let tendrils = vec![t1.clone(), t2.clone()];
@@ -54,7 +52,9 @@ fn name_included_if_any_pattern_matches() {
     let t1 = TendrilBundle::new("SomeApp", vec!["n1", "n2"]);
     let tendrils = vec![t1.clone()];
     let filters = vec![
-        "I don't match".to_string(), "me neither".to_string(), "n1".to_string()
+        "I don't match".to_string(),
+        "me neither".to_string(),
+        "n1".to_string(),
     ];
 
     let actual = filter_by_names(tendrils, &filters);
@@ -65,9 +65,7 @@ fn name_included_if_any_pattern_matches() {
 }
 
 #[apply(string_filter_non_match_tests)]
-fn tendril_not_included_if_no_name_matches(
-    #[case] filters: &[String]
-) {
+fn tendril_not_included_if_no_name_matches(#[case] filters: &[String]) {
     let t1 = TendrilBundle::new("SomeApp", vec!["v1", "v2"]);
     let t2 = TendrilBundle::new("SomeApp", vec![]);
     let tendrils = vec![t1.clone(), t2.clone()];
@@ -82,11 +80,7 @@ fn duplicate_filter_names_only_returns_tendril_once() {
     let t1 = TendrilBundle::new("SomeApp", vec!["n1"]);
     let t2 = TendrilBundle::new("SomeApp", vec!["n2"]);
     let tendrils = vec![t1.clone(), t2.clone()];
-    let filters = [
-        "n1".to_string(),
-        "n1".to_string(),
-        "n1".to_string(),
-    ];
+    let filters = ["n1".to_string(), "n1".to_string(), "n1".to_string()];
 
     let actual = filter_by_names(tendrils, &filters);
 
@@ -95,11 +89,7 @@ fn duplicate_filter_names_only_returns_tendril_once() {
 
 #[test]
 fn duplicate_tendril_names_only_returns_tendril_once() {
-    let t1 = TendrilBundle::new("SomeApp", vec![
-        "n1",
-        "n1",
-        "n1",
-    ]);
+    let t1 = TendrilBundle::new("SomeApp", vec!["n1", "n1", "n1"]);
     let t2 = TendrilBundle::new("SomeApp", vec!["n2"]);
     let tendrils = vec![t1.clone(), t2.clone()];
     let filters = ["n1".to_string()];
@@ -122,9 +112,7 @@ fn duplicate_tendrils_returns_all_instances() {
 }
 
 #[apply(supported_weird_values)]
-fn filter_supports_weird_names(
-    #[case] name: String
-) {
+fn filter_supports_weird_names(#[case] name: String) {
     let t1 = TendrilBundle::new("SomeApp", vec![&name]);
     let t2 = TendrilBundle::new("SomeApp", vec!["n2"]);
     let tendrils = vec![t1.clone(), t2.clone()];

@@ -1,9 +1,7 @@
-use crate::{Tendril, TendrilMode};
-use crate::enums::InvalidTendrilError;
+use crate::{InvalidTendrilError, Tendril, TendrilMode};
 use rstest::rstest;
 use rstest_reuse::{self, apply, template};
-use std::path::PathBuf;
-use std::path::MAIN_SEPARATOR as SEP;
+use std::path::{PathBuf, MAIN_SEPARATOR as SEP};
 
 #[template]
 #[rstest]
@@ -50,7 +48,8 @@ fn group_is_invalid_returns_invalid_group_error(#[case] group: &str) {
         "misc.txt",
         PathBuf::from("SomePath"),
         TendrilMode::DirOverwrite,
-    ).unwrap_err();
+    )
+    .unwrap_err();
 
     assert_eq!(actual, InvalidTendrilError::InvalidGroup);
 }
@@ -72,7 +71,8 @@ fn name_is_invalid_returns_invalid_name_error(#[case] name: &str) {
         name,
         PathBuf::from("SomePath"),
         TendrilMode::DirOverwrite,
-    ).unwrap_err();
+    )
+    .unwrap_err();
 
     assert_eq!(actual, InvalidTendrilError::InvalidName);
 }
@@ -87,7 +87,8 @@ fn parent_is_invalid_returns_invalid_parent_error(#[case] parent: &str) {
         "misc.txt",
         PathBuf::from(parent),
         TendrilMode::DirOverwrite,
-    ).unwrap_err();
+    )
+    .unwrap_err();
 
     assert_eq!(actual, InvalidTendrilError::InvalidParent);
 }
@@ -99,7 +100,8 @@ fn group_is_valid_returns_ok(#[case] group: &str) {
         "misc.txt",
         PathBuf::from("SomePath"),
         TendrilMode::DirOverwrite,
-    ).unwrap();
+    )
+    .unwrap();
 }
 
 #[apply(valid_groups_and_names)]
@@ -109,7 +111,8 @@ fn name_is_valid_returns_ok(#[case] name: &str) {
         name,
         PathBuf::from("SomePath"),
         TendrilMode::DirOverwrite,
-    ).unwrap();
+    )
+    .unwrap();
 }
 
 #[apply(valid_names_but_invalid_groups)]
@@ -129,7 +132,8 @@ fn name_subdir_is_forbidden_group_returns_ok(#[case] subdir_name: &str) {
         &format!("{subdir_name}/misc.txt"),
         PathBuf::from("SomePath"),
         TendrilMode::DirOverwrite,
-    ).unwrap();
+    )
+    .unwrap();
 }
 
 #[apply(valid_groups_and_names)]
@@ -144,7 +148,8 @@ fn parent_is_valid_returns_ok(#[case] parent: &str) {
         "misc.txt",
         PathBuf::from(parent),
         TendrilMode::DirOverwrite,
-    ).unwrap();
+    )
+    .unwrap();
 }
 
 #[rstest]
@@ -192,7 +197,8 @@ fn full_path_appends_name_to_parent_using_platform_dir_sep_for_all_slashes(
         name_given_and_exp.0,
         parent,
         TendrilMode::DirOverwrite,
-    ).unwrap();
+    )
+    .unwrap();
     let expected = format!("{expected_prefix}{}", name_given_and_exp.1);
 
     let actual = tendril.full_path();

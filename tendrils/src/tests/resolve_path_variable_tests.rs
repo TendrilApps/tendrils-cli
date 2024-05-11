@@ -61,11 +61,14 @@ fn wrong_capitalization_of_var_name_returns_raw_path(#[case] given: String) {
 #[case("offset<mut-testing>>arrows", "offsetvalue>arrows")]
 #[case("<mut-testing>/mut-testing", "value/mut-testing")]
 #[case("<mut-testing>/duplicate/<mut-testing>", "value/duplicate/value")]
-#[case("<mut-testing>/multi/unique/<mut-testing2>", "value/multi/unique/value2")]
+#[case(
+    "<mut-testing>/multi/unique/<mut-testing2>",
+    "value/multi/unique/value2"
+)]
 #[serial("mut-env-var-testing")]
 fn var_in_path_is_replaced_with_value(
     #[case] given: String,
-    #[case] expected_str: String
+    #[case] expected_str: String,
 ) {
     let expected = PathBuf::from(expected_str);
     std::env::set_var("mut-testing", "value");
@@ -88,9 +91,7 @@ fn var_in_path_is_replaced_with_value(
 #[case("<var/name/that/is/a/path>")]
 #[case("<var name with spaces>")]
 #[serial("mut-env-var-testing")]
-fn weird_var_names_still_replace_with_value(
-    #[case] var_name: String,
-) {
+fn weird_var_names_still_replace_with_value(#[case] var_name: String) {
     let given = var_name.clone();
     let expected = PathBuf::from("value");
     let var_no_brkts = &var_name[1..var_name.len() - 1];
@@ -101,7 +102,6 @@ fn weird_var_names_still_replace_with_value(
     assert_eq!(actual, expected);
 }
 
-
 #[rstest]
 #[case("<var>", "<var>", "<var>")]
 #[case("<var>", "var", "var")]
@@ -111,7 +111,7 @@ fn weird_var_names_still_replace_with_value(
 fn value_is_given_var_name_keeps_value(
     #[case] given: String,
     #[case] value: String,
-    #[case] expected_str: String
+    #[case] expected_str: String,
 ) {
     let expected = PathBuf::from(expected_str);
     std::env::set_var("var", value);
@@ -130,7 +130,7 @@ fn value_is_another_var_name_keeps_value(
     #[case] given: String,
     #[case] var1_value: String,
     #[case] var2_value: String,
-    #[case] expected_str: String
+    #[case] expected_str: String,
 ) {
     // See also: `value_is_another_var_name_keeps_value_exceptions`
     let expected = PathBuf::from(expected_str);
@@ -150,7 +150,7 @@ fn value_is_another_var_name_keeps_value_exceptions(
     #[case] given: String,
     #[case] var1_value: String,
     #[case] var2_value: String,
-    #[case] expected_str: String
+    #[case] expected_str: String,
 ) {
     // These cases are exceptions to `value_is_another_var_name_keeps_value`.
     // Instead of keeping the var name, it's replaced with
@@ -176,10 +176,11 @@ fn var_value_is_non_unicode_returns_lossy_value() {
     let given = "<mut-testing>".to_string();
     let expected = PathBuf::from("fo�o");
 
-    #[cfg(unix)] {
+    #[cfg(unix)]
+    {
         use std::ffi::OsStr;
         use std::os::unix::ffi::OsStrExt;
-    
+
         // Here, the values 0x66 and 0x6f correspond to 'f' and 'o'
         // respectively. The value 0x80 is a lone continuation byte, invalid
         // in a UTF-8 sequence.
@@ -187,10 +188,11 @@ fn var_value_is_non_unicode_returns_lossy_value() {
         let non_utf8_string = OsStr::from_bytes(&source[..]);
         std::env::set_var("mut-testing", non_utf8_string);
     }
-    #[cfg(windows)] {
+    #[cfg(windows)]
+    {
         use std::ffi::OsString;
         use std::os::windows::prelude::OsStringExt;
-    
+
         // Here the values 0x0066 and 0x006f correspond to 'f' and 'o'
         // respectively. The value 0xD800 is a lone surrogate half, invalid
         // in a UTF-16 sequence.
@@ -217,12 +219,8 @@ fn var_value_is_non_unicode_returns_lossy_value() {
 fn leading_tilde_is_replaced_with_home_if_home_exists_regardless_of_fallback_vars(
     #[case] given: String,
     #[case] expected_str: String,
-
-    #[values(true, false)]
-    homedrive_exists: bool,
-
-    #[values(true, false)]
-    homepath_exists: bool,
+    #[values(true, false)] homedrive_exists: bool,
+    #[values(true, false)] homepath_exists: bool,
 ) {
     let expected = PathBuf::from(expected_str);
     std::env::set_var("var", "value");
@@ -304,9 +302,7 @@ fn leading_tilde_returns_given_if_home_and_either_homedrive_or_homepath_dont_exi
 #[case("N~onLeadingTilde")]
 #[case("NonLeadingTilde~")]
 #[serial("mut-env-var-testing")]
-fn no_leading_tilde_returns_given(
-    #[case] given: String,
-) {
+fn no_leading_tilde_returns_given(#[case] given: String) {
     let expected = PathBuf::from(given.clone());
     std::env::set_var("var", "value");
     std::env::set_var("HOME", "MyHome");
@@ -344,10 +340,11 @@ fn tilde_value_is_non_unicode_returns_lossy_value(
     let given = "~".to_string();
     let expected = PathBuf::from(expected_str);
 
-    #[cfg(unix)] {
+    #[cfg(unix)]
+    {
         use std::ffi::OsStr;
         use std::os::unix::ffi::OsStrExt;
-    
+
         // Here, the values 0x66 and 0x6f correspond to 'f' and 'o'
         // respectively. The value 0x80 is a lone continuation byte, invalid
         // in a UTF-8 sequence.
@@ -362,10 +359,11 @@ fn tilde_value_is_non_unicode_returns_lossy_value(
         std::env::set_var("HOMEDRIVE", non_utf8_string);
         std::env::set_var("HOMEPATH", non_utf8_string);
     }
-    #[cfg(windows)] {
+    #[cfg(windows)]
+    {
         use std::ffi::OsString;
         use std::os::windows::prelude::OsStringExt;
-    
+
         // Here the values 0x0066 and 0x006f correspond to 'f' and 'o'
         // respectively. The value 0xD800 is a lone surrogate half, invalid
         // in a UTF-16 sequence.

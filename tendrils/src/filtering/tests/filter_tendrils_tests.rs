@@ -1,5 +1,5 @@
-use crate::{ActionMode, TendrilBundle};
 use crate::filtering::{filter_tendrils, FilterSpec};
+use crate::{ActionMode, TendrilBundle};
 use rstest_reuse::{self, template};
 
 #[template]
@@ -36,7 +36,8 @@ fn string_filter_empty_tests(#[case] filters: &[String]) {}
 fn string_filter_match_tests(
     #[case] filters: &[String],
     #[case] exp_matches: &[&str],
-) {}
+) {
+}
 
 /// Expected to not match based on a field under test with values ["v1", "v2"]
 #[template]

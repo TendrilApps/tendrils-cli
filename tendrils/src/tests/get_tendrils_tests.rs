@@ -1,10 +1,6 @@
-use crate::{
-    get_tendrils,
-    GetTendrilsError,
-    TendrilBundle,
-};
-use crate::tests::sample_tendrils::SampleTendrils;
 use crate::test_utils::get_disposable_dir;
+use crate::tests::sample_tendrils::SampleTendrils;
+use crate::{get_tendrils, GetTendrilsError, TendrilBundle};
 use tempdir::TempDir;
 
 #[test]
@@ -13,17 +9,16 @@ fn no_tendrils_json_file_returns_io_not_found_error() {
 
     let actual = get_tendrils(&temp.path());
 
-    assert_eq!(actual, Err(GetTendrilsError::IoError {
-        kind: std::io::ErrorKind::NotFound,
-    }));
+    assert_eq!(
+        actual,
+        Err(GetTendrilsError::IoError { kind: std::io::ErrorKind::NotFound })
+    );
 }
 
 #[test]
 fn invalid_json_returns_parse_error() {
-    let temp_td_dir = TempDir::new_in(
-        get_disposable_dir(),
-        "TendrilsDir"
-    ).unwrap();
+    let temp_td_dir =
+        TempDir::new_in(get_disposable_dir(), "TendrilsDir").unwrap();
 
     let tendrils_json = &temp_td_dir.path().join("tendrils.json");
     std::fs::write(&tendrils_json, "I'm not JSON").unwrap();
@@ -40,10 +35,8 @@ fn invalid_json_returns_parse_error() {
 
 #[test]
 fn valid_json_returns_tendrils_in_same_order_as_file() {
-    let temp_td_dir = TempDir::new_in(
-        get_disposable_dir(),
-        "TendrilsDir"
-    ).unwrap();
+    let temp_td_dir =
+        TempDir::new_in(get_disposable_dir(), "TendrilsDir").unwrap();
     let json = SampleTendrils::build_tendrils_json(&vec![
         SampleTendrils::tendril_1_json(),
         SampleTendrils::tendril_4_json(),

@@ -4,7 +4,7 @@ pub struct SampleTendrils {}
 
 impl SampleTendrils {
     pub fn tendril_1() -> TendrilBundle {
-            TendrilBundle {
+        TendrilBundle {
             group: "MyApp".to_string(),
             names: vec!["settings.json".to_string()],
             parents: ["C:\\Users\\MyName\\AppData\\".to_string()].to_vec(),
@@ -22,7 +22,8 @@ impl SampleTendrils {
             "dir-merge": false,
             "link": false,
             "profiles": []
-        }"#.to_string()
+        }"#
+        .to_string()
     }
 
     pub fn tendril_2() -> TendrilBundle {
@@ -44,7 +45,8 @@ impl SampleTendrils {
             "dir-merge": true,
             "link": false,
             "profiles": ["win"]
-        }"#.to_string()
+        }"#
+        .to_string()
     }
 
     pub fn tendril_3() -> TendrilBundle {
@@ -66,7 +68,8 @@ impl SampleTendrils {
             "dir-merge": false,
             "link": true,
             "profiles": ["mac"]
-        }"#.to_string()
+        }"#
+        .to_string()
     }
 
     pub fn tendril_4() -> TendrilBundle {
@@ -88,7 +91,8 @@ impl SampleTendrils {
             "dir-merge": false,
             "link": false,
             "profiles": ["mac", "win"]
-        }"#.to_string()
+        }"#
+        .to_string()
     }
 
     pub fn tendril_5() -> TendrilBundle {
@@ -110,14 +114,19 @@ impl SampleTendrils {
             "names": "misc.txt",
             "parents": "some/parent/path5",
             "profiles": "mac"
-        }"#.to_string()
+        }"#
+        .to_string()
     }
 
     pub fn tendril_6() -> TendrilBundle {
         TendrilBundle {
             group: "MyApp".to_string(),
             names: vec!["misc1.txt".to_string(), "misc2.txt".to_string()],
-            parents: ["some/parent/path6a".to_string(), "some/parent/path6b".to_string()].to_vec(),
+            parents: [
+                "some/parent/path6a".to_string(),
+                "some/parent/path6b".to_string(),
+            ]
+            .to_vec(),
             dir_merge: false,
             link: false,
             profiles: vec!["mac".to_string(), "win".to_string()],
@@ -130,7 +139,8 @@ impl SampleTendrils {
             "names": ["misc1.txt", "misc2.txt"],
             "parents": ["some/parent/path6a", "some/parent/path6b"],
             "profiles": ["mac", "win"]
-        }"#.to_string()
+        }"#
+        .to_string()
     }
 
     pub fn all_tendrils() -> Vec<TendrilBundle> {
@@ -156,11 +166,9 @@ impl SampleTendrils {
     }
 
     pub fn build_tendrils_json(json_tendrils: &Vec<String>) -> String {
-        let json_chunks:Vec<String> = [
-            "[".to_string(),
-            json_tendrils.join(","),
-            "]".to_string()
-        ].to_vec();
+        let json_chunks: Vec<String> =
+            ["[".to_string(), json_tendrils.join(","), "]".to_string()]
+                .to_vec();
         json_chunks.join("")
     }
 }

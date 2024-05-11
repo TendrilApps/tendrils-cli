@@ -25,29 +25,24 @@ impl<'a> Tendril<'a> {
             || group.to_lowercase() == "tendrils.json"
             || group.to_lowercase() == ".git"
             || group.contains('\n')
-            || group.contains('\r') {
+            || group.contains('\r')
+        {
             return Err(InvalidTendrilError::InvalidGroup);
         }
 
-        if name.is_empty()
-            || name.contains('\n')
-            || name.contains('\r') {
+        if name.is_empty() || name.contains('\n') || name.contains('\r') {
             return Err(InvalidTendrilError::InvalidName);
         }
 
         let parent_str = parent.to_string_lossy();
         if parent_str.is_empty()
             || parent_str.contains('\n')
-            || parent_str.contains('\r') {
+            || parent_str.contains('\r')
+        {
             return Err(InvalidTendrilError::InvalidParent);
         }
 
-        Ok(Tendril {
-            group,
-            name,
-            parent,
-            mode,
-        })
+        Ok(Tendril { group, name, parent, mode })
     }
 
     pub fn group(&self) -> &str {

@@ -5,7 +5,7 @@ pub trait Writer {
 
 pub struct StdOutWriter {}
 
-impl Writer for StdOutWriter{
+impl Writer for StdOutWriter {
     fn write(&mut self, text: &str) {
         print!("{text}");
     }

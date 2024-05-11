@@ -3,25 +3,25 @@
 use clap::Parser;
 mod cli;
 use cli::{
-    ActionArgs,
     ansi_hyperlink,
-    FilterArgs,
     print_reports,
+    ActionArgs,
+    FilterArgs,
     TendrilCliArgs,
-    TendrilsSubcommands
+    TendrilsSubcommands,
 };
 use exitcode;
 use std::path::PathBuf;
 use tendrils::{
     can_symlink,
     filter_tendrils,
-    FilterSpec,
     get_tendrils,
     get_tendrils_dir,
     init_tendrils_dir,
     is_tendrils_dir,
     tendril_action,
     ActionMode,
+    FilterSpec,
     GetTendrilsError,
     InitError,
 };
@@ -43,44 +43,40 @@ fn main() {
 /// It is up to the calling function to handle exiting with this code.
 fn run(args: TendrilCliArgs, writer: &mut impl Writer) -> i32 {
     match args.tendrils_command {
-        TendrilsSubcommands::Init { path, force } => {
-            init(path, force, writer)
-        }
-        TendrilsSubcommands::Path => {
-            path(writer)
-        },
-        TendrilsSubcommands::Pull {action_args, filter_args} => {
+        TendrilsSubcommands::Init { path, force } => init(path, force, writer),
+        TendrilsSubcommands::Path => path(writer),
+        TendrilsSubcommands::Pull { action_args, filter_args } => {
             tendril_action_subcommand(
                 ActionMode::Pull,
                 action_args,
                 filter_args,
                 writer,
             )
-        },
-        TendrilsSubcommands::Push {action_args, filter_args} => {
+        }
+        TendrilsSubcommands::Push { action_args, filter_args } => {
             tendril_action_subcommand(
                 ActionMode::Push,
                 action_args,
                 filter_args,
                 writer,
             )
-        },
-        TendrilsSubcommands::Link {action_args, filter_args} => {
+        }
+        TendrilsSubcommands::Link { action_args, filter_args } => {
             tendril_action_subcommand(
                 ActionMode::Link,
                 action_args,
                 filter_args,
                 writer,
             )
-        },
-        TendrilsSubcommands::Out {action_args, filter_args} => {
+        }
+        TendrilsSubcommands::Out { action_args, filter_args } => {
             tendril_action_subcommand(
                 ActionMode::Out,
                 action_args,
                 filter_args,
                 writer,
             )
-        },
+        }
     }
 }
 
@@ -91,20 +87,16 @@ const ERR_PREFIX: &str = "\u{1b}[91mError\u{1b}[39m";
 /// It is up to the calling function to handle exiting with this code.
 fn init(path: Option<String>, force: bool, writer: &mut impl Writer) -> i32 {
     let td_dir = match path {
-        Some(v) => {
-            PathBuf::from(v)
-        }
-        None => {
-            match std::env::current_dir() {
-                Ok(v) => v,
-                Err(_err) => {
-                    writer.writeln(&format!(
-                        "{ERR_PREFIX}: Could not get the current directory."
-                    ));
-                    return exitcode::OSERR;
-                }
+        Some(v) => PathBuf::from(v),
+        None => match std::env::current_dir() {
+            Ok(v) => v,
+            Err(_err) => {
+                writer.writeln(&format!(
+                    "{ERR_PREFIX}: Could not get the current directory."
+                ));
+                return exitcode::OSERR;
             }
-        }
+        },
     };
 
     match init_tendrils_dir(&td_dir, force) {
@@ -113,18 +105,26 @@ fn init(path: Option<String>, force: bool, writer: &mut impl Writer) -> i32 {
                 "Created a Tendrils folder at: {}.",
                 &td_dir.to_string_lossy()
             ));
-        },
-        Err(InitError::IoError {kind: e_kind}) => {
+        }
+        Err(InitError::IoError { kind: e_kind }) => {
             writer.writeln(&format!("{ERR_PREFIX}: {e_kind}."));
             return exitcode::IOERR;
-        },
+        }
         Err(InitError::AlreadyInitialized) => {
-            writer.writeln(&format!("{ERR_PREFIX}: This folder is already a Tendrils folder."));
+            writer.writeln(&format!(
+                "{ERR_PREFIX}: This folder is already a Tendrils folder."
+            ));
             return exitcode::DATAERR;
-        },
+        }
         Err(InitError::NotEmpty) => {
-            writer.writeln(&format!("{ERR_PREFIX}: This folder is not empty. Creating a Tendrils folder here may interfere with the existing contents."));
-            writer.writeln("Consider running with the 'force' flag to ignore this error:\n");
+            writer.writeln(&format!(
+                "{ERR_PREFIX}: This folder is not empty. Creating a Tendrils \
+                 folder here may interfere with the existing contents."
+            ));
+            writer.writeln(
+                "Consider running with the 'force' flag to ignore this \
+                 error:\n",
+            );
             writer.writeln("td init --force");
             return exitcode::DATAERR;
         }
@@ -141,19 +141,20 @@ fn path(writer: &mut impl Writer) -> i32 {
         Ok(v) => {
             let styled_text = ansi_hyperlink(&v, &v);
             writer.writeln(&styled_text);
-        },
+        }
         Err(std::env::VarError::NotPresent) => {
             writer.writeln(&format!(
                 "The '{ENV_NAME}' environment variable is not set."
             ));
-        },
+        }
         Err(std::env::VarError::NotUnicode(_v)) => {
             writer.writeln(&format!(
-                "{ERR_PREFIX}: The '{ENV_NAME}' environment variable is not valid UTF-8."
+                "{ERR_PREFIX}: The '{ENV_NAME}' environment variable is not \
+                 valid UTF-8."
             ));
             return exitcode::DATAERR;
         }
-    } 
+    }
     return 0;
 }
 
@@ -202,28 +203,35 @@ fn tendril_action_subcommand(
 
     use std::env::consts::OS;
     if mode == ActionMode::Link && OS == "windows" && !can_symlink() {
-        writer.writeln(&format!("{ERR_PREFIX}: Missing the permissions required to create symlinks on Windows. Consider:"));
+        writer.writeln(&format!(
+            "{ERR_PREFIX}: Missing the permissions required to create \
+             symlinks on Windows. Consider:"
+        ));
         writer.writeln("    - Running this command in an elevated terminal");
-        writer.writeln("    - Enabling developer mode (this allows creating symlinks without requiring administrator priviledges)");
-        writer.writeln("    - Changing these tendrils to non-link modes instead");
+        writer.writeln(
+            "    - Enabling developer mode (this allows creating symlinks \
+             without requiring administrator priviledges)",
+        );
+        writer
+            .writeln("    - Changing these tendrils to non-link modes instead");
         return exitcode::CANTCREAT;
     }
 
     let all_tendrils = match get_tendrils(&td_dir) {
         Ok(v) => v,
-        Err(GetTendrilsError::IoError {kind: _}) => {
+        Err(GetTendrilsError::IoError { kind: _ }) => {
             writer.writeln(&format!(
                 "{ERR_PREFIX}: Could not read the tendrils.json file."
             ));
             return exitcode::NOINPUT;
-        },
+        }
         Err(GetTendrilsError::ParseError(e)) => {
             writer.writeln(&format!(
                 "{ERR_PREFIX}: Could not parse the tendrils.json file."
             ));
             writer.writeln(&format!("{e}"));
             return exitcode::DATAERR;
-        },
+        }
     };
 
     let mode_filter;
@@ -260,7 +268,7 @@ fn tendril_action_subcommand(
 
     print_reports(&action_reports, writer);
 
-    if action_reports.iter().any(|r| match &r.log { 
+    if action_reports.iter().any(|r| match &r.log {
         Err(_) => true,
         Ok(log) => log.result.is_err(),
     }) {
