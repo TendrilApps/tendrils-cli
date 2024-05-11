@@ -95,6 +95,17 @@ pub enum TendrilActionSuccess {
     OverwriteSkipped,
 }
 
+impl ToString for TendrilActionSuccess {
+    fn to_string(&self) -> String {
+        match self {
+            TendrilActionSuccess::New => "Created".to_string(),
+            TendrilActionSuccess::NewSkipped => "Skipped creation".to_string(),
+            TendrilActionSuccess::Overwrite => "Overwritten".to_string(),
+            TendrilActionSuccess::OverwriteSkipped => "Skipped overwrite".to_string(),
+        }
+    }
+}
+
 /// Indicates an unsuccessful tendril action.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum TendrilActionError {
@@ -146,6 +157,57 @@ impl From<std::io::ErrorKind> for TendrilActionError {
         TendrilActionError::IoError {
             kind: e_kind,
             loc: Location::Unknown,
+        }
+    }
+}
+
+impl ToString for TendrilActionError {
+    fn to_string(&self) -> String {
+        use std::io::ErrorKind::NotFound;
+        use FsoType::{Dir, File, SymFile, SymDir};
+        use Location::{Dest, Source, Unknown};
+        match self {
+            TendrilActionError::IoError {kind: NotFound, loc: Source} => {
+                "Source not found".to_string()
+            },
+            TendrilActionError::IoError {kind: NotFound, loc: Dest} => {
+                "Destination not found".to_string()
+            },
+            TendrilActionError::IoError {kind: NotFound, loc: Unknown} => {
+                "Not found".to_string()
+            },
+            TendrilActionError::IoError {kind: e_kind, loc: Source} => {
+                format!("{:?} error at source", e_kind)
+            },
+            TendrilActionError::IoError {kind: e_kind, loc: Dest} => {
+                format!("{:?} error at destination", e_kind)
+            },
+            TendrilActionError::IoError {kind: e_kind, loc: Unknown} => {
+                format!("{:?} error", e_kind)
+            },
+            TendrilActionError::ModeMismatch => "Wrong tendril style".to_string(),
+            TendrilActionError::Recursion => "Recursive tendril".to_string(),
+            TendrilActionError::TypeMismatch {loc: Source, mistype: File} => {
+                "Unexpected file at source".to_string()
+            },
+            TendrilActionError::TypeMismatch {loc: Source, mistype: Dir} => {
+                "Unexpected directory at source".to_string()
+            },
+            TendrilActionError::TypeMismatch {loc: Source, mistype: SymFile | SymDir} => {
+                "Unexpected symlink at source".to_string()
+            },
+            TendrilActionError::TypeMismatch {loc: Dest, mistype: File} => {
+                "Unexpected file at destination".to_string()
+            },
+            TendrilActionError::TypeMismatch {loc: Dest, mistype: Dir} => {
+                "Unexpected directory at destination".to_string()
+            },
+            TendrilActionError::TypeMismatch {loc: Dest, mistype: SymFile | SymDir} => {
+                "Unexpected symlink at destination".to_string()
+            },
+            TendrilActionError::TypeMismatch {loc: Unknown, mistype: _} => {
+                "Unexpected file system object".to_string()
+            },
         }
     }
 }
