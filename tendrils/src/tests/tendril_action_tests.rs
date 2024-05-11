@@ -1,15 +1,15 @@
 use crate::{
+    ActionLog,
     ActionMode,
     FsoType,
     Location,
     tendril_action,
     TendrilActionError,
     TendrilActionSuccess,
-    TendrilActionMetadata,
-    TendrilMetadata,
+    TendrilLog,
 };
 use crate::tendril_bundle::TendrilBundle;
-use crate::tendril_report::TendrilActionReport;
+use crate::tendril_report::TendrilReport;
 use crate::test_utils::{
     get_disposable_dir,
     is_empty,
@@ -105,68 +105,58 @@ fn pull_returns_tendril_and_result_for_each_given(
         false => Ok(TendrilActionSuccess::New),
     };
     let expected  = vec![
-        TendrilActionReport {
+        TendrilReport {
             orig_tendril: &given[0],
             name: &given[0].names[0],
-            metadata: Ok(TendrilActionMetadata {
-                md: TendrilMetadata {
-                    local_type: None,
-                    remote_type: Some(FsoType::File),
-                    resolved_path: remote_app1_file,
-                },
-                action_result: expected_success.clone(),
-            }),
+            log: Ok(ActionLog::new(
+                None,
+                Some(FsoType::File),
+                remote_app1_file,
+                expected_success.clone(),
+            )),
         },
-        TendrilActionReport {
+        TendrilReport {
             orig_tendril: &given[1],
             name: &given[1].names[0],
-            metadata: Ok(TendrilActionMetadata {
-                md: TendrilMetadata {
-                    local_type: None,
-                    remote_type: Some(FsoType::File),
-                    resolved_path: remote_app2_file,
-                },
-                action_result: expected_success.clone(),
-            }),
+            log: Ok(ActionLog::new(
+                None,
+                Some(FsoType::File),
+                remote_app2_file,
+                expected_success.clone(),
+            )),
         },
-        TendrilActionReport {
+        TendrilReport {
             orig_tendril: &given[2],
             name: &given[2].names[0],
-            metadata: Ok(TendrilActionMetadata {
-                md: TendrilMetadata {
-                    local_type: None,
-                    remote_type: Some(FsoType::Dir),
-                    resolved_path: remote_app1_dir,
-                },
-                action_result: expected_success.clone(),
-            }),
+            log: Ok(ActionLog::new(
+                None,
+                Some(FsoType::Dir),
+                remote_app1_dir,
+                expected_success.clone(),
+            )),
         },
-        TendrilActionReport {
+        TendrilReport {
             orig_tendril: &given[3],
             name: &given[3].names[0],
-            metadata: Ok(TendrilActionMetadata {
-                md: TendrilMetadata {
-                    local_type: None,
-                    remote_type: None,
-                    resolved_path: given_parent_dir_a.join("I don't exist"),
-                },
-                action_result: Err(TendrilActionError::IoError {
+            log: Ok(ActionLog::new(
+                None,
+                None,
+                given_parent_dir_a.join("I don't exist"),
+                Err(TendrilActionError::IoError {
                     kind: std::io::ErrorKind::NotFound,
                     loc: Location::Source,
                 }),
-            }),
+            )),
         },
-        TendrilActionReport {
+        TendrilReport {
             orig_tendril: &given[3],
             name: &given[3].names[1],
-            metadata: Ok(TendrilActionMetadata {
-                md: TendrilMetadata {
-                    local_type: None,
-                    remote_type: Some(FsoType::File),
-                    resolved_path: remote_app3_fileb_pa,
-                },
-                action_result: expected_success,
-            }),
+            log: Ok(ActionLog::new(
+                None,
+                Some(FsoType::File),
+                remote_app3_fileb_pa,
+                expected_success,
+            )),
         },
         // The second path should not be considered since this is a pull action
     ];
@@ -261,95 +251,81 @@ fn push_returns_tendril_and_result_for_each_given(
         false => Ok(TendrilActionSuccess::New),
     };
     let expected = vec![
-        TendrilActionReport {
+        TendrilReport {
             orig_tendril: &given[0],
             name: &given[0].names[0],
-            metadata: Ok(TendrilActionMetadata {
-                md: TendrilMetadata {
-                    local_type: Some(FsoType::File),
-                    remote_type: None,
-                    resolved_path: remote_app1_file.clone(),
-                },
-                action_result: expected_success.clone(),
-            }),
+            log: Ok(ActionLog::new(
+                Some(FsoType::File),
+                None,
+                remote_app1_file.clone(),
+                expected_success.clone(),
+            )),
         },
-        TendrilActionReport {
+        TendrilReport {
             orig_tendril: &given[1],
             name: &given[1].names[0],
-            metadata: Ok(TendrilActionMetadata {
-                md: TendrilMetadata {
-                    local_type: Some(FsoType::File),
-                    remote_type: None,
-                    resolved_path: remote_app2_file.clone(),
-                },
-                action_result: expected_success.clone(),
-            }),
+            log: Ok(ActionLog::new(
+                Some(FsoType::File),
+                None,
+                remote_app2_file.clone(),
+                expected_success.clone(),
+            )),
         },
-        TendrilActionReport {
+        TendrilReport {
             orig_tendril: &given[2],
             name: &given[2].names[0],
-            metadata: Ok(TendrilActionMetadata {
-                md: TendrilMetadata {
-                    local_type: Some(FsoType::Dir),
-                    remote_type: None,
-                    resolved_path: remote_app1_dir.clone(),
-                },
-                action_result: expected_success.clone(),
-            }),
+            log: Ok(ActionLog::new(
+                Some(FsoType::Dir),
+                None,
+                remote_app1_dir.clone(),
+                expected_success.clone(),
+            )),
         },
-        TendrilActionReport {
+        TendrilReport {
             orig_tendril: &given[3],
             name: &given[3].names[0],
-            metadata: Ok(TendrilActionMetadata {
-                md: TendrilMetadata {
-                    local_type: None,
-                    remote_type: None,
-                    resolved_path: given_parent_dir_a.join("I don't exist"),
-                },
-                action_result: Err(TendrilActionError::IoError {
+            log: Ok(ActionLog::new(
+                None,
+                None,
+                given_parent_dir_a.join("I don't exist"),
+                Err(TendrilActionError::IoError {
                     kind: std::io::ErrorKind::NotFound,
                     loc: Location::Source,
                 }),
-            }),
+            )),
         },
-        TendrilActionReport {
+        TendrilReport {
             orig_tendril: &given[3],
             name: &given[3].names[0],
-            metadata: Ok(TendrilActionMetadata {
-                md: TendrilMetadata {
-                    local_type: None,
-                    remote_type: None,
-                    resolved_path: given_parent_dir_b.join("I don't exist"),
-                },
-                action_result: Err(TendrilActionError::IoError {
+            log: Ok(ActionLog::new(
+                None,
+                None,
+                given_parent_dir_b.join("I don't exist"),
+                Err(TendrilActionError::IoError {
                     kind: std::io::ErrorKind::NotFound,
                     loc: Location::Source,
                 }),
-            }),
+            )),
         },
-        TendrilActionReport {
+        TendrilReport {
             orig_tendril: &given[3],
             name: &given[3].names[1],
-            metadata: Ok(TendrilActionMetadata {
-                md: TendrilMetadata {
-                    local_type: Some(FsoType::File),
-                    remote_type: None,
-                    resolved_path: remote_app3_fileb_pa.clone(),
-                },
-                action_result: expected_success.clone(),
-            }),
+            log: Ok(ActionLog::new(
+                Some(FsoType::File),
+                None,
+                remote_app3_fileb_pa.clone(),
+                expected_success.clone(),
+            )),
         },
-        TendrilActionReport {
+        TendrilReport {
             orig_tendril: &given[3],
             name: &given[3].names[1],
-            metadata: Ok(TendrilActionMetadata {
-                md: TendrilMetadata {
-                    local_type: Some(FsoType::File),
-                    remote_type: None,
-                    resolved_path: remote_app3_fileb_pb.clone(),
-                },
-                action_result: expected_success,
-            }),
+            log: Ok(ActionLog::new(
+                Some(FsoType::File),
+                None,
+                remote_app3_fileb_pb.clone(),
+                expected_success,
+            )),
         },
     ];
 
@@ -454,95 +430,81 @@ fn link_returns_tendril_and_result_for_each_given(
         false => Ok(TendrilActionSuccess::New),
     };
     let expected = vec![
-        TendrilActionReport {
+        TendrilReport {
             orig_tendril: &given[0],
             name: &given[0].names[0],
-            metadata: Ok(TendrilActionMetadata {
-                md: TendrilMetadata {
-                    local_type: Some(FsoType::File),
-                    remote_type: None,
-                    resolved_path: remote_app1_file.clone(),
-                },
-                action_result: expected_success.clone(),
-            }),
+            log: Ok(ActionLog::new(
+                Some(FsoType::File),
+                None,
+                remote_app1_file.clone(),
+                expected_success.clone(),
+            )),
         },
-        TendrilActionReport {
+        TendrilReport {
             orig_tendril: &given[1],
             name: &given[1].names[0],
-            metadata: Ok(TendrilActionMetadata {
-                md: TendrilMetadata {
-                    local_type: Some(FsoType::File),
-                    remote_type: None,
-                    resolved_path: remote_app2_file.clone(),
-                },
-                action_result: expected_success.clone(),
-            }),
+            log: Ok(ActionLog::new(
+                Some(FsoType::File),
+                None,
+                remote_app2_file.clone(),
+                expected_success.clone(),
+            )),
         },
-        TendrilActionReport {
+        TendrilReport {
             orig_tendril: &given[2],
             name: &given[2].names[0],
-            metadata: Ok(TendrilActionMetadata {
-                md: TendrilMetadata {
-                    local_type: Some(FsoType::Dir),
-                    remote_type: None,
-                    resolved_path: remote_app1_dir.clone(),
-                },
-                action_result: expected_success.clone(),
-            }),
+            log: Ok(ActionLog::new(
+                Some(FsoType::Dir),
+                None,
+                remote_app1_dir.clone(),
+                expected_success.clone(),
+            )),
         },
-        TendrilActionReport {
+        TendrilReport {
             orig_tendril: &given[3],
             name: &given[3].names[0],
-            metadata: Ok(TendrilActionMetadata {
-                md: TendrilMetadata {
-                    local_type: None,
-                    remote_type: None,
-                    resolved_path: given_parent_dir_a.join("I don't exist"),
-                },
-                action_result: Err(TendrilActionError::IoError {
+            log: Ok(ActionLog::new(
+                None,
+                None,
+                given_parent_dir_a.join("I don't exist"),
+                Err(TendrilActionError::IoError {
                     kind: std::io::ErrorKind::NotFound,
                     loc: Location::Source,
                 }),
-            }),
+            )),
         },
-        TendrilActionReport {
+        TendrilReport {
             orig_tendril: &given[3],
             name: &given[3].names[0],
-            metadata: Ok(TendrilActionMetadata {
-                md: TendrilMetadata {
-                    local_type: None,
-                    remote_type: None,
-                    resolved_path: given_parent_dir_b.join("I don't exist"),
-                },
-                action_result: Err(TendrilActionError::IoError {
+            log: Ok(ActionLog::new(
+                None,
+                None,
+                given_parent_dir_b.join("I don't exist"),
+                Err(TendrilActionError::IoError {
                     kind: std::io::ErrorKind::NotFound,
                     loc: Location::Source,
                 }),
-            }),
+            )),
         },
-        TendrilActionReport {
+        TendrilReport {
             orig_tendril: &given[3],
             name: &given[3].names[1],
-            metadata: Ok(TendrilActionMetadata {
-                md: TendrilMetadata {
-                    local_type: Some(FsoType::File),
-                    remote_type: None,
-                    resolved_path: remote_app3_fileb_pa.clone(),
-                },
-                action_result: expected_success.clone(),
-            }),
+            log: Ok(ActionLog::new(
+                Some(FsoType::File),
+                None,
+                remote_app3_fileb_pa.clone(),
+                expected_success.clone(),
+            )),
         },
-        TendrilActionReport {
+        TendrilReport {
             orig_tendril: &given[3],
             name: &given[3].names[1],
-            metadata: Ok(TendrilActionMetadata {
-                md: TendrilMetadata {
-                    local_type: Some(FsoType::File),
-                    remote_type: None,
-                    resolved_path: remote_app3_fileb_pb.clone(),
-                },
-                action_result: expected_success,
-            }),
+            log: Ok(ActionLog::new(
+                Some(FsoType::File),
+                None,
+                remote_app3_fileb_pb.clone(),
+                expected_success,
+            )),
         },
     ];
 
@@ -647,95 +609,81 @@ fn out_returns_tendril_and_result_for_each_given_link_or_push_style(
         false => Ok(TendrilActionSuccess::New),
     };
     let expected = vec![
-        TendrilActionReport {
+        TendrilReport {
             orig_tendril: &given[0],
             name: &given[0].names[0],
-            metadata: Ok(TendrilActionMetadata {
-                md: TendrilMetadata {
-                    local_type: Some(FsoType::File),
-                    remote_type: None,
-                    resolved_path: remote_app1_file.clone(),
-                },
-                action_result: expected_success.clone(),
-            })
+            log: Ok(ActionLog::new(
+                Some(FsoType::File),
+                None,
+                remote_app1_file.clone(),
+                expected_success.clone(),
+            ))
         },
-        TendrilActionReport {
+        TendrilReport {
             orig_tendril: &given[1],
             name: &given[1].names[0],
-            metadata: Ok(TendrilActionMetadata {
-                md: TendrilMetadata {
-                    local_type: Some(FsoType::File),
-                    remote_type: None,
-                    resolved_path: remote_app2_file.clone(),
-                },
-                action_result: expected_success.clone(),
-            }),
+            log: Ok(ActionLog::new(
+                Some(FsoType::File),
+                None,
+                remote_app2_file.clone(),
+                expected_success.clone(),
+            )),
         },
-        TendrilActionReport {
+        TendrilReport {
             orig_tendril: &given[2],
             name: &given[2].names[0],
-            metadata: Ok(TendrilActionMetadata {
-                md: TendrilMetadata {
-                    local_type: Some(FsoType::Dir),
-                    remote_type: None,
-                    resolved_path: remote_app1_dir.clone(),
-                },
-                action_result: expected_success.clone(),
-            }),
+            log: Ok(ActionLog::new(
+                Some(FsoType::Dir),
+                None,
+                remote_app1_dir.clone(),
+                expected_success.clone(),
+            )),
         },
-        TendrilActionReport {
+        TendrilReport {
             orig_tendril: &given[3],
             name: &given[3].names[0],
-            metadata: Ok(TendrilActionMetadata {
-                md: TendrilMetadata {
-                    local_type: None,
-                    remote_type: None,
-                    resolved_path: given_parent_dir_a.join("I don't exist"),
-                },
-                action_result: Err(TendrilActionError::IoError {
+            log: Ok(ActionLog::new(
+                None,
+                None,
+                given_parent_dir_a.join("I don't exist"),
+                Err(TendrilActionError::IoError {
                     kind: std::io::ErrorKind::NotFound,
                     loc: Location::Source,
                 }),
-            }),
+            )),
         },
-        TendrilActionReport {
+        TendrilReport {
             orig_tendril: &given[3],
             name: &given[3].names[0],
-            metadata: Ok(TendrilActionMetadata {
-                md: TendrilMetadata {
-                    local_type: None,
-                    remote_type: None,
-                    resolved_path: given_parent_dir_b.join("I don't exist"),
-                },
-                action_result: Err(TendrilActionError::IoError {
+            log: Ok(ActionLog::new(
+                None,
+                None,
+                given_parent_dir_b.join("I don't exist"),
+                Err(TendrilActionError::IoError {
                     kind: std::io::ErrorKind::NotFound,
                     loc: Location::Source,
                 }),
-            }),
+            )),
         },
-        TendrilActionReport {
+        TendrilReport {
             orig_tendril: &given[3],
             name: &given[3].names[1],
-            metadata: Ok(TendrilActionMetadata {
-                md: TendrilMetadata {
-                    local_type: Some(FsoType::File),
-                    remote_type: None,
-                    resolved_path: remote_app3_fileb_pa.clone(),
-                },
-                action_result: expected_success.clone(),
-            }),
+            log: Ok(ActionLog::new(
+                Some(FsoType::File),
+                None,
+                remote_app3_fileb_pa.clone(),
+                expected_success.clone(),
+            )),
         },
-        TendrilActionReport {
+        TendrilReport {
             orig_tendril: &given[3],
             name: &given[3].names[1],
-            metadata: Ok(TendrilActionMetadata {
-                md: TendrilMetadata {
-                    local_type: Some(FsoType::File),
-                    remote_type: None,
-                    resolved_path: remote_app3_fileb_pb.clone(),
-                },
-                action_result: expected_success,
-            }),
+            log: Ok(ActionLog::new(
+                Some(FsoType::File),
+                None,
+                remote_app3_fileb_pb.clone(),
+                expected_success,
+            )),
         },
     ];
 
@@ -809,20 +757,18 @@ fn parent_path_vars_are_resolved(
         ActionMode::Pull => Location::Source,
         _ => Location::Dest,
     };
-    let expected = vec![TendrilActionReport {
+    let expected = vec![TendrilReport {
         orig_tendril: &tendril,
         name: "misc.txt",
-        metadata: Ok(TendrilActionMetadata {
-            md: TendrilMetadata {
-                local_type: None,
-                remote_type: None,
-                resolved_path: PathBuf::from(expected_resolved_path.clone()),
-            },
-            action_result: Err(TendrilActionError::IoError {
+        log: Ok(ActionLog::new(
+            None,
+            None,
+            PathBuf::from(expected_resolved_path.clone()),
+            Err(TendrilActionError::IoError {
                 kind: std::io::ErrorKind::NotFound,
                 loc: expected_loc,
             }),
-        })
+        ))
     }];
 
     let actual = tendril_action(
@@ -834,11 +780,10 @@ fn parent_path_vars_are_resolved(
     );
 
     let actual_result_path = &actual[0]
-        .metadata
+        .log
         .as_ref()
         .unwrap()
-        .md
-        .resolved_path;
+        .resolved_path();
 
     let actual_resolved_path_str = actual_result_path.to_string_lossy();
     assert_eq!(actual_resolved_path_str.into_owned(), expected_resolved_path);

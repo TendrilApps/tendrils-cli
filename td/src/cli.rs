@@ -4,12 +4,14 @@ use inline_colorization::{color_bright_green, color_bright_red, color_reset};
 mod td_table;
 use td_table::TdTable;
 use tendrils::{
-    InvalidTendrilError,
+    ActionLog,
     FsoType,
+    InvalidTendrilError,
     Location,
     TendrilActionError,
     TendrilActionSuccess,
-    TendrilActionReport,
+    TendrilLog,
+    TendrilReport,
 };
 use std::path::PathBuf;
 
@@ -214,7 +216,10 @@ fn ansi_styled_result(
     }
 }
 
-pub fn print_reports(reports: &[TendrilActionReport], writer: &mut impl Writer) {
+pub fn print_reports(
+    reports: &[TendrilReport<ActionLog>],
+    writer: &mut impl Writer
+) {
     if reports.is_empty() {
         return;
     }
@@ -228,12 +233,12 @@ pub fn print_reports(reports: &[TendrilActionReport], writer: &mut impl Writer) 
     ]);
 
     for report in reports {
-        let (styled_path, styled_result) = match &report.metadata {
-            Ok(action_md) => {(
+        let (styled_path, styled_result) = match &report.log {
+            Ok(log) => {(
                 ansi_styled_resolved_path(
-                    &Ok(action_md.md.resolved_path.clone())
+                    &Ok(log.resolved_path().clone())
                 ),
-                ansi_styled_result(&action_md.action_result)
+                ansi_styled_result(&log.result)
             )},
             Err(e) => {(
                 // Print the resolving error in the result column
@@ -254,10 +259,10 @@ pub fn print_reports(reports: &[TendrilActionReport], writer: &mut impl Writer) 
     print_totals(reports, writer);
 }
 
-fn print_totals(reports: &[TendrilActionReport], writer: & mut impl Writer) {
+fn print_totals(reports: &[TendrilReport<ActionLog>], writer: & mut impl Writer) {
     let total_successes = reports.iter().filter(|r| {
-        match &r.metadata {
-            Ok(action_md) => action_md.action_result.is_ok(),
+        match &r.log {
+            Ok(log) => log.result.is_ok(),
             _ => false,
         }
     })
