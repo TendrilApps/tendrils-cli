@@ -56,10 +56,9 @@ impl TendrilBundle {
     }
 }
 
-fn one_or_many_to_vec<'de, D>(deserializer: D) -> Result<Vec<String>, D::Error>
-where
-    D: Deserializer<'de>,
-{
+fn one_or_many_to_vec<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Vec<String>, D::Error> {
     let one_or_many: OneOrMany<String> =
         de::Deserialize::deserialize(deserializer)?;
     Ok(one_or_many.into())

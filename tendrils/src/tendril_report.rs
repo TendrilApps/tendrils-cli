@@ -9,10 +9,7 @@ use std::path::PathBuf;
 
 /// Generic report format for any operation on a [`TendrilBundle`]
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct TendrilReport<'a, T>
-where
-    T: TendrilLog,
-{
+pub struct TendrilReport<'a, T: TendrilLog> {
     /// The original tendril bundle that this tendril was expanded from
     pub orig_tendril: &'a TendrilBundle,
     /// The name of the tendril that was expanded. If this `orig_tendril`
