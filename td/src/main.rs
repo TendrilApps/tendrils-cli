@@ -260,9 +260,9 @@ fn tendril_action_subcommand(
 
     print_reports(&action_reports, writer);
 
-    if action_reports.iter().any(|r| match r.action_result { 
-        None | Some(Err(_)) => true,
-        _ => false,
+    if action_reports.iter().any(|r| match &r.log { 
+        Err(_) => true,
+        Ok(log) => log.result.is_err(),
     }) {
         return exitcode::SOFTWARE;
     }

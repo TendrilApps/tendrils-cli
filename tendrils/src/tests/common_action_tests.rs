@@ -6,10 +6,13 @@
 //! - [`crate::tests::push_tendril_tests`]
 
 use crate::{
+    ActionLog,
+    is_rofs_err,
     is_tendrils_dir,
     link_tendril,
     pull_tendril,
     push_tendril,
+    Tendril,
 };
 use crate::enums::{
     FsoType,
@@ -18,7 +21,6 @@ use crate::enums::{
     TendrilActionSuccess,
     TendrilMode
 };
-use crate::tendril::Tendril;
 use crate::test_utils::{
     get_disposable_dir,
     symlink_expose,
@@ -37,7 +39,7 @@ use tempdir::TempDir;
 #[case(push_tendril)]
 fn remote_is_given_td_dir_returns_recursion_error(
     #[case] action: fn(&Path, &Tendril, bool, bool)
-        -> Result<TendrilActionSuccess, TendrilActionError>,
+        -> ActionLog,
 
     #[values(true, false)]
     dry_run: bool,
@@ -59,7 +61,12 @@ fn remote_is_given_td_dir_returns_recursion_error(
 
     let actual = action(&setup.td_dir, &tendril, dry_run, force);
 
-    assert_eq!(actual, Err(TendrilActionError::Recursion));
+    assert_eq!(actual, ActionLog::new(
+        None,
+        None,
+        tendril.parent().join(tendril.name()),
+        Err(TendrilActionError::Recursion),
+    ));
 }
 
 #[rstest]
@@ -68,7 +75,7 @@ fn remote_is_given_td_dir_returns_recursion_error(
 #[case(push_tendril)]
 fn remote_is_ancestor_to_given_td_dir_returns_recursion_error(
     #[case] action: fn(&Path, &Tendril, bool, bool)
-        -> Result<TendrilActionSuccess, TendrilActionError>,
+        -> ActionLog,
 
     #[values(true, false)]
     dry_run: bool,
@@ -95,7 +102,12 @@ fn remote_is_ancestor_to_given_td_dir_returns_recursion_error(
 
     let actual = action(&setup.td_dir, &tendril, dry_run, force);
 
-    assert_eq!(actual, Err(TendrilActionError::Recursion));
+    assert_eq!(actual, ActionLog::new(
+        None,
+        None,
+        tendril.parent().join(tendril.name()),
+        Err(TendrilActionError::Recursion),
+    ));
 }
 
 #[rstest]
@@ -104,7 +116,7 @@ fn remote_is_ancestor_to_given_td_dir_returns_recursion_error(
 #[case(push_tendril)]
 fn remote_is_direct_child_of_given_td_dir_returns_recursion_error(
     #[case] action: fn(&Path, &Tendril, bool, bool)
-        -> Result<TendrilActionSuccess, TendrilActionError>,
+        -> ActionLog,
 
     #[values(true, false)]
     dry_run: bool,
@@ -133,7 +145,12 @@ fn remote_is_direct_child_of_given_td_dir_returns_recursion_error(
 
     let actual = action( &td_dir, &tendril, dry_run, force);
 
-    assert_eq!(actual, Err(TendrilActionError::Recursion));
+    assert_eq!(actual, ActionLog::new(
+        None,
+        Some(FsoType::File),
+        tendril.parent().join(tendril.name()),
+        Err(TendrilActionError::Recursion),
+    ));
 }
 
 #[rstest]
@@ -142,7 +159,7 @@ fn remote_is_direct_child_of_given_td_dir_returns_recursion_error(
 #[case(push_tendril)]
 fn remote_is_nested_child_of_given_td_dir_returns_recursion_error(
     #[case] action: fn(&Path, &Tendril, bool, bool)
-        -> Result<TendrilActionSuccess, TendrilActionError>,
+        -> ActionLog,
 
     #[values(true, false)]
     dry_run: bool,
@@ -176,7 +193,12 @@ fn remote_is_nested_child_of_given_td_dir_returns_recursion_error(
 
     let actual = action(&td_dir, &tendril, dry_run, force);
 
-    assert_eq!(actual, Err(TendrilActionError::Recursion));
+    assert_eq!(actual, ActionLog::new(
+        None,
+        Some(FsoType::File),
+        tendril.parent().join(tendril.name()),
+        Err(TendrilActionError::Recursion),
+    ));
 }
 
 #[rstest]
@@ -185,7 +207,7 @@ fn remote_is_nested_child_of_given_td_dir_returns_recursion_error(
 #[case(push_tendril)]
 fn remote_is_sibling_to_given_td_dir_proceeds_normally(
     #[case] action: fn(&Path, &Tendril, bool, bool)
-        -> Result<TendrilActionSuccess, TendrilActionError>,
+        -> ActionLog,
 
     #[values(true, false)]
     dry_run: bool,
@@ -201,24 +223,34 @@ fn remote_is_sibling_to_given_td_dir_proceeds_normally(
         setup.td_dir.parent().unwrap()
     );
 
+    let exp_remote_type;
     let mut tendril = setup.dir_tendril();
     if action == link_tendril {
         tendril.mode = TendrilMode::Link;
         symlink_expose(&setup.remote_dir, &setup.target_dir, false, true)
             .unwrap();
+        exp_remote_type = Some(FsoType::SymDir);
     }
     else {
         setup.make_remote_dir();
+        exp_remote_type = Some(FsoType::Dir);
     }
 
     let actual = action(&setup.td_dir, &tendril, dry_run, force);
 
+    let exp_result;
     if dry_run {
-        assert_eq!(actual, Ok(TendrilActionSuccess::OverwriteSkipped));
+        exp_result = Ok(TendrilActionSuccess::OverwriteSkipped);
     }
     else {
-        assert_eq!(actual, Ok(TendrilActionSuccess::Overwrite));
+        exp_result = Ok(TendrilActionSuccess::Overwrite);
     }
+    assert_eq!(actual, ActionLog::new(
+        Some(FsoType::Dir),
+        exp_remote_type,
+        setup.remote_dir,
+        exp_result,
+    ));
 }
 
 #[rstest]
@@ -227,7 +259,7 @@ fn remote_is_sibling_to_given_td_dir_proceeds_normally(
 #[case(push_tendril)]
 fn remote_is_another_td_dir_proceeds_normally(
     #[case] action: fn(&Path, &Tendril, bool, bool)
-        -> Result<TendrilActionSuccess, TendrilActionError>,
+        -> ActionLog,
 
     #[values(true, false)]
     dry_run: bool,
@@ -248,18 +280,25 @@ fn remote_is_another_td_dir_proceeds_normally(
 
     let actual = action(&setup.td_dir, &tendril, dry_run, force);
 
+    let exp_result;
     if action == link_tendril && !force {
-        assert_eq!(actual, Err(TendrilActionError::TypeMismatch {
+        exp_result = Err(TendrilActionError::TypeMismatch {
                 loc: Location::Dest,
                 mistype: FsoType::Dir,
-            }))
+            })
     }
     else if dry_run {
-        assert_eq!(actual, Ok(TendrilActionSuccess::OverwriteSkipped));
+        exp_result = Ok(TendrilActionSuccess::OverwriteSkipped);
     }
     else {
-        assert_eq!(actual, Ok(TendrilActionSuccess::Overwrite));
+        exp_result = Ok(TendrilActionSuccess::Overwrite);
     }
+    assert_eq!(actual, ActionLog::new(
+        Some(FsoType::Dir),
+        Some(FsoType::Dir),
+        setup.remote_dir,
+        exp_result,
+    ));
 }
 
 #[rstest]
@@ -281,7 +320,7 @@ fn var_in_any_field_exists_uses_raw_path_even_if_var_exists(
 
     #[values(link_tendril, pull_tendril, push_tendril)]
     action: fn(&Path, &Tendril, bool, bool)
-        -> Result<TendrilActionSuccess, TendrilActionError>,
+        -> ActionLog,
 
     #[values(true, false)]
     dry_run: bool,
@@ -307,23 +346,33 @@ fn var_in_any_field_exists_uses_raw_path_even_if_var_exists(
         setup.parent_dir.clone(),
         TendrilMode::DirOverwrite,
     ).unwrap();
+    let exp_remote_type;
     if action == link_tendril {
         tendril.mode = TendrilMode::Link;
         symlink_expose(&setup.remote_file, &setup.target_file, false, true)
             .unwrap();
+        exp_remote_type = Some(FsoType::SymFile);
     }
     else {
         setup.make_remote_file();
+        exp_remote_type = Some(FsoType::File);
     }
 
     let actual = action(&setup.td_dir, &tendril, dry_run, force);
 
+    let exp_result;
     if dry_run {
-        assert_eq!(actual, Ok(TendrilActionSuccess::OverwriteSkipped));
+        exp_result = Ok(TendrilActionSuccess::OverwriteSkipped);
     }
     else {
-        assert_eq!(actual, Ok(TendrilActionSuccess::Overwrite));
+        exp_result = Ok(TendrilActionSuccess::Overwrite);
     }
+    assert_eq!(actual, ActionLog::new(
+        Some(FsoType::File),
+        exp_remote_type,
+        tendril.parent().join(tendril.name()),
+        exp_result,
+    ));
 }
 
 #[rstest]
@@ -332,7 +381,7 @@ fn var_in_any_field_exists_uses_raw_path_even_if_var_exists(
 #[case(push_tendril)]
 fn other_tendrils_in_same_group_dir_are_unchanged(
     #[case] action: fn(&Path, &Tendril, bool, bool)
-        -> Result<TendrilActionSuccess, TendrilActionError>,
+        -> ActionLog,
 
     #[values(true, false)]
     dry_run: bool,
@@ -354,6 +403,9 @@ fn other_tendrils_in_same_group_dir_are_unchanged(
 
     let mut file_tendril = setup.file_tendril();
     let mut dir_tendril = setup.dir_tendril();
+
+    let exp_remote_type_file;
+    let exp_remote_type_dir;
     if action == link_tendril {
         file_tendril.mode = TendrilMode::Link;
         dir_tendril.mode = TendrilMode::Link;
@@ -361,10 +413,14 @@ fn other_tendrils_in_same_group_dir_are_unchanged(
             .unwrap();
         symlink_expose(&setup.remote_dir, &setup.target_dir, false, true)
             .unwrap();
+        exp_remote_type_file = Some(FsoType::SymFile);
+        exp_remote_type_dir = Some(FsoType::SymDir);
     }
     else {
         setup.make_remote_file();
         setup.make_remote_dir();
+        exp_remote_type_file = Some(FsoType::File);
+        exp_remote_type_dir = Some(FsoType::Dir);
     }
 
     let file_actual = action(&setup.td_dir, &file_tendril, dry_run, force);
@@ -375,14 +431,25 @@ fn other_tendrils_in_same_group_dir_are_unchanged(
     let some_other_local_nested_contents = read_to_string(some_other_local_nested).unwrap();
     assert_eq!(some_other_local_file_contents, "Another tendril from the same group");
     assert_eq!(some_other_local_nested_contents, "Another nested from the same group");
+    let exp_result;
     if dry_run {
-        assert_eq!(file_actual, Ok(TendrilActionSuccess::OverwriteSkipped));
-        assert_eq!(dir_actual, Ok(TendrilActionSuccess::OverwriteSkipped));
+        exp_result = Ok(TendrilActionSuccess::OverwriteSkipped);
     }
     else {
-        assert_eq!(file_actual, Ok(TendrilActionSuccess::Overwrite));
-        assert_eq!(dir_actual, Ok(TendrilActionSuccess::Overwrite));
+        exp_result = Ok(TendrilActionSuccess::Overwrite);
     }
+    assert_eq!(file_actual, ActionLog::new(
+        Some(FsoType::File),
+        exp_remote_type_file,
+        setup.remote_file,
+        exp_result.clone(),
+    ));
+    assert_eq!(dir_actual, ActionLog::new(
+        Some(FsoType::Dir),
+        exp_remote_type_dir,
+        setup.remote_dir,
+        exp_result,
+    ));
 }
 
 #[rstest]
@@ -391,7 +458,7 @@ fn other_tendrils_in_same_group_dir_are_unchanged(
 #[case(push_tendril)]
 fn other_files_in_subdir_are_unchanged(
     #[case] action: fn(&Path, &Tendril, bool, bool)
-        -> Result<TendrilActionSuccess, TendrilActionError>,
+        -> ActionLog,
 
     #[values(true, false)]
     dry_run: bool,
@@ -429,26 +496,40 @@ fn other_files_in_subdir_are_unchanged(
         &setup.td_dir, &subdir_dir_tendril, dry_run, force
     );
 
-    let expected;
+    let exp_result;
+    let mut exp_remote_type_file = Some(FsoType::File);
+    let mut exp_remote_type_dir = Some(FsoType::Dir);
     if action == link_tendril {
         if dry_run {
-        expected = Ok(TendrilActionSuccess::NewSkipped);
+            exp_result = Ok(TendrilActionSuccess::NewSkipped);
         }
         else {
-            expected = Ok(TendrilActionSuccess::New);
+            exp_result = Ok(TendrilActionSuccess::New);
         }
+        exp_remote_type_file = None;
+        exp_remote_type_dir = None;
     }
     else if dry_run {
-        expected = Ok(TendrilActionSuccess::OverwriteSkipped);
+        exp_result = Ok(TendrilActionSuccess::OverwriteSkipped);
     }
     else {
-        expected = Ok(TendrilActionSuccess::Overwrite);
+        exp_result = Ok(TendrilActionSuccess::Overwrite);
     }
 
+    assert_eq!(subdir_file_actual, ActionLog::new(
+        Some(FsoType::File),
+        exp_remote_type_file,
+        setup.remote_subdir_file,
+        exp_result.clone(),
+    ));
+    assert_eq!(subdir_dir_actual, ActionLog::new(
+        Some(FsoType::Dir),
+        exp_remote_type_dir,
+        setup.remote_subdir_dir,
+        exp_result,
+    ));
     let other_local_file_contents = read_to_string(other_local_file).unwrap();
     let other_remote_file_contents = read_to_string(other_remote_file).unwrap();
-    assert_eq!(subdir_file_actual, expected);
-    assert_eq!(subdir_dir_actual, expected);
     assert_eq!(other_local_file_contents, "Other local file contents");
     assert_eq!(other_remote_file_contents, "Other remote file contents");
 }
@@ -459,7 +540,7 @@ fn other_files_in_subdir_are_unchanged(
 #[case(push_tendril)]
 fn remote_parent_doesnt_exist_returns_io_error_not_found(
     #[case] action: fn(&Path, &Tendril, bool, bool)
-        -> Result<TendrilActionSuccess, TendrilActionError>,
+        -> ActionLog,
 
     #[values(true, false)]
     dry_run: bool,
@@ -469,6 +550,12 @@ fn remote_parent_doesnt_exist_returns_io_error_not_found(
 ) {
     let mut setup = Setup::new();
     setup.parent_dir = setup.parent_dir.join("IDoNotExist");
+    setup.remote_file = setup.parent_dir.join("misc.txt");
+    setup.remote_dir = setup.parent_dir.join("misc");
+    setup.remote_nested_file = setup.remote_dir.join("nested.txt");
+    setup.remote_subdir_file = setup.parent_dir.join("SubDir/misc.txt");
+    setup.remote_subdir_dir = setup.parent_dir.join("SubDir/misc");
+    setup.remote_subdir_nested_file = setup.remote_subdir_dir.join("nested.txt");
     setup.make_local_file();
     setup.make_local_nested_file();
     setup.make_local_subdir_file();
@@ -502,14 +589,34 @@ fn remote_parent_doesnt_exist_returns_io_error_not_found(
         true => Location::Source,
         false => Location::Dest,
     };
-    let expected = Err(TendrilActionError::IoError {
+    let exp_result = Err(TendrilActionError::IoError {
         kind: std::io::ErrorKind::NotFound,
         loc: exp_loc.clone(),
     });
-    assert_eq!(file_actual, expected);
-    assert_eq!(dir_actual, expected);
-    assert_eq!(subdir_file_actual, expected);
-    assert_eq!(subdir_dir_actual, expected);
+    assert_eq!(file_actual, ActionLog::new(
+        Some(FsoType::File),
+        None,
+        setup.remote_file.clone(),
+        exp_result.clone(),
+    ));
+    assert_eq!(dir_actual, ActionLog::new(
+        Some(FsoType::Dir),
+        None,
+        setup.remote_dir.clone(),
+        exp_result.clone(),
+    ));
+    assert_eq!(subdir_file_actual, ActionLog::new(
+        Some(FsoType::File),
+        None,
+        setup.remote_subdir_file.clone(),
+        exp_result.clone(),
+    ));
+    assert_eq!(subdir_dir_actual, ActionLog::new(
+        Some(FsoType::Dir),
+        None,
+        setup.remote_subdir_dir.clone(),
+        exp_result,
+    ));
     assert_eq!(setup.local_file_contents(), "Local file contents");
     assert_eq!(setup.local_nested_file_contents(), "Local nested file contents");
     assert_eq!(setup.local_subdir_file_contents(), "Local subdir file contents");
@@ -522,7 +629,7 @@ fn remote_parent_doesnt_exist_returns_io_error_not_found(
 #[case(push_tendril)]
 fn remote_direct_parent_doesnt_exist_but_parent_does_should_create_subdirs_then_succeed(
     #[case] action: fn(&Path, &Tendril, bool, bool)
-        -> Result<TendrilActionSuccess, TendrilActionError>,
+        -> ActionLog,
 
     #[values(true, false)]
     dry_run: bool,
@@ -551,17 +658,15 @@ fn remote_direct_parent_doesnt_exist_but_parent_does_should_create_subdirs_then_
         &subdir_dir_setup.td_dir, &subdir_dir_tendril, dry_run, force
     );
 
+    let exp_result;
     if action == pull_tendril {
-        let expected = Err(TendrilActionError::IoError {
+        exp_result = Err(TendrilActionError::IoError {
             kind: std::io::ErrorKind::NotFound,
             loc: Location::Source,
         });
-        assert_eq!(subdir_file_actual, expected);
-        assert_eq!(subdir_dir_actual, expected);
     }
     else if dry_run {
-        assert_eq!(subdir_file_actual, Ok(TendrilActionSuccess::NewSkipped));
-        assert_eq!(subdir_dir_actual, Ok(TendrilActionSuccess::NewSkipped));
+        exp_result = Ok(TendrilActionSuccess::NewSkipped);
         assert_eq!(
             subdir_file_setup.local_subdir_file_contents(),
             "Local subdir file contents"
@@ -574,8 +679,7 @@ fn remote_direct_parent_doesnt_exist_but_parent_does_should_create_subdirs_then_
         assert!(!subdir_dir_setup.remote_subdir_dir.exists());
     }
     else {
-        assert_eq!(subdir_file_actual, Ok(TendrilActionSuccess::New));
-        assert_eq!(subdir_dir_actual, Ok(TendrilActionSuccess::New));
+        exp_result = Ok(TendrilActionSuccess::New);
         assert_eq!(
             subdir_file_setup.local_subdir_file_contents(),
             "Local subdir file contents"
@@ -593,6 +697,18 @@ fn remote_direct_parent_doesnt_exist_but_parent_does_should_create_subdirs_then_
             "Local subdir nested file contents"
         );
     }
+    assert_eq!(subdir_file_actual, ActionLog::new(
+        Some(FsoType::File),
+        None,
+        subdir_file_setup.remote_subdir_file,
+        exp_result.clone(),
+    ));
+    assert_eq!(subdir_dir_actual, ActionLog::new(
+        Some(FsoType::Dir),
+        None,
+        subdir_dir_setup.remote_subdir_dir,
+        exp_result,
+    ));
 }
 
 #[rstest]
@@ -601,7 +717,7 @@ fn remote_direct_parent_doesnt_exist_but_parent_does_should_create_subdirs_then_
 #[case(push_tendril)]
 fn td_dir_doesnt_exist_returns_io_error_not_found(
     #[case] action: fn(&Path, &Tendril, bool, bool)
-        -> Result<TendrilActionSuccess, TendrilActionError>,
+        -> ActionLog,
 
     #[values(true, false)]
     dry_run: bool,
@@ -612,6 +728,8 @@ fn td_dir_doesnt_exist_returns_io_error_not_found(
     let setup = Setup::new();
     let mut file_tendril = setup.file_tendril();
     let mut dir_tendril = setup.dir_tendril();
+    let exp_remote_type_file;
+    let exp_remote_type_dir;
     if action == link_tendril {
         file_tendril.mode = TendrilMode::Link;
         dir_tendril.mode = TendrilMode::Link;
@@ -619,25 +737,42 @@ fn td_dir_doesnt_exist_returns_io_error_not_found(
         setup.make_target_dir();
         symlink_expose(&setup.remote_file, &setup.target_file, false, true)
             .unwrap();
-        symlink_expose(&setup.remote_file, &setup.target_file, false, true)
+        symlink_expose(&setup.remote_dir, &setup.target_dir, false, true)
             .unwrap();
+        exp_remote_type_file = Some(FsoType::SymFile);
+        exp_remote_type_dir = Some(FsoType::SymDir);
     }
     else {
         setup.make_remote_file();
         setup.make_remote_dir();
+        exp_remote_type_file = Some(FsoType::File);
+        exp_remote_type_dir = Some(FsoType::Dir);
     }
     assert!(!setup.td_dir.exists());
 
-    let actual = action(&setup.td_dir, &file_tendril, dry_run, force);
+    let file_actual = action(&setup.td_dir, &file_tendril, dry_run, force);
+    let dir_actual = action(&setup.td_dir, &dir_tendril, dry_run, force);
 
     let exp_loc = match action == pull_tendril {
         true => Location::Dest,
         false => Location::Source,
     };
-    assert_eq!(actual, Err(TendrilActionError::IoError {
+    let exp_result = Err(TendrilActionError::IoError {
         kind: std::io::ErrorKind::NotFound,
         loc: exp_loc,
-    }));
+    });
+    assert_eq!(file_actual, ActionLog::new(
+        None,
+        exp_remote_type_file,
+        setup.remote_file.clone(),
+        exp_result.clone(),
+    ));
+    assert_eq!(dir_actual, ActionLog::new(
+        None,
+        exp_remote_type_dir,
+        setup.remote_dir.clone(),
+        exp_result,
+    ));
     assert!(!setup.td_dir.exists());
 }
 
@@ -646,7 +781,7 @@ fn td_dir_doesnt_exist_returns_io_error_not_found(
 #[case(push_tendril)]
 fn link_mode_tendril_returns_mode_mismatch_error(
     #[case] action: fn(&Path, &Tendril, bool, bool)
-        -> Result<TendrilActionSuccess, TendrilActionError>,
+        -> ActionLog,
 
     #[values(true, false)]
     dry_run: bool,
@@ -663,7 +798,12 @@ fn link_mode_tendril_returns_mode_mismatch_error(
 
     let actual = action(&setup.td_dir, &tendril, dry_run, force);
 
-    assert_eq!(actual, Err(TendrilActionError::ModeMismatch));
+    assert_eq!(actual, ActionLog::new(
+        Some(FsoType::File),
+        Some(FsoType::File),
+        setup.remote_file.clone(),
+        Err(TendrilActionError::ModeMismatch),
+    ));
     assert_eq!(&setup.remote_file_contents(), "Remote file contents");
     assert_eq!(&setup.local_file_contents(), "Local file contents");
 }
@@ -677,7 +817,7 @@ fn link_mode_tendril_returns_mode_mismatch_error(
 #[case(push_tendril, false)]
 fn cases_that_do_not_modify_local(
     #[case] action: fn(&Path, &ResolvedTendril, bool, bool)
-        -> Result<TendrilActionSuccess, TendrilActionError>,
+        -> TendrilActionMetadata,
 
     #[case] dry_run: bool,
 ) { }
@@ -685,7 +825,7 @@ fn cases_that_do_not_modify_local(
 #[apply(cases_that_do_not_modify_local)]
 pub(crate) fn local_is_unchanged(
     #[case] action: fn(&Path, &Tendril, bool, bool)
-        -> Result<TendrilActionSuccess, TendrilActionError>,
+        -> ActionLog,
 
     #[case] dry_run: bool,
 
@@ -700,6 +840,9 @@ pub(crate) fn local_is_unchanged(
 
     let mut file_tendril = setup.file_tendril();
     let mut dir_tendril = setup.dir_tendril();
+
+    let exp_remote_type_file;
+    let exp_remote_type_dir;
     if action == link_tendril {
         file_tendril.mode = TendrilMode::Link;
         dir_tendril.mode = TendrilMode::Link;
@@ -707,31 +850,46 @@ pub(crate) fn local_is_unchanged(
             .unwrap();
         symlink_expose(&setup.remote_dir, &setup.target_dir, false, true)
             .unwrap();
+        exp_remote_type_file = Some(FsoType::SymFile);
+        exp_remote_type_dir = Some(FsoType::SymDir);
     }
     else {
         setup.make_remote_file();
         setup.make_remote_nested_file();
+        exp_remote_type_file = Some(FsoType::File);
+        exp_remote_type_dir = Some(FsoType::Dir);
     }
 
     let file_actual = action(&setup.td_dir, &file_tendril, dry_run, force);
     let dir_actual = action(&setup.td_dir, &dir_tendril, dry_run, force);
 
-    assert_eq!(setup.local_file_contents(), "Local file contents");
-    assert_eq!(setup.local_nested_file_contents(), "Local nested file contents");
+    let exp_result;
     if dry_run {
-        assert_eq!(file_actual, Ok(TendrilActionSuccess::OverwriteSkipped));
-        assert_eq!(dir_actual, Ok(TendrilActionSuccess::OverwriteSkipped));
+        exp_result = Ok(TendrilActionSuccess::OverwriteSkipped);
     }
     else {
-        assert_eq!(file_actual, Ok(TendrilActionSuccess::Overwrite));
-        assert_eq!(dir_actual, Ok(TendrilActionSuccess::Overwrite));
+        exp_result = Ok(TendrilActionSuccess::Overwrite);
     }
+    assert_eq!(file_actual, ActionLog::new(
+        Some(FsoType::File),
+        exp_remote_type_file,
+        setup.remote_file.clone(),
+        exp_result.clone(),
+    ));
+    assert_eq!(dir_actual, ActionLog::new(
+        Some(FsoType::Dir),
+        exp_remote_type_dir,
+        setup.remote_dir.clone(),
+        exp_result,
+    ));
+    assert_eq!(setup.local_file_contents(), "Local file contents");
+    assert_eq!(setup.local_nested_file_contents(), "Local nested file contents");
 }
 
 #[apply(cases_that_do_not_modify_local)]
 pub(crate) fn local_symlink_is_unchanged(
     #[case] action: fn(&Path, &Tendril, bool, bool)
-        -> Result<TendrilActionSuccess, TendrilActionError>,
+        -> ActionLog,
 
     #[case] dry_run: bool,
 
@@ -749,6 +907,9 @@ pub(crate) fn local_symlink_is_unchanged(
 
     let mut file_tendril = setup.file_tendril();
     let mut dir_tendril = setup.dir_tendril();
+
+    let exp_remote_type_file;
+    let exp_remote_type_dir;
     if action == link_tendril {
         file_tendril.mode = TendrilMode::Link;
         dir_tendril.mode = TendrilMode::Link;
@@ -756,37 +917,57 @@ pub(crate) fn local_symlink_is_unchanged(
         // type mismatch here during links
         symlink_expose(&setup.remote_file, &setup.target_file, false, true).unwrap();
         symlink_expose(&setup.remote_dir, &setup.target_dir, false, true).unwrap();
+        exp_remote_type_file = Some(FsoType::SymFile);
+        exp_remote_type_dir = Some(FsoType::SymDir);
+    }
+    else {
+        exp_remote_type_file = Some(FsoType::File);
+        exp_remote_type_dir = Some(FsoType::Dir);
     }
 
     let file_actual = action(&setup.td_dir, &file_tendril, dry_run, force);
     let dir_actual = action(&setup.td_dir, &dir_tendril, dry_run, force);
 
-    assert!(setup.local_file.is_symlink());
-    assert!(setup.local_dir.is_symlink());
-    assert_eq!(setup.local_file_contents(), "Target file contents");
-    assert_eq!(setup.local_nested_file_contents(), "Target nested file contents");
     let exp_loc = match action == pull_tendril {
         true => Location::Dest,
         false => Location::Source,
     };
+    let exp_file_result;
+    let exp_dir_result;
     if !force {
-        assert_eq!(file_actual, Err(TendrilActionError::TypeMismatch {
+        exp_file_result = Err(TendrilActionError::TypeMismatch {
             loc: exp_loc.clone(),
-            mistype: FsoType::Symlink,
-        }));
-        assert_eq!(dir_actual, Err(TendrilActionError::TypeMismatch {
+            mistype: FsoType::SymFile,
+        });
+        exp_dir_result = Err(TendrilActionError::TypeMismatch {
             loc: exp_loc,
-            mistype: FsoType::Symlink,
-        }));
+            mistype: FsoType::SymDir,
+        });
     }
     else if dry_run {
-        assert_eq!(file_actual, Ok(TendrilActionSuccess::OverwriteSkipped));
-        assert_eq!(dir_actual, Ok(TendrilActionSuccess::OverwriteSkipped));
+        exp_file_result = Ok(TendrilActionSuccess::OverwriteSkipped);
+        exp_dir_result = Ok(TendrilActionSuccess::OverwriteSkipped);
     }
     else {
-        assert_eq!(file_actual, Ok(TendrilActionSuccess::Overwrite));
-        assert_eq!(dir_actual, Ok(TendrilActionSuccess::Overwrite));
+        exp_file_result = Ok(TendrilActionSuccess::Overwrite);
+        exp_dir_result = Ok(TendrilActionSuccess::Overwrite);
     }
+    assert_eq!(file_actual, ActionLog::new(
+        Some(FsoType::SymFile),
+        exp_remote_type_file,
+        setup.remote_file.clone(),
+        exp_file_result,
+    ));
+    assert_eq!(dir_actual, ActionLog::new(
+        Some(FsoType::SymDir),
+        exp_remote_type_dir,
+        setup.remote_dir.clone(),
+        exp_dir_result,
+    ));
+    assert!(setup.local_file.is_symlink());
+    assert!(setup.local_dir.is_symlink());
+    assert_eq!(setup.local_file_contents(), "Target file contents");
+    assert_eq!(setup.local_nested_file_contents(), "Target nested file contents");
 }
 
 #[template]
@@ -797,7 +978,7 @@ pub(crate) fn local_symlink_is_unchanged(
 #[case(push_tendril, true)] // Only applies to push in a dry run
 fn cases_that_do_not_modify_remote(
     #[case] action: fn(&Path, &ResolvedTendril, bool, bool)
-        -> Result<TendrilActionSuccess, TendrilActionError>,
+        -> TendrilActionMetadata,
 
     #[case] dry_run: bool,
 ) { }
@@ -805,7 +986,7 @@ fn cases_that_do_not_modify_remote(
 #[apply(cases_that_do_not_modify_remote)]
 pub(crate) fn remote_is_unchanged(
     #[case] action: fn(&Path, &Tendril, bool, bool)
-        -> Result<TendrilActionSuccess, TendrilActionError>,
+        -> ActionLog,
 
     #[case] dry_run: bool,
 
@@ -828,32 +1009,46 @@ pub(crate) fn remote_is_unchanged(
     let file_actual = action(&setup.td_dir, &file_tendril, dry_run, force);
     let dir_actual = action(&setup.td_dir, &dir_tendril, dry_run, force);
 
-    assert_eq!(setup.remote_file_contents(), "Remote file contents");
-    assert_eq!(setup.remote_nested_file_contents(), "Remote nested file contents");
+    let exp_file_result;
+    let exp_dir_result;
     if !force && action == link_tendril {
-        assert_eq!(file_actual, Err(TendrilActionError::TypeMismatch {
-                loc: Location::Dest,
-                mistype: FsoType::File,
-            }));
-        assert_eq!(dir_actual,  Err(TendrilActionError::TypeMismatch {
-                loc: Location::Dest,
-                mistype: FsoType::Dir,
-            }));
+        exp_file_result = Err(TendrilActionError::TypeMismatch {
+            loc: Location::Dest,
+            mistype: FsoType::File,
+        });
+        exp_dir_result = Err(TendrilActionError::TypeMismatch {
+            loc: Location::Dest,
+            mistype: FsoType::Dir,
+        });
     }
     else if dry_run {
-        assert_eq!(file_actual, Ok(TendrilActionSuccess::OverwriteSkipped));
-        assert_eq!(dir_actual, Ok(TendrilActionSuccess::OverwriteSkipped));
+        exp_file_result = Ok(TendrilActionSuccess::OverwriteSkipped);
+        exp_dir_result = Ok(TendrilActionSuccess::OverwriteSkipped);
     }
     else {
-        assert_eq!(file_actual, Ok(TendrilActionSuccess::Overwrite));
-        assert_eq!(dir_actual, Ok(TendrilActionSuccess::Overwrite));
+        exp_file_result = Ok(TendrilActionSuccess::Overwrite);
+        exp_dir_result = Ok(TendrilActionSuccess::Overwrite);
     }
+    assert_eq!(file_actual, ActionLog::new(
+        Some(FsoType::File),
+        Some(FsoType::File),
+        setup.remote_file.clone(),
+        exp_file_result,
+    ));
+    assert_eq!(dir_actual, ActionLog::new(
+        Some(FsoType::Dir),
+        Some(FsoType::Dir),
+        setup.remote_dir.clone(),
+        exp_dir_result,
+    ));
+    assert_eq!(setup.remote_file_contents(), "Remote file contents");
+    assert_eq!(setup.remote_nested_file_contents(), "Remote nested file contents");
 }
 
 #[apply(cases_that_do_not_modify_remote)]
 pub(crate) fn remote_symlink_is_unchanged(
     #[case] action: fn(&Path, &Tendril, bool, bool)
-        -> Result<TendrilActionSuccess, TendrilActionError>,
+        -> ActionLog,
 
     #[case] dry_run: bool,
 
@@ -880,32 +1075,46 @@ pub(crate) fn remote_symlink_is_unchanged(
     let file_actual = action(&setup.td_dir, &file_tendril, dry_run, force);
     let dir_actual = action(&setup.td_dir, &dir_tendril, dry_run, force);
 
-    assert!(setup.remote_file.is_symlink());
-    assert!(setup.remote_dir.is_symlink());
-    assert_eq!(setup.remote_file_contents(), "Target file contents");
-    assert_eq!(setup.remote_nested_file_contents(), "Target nested file contents");
+    let exp_file_result;
+    let exp_dir_result;
     if !force && action != link_tendril {
         let exp_loc = match action == pull_tendril {
             true => Location::Source,
             false => Location::Dest,
         };
-        assert_eq!(file_actual, Err(TendrilActionError::TypeMismatch {
+        exp_file_result = Err(TendrilActionError::TypeMismatch {
             loc: exp_loc.clone(),
-            mistype: FsoType::Symlink,
-        }));
-        assert_eq!(dir_actual,  Err(TendrilActionError::TypeMismatch {
-            loc: exp_loc,
-            mistype: FsoType::Symlink,
-        }));
+            mistype: FsoType::SymFile,
+        });
+        exp_dir_result = Err(TendrilActionError::TypeMismatch {
+            loc: exp_loc.clone(),
+            mistype: FsoType::SymDir,
+        });
     }
     else if dry_run {
-        assert_eq!(file_actual, Ok(TendrilActionSuccess::OverwriteSkipped));
-        assert_eq!(dir_actual, Ok(TendrilActionSuccess::OverwriteSkipped));
+        exp_file_result = Ok(TendrilActionSuccess::OverwriteSkipped);
+        exp_dir_result = Ok(TendrilActionSuccess::OverwriteSkipped);
     }
     else {
-        assert_eq!(file_actual, Ok(TendrilActionSuccess::Overwrite));
-        assert_eq!(dir_actual, Ok(TendrilActionSuccess::Overwrite));
+        exp_file_result = Ok(TendrilActionSuccess::Overwrite);
+        exp_dir_result = Ok(TendrilActionSuccess::Overwrite);
     }
+    assert_eq!(file_actual, ActionLog::new(
+        Some(FsoType::File),
+        Some(FsoType::SymFile),
+        setup.remote_file.clone(),
+        exp_file_result,
+    ));
+    assert_eq!(dir_actual, ActionLog::new(
+        Some(FsoType::Dir),
+        Some(FsoType::SymDir),
+        setup.remote_dir.clone(),
+        exp_dir_result,
+    ));
+    assert!(setup.remote_file.is_symlink());
+    assert!(setup.remote_dir.is_symlink());
+    assert_eq!(setup.remote_file_contents(), "Target file contents");
+    assert_eq!(setup.remote_nested_file_contents(), "Target nested file contents");
 }
 
 #[rstest]
@@ -914,7 +1123,7 @@ pub(crate) fn remote_symlink_is_unchanged(
 #[case(push_tendril)]
 fn current_dir_is_unchanged(
     #[case] action: fn(&Path, &Tendril, bool, bool)
-        -> Result<TendrilActionSuccess, TendrilActionError>,
+        -> ActionLog,
 
     #[values(true, false)]
     dry_run: bool,
@@ -937,15 +1146,23 @@ fn current_dir_is_unchanged(
     let file_actual = action(&setup.td_dir, &file_tendril, dry_run, force);
     let dir_actual = action(&setup.td_dir, &dir_tendril, dry_run, force);
 
+    let exp_result = Err(TendrilActionError::IoError {
+        kind: std::io::ErrorKind::NotFound,
+        loc: Location::Source,
+    });
+    assert_eq!(file_actual, ActionLog::new(
+        None,
+        None,
+        setup.remote_file.clone(),
+        exp_result.clone(),
+    ));
+    assert_eq!(dir_actual, ActionLog::new(
+        None,
+        None,
+        setup.remote_dir.clone(),
+        exp_result,
+    ));
     assert_eq!(std::env::current_dir().unwrap(), orig_cd);
-    assert_eq!(file_actual, Err(TendrilActionError::IoError {
-        kind: std::io::ErrorKind::NotFound,
-        loc: Location::Source,
-    }));
-    assert_eq!(dir_actual, Err(TendrilActionError::IoError {
-        kind: std::io::ErrorKind::NotFound,
-        loc: Location::Source,
-    }));
 }
 
 #[rstest]
@@ -956,7 +1173,7 @@ fn current_dir_is_unchanged(
 #[serial("root")]
 fn windows_platform_parent_is_root_returns_permission_error_unless_dry_run_or_dir(
     #[case] action: fn(&Path, &Tendril, bool, bool)
-        -> Result<TendrilActionSuccess, TendrilActionError>,
+        -> ActionLog,
 
     #[values(true, false)]
     dry_run: bool,
@@ -1001,40 +1218,57 @@ fn windows_platform_parent_is_root_returns_permission_error_unless_dry_run_or_di
     let file_actual = action(&setup.td_dir, &file_tendril, dry_run, force);
     let dir_actual = action(&setup.td_dir, &dir_tendril, dry_run, force);
 
+    let exp_file_result;
+    let exp_dir_result;
+    let exp_remote_type_file = None;
+    let mut exp_remote_type_dir = None;
     if action == pull_tendril {
         // No way to create a file at the root for the test. In theory, if a tendril
         // pointed to an existing file at the root this would return successfully
-        assert_eq!(file_actual, Err(TendrilActionError::IoError {
+        exp_file_result = Err(TendrilActionError::IoError {
             kind: std::io::ErrorKind::NotFound,
             loc: Location::Source,
-        }));
+        });
+        exp_remote_type_dir = Some(FsoType::Dir);
         if dry_run {
-            assert_eq!(dir_actual, Ok(TendrilActionSuccess::OverwriteSkipped));
+            exp_dir_result = Ok(TendrilActionSuccess::OverwriteSkipped);
             assert_eq!(setup.local_nested_file_contents(), "Local nested file contents");
         }
         else {
-            assert_eq!(dir_actual, Ok(TendrilActionSuccess::Overwrite));
+            exp_dir_result = Ok(TendrilActionSuccess::Overwrite);
             assert_eq!(setup.local_nested_file_contents(), "Remote nested file contents");
         }
     }
     else if dry_run {
-        assert_eq!(file_actual, Ok(TendrilActionSuccess::NewSkipped));
-        assert_eq!(dir_actual, Ok(TendrilActionSuccess::NewSkipped));
+        exp_file_result = Ok(TendrilActionSuccess::NewSkipped);
+        exp_dir_result = Ok(TendrilActionSuccess::NewSkipped);
         assert!(!setup.remote_file.exists());
         assert!(!setup.remote_dir.exists());
     }
     else {
         // File creation at root fails but directory creation is successful
-        assert_eq!(file_actual, Err(TendrilActionError::IoError {
+        exp_file_result = Err(TendrilActionError::IoError {
             kind: std::io::ErrorKind::PermissionDenied,
             loc: Location::Dest,
-        }));
+        });
         // If getting "Overwrite", check whether the temp folder exists in the
         // root folder. It may not have been cleaned up properly if previous tests runs failed
-        assert_eq!(dir_actual, Ok(TendrilActionSuccess::New));
+        exp_dir_result = Ok(TendrilActionSuccess::New);
         assert!(!setup.remote_file.exists());
         assert_eq!(setup.remote_nested_file_contents(), "Local nested file contents");
     }
+    assert_eq!(file_actual, ActionLog::new(
+        Some(FsoType::File),
+        exp_remote_type_file,
+        file_tendril.parent().join(file_tendril.name()),
+        exp_file_result,
+    ));
+    assert_eq!(dir_actual, ActionLog::new(
+        Some(FsoType::Dir),
+        exp_remote_type_dir,
+        dir_tendril.parent().join(dir_tendril.name()),
+        exp_dir_result,
+    ));
 
     // Cleanup
     remove_file(&setup.remote_file).ok();
@@ -1050,7 +1284,7 @@ fn windows_platform_parent_is_root_returns_permission_error_unless_dry_run_or_di
 #[serial("root")]
 fn non_windows_platform_parent_is_root_returns_permission_error_unless_dry_run(
     #[case] action: fn(&Path, &Tendril, bool, bool)
-        -> Result<TendrilActionSuccess, TendrilActionError>,
+        -> ActionLog,
 
     #[values(true, false)]
     dry_run: bool,
@@ -1090,44 +1324,62 @@ fn non_windows_platform_parent_is_root_returns_permission_error_unless_dry_run(
     let file_actual = action(&setup.td_dir, &file_tendril, dry_run, force);
     let dir_actual = action(&setup.td_dir, &dir_tendril, dry_run, force);
 
+    let exp_result;
     if action == pull_tendril {
-        assert_eq!(file_actual, Err(TendrilActionError::IoError {
+        exp_result = Err(TendrilActionError::IoError {
             kind: std::io::ErrorKind::NotFound,
             loc: Location::Source,
-        }));
-        assert_eq!(dir_actual, Err(TendrilActionError::IoError {
-            kind: std::io::ErrorKind::NotFound,
-            loc: Location::Source,
-        }));
+        });
+        assert_eq!(file_actual, ActionLog::new(
+            Some(FsoType::File),
+            None,
+            file_tendril.parent().join(file_tendril.name()),
+            exp_result.clone(),
+        ));
+        assert_eq!(dir_actual, ActionLog::new(
+            Some(FsoType::Dir),
+            None,
+            dir_tendril.parent().join(dir_tendril.name()),
+            exp_result,
+        ));
         assert_eq!(setup.local_file_contents(), "Local file contents");
         assert_eq!(setup.local_nested_file_contents(), "Local nested file contents");
     }
     else if dry_run {
-        assert_eq!(file_actual, Ok(TendrilActionSuccess::NewSkipped));
-        assert_eq!(dir_actual, Ok(TendrilActionSuccess::NewSkipped));
+        exp_result = Ok(TendrilActionSuccess::NewSkipped);
+        assert_eq!(file_actual, ActionLog::new(
+            Some(FsoType::File),
+            None,
+            file_tendril.parent().join(file_tendril.name()),
+            exp_result.clone(),
+        ));
+        assert_eq!(dir_actual, ActionLog::new(
+            Some(FsoType::Dir),
+            None,
+            dir_tendril.parent().join(dir_tendril.name()),
+            exp_result,
+        ));
         assert!(!setup.remote_file.exists());
         assert!(!setup.remote_dir.exists());
     }
     else {
-        match file_actual {
+        match file_actual.result {
             Err(TendrilActionError::IoError {
                 kind: e_kind, 
-                loc: Location::Unknown,
+                loc: Location::Dest,
             }) => {
-                // Possible bug where the std::io::ErrorKind::ReadOnlyFilesystem
-                // is only available in nightly but is being returned on Mac
-                assert!(format!("{:?}", e_kind).contains("ReadOnlyFilesystem"));
+                assert!(is_rofs_err(&e_kind));
             },
-            _ => panic!("Actual error: {:?}", file_actual),
+            _ => panic!("Actual error: {:?}", file_actual.result),
         }
-        match dir_actual {
+        match dir_actual.result {
             Err(TendrilActionError::IoError {
                 kind: e_kind, 
-                loc: Location::Unknown,
+                loc: Location::Dest,
             }) => {
-                assert!(format!("{:?}", e_kind).contains("ReadOnlyFilesystem"));
+                assert!(is_rofs_err(&e_kind));
             },
-            _ => panic!("Actual error: {:?}", dir_actual),
+            _ => panic!("Actual error: {:?}", dir_actual.result),
         }
         assert!(!setup.remote_file.exists());
         assert!(!setup.remote_dir.exists());

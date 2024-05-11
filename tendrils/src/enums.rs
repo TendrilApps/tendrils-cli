@@ -150,15 +150,6 @@ impl From<std::io::ErrorKind> for TendrilActionError {
     }
 }
 
-impl TendrilActionError {
-    pub fn from_io_err(err: std::io::Error, loc: Location) -> Self {
-        TendrilActionError::IoError {
-            kind: err.kind(),
-            loc
-        }
-    }
-}
-
 /// Indicates a side of a file system transaction
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Location {
@@ -170,9 +161,14 @@ pub enum Location {
 /// Indicates a type of file system object
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum FsoType {
+    /// A standard file
     File,
+    /// A standard directory
     Dir,
-    Symlink,
+    /// A symlink to a file
+    SymFile,
+    /// A symlink to a directory
+    SymDir,
 }
 
 /// Indicates the behaviour of this tendril, and determines whether it is

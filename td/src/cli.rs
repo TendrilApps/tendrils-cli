@@ -4,12 +4,14 @@ use inline_colorization::{color_bright_green, color_bright_red, color_reset};
 mod td_table;
 use td_table::TdTable;
 use tendrils::{
-    InvalidTendrilError,
+    ActionLog,
     FsoType,
+    InvalidTendrilError,
     Location,
     TendrilActionError,
     TendrilActionSuccess,
-    TendrilActionReport,
+    TendrilLog,
+    TendrilReport,
 };
 use std::path::PathBuf;
 
@@ -145,14 +147,14 @@ fn ansi_styled_resolved_path(
 }
 
 fn ansi_styled_result(
-    result: &Option<Result<TendrilActionSuccess, TendrilActionError>>
+    result: &Result<TendrilActionSuccess, TendrilActionError>
 ) -> String {
     use std::io::ErrorKind::NotFound;
-    use FsoType::{Dir, File, Symlink};
+    use FsoType::{Dir, File, SymFile, SymDir};
     use Location::{Dest, Source, Unknown};
 
     match result {
-        Some(Ok(r)) => {
+        Ok(r) => {
             let text = match r {
                 TendrilActionSuccess::New => "Created",
                 TendrilActionSuccess::NewSkipped => "Skipped creation",
@@ -161,7 +163,7 @@ fn ansi_styled_result(
             };
             ansi_style(text, color_bright_green.to_owned(), color_reset)
         },
-        Some(Err(e)) => {
+        Err(e) => {
             let owned_str: String;
             let text = match e {
                 TendrilActionError::IoError {kind: NotFound, loc: Source} => {
@@ -193,7 +195,7 @@ fn ansi_styled_result(
                 TendrilActionError::TypeMismatch {loc: Source, mistype: Dir} => {
                     "Unexpected directory at source"
                 },
-                TendrilActionError::TypeMismatch {loc: Source, mistype: Symlink} => {
+                TendrilActionError::TypeMismatch {loc: Source, mistype: SymFile | SymDir} => {
                     "Unexpected symlink at source"
                 },
                 TendrilActionError::TypeMismatch {loc: Dest, mistype: File} => {
@@ -202,7 +204,7 @@ fn ansi_styled_result(
                 TendrilActionError::TypeMismatch {loc: Dest, mistype: Dir} => {
                     "Unexpected directory at destination"
                 },
-                TendrilActionError::TypeMismatch {loc: Dest, mistype: Symlink} => {
+                TendrilActionError::TypeMismatch {loc: Dest, mistype: SymFile | SymDir} => {
                     "Unexpected symlink at destination"
                 },
                 TendrilActionError::TypeMismatch {loc: Unknown, mistype: _} => {
@@ -211,11 +213,13 @@ fn ansi_styled_result(
             };
             ansi_style(text, color_bright_red.to_owned(), color_reset)
         },
-        None => return "".to_string()
     }
 }
 
-pub fn print_reports(reports: &[TendrilActionReport], writer: &mut impl Writer) {
+pub fn print_reports(
+    reports: &[TendrilReport<ActionLog>],
+    writer: &mut impl Writer
+) {
     if reports.is_empty() {
         return;
     }
@@ -229,14 +233,17 @@ pub fn print_reports(reports: &[TendrilActionReport], writer: &mut impl Writer) 
     ]);
 
     for report in reports {
-        let (styled_path, styled_result) = match &report.resolved_path {
-            Ok(_) => {(
-                ansi_styled_resolved_path(&report.resolved_path),
-                ansi_styled_result(&report.action_result)
+        let (styled_path, styled_result) = match &report.log {
+            Ok(log) => {(
+                ansi_styled_resolved_path(
+                    &Ok(log.resolved_path().clone())
+                ),
+                ansi_styled_result(&log.result)
             )},
-            Err(_) => {(
+            Err(e) => {(
+                // Print the resolving error in the result column
                 "".to_string(),
-                ansi_styled_resolved_path(&report.resolved_path),
+                ansi_styled_resolved_path(&Err(e.clone())),
             )},
         };
 
@@ -252,10 +259,10 @@ pub fn print_reports(reports: &[TendrilActionReport], writer: &mut impl Writer) 
     print_totals(reports, writer);
 }
 
-fn print_totals(reports: &[TendrilActionReport], writer: & mut impl Writer) {
+fn print_totals(reports: &[TendrilReport<ActionLog>], writer: & mut impl Writer) {
     let total_successes = reports.iter().filter(|r| {
-        match &r.action_result {
-            Some(v) => v.is_ok(),
+        match &r.log {
+            Ok(log) => log.result.is_ok(),
             _ => false,
         }
     })
