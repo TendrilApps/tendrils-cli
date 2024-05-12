@@ -417,26 +417,14 @@ fn link_tendril(
         local_type = log.local_type();
     }
 
-    log.result = match symlink(
+    log.result = symlink(
         log.resolved_path(),
         log.remote_type(),
         &target,
         local_type,
         dry_run,
         force,
-    ) {
-        Err(TendrilActionError::IoError { kind: e_kind, loc: _ })
-            if dry_run
-                && e_kind == std::io::ErrorKind::NotFound
-                && log.resolved_path().exists()
-                && td_dir.exists() =>
-        {
-            // Local does not exist and should be copied before link
-            // in a non-dry run. Ignore this error here
-            Ok(TendrilActionSuccess::OverwriteSkipped)
-        }
-        r => r,
-    };
+    );
 
     log
 }
