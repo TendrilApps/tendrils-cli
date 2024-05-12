@@ -149,7 +149,9 @@ impl Setup {
     }
 
     pub fn file_tendril_bundle(&self) -> TendrilBundle {
-        TendrilBundle::new("SomeApp", vec!["misc.txt"])
+        let mut bundle = TendrilBundle::new("SomeApp", vec!["misc.txt"]);
+        bundle.parents = vec![self.parent_dir.to_string_lossy().to_string()];
+        bundle
     }
 
     pub fn file_tendril(&self) -> Tendril {

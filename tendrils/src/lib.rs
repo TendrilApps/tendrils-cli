@@ -842,6 +842,9 @@ fn symlink_win(
 /// reports for each action.
 ///
 /// # Arguments
+/// - `update_fn` - Updater function that will be passed the most recent
+/// report as each action is completed. This allows the calling function to
+/// receive updates as progress is made.
 /// - `mode` - The action mode to be performed.
 /// - `td_dir` - The *Tendrils* folder to perform the actions on.
 /// - `td_bundles` - The list of tendril bundles to perform the actions on.
@@ -877,14 +880,14 @@ fn symlink_win(
 /// - t2_n1_p2
 /// - t2_n2_p1
 /// - t2_n2_p2
-pub fn tendril_action<'a>(
+pub fn tendril_action_updating<'a, F: FnMut(TendrilReport<'a, ActionLog>)>(
+    mut update_fn: F,
     mode: ActionMode,
     td_dir: &Path,
     td_bundles: &'a [TendrilBundle],
     dry_run: bool,
     force: bool,
-) -> Vec<TendrilReport<'a, ActionLog>> {
-    let mut action_reports: Vec<TendrilReport<ActionLog>> = vec![];
+) {
     let first_only = mode == ActionMode::Pull;
     let can_symlink =
         mode == ActionMode::Link || mode == ActionMode::Out && can_symlink();
@@ -900,7 +903,7 @@ pub fn tendril_action<'a>(
         };
 
         for (i, resolved_tendril) in resolved_tendrils.into_iter().enumerate() {
-            let action_md = match (resolved_tendril, &mode, can_symlink) {
+            let log = match (resolved_tendril, &mode, can_symlink) {
                 (Ok(v), ActionMode::Pull, _) => {
                     Ok(pull_tendril(td_dir, &v, dry_run, force))
                 }
@@ -948,11 +951,26 @@ pub fn tendril_action<'a>(
             let report = TendrilReport {
                 orig_tendril: tendril,
                 name: &tendril.names[name_idx],
-                log: action_md,
+                log,
             };
-            action_reports.push(report);
+
+            update_fn(report);
         }
     }
+}
 
-    action_reports
+/// Same behaviour as [`tendril_action_updating`] except reports are only
+/// returned once all actions have completed.
+pub fn tendril_action<'a>(
+    mode: ActionMode,
+    td_dir: &Path,
+    td_bundles: &'a [TendrilBundle],
+    dry_run: bool,
+    force: bool,
+) -> Vec<TendrilReport<'a, ActionLog>> {
+    let mut reports = vec![];
+    let updater = |r| reports.push(r);
+
+    tendril_action_updating(updater, mode, td_dir, td_bundles, dry_run, force);
+    reports
 }
