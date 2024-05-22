@@ -263,6 +263,10 @@ fn is_rofs_err(e_kind: &std::io::ErrorKind) -> bool {
     format!("{:?}", e_kind).contains("ReadOnlyFilesystem")
 }
 
+fn get_local_path(tendril: &Tendril, td_dir: &Path) -> PathBuf {
+    td_dir.join(tendril.group()).join(tendril.name())
+}
+
 /// Parses the `tendrils.json` file in the given *Tendrils* folder
 /// and returns the tendril bundles in the order they are defined in the file.
 ///
@@ -370,7 +374,7 @@ fn link_tendril(
     dry_run: bool,
     mut force: bool,
 ) -> ActionLog {
-    let target = td_dir.join(tendril.group()).join(tendril.name());
+    let target = get_local_path(tendril, td_dir);
     let create_at = tendril.full_path();
 
     let mut log = ActionLog::new(
@@ -441,7 +445,7 @@ fn pull_tendril(
     dry_run: bool,
     force: bool,
 ) -> ActionLog {
-    let dest = td_dir.join(tendril.group()).join(tendril.name());
+    let dest = get_local_path(tendril, td_dir);
     let source = tendril.full_path();
 
     let mut log = ActionLog::new(
@@ -487,7 +491,7 @@ fn push_tendril(
     dry_run: bool,
     force: bool,
 ) -> ActionLog {
-    let source = td_dir.join(tendril.group()).join(tendril.name());
+    let source = get_local_path(tendril, td_dir);
     let dest = tendril.full_path();
 
     let mut log = ActionLog::new(
@@ -918,7 +922,7 @@ pub fn tendril_action_updating<'a, F: FnMut(TendrilReport<'a, ActionLog>)>(
                         // unnecessarily.
                         let remote = v.full_path();
                         Ok(ActionLog::new(
-                            td_dir.join(v.group()).join(v.name()).get_type(),
+                            get_local_path(&v, td_dir).get_type(),
                             remote.get_type(),
                             remote,
                             Err(TendrilActionError::IoError {
