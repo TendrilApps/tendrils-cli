@@ -884,18 +884,18 @@ pub fn tendril_action_updating<'a, F: FnMut(TendrilReport<'a, ActionLog>)>(
     let can_symlink =
         mode == ActionMode::Link || mode == ActionMode::Out && can_symlink();
 
-    for tendril in td_bundles.iter() {
-        let resolved_tendrils = resolve_tendril_bundle(tendril, first_only);
+    for bundle in td_bundles.iter() {
+        let tendrils = resolve_tendril_bundle(bundle, first_only);
 
         // The number of parents that were considered when
         // resolving the tendril bundle
         let num_parents = match first_only {
             true => 1,
-            false => tendril.parents.len(),
+            false => bundle.parents.len(),
         };
 
-        for (i, resolved_tendril) in resolved_tendrils.into_iter().enumerate() {
-            let log = match (resolved_tendril, &mode, can_symlink) {
+        for (i, tendril) in tendrils.into_iter().enumerate() {
+            let log = match (tendril, &mode, can_symlink) {
                 (Ok(v), ActionMode::Pull, _) => {
                     Ok(pull_tendril(td_dir, &v, dry_run, force))
                 }
@@ -941,8 +941,8 @@ pub fn tendril_action_updating<'a, F: FnMut(TendrilReport<'a, ActionLog>)>(
             let name_idx = ((i / num_parents) as f32).floor() as usize;
 
             let report = TendrilReport {
-                orig_tendril: tendril,
-                name: &tendril.names[name_idx],
+                orig_tendril: bundle,
+                name: &bundle.names[name_idx],
                 log,
             };
 
