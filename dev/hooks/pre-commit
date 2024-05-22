@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Run the test suite
-nu ./dev/generic/test-staged.nu
+sh ./dev/generic/test-staged.sh
 eCode=$?
 if [ $eCode != 0 ]
 then
