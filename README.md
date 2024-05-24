@@ -8,6 +8,8 @@
     - Versioning/syncing small scripts that otherwise would not have their own repos
     - Quickly editing miscellaneous files in a common place rather than tracking them down individually
     - Multiple settings profiles within one user
+- Where *Tendrils* isn't as useful:
+    - Ephemeral environments, such as Docker containers. It's likely simpler to use a one-off script to put the files where they belong
 
 # Getting Started
 ## Supported Platforms
@@ -150,7 +152,7 @@ structure to [parent](#parents)
 - If this field is omitted, it defaults to `false`
 
 ### `profiles`
-- Provide an additional means for associating groups of tendrils (in a broader sense than `group`
+- Provide an additional means for associating groups of tendrils (in a broader sense than `group`)
     - They may group by context, and often map to a specific computer (`home`, `work`, etc), or to a group of computers (`unix`, `windows`, etc)
     - They may also be used to group by category (`configs`, `scripts`, etc.)
 - A tendril can belong to several profiles at once
