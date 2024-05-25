@@ -45,8 +45,9 @@ td init
 ```
 
 3. Define some tendrils in the file following the [schema](#schema)
-4. Run a [`pull`](#pulling) to make an initial copy of any [push/pull style](#pushpull-style) tendrils to the [Tendrils folder](#tendrils-folder)
-5. Run a [`link`](#linking) to setup any [link style](#link-style) tendrils
+4. Run a [`td list`](#list-tendrils) to ensure that the tendrils have been defined as you expected
+5. Run a [`pull`](#pulling) to make an initial copy of any [push/pull style](#pushpull-style) tendrils to the [Tendrils folder](#tendrils-folder)
+6. Run a [`link`](#linking) to setup any [link style](#link-style) tendrils
 
 # Tendrils Folder
 - Serves as a common location for all of the tendrils defined in the [`tendrils.json`](#tendrilsjson) file
@@ -175,6 +176,14 @@ structure to [parent](#parents)
 "profiles": ["my-profile1", "my-profile2"]
 ```
 
+# List Tendrils
+- Basic information for each tendril can be listed using the `list` command
+- `td` must be called from or pointed to a [Tendrils folder](#tendrils-folder)
+    - See [specifying a tendrils folder](#specifying-the-tendrils-folder)
+``` bash
+td list
+```
+
 # Tendril Actions
 - There are several actions for working with tendrils 
 - `td` is the CLI tool that performs these commands
@@ -185,7 +194,6 @@ structure to [parent](#parents)
 - Copies tendrils from their locations on the computer to the [Tendrils folder](#tendrils-folder)
 - Only operates on [push/pull style](#pushpull-style) tendrils
 - Only the *first* [parent](#parents) is used
-
 ```bash
 td pull
 ```
@@ -236,25 +244,28 @@ td push --dry-run (-d)
 td push --force (-f)
 ```
 
+# Common Command Options
+- These options are available on several of the `td` commands
+
 ## Specifying the Tendrils Folder
 - If no path argument is provided:
     1. *Tendrils* will first check if the current working directory is a [Tendrils folder](#tendrils-folder). If it is, this folder (and the tendrils defined in its [`tendrils.json`](#tendrilsjson)) will be used for the command
     2. If the CWD is not a *Tendrils* folder, then the `TENDRILS_FOLDER` environment variable will be checked
 - A path can be explicitly set using the `--path` argument
-    - Available on all of the actions listed above
+    - Available on [`list`](#list-tendrils) all of the [actions](#tendril-actions) listed above
     - If a path is provided, the current working directory and the value of the `TENDRILS_FOLDER` environment variable are not considered
 ``` bash
 td push --path some/tendrils/folder
 ```
 
 ## Filtering Tendrils
+- Only tendrils that match the filters will be used in the command
 - These filters are cumulative
 - For the filters below that support glob patterns, these are resolved using the [`glob-match`](https://crates.io/crates/glob-match) crate
     - Consult this crate's documentation for the syntax
 
 ### Filtering by Group
 - Using the `--group (-g)` argument
-- Available on all of the actions listed above
 - Only tendrils who's [group](#group) matches any of the given filters will be included
     - Glob patterns are supported
 ``` bash
@@ -264,10 +275,9 @@ td link -g App1 App2
 
 ### Filtering by Name
 - Using the `--names (-n)` argument
-- Available on all of the actions listed above
 - Only includes tendril [names](#names) that match any of the given names
     - Glob patterns are supported
-- Any tendril names that do not match are omitted, and any tendrils without any matching names are omitted entirely.
+- Any tendril names that do not match are omitted
 ``` bash
 td link -n file1.txt file2.txt *.json
 ```
@@ -275,10 +285,9 @@ td link -n file1.txt file2.txt *.json
 
 ### Filtering by Parents
 - Using the `--parents (-p)` argument
-- Available on all of the actions listed above
 - Only includes tendril [parents](#parents) that match any of the given parents
     - Glob patterns are supported
-- Any tendril parents that do not match are omitted, and any tendrils without any matching parents are omitted entirely.
+- Any tendril parents that do not match are omitted
 - Note: Parents are filtered *before* they are [resolved](#path-resolving)
 ``` bash
 td push -p ~/Library/** **/*OneDrive*/**
@@ -287,7 +296,6 @@ td push -p ~/Library/** **/*OneDrive*/**
 
 ### Filtering by Profile
 - Using the `--profiles (-P)` argument
-- Available on all of the actions listed above
 - Only tendrils with one or more matching [profiles](#profiles) will be included
     - Glob patterns are supported
 - Tendrils without any profiles specified will still be included

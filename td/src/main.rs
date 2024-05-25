@@ -5,14 +5,15 @@ use clap::Parser;
 mod cli;
 use cli::{
     ansi_hyperlink,
-    print_reports,
+    print_action_reports,
+    print_list_reports,
     AboutSubcommands,
     ActionArgs,
     FilterArgs,
     TendrilCliArgs,
     TendrilsSubcommands,
 };
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use tendrils::{
     can_symlink,
     filter_tendrils,
@@ -20,11 +21,13 @@ use tendrils::{
     get_tendrils_dir,
     init_tendrils_dir,
     is_tendrils_dir,
+    list_tendrils,
     tendril_action,
     ActionMode,
     FilterSpec,
     GetTendrilsError,
     InitError,
+    TendrilBundle,
 };
 mod writer;
 use writer::Writer;
@@ -48,6 +51,9 @@ fn run(args: TendrilCliArgs, writer: &mut impl Writer) -> i32 {
             about(about_subcommand, writer)
         }
         TendrilsSubcommands::Init { path, force } => init(path, force, writer),
+        TendrilsSubcommands::List { list_args, filter_args } => {
+            list(list_args.path_args.path, filter_args, writer)
+        }
         TendrilsSubcommands::Path => path(writer),
         TendrilsSubcommands::Pull { action_args, filter_args } => {
             tendril_action_subcommand(
@@ -147,6 +153,116 @@ fn init(path: Option<String>, force: bool, writer: &mut impl Writer) -> i32 {
     0
 }
 
+fn get_td_dir_or_print_err(
+    starting_path: &Option<String>,
+    writer: &mut impl Writer,
+) -> Result<PathBuf, i32> {
+    match starting_path {
+        Some(v) => {
+            let test_path = PathBuf::from(v);
+            if is_tendrils_dir(&test_path) {
+                Ok(test_path)
+            }
+            else {
+                writer.writeln(&format!(
+                    "{ERR_PREFIX}: The given path is not a Tendrils folder."
+                ));
+                return Err(exitcode::NOINPUT);
+            }
+        }
+        None => {
+            let starting_dir = match std::env::current_dir() {
+                Ok(v) => v,
+                Err(_err) => {
+                    writer.writeln(&format!(
+                        "{ERR_PREFIX}: Could not get the current directory."
+                    ));
+                    return Err(exitcode::OSERR);
+                }
+            };
+            match get_tendrils_dir(&starting_dir) {
+                Some(v) => Ok(v),
+                None => {
+                    writer.writeln(&format!(
+                        "{ERR_PREFIX}: Could not find a Tendrils folder."
+                    ));
+                    return Err(exitcode::NOINPUT);
+                }
+            }
+        }
+    }
+}
+
+fn get_tendrils_or_print_err(
+    td_dir: &Path,
+    filter: FilterSpec,
+    writer: &mut impl Writer,
+) -> Result<Vec<TendrilBundle>, i32> {
+    let all_tendrils = match get_tendrils(&td_dir) {
+        Ok(v) => v,
+        Err(GetTendrilsError::IoError { kind: _ }) => {
+            writer.writeln(&format!(
+                "{ERR_PREFIX}: Could not read the tendrils.json file."
+            ));
+            return Err(exitcode::NOINPUT);
+        }
+        Err(GetTendrilsError::ParseError(e)) => {
+            writer.writeln(&format!(
+                "{ERR_PREFIX}: Could not parse the tendrils.json file."
+            ));
+            writer.writeln(&e);
+            return Err(exitcode::DATAERR);
+        }
+    };
+
+    let all_tendrils_is_empty = all_tendrils.is_empty();
+    let filtered_tendrils = filter_tendrils(all_tendrils, filter);
+
+    if all_tendrils_is_empty {
+        writer.writeln("No tendrils were found.");
+    }
+    else if filtered_tendrils.is_empty() {
+        writer.writeln("No tendrils matched the given filter(s).");
+    }
+
+    Ok(filtered_tendrils)
+}
+
+/// Returns, but does not set, the suggested exit code for the process.
+/// It is up to the calling function to handle exiting with this code.
+fn list(
+    path: Option<String>,
+    filter_args: FilterArgs,
+    writer: &mut impl Writer,
+) -> i32 {
+    let td_dir = match get_td_dir_or_print_err(&path, writer) {
+        Ok(v) => v,
+        Err(e) => return e,
+    };
+
+    let filter = FilterSpec {
+        mode: None,
+        groups: &filter_args.groups,
+        names: &filter_args.names,
+        parents: &filter_args.parents,
+        profiles: &filter_args.profiles,
+    };
+    let filtered_tendrils =
+        match get_tendrils_or_print_err(&td_dir, filter, writer) {
+            Ok(v) => v,
+            Err(e) => return e,
+        };
+
+    let list_reports = list_tendrils(&td_dir, &filtered_tendrils);
+
+    print_list_reports(&list_reports, writer);
+
+    if list_reports.iter().any(|r| r.log.is_err()) {
+        return exitcode::SOFTWARE;
+    }
+    0
+}
+
 /// Returns, but does not set, the suggested exit code for the process.
 /// It is up to the calling function to handle exiting with this code.
 fn path(writer: &mut impl Writer) -> i32 {
@@ -180,39 +296,9 @@ fn tendril_action_subcommand(
     filter_args: FilterArgs,
     writer: &mut impl Writer,
 ) -> i32 {
-    let td_dir = match action_args.path {
-        Some(v) => {
-            let test_path = PathBuf::from(v);
-            if is_tendrils_dir(&test_path) {
-                test_path
-            }
-            else {
-                writer.writeln(&format!(
-                    "{ERR_PREFIX}: The given path is not a Tendrils folder."
-                ));
-                return exitcode::NOINPUT;
-            }
-        }
-        None => {
-            let starting_dir = match std::env::current_dir() {
-                Ok(v) => v,
-                Err(_err) => {
-                    writer.writeln(&format!(
-                        "{ERR_PREFIX}: Could not get the current directory."
-                    ));
-                    return exitcode::OSERR;
-                }
-            };
-            match get_tendrils_dir(&starting_dir) {
-                Some(v) => v,
-                None => {
-                    writer.writeln(&format!(
-                        "{ERR_PREFIX}: Could not find a Tendrils folder."
-                    ));
-                    return exitcode::NOINPUT;
-                }
-            }
-        }
+    let td_dir = match get_td_dir_or_print_err(&action_args.path.path, writer) {
+        Ok(v) => v,
+        Err(e) => return e,
     };
 
     use std::env::consts::OS;
@@ -231,23 +317,6 @@ fn tendril_action_subcommand(
         return exitcode::CANTCREAT;
     }
 
-    let all_tendrils = match get_tendrils(&td_dir) {
-        Ok(v) => v,
-        Err(GetTendrilsError::IoError { kind: _ }) => {
-            writer.writeln(&format!(
-                "{ERR_PREFIX}: Could not read the tendrils.json file."
-            ));
-            return exitcode::NOINPUT;
-        }
-        Err(GetTendrilsError::ParseError(e)) => {
-            writer.writeln(&format!(
-                "{ERR_PREFIX}: Could not parse the tendrils.json file."
-            ));
-            writer.writeln(&e);
-            return exitcode::DATAERR;
-        }
-    };
-
     let mode_filter = if mode == ActionMode::Out {
         None
     }
@@ -261,15 +330,11 @@ fn tendril_action_subcommand(
         parents: &filter_args.parents,
         profiles: &filter_args.profiles,
     };
-    let all_tendrils_is_empty = all_tendrils.is_empty();
-    let filtered_tendrils = filter_tendrils(all_tendrils, filter);
-
-    if all_tendrils_is_empty {
-        writer.writeln("No tendrils were found.");
-    }
-    else if filtered_tendrils.is_empty() {
-        writer.writeln("No tendrils matched the given filter(s).");
-    }
+    let filtered_tendrils =
+        match get_tendrils_or_print_err(&td_dir, filter, writer) {
+            Ok(v) => v,
+            Err(e) => return e,
+        };
 
     let action_reports = tendril_action(
         mode,
@@ -279,7 +344,7 @@ fn tendril_action_subcommand(
         action_args.force,
     );
 
-    print_reports(&action_reports, writer);
+    print_action_reports(&action_reports, writer);
 
     if action_reports.iter().any(|r| match &r.log {
         Err(_) => true,

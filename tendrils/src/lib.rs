@@ -21,7 +21,7 @@ use std::path::{Path, PathBuf};
 mod tendril;
 use tendril::Tendril;
 mod tendril_report;
-pub use tendril_report::{ActionLog, TendrilLog, TendrilReport};
+pub use tendril_report::{ActionLog, ListLog, TendrilLog, TendrilReport};
 mod tendril_bundle;
 pub use tendril_bundle::TendrilBundle;
 
@@ -433,6 +433,77 @@ fn link_tendril(
     log
 }
 
+fn list_tendril(td_dir: &Path, tendril: &Tendril) -> ListLog {
+    let local = get_local_path(tendril, td_dir);
+    let remote = tendril.full_path();
+
+    ListLog::new(
+        local.get_type(),
+        remote.get_type(),
+        remote,
+        tendril.mode.clone(),
+        vec![], // The profiles must be assigned by the caller
+    )
+}
+
+/// Returns a basic information report for each of the given tendrils.
+///
+/// # Arguments
+/// - `td_dir` - The *Tendrils* folder to perform the actions on. This does
+/// *not* check whether the given folder is a valid *Tendrils* folder.
+/// - `td_bundles` - The list of tendril bundles to perform the actions on.
+///
+/// # Returns
+/// A [`TendrilReport`] containing an [`ListLog`] for each tendril.
+/// A given [`TendrilBundle`] may result in many tendrils if it includes
+/// multiple names and/or parents.
+/// The order of the reports maintains the order of the given
+/// tendrils, but each one is expanded into individual tendrils firstly by
+/// each of its `names`, then by each of its `parents`. For example, for a
+/// list of two tendrils [t1, t2], each having multiple names [n1, n2] and
+/// multiple parents [p1, p2], the list will be expanded to:
+/// - t1_n1_p1
+/// - t1_n1_p2
+/// - t1_n2_p1
+/// - t1_n2_p2
+/// - t2_n1_p1
+/// - t2_n1_p2
+/// - t2_n2_p1
+/// - t2_n2_p2
+pub fn list_tendrils<'a>(
+    td_dir: &Path,
+    td_bundles: &'a [TendrilBundle],
+) -> Vec<TendrilReport<'a, ListLog>> {
+    let mut reports = vec![];
+
+    for bundle in td_bundles.iter() {
+        let tendrils = resolve_tendril_bundle(bundle, false);
+        let num_parents = bundle.parents.len();
+
+        for (i, tendril) in tendrils.into_iter().enumerate() {
+            let log = match tendril {
+                Ok(v) => {
+                    let mut list_log = list_tendril(td_dir, &v);
+                    list_log.profiles = bundle.profiles.clone();
+                    Ok(list_log)
+                }
+                Err(e) => Err(e),
+            };
+
+            let name_idx = ((i / num_parents) as f32).floor() as usize;
+
+            let report = TendrilReport {
+                orig_tendril: bundle,
+                name: &bundle.names[name_idx],
+                log,
+            };
+            reports.push(report);
+        }
+    }
+
+    reports
+}
+
 /// # Arguments
 /// - `json` - JSON array of tendril bundles
 fn parse_tendrils(json: &str) -> Result<Vec<TendrilBundle>, serde_json::Error> {
@@ -838,7 +909,8 @@ fn symlink_win(
 /// report as each action is completed. This allows the calling function to
 /// receive updates as progress is made.
 /// - `mode` - The action mode to be performed.
-/// - `td_dir` - The *Tendrils* folder to perform the actions on.
+/// - `td_dir` - The *Tendrils* folder to perform the actions on. This does
+/// *not* check whether the given folder is a valid *Tendrils* folder.
 /// - `td_bundles` - The list of tendril bundles to perform the actions on.
 /// - `dry_run`
 ///     - `true` will perform the internal checks for the action but does not

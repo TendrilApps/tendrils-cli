@@ -226,6 +226,17 @@ pub enum FsoType {
     SymDir,
 }
 
+impl ToString for &FsoType {
+    fn to_string(&self) -> String {
+        match self {
+            FsoType::File => "File".to_string(),
+            FsoType::Dir => "Directory".to_string(),
+            FsoType::SymFile => "Sym. file".to_string(),
+            FsoType::SymDir => "Sym. directory".to_string(),
+        }
+    }
+}
+
 /// Indicates the behaviour of this tendril, and determines whether it is
 /// a push/pull style, or a link style tendril.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -244,6 +255,16 @@ pub enum TendrilMode {
     /// Create a symlink at the remote location that points to local
     /// file/folder.
     Link,
+}
+
+impl ToString for TendrilMode {
+    fn to_string(&self) -> String {
+        match self {
+            TendrilMode::DirMerge => "Merge".to_string(),
+            TendrilMode::DirOverwrite => "Overwrite".to_string(),
+            TendrilMode::Link => "Symlink".to_string(),
+        }
+    }
 }
 
 /// Indicates an invalid tendril field.

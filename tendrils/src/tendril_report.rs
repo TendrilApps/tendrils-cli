@@ -4,6 +4,7 @@ use crate::{
     TendrilActionError,
     TendrilActionSuccess,
     TendrilBundle,
+    TendrilMode,
 };
 use std::path::PathBuf;
 
@@ -59,6 +60,43 @@ impl ActionLog {
 }
 
 impl TendrilLog for ActionLog {
+    fn local_type(&self) -> &Option<FsoType> {
+        &self.local_type
+    }
+
+    fn remote_type(&self) -> &Option<FsoType> {
+        &self.remote_type
+    }
+
+    fn resolved_path(&self) -> &PathBuf {
+        &self.resolved_path
+    }
+}
+
+/// Contains the listed info from a single tendril.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ListLog {
+    local_type: Option<FsoType>,
+    remote_type: Option<FsoType>,
+    resolved_path: PathBuf,
+    pub mode: TendrilMode,
+    pub profiles: Vec<String>,
+}
+
+impl ListLog {
+    /// Minimal constructor, assumes defaults for some fields
+    pub fn new(
+        local_type: Option<FsoType>,
+        remote_type: Option<FsoType>,
+        resolved_path: PathBuf,
+        mode: TendrilMode,
+        profiles: Vec<String>,
+    ) -> ListLog {
+        ListLog { local_type, remote_type, resolved_path, mode, profiles }
+    }
+}
+
+impl TendrilLog for ListLog {
     fn local_type(&self) -> &Option<FsoType> {
         &self.local_type
     }

@@ -6,7 +6,9 @@ use std::path::PathBuf;
 use td_table::TdTable;
 use tendrils::{
     ActionLog,
+    FsoType,
     InvalidTendrilError,
+    ListLog,
     TendrilActionError,
     TendrilActionSuccess,
     TendrilLog,
@@ -39,6 +41,15 @@ pub enum TendrilsSubcommands {
         /// current directory
         #[arg(long)]
         path: Option<String>,
+    },
+
+    /// List information for the set of tendrils
+    List {
+        #[clap(flatten)]
+        list_args: ListArgs,
+
+        #[clap(flatten)]
+        filter_args: FilterArgs,
     },
 
     /// Gets the Tendrils folder path environment variable
@@ -93,10 +104,16 @@ pub enum AboutSubcommands {
 }
 
 #[derive(Args, Clone, Debug, Eq, PartialEq)]
-pub struct ActionArgs {
+pub struct TdDirArgs {
     /// Explicitly sets the path to the Tendrils folder
     #[arg(long)]
     pub path: Option<String>,
+}
+
+#[derive(Args, Clone, Debug, Eq, PartialEq)]
+pub struct ActionArgs {
+    #[clap(flatten)]
+    pub path: TdDirArgs,
 
     /// Prints what the command would do without modifying
     /// the file system
@@ -106,6 +123,12 @@ pub struct ActionArgs {
     /// Ignores type mismatches and forces the operation
     #[arg(short, long)]
     pub force: bool,
+}
+
+#[derive(Args, Clone, Debug, Eq, PartialEq)]
+pub struct ListArgs {
+    #[clap(flatten)]
+    pub path_args: TdDirArgs,
 }
 
 #[derive(Args, Clone, Debug, Eq, PartialEq)]
@@ -176,7 +199,22 @@ fn ansi_styled_result(
     }
 }
 
-pub fn print_reports(
+fn ansi_styled_fso_type(fso_type: &Option<FsoType>) -> String {
+    // No ansi styling for now
+
+
+
+
+
+
+    
+    match fso_type {
+        Some(v) => v.to_string(),
+        None => String::from("Not found"),
+    }
+}
+
+pub fn print_action_reports(
     reports: &[TendrilReport<ActionLog>],
     writer: &mut impl Writer,
 ) {
@@ -214,10 +252,53 @@ pub fn print_reports(
     }
     writer.writeln(&tbl.draw());
 
-    print_totals(reports, writer);
+    print_action_totals(reports, writer);
 }
 
-fn print_totals(
+pub fn print_list_reports(
+    reports: &[TendrilReport<ListLog>],
+    writer: &mut impl Writer,
+) {
+    if reports.is_empty() {
+        return;
+    }
+
+    let mut tbl = TdTable::new();
+    tbl.set_header(&[
+        "Group".to_string(),
+        "Name".to_string(),
+        "Path".to_string(),
+        "Local Type".to_string(),
+        "Remote Type".to_string(),
+        "Mode".to_string(),
+        "Profiles".to_string(),
+    ]);
+
+    for report in reports {
+        match &report.log {
+            Ok(log) => {
+                tbl.push_row(&[
+                    report.orig_tendril.group.clone(),
+                    String::from(report.name),
+                    ansi_styled_resolved_path(&Ok(log.resolved_path().clone())),
+                    ansi_styled_fso_type(log.local_type()),
+                    ansi_styled_fso_type(log.remote_type()),
+                    log.mode.to_string(),
+                    format!("{:?}", log.profiles),
+                ]);
+            }
+            Err(e) => {
+                ansi_styled_resolved_path(&Err(e.clone()));
+                "".to_string();
+            }
+        };
+    }
+    writer.writeln(&tbl.draw());
+
+    print_list_totals(reports, writer);
+}
+
+fn print_action_totals(
     reports: &[TendrilReport<ActionLog>],
     writer: &mut impl Writer,
 ) {
@@ -245,4 +326,13 @@ fn print_totals(
             color_reset
         ),
     ));
+}
+
+fn print_list_totals(
+    reports: &[TendrilReport<ListLog>],
+    writer: &mut impl Writer,
+) {
+    let total = reports.len();
+
+    writer.writeln(&format!("Total: {total}"));
 }
