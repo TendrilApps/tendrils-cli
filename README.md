@@ -11,6 +11,9 @@
 - Where *Tendrils* isn't as useful:
     - Ephemeral environments, such as Docker containers. It's likely simpler to use a one-off script to put the files where they belong
 
+# License
+- GPLv3 - See additional licensing information in the [license file](./LICENSE.md)
+
 # Getting Started
 ## Supported Platforms
 - Mac
