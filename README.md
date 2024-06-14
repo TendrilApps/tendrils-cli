@@ -13,6 +13,7 @@
 
 # License
 - GPLv3 - See additional licensing information in the [license file](./LICENSE.md)
+- This project uses several open source libraries, and their licensing information can be found in the [third party license file](./LICENSE-3RD-PARTY.md)
 
 # Getting Started
 ## Supported Platforms

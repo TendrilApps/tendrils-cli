@@ -1,5 +1,7 @@
+# Preamble
 Tendrils - Provides a centralized location for working with, synchronizing,
 and version controlling files & folders dispersed across the computer.
+For third party licenses, see [LICENSE-3RD-PARTY.md](./LICENSE-3RD-PARTY.md).
 
 Copyright 2024  Cole Markle
 
@@ -16,8 +18,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-=========================================
-=========================================
+# GNU License
 
                     GNU GENERAL PUBLIC LICENSE
                        Version 3, 29 June 2007
