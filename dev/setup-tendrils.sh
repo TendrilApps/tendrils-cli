@@ -1,8 +1,8 @@
 cd "$(dirname $0)"
-os="$(sh ./Generic/get-os.sh)"
+os="$(sh ./utils/get-os.sh)"
 
 echo "Running generic repo setup"
-sh ./generic/setup.sh
+sh ./utils/setup-repo.sh
 
 
 echo "Setting up sample files/folders:"
