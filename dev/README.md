@@ -39,6 +39,7 @@
 - This json metadata is then compiled to a markdown output using [3rd-party-compile-licenses.nu](./utils/3rd-party-compile-licenses.nu)
 
 ``` bash
-nu 3rd-party-update-cargo-deps.nu path/to/3rd-party-metadata.json
-nu 3rd-party-compile-licenses.nu path/to/3rd-party-metadata.json
+# From the root of the repo
+nu dev/utils/3rd-party-update-cargo-deps.nu dev/3rd-party-metadata.json
+(nu dev/utils/3rd-party-compile-licenses.nu dev/3rd-party-metadata.json) | save LICENSE-3RD-PARTY.md -f
 ```
