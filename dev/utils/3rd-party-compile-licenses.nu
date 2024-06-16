@@ -47,6 +47,10 @@ def get_license_texts [dep: record] {
         let lic_path1 = ($local_src_path | path dirname | path join $lic_file)
         let lic_path2 = ($local_src_path | path dirname | path dirname | path join $lic_file)
 
+        if (not ($lic_txt | is-empty)) {
+            $lic_txt = ($lic_txt + "---\n")
+        }
+
         if ($lic_file | is_https_url) {
             $lic_txt = ($lic_txt + (curl $lic_file -s -f))
             if ($env.LAST_EXIT_CODE != 0) {
@@ -64,6 +68,8 @@ def get_license_texts [dep: record] {
                 1 / 0
             }
         }
+
+        $lic_txt = ($lic_txt + "\n")
     }
 
     $lic_txt
@@ -91,7 +97,6 @@ def to_md [] {
     echo $"The source code is available here: ($dep.repo)."
     echo "Its license(s) and notice(s) are as follows:\n"
     $dep.license_txt
-    echo ""
 }
 
 # Accepts a piped string and returns true if it is an http url
