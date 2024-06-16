@@ -1,6 +1,3 @@
-use list_contains.nu
-use rec_contains.nu
-
 def main [third_party_mdata_path: string] {
     mut formatted_mdata = (open $third_party_mdata_path)
 
@@ -11,7 +8,7 @@ def main [third_party_mdata_path: string] {
     for cargo_dep in $cargo_deps {
         # Preserve existing license file field for existing dependencies
         mut old_license_files = []
-        if ($formatted_mdata.cargo-dependencies | rec_contains $cargo_dep.id) {
+        if ($cargo_dep.id in $formatted_mdata.cargo-dependencies) {
             $old_license_files = ($formatted_mdata.cargo-dependencies | get $cargo_dep.id).license_files
         }
 
@@ -32,6 +29,6 @@ def main [third_party_mdata_path: string] {
 # Removes the workspace crates and only leaves the third party crates
 export def filter_workspace_crates [cargo_md: record] {
     let workspace_members = $cargo_md.workspace_members 
-    let filtered = ($cargo_md.packages | where {|dep| not ($workspace_members | list_contains $dep.id) })
+    let filtered = ($cargo_md.packages | where {|dep| $dep.id not-in $workspace_members })
     $filtered
 }
