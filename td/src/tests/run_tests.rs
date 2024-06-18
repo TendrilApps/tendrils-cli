@@ -1,4 +1,11 @@
-use crate::cli::{ActionArgs, FilterArgs, TendrilCliArgs, TendrilsSubcommands};
+use crate::cli::{
+    ansi_hyperlink,
+    AboutSubcommands,
+    ActionArgs,
+    FilterArgs,
+    TendrilCliArgs,
+    TendrilsSubcommands,
+};
 use crate::{run, Writer, ERR_PREFIX};
 use inline_colorization::{color_bright_green, color_bright_red, color_reset};
 use rstest::rstest;
@@ -61,14 +68,61 @@ fn build_action_subcommand(
 }
 
 impl Writer for MockWriter {
-    fn write(&mut self, text: &str) {
-        self.all_output.push_str(text);
-    }
-
     fn writeln(&mut self, text: &str) {
         self.all_output.push_str(text);
         self.all_output.push('\n');
     }
+}
+
+#[test]
+fn about_license_returns_license_type_and_hyperlink_to_repo_license_file() {
+    let mut writer = MockWriter::new();
+    let version = env!["CARGO_PKG_VERSION"];
+    let mut url = format![
+        "https://github.com/TendrilApps/tendrils-cli/blob/{version}/LICENSE.md"
+    ];
+    url = ansi_hyperlink(&url, &url);
+    let expected = format![
+        "td is licensed under a GPL-3.0-or-later license.\n\nThe license text \
+         is here:\n{url}\n"
+    ];
+
+    let args = TendrilCliArgs {
+        tendrils_command: TendrilsSubcommands::About {
+            about_subcommand: AboutSubcommands::License,
+        },
+    };
+
+    let actual_exit_code = run(args, &mut writer);
+
+    assert_eq!(writer.all_output, expected);
+    assert_eq!(actual_exit_code, 0);
+}
+
+#[test]
+fn about_acknowledgements_returns_message_and_hyperlink_to_repo_third_party_file(
+) {
+    let mut writer = MockWriter::new();
+    let version = env!["CARGO_PKG_VERSION"];
+    let mut url = format![
+        "https://github.com/TendrilApps/tendrils-cli/blob/{version}/LICENSE-3RD-PARTY.md"
+    ];
+    url = ansi_hyperlink(&url, &url);
+    let expected = format![
+        "td uses several open source dependencies.\n\nTheir acknowledgements \
+         and licensing information are here:\n{url}\n"
+    ];
+
+    let args = TendrilCliArgs {
+        tendrils_command: TendrilsSubcommands::About {
+            about_subcommand: AboutSubcommands::Acknowledgements,
+        },
+    };
+
+    let actual_exit_code = run(args, &mut writer);
+
+    assert_eq!(writer.all_output, expected);
+    assert_eq!(actual_exit_code, 0);
 }
 
 #[rstest]

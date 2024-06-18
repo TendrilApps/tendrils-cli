@@ -23,6 +23,12 @@ pub struct TendrilCliArgs {
 
 #[derive(Subcommand, Clone, Debug, Eq, PartialEq)]
 pub enum TendrilsSubcommands {
+    /// License, acknowledgements, and other information about td
+    About {
+        #[command(subcommand)]
+        about_subcommand: AboutSubcommands,
+    },
+
     /// Initializes a new Tendrils folder in the current directory
     Init {
         /// Ignores errors due to a non-empty folder
@@ -75,6 +81,15 @@ pub enum TendrilsSubcommands {
         #[clap(flatten)]
         filter_args: FilterArgs,
     },
+}
+
+#[derive(Subcommand, Clone, Debug, Eq, PartialEq)]
+pub enum AboutSubcommands {
+    /// Print license info for td
+    License,
+
+    /// Print acknowledgements & license info for third party packages
+    Acknowledgements,
 }
 
 #[derive(Args, Clone, Debug, Eq, PartialEq)]

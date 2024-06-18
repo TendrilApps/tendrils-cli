@@ -1,5 +1,5 @@
 # General
-- *Tendrils* is a tool to manage specific files/folders/scripts strewn about the computer from a single location
+- *Tendrils* is a tool to manage specific files/folders strewn about the computer from a single location
     - Each file/folder is defined by a tendril in the [`tendrils.json`](#tendrilsjson) file
     - They are all stored in a common [Tendrils folder](#tendrils-folder)
     - `td` is the CLI tool to manage these tendrils
@@ -11,9 +11,13 @@
 - Where *Tendrils* isn't as useful:
     - Ephemeral environments, such as Docker containers. It's likely simpler to use a one-off script to put the files where they belong
 
-# License
+# License & Acknowledgements
 - GPLv3 - See additional licensing information in the [license file](./LICENSE.md)
 - This project uses several open source libraries, and their licensing information can be found in the [third party license file](./LICENSE-3RD-PARTY.md)
+- License and other info can be displayed using the `td about` command
+``` bash
+td about
+```
 
 # Getting Started
 ## Supported Platforms

@@ -1,10 +1,12 @@
 #![doc = include_str!("../../README.md")]
 
+mod about;
 use clap::Parser;
 mod cli;
 use cli::{
     ansi_hyperlink,
     print_reports,
+    AboutSubcommands,
     ActionArgs,
     FilterArgs,
     TendrilCliArgs,
@@ -42,6 +44,9 @@ fn main() {
 /// It is up to the calling function to handle exiting with this code.
 fn run(args: TendrilCliArgs, writer: &mut impl Writer) -> i32 {
     match args.tendrils_command {
+        TendrilsSubcommands::About { about_subcommand } => {
+            about(about_subcommand, writer)
+        }
         TendrilsSubcommands::Init { path, force } => init(path, force, writer),
         TendrilsSubcommands::Path => path(writer),
         TendrilsSubcommands::Pull { action_args, filter_args } => {
@@ -81,6 +86,16 @@ fn run(args: TendrilCliArgs, writer: &mut impl Writer) -> i32 {
 
 /// `Error` in bright red font
 const ERR_PREFIX: &str = "\u{1b}[91mError\u{1b}[39m";
+
+fn about(about_subcommand: AboutSubcommands, writer: &mut impl Writer) -> i32 {
+    match about_subcommand {
+        AboutSubcommands::License => writer.writeln(&about::cli_license()),
+        AboutSubcommands::Acknowledgements => {
+            writer.writeln(&about::cli_acknowledgements())
+        }
+    };
+    0
+}
 
 /// Returns, but does not set, the suggested exit code for the process.
 /// It is up to the calling function to handle exiting with this code.
