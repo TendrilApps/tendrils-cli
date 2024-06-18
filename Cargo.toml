@@ -1,6 +1,7 @@
 [workspace.package]
 description = "Manage specific files/folders strewn about the computer from a single location"
 license = "GPL-3.0-or-later"
+repository = "https://github.com/TendrilApps/tendrils-cli"
 
 [workspace]
 members = [
