@@ -1,9 +1,5 @@
 #!/bin/sh
 
 # Run the test suite
-sh ./dev/generic/test-staged.sh
-eCode=$?
-if [ $eCode != 0 ]
-then
-    exit $eCode
-fi
+sh ./dev/utils/test-staged.sh
+exit $?
