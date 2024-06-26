@@ -1,6 +1,6 @@
 exitCodeSum=0
 
-cargo test --all-features -q
+cargo test --all-features -q --workspace
 exitCodeSum=$(($exitCodeSum + $?))
 
 # Check that the td binary builds (at least in debug mode)
