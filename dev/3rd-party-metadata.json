@@ -233,6 +233,17 @@
       "desc": "Blazing fast concurrent HashMap for Rust.",
       "repo": "https://github.com/xacrimon/dashmap"
     },
+    "registry+https://github.com/rust-lang/crates.io-index#equivalent@1.0.1":
+    {
+      "name": "equivalent",
+      "version": "1.0.1",
+      "license": "Apache-2.0 OR MIT",
+      "license_files": [
+        "LICENSE-MIT"
+      ],
+      "desc": "Traits for key comparison in maps.",
+      "repo": "https://github.com/cuviper/equivalent"
+    },
     "registry+https://github.com/rust-lang/crates.io-index#exitcode@1.1.2":
     {
       "name": "exitcode",
@@ -474,6 +485,17 @@
       ],
       "desc": "heck is a case conversion library.",
       "repo": "https://github.com/withoutboats/heck"
+    },
+    "registry+https://github.com/rust-lang/crates.io-index#indexmap@2.2.6":
+    {
+      "name": "indexmap",
+      "version": "2.2.6",
+      "license": "Apache-2.0 OR MIT",
+      "license_files": [
+        "LICENSE-MIT"
+      ],
+      "desc": "A hash table with consistent order and fast iteration.",
+      "repo": "https://github.com/indexmap-rs/indexmap"
     },
     "registry+https://github.com/rust-lang/crates.io-index#inline_colorization@0.1.6":
     {
@@ -1024,6 +1046,17 @@
       "desc": "A JSON serialization file format",
       "repo": "https://github.com/serde-rs/json"
     },
+    "registry+https://github.com/rust-lang/crates.io-index#serde_spanned@0.6.6":
+    {
+      "name": "serde_spanned",
+      "version": "0.6.6",
+      "license": "MIT OR Apache-2.0",
+      "license_files": [
+        "LICENSE-MIT"
+      ],
+      "desc": "Serde-compatible spanned Value",
+      "repo": "https://github.com/toml-rs/toml"
+    },
     "registry+https://github.com/rust-lang/crates.io-index#serial_test@2.0.0":
     {
       "name": "serial_test",
@@ -1144,6 +1177,39 @@
       ],
       "desc": "A library for managing a temporary directory and deleting all contents when it's\ndropped.\n",
       "repo": "https://github.com/rust-lang/tempdir"
+    },
+    "registry+https://github.com/rust-lang/crates.io-index#toml@0.7.8":
+    {
+      "name": "toml",
+      "version": "0.7.8",
+      "license": "MIT OR Apache-2.0",
+      "license_files": [
+        "LICENSE-MIT"
+      ],
+      "desc": "A native Rust encoder and decoder of TOML-formatted files and streams. Provides\nimplementations of the standard Serialize/Deserialize traits for TOML data to\nfacilitate deserializing and serializing Rust structures.\n",
+      "repo": "https://github.com/toml-rs/toml"
+    },
+    "registry+https://github.com/rust-lang/crates.io-index#toml_datetime@0.6.6":
+    {
+      "name": "toml_datetime",
+      "version": "0.6.6",
+      "license": "MIT OR Apache-2.0",
+      "license_files": [
+        "LICENSE-MIT"
+      ],
+      "desc": "A TOML-compatible datetime type",
+      "repo": "https://github.com/toml-rs/toml"
+    },
+    "registry+https://github.com/rust-lang/crates.io-index#toml_edit@0.19.15":
+    {
+      "name": "toml_edit",
+      "version": "0.19.15",
+      "license": "MIT OR Apache-2.0",
+      "license_files": [
+        "LICENSE-MIT"
+      ],
+      "desc": "Yet another format-preserving TOML parser.",
+      "repo": "https://github.com/toml-rs/toml"
     },
     "registry+https://github.com/rust-lang/crates.io-index#unicode-ident@1.0.12":
     {
@@ -1510,6 +1576,17 @@
       "desc": "Import lib for Windows",
       "repo": "https://github.com/microsoft/windows-rs"
     },
+    "registry+https://github.com/rust-lang/crates.io-index#winnow@0.5.40":
+    {
+      "name": "winnow",
+      "version": "0.5.40",
+      "license": "MIT",
+      "license_files": [
+        "LICENSE-MIT"
+      ],
+      "desc": "A byte-oriented, zero-copy, parser combinators library",
+      "repo": "https://github.com/winnow-rs/winnow"
+    },
     "registry+https://github.com/rust-lang/crates.io-index#winreg@0.52.0":
     {
       "name": "winreg",
@@ -1521,6 +1598,17 @@
       ],
       "desc": "Rust bindings to MS Windows Registry API",
       "repo": "https://github.com/gentoo90/winreg-rs"
+    },
+    "registry+https://github.com/rust-lang/crates.io-index#winresource@0.1.17":
+    {
+      "name": "winresource",
+      "version": "0.1.17",
+      "license": "MIT",
+      "license_files": [
+        "LICENSE"
+      ],
+      "desc": "Create and set windows icons and metadata for executables",
+      "repo": "https://github.com/BenjaminRi/winresource"
     }
   }
 }
