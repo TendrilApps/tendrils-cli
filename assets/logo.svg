@@ -18,14 +18,14 @@
 
     <mask id="arrow-mask">
         <rect fill="white" width="100%" height="100%" />
-        <path id="single-arrow-mask" fill="black" d="M703 503 l -150 -75 l0 30 l150 75 z" />
+        <path id="single-arrow-mask" fill="black" d="M733 503 l -200 -100 l0 40 l200 100 z" />
         <use href="#single-arrow-mask" transform="rotate(180, 500, 500)" />
     </mask>
 
     <!-- <rect id="background" width="100%" height="100%" /> -->
-    <a mask="url(#arrow-mask)" href="https://github.com/TendrilApps">
+    <a href="https://github.com/TendrilApps">
         <path id="pattern-seed" class="twist"
-            d="M700 500 c0 -40 -10 -350 -400 -360 l-30 50 c 200 0 400 100 430 310" />
+            d="M730 500 c0 -75 0 -360 -430 -430 L210 130 C 580 180 690 290 730 500 z" />
         <use xlink:href="#pattern-seed" transform="rotate( 60, 500, 500)" />
         <use xlink:href="#pattern-seed" transform="rotate(120, 500, 500)" />
         <use xlink:href="#pattern-seed" transform="rotate(180, 500, 500)" />
@@ -33,10 +33,12 @@
         <use xlink:href="#pattern-seed" transform="rotate(300, 500, 500)" />
 
         <path id="outer-ring" class="std-fill"
-            d="M 500, 500 m 0, -420 a 420, 420, 0, 1, 0, 1, 0 Z m 1 60 a 360, 360, 0, 1, 1, -1, 0 Z" />
-        <path id="inner-ring" class="std-fill"
-            d="M 500, 500 m 0, -200 a 200, 200, 0, 1, 0, 1, 0 Z m 1 40 a 160, 160, 0, 1, 1, -1, 0 Z" />
-        <path id="arrow-head" class="std-fill" d="M700 502 l-130 -65 l60 -60 z" />
-        <use xlink:href="#arrow-head" transform="rotate(180, 500, 500)" />
+            d="M 500, 500 m 0, -490 a 490, 490, 0, 1, 0, 1, 0 Z m 1 70 a 420, 420, 0, 1, 1, -1, 0 Z" />
+        <g mask="url(#arrow-mask)" >
+            <path id="inner-ring" class="std-fill"
+                d="M 500, 500 m 0, -230 a 230, 230, 0, 1, 0, 1, 0 Z m 1 50 a 180, 180, 0, 1, 1, -1, 0 Z" />
+            <path id="arrow-head" class="std-fill" d="M730 502 l-150 -75 l60 -60 z" />
+            <use xlink:href="#arrow-head" transform="rotate(180, 500, 500)" />
+        </g>
     </a>
 </svg>
