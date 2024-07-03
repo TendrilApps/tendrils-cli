@@ -37,15 +37,18 @@ fn main() {
     let args = cli::TendrilCliArgs::parse();
 
     let exit_code = run(args, &mut stdout_writer);
-    std::process::exit(exit_code)
+    if let Err(e) = exit_code {
+        std::process::exit(e)
+    }
 }
 
-/// Returns, but does not set, the suggested exit code for the process.
+/// Returns, but does not set, the suggested exit code in case of error.
 /// It is up to the calling function to handle exiting with this code.
-fn run(args: TendrilCliArgs, writer: &mut impl Writer) -> i32 {
+fn run(args: TendrilCliArgs, writer: &mut impl Writer) -> Result<(), i32> {
     match args.tendrils_command {
         TendrilsSubcommands::About { about_subcommand } => {
-            about(about_subcommand, writer)
+            about(about_subcommand, writer);
+            Ok(())
         }
         TendrilsSubcommands::Init { path, force } => init(path, force, writer),
         TendrilsSubcommands::Path => path(writer),
@@ -87,19 +90,20 @@ fn run(args: TendrilCliArgs, writer: &mut impl Writer) -> i32 {
 /// `Error` in bright red font
 const ERR_PREFIX: &str = "\u{1b}[91mError\u{1b}[39m";
 
-fn about(about_subcommand: AboutSubcommands, writer: &mut impl Writer) -> i32 {
+fn about(about_subcommand: AboutSubcommands, writer: &mut impl Writer) {
     match about_subcommand {
         AboutSubcommands::License => writer.writeln(&about::cli_license()),
         AboutSubcommands::Acknowledgements => {
             writer.writeln(&about::cli_acknowledgements())
         }
     };
-    0
 }
 
-/// Returns, but does not set, the suggested exit code for the process.
+/// Returns, but does not set, the suggested exit code in case of error.
 /// It is up to the calling function to handle exiting with this code.
-fn init(path: Option<String>, force: bool, writer: &mut impl Writer) -> i32 {
+fn init(
+    path: Option<String>, force: bool, writer: &mut impl Writer
+) -> Result<(), i32> {
     let td_dir = match path {
         Some(v) => PathBuf::from(v),
         None => match std::env::current_dir() {
@@ -108,7 +112,7 @@ fn init(path: Option<String>, force: bool, writer: &mut impl Writer) -> i32 {
                 writer.writeln(&format!(
                     "{ERR_PREFIX}: Could not get the current directory."
                 ));
-                return exitcode::OSERR;
+                return Err(exitcode::OSERR);
             }
         },
     };
@@ -122,13 +126,13 @@ fn init(path: Option<String>, force: bool, writer: &mut impl Writer) -> i32 {
         }
         Err(InitError::IoError { kind: e_kind }) => {
             writer.writeln(&format!("{ERR_PREFIX}: {e_kind}."));
-            return exitcode::IOERR;
+            return Err(exitcode::IOERR);
         }
         Err(InitError::AlreadyInitialized) => {
             writer.writeln(&format!(
                 "{ERR_PREFIX}: This folder is already a Tendrils folder."
             ));
-            return exitcode::DATAERR;
+            return Err(exitcode::DATAERR);
         }
         Err(InitError::NotEmpty) => {
             writer.writeln(&format!(
@@ -140,16 +144,16 @@ fn init(path: Option<String>, force: bool, writer: &mut impl Writer) -> i32 {
                  error:\n",
             );
             writer.writeln("td init --force");
-            return exitcode::DATAERR;
+            return Err(exitcode::DATAERR);
         }
     };
 
-    0
+    Ok(())
 }
 
-/// Returns, but does not set, the suggested exit code for the process.
+/// Returns, but does not set, the suggested exit code in case of error.
 /// It is up to the calling function to handle exiting with this code.
-fn path(writer: &mut impl Writer) -> i32 {
+fn path(writer: &mut impl Writer) -> Result<(), i32> {
     const ENV_NAME: &str = "TENDRILS_FOLDER";
     match std::env::var(ENV_NAME) {
         Ok(v) => {
@@ -166,20 +170,21 @@ fn path(writer: &mut impl Writer) -> i32 {
                 "{ERR_PREFIX}: The '{ENV_NAME}' environment variable is not \
                  valid UTF-8."
             ));
-            return exitcode::DATAERR;
+            return Err(exitcode::DATAERR);
         }
     }
-    0
+
+    Ok(())
 }
 
-/// Returns, but does not set, the suggested exit code for the process.
+/// Returns, but does not set, the suggested exit code in case of error.
 /// It is up to the calling function to handle exiting with this code.
 fn tendril_action_subcommand(
     mode: ActionMode,
     action_args: ActionArgs,
     filter_args: FilterArgs,
     writer: &mut impl Writer,
-) -> i32 {
+) -> Result<(), i32> {
     let td_dir = match action_args.path {
         Some(v) => {
             let test_path = PathBuf::from(v);
@@ -190,7 +195,7 @@ fn tendril_action_subcommand(
                 writer.writeln(&format!(
                     "{ERR_PREFIX}: The given path is not a Tendrils folder."
                 ));
-                return exitcode::NOINPUT;
+                return Err(exitcode::NOINPUT);
             }
         }
         None => {
@@ -200,7 +205,7 @@ fn tendril_action_subcommand(
                     writer.writeln(&format!(
                         "{ERR_PREFIX}: Could not get the current directory."
                     ));
-                    return exitcode::OSERR;
+                    return Err(exitcode::OSERR);
                 }
             };
             match get_tendrils_dir(&starting_dir) {
@@ -209,7 +214,7 @@ fn tendril_action_subcommand(
                     writer.writeln(&format!(
                         "{ERR_PREFIX}: Could not find a Tendrils folder."
                     ));
-                    return exitcode::NOINPUT;
+                    return Err(exitcode::NOINPUT);
                 }
             }
         }
@@ -228,7 +233,7 @@ fn tendril_action_subcommand(
         );
         writer
             .writeln("    - Changing these tendrils to non-link modes instead");
-        return exitcode::CANTCREAT;
+        return Err(exitcode::CANTCREAT);
     }
 
     let all_tendrils = match get_tendrils(&td_dir) {
@@ -237,14 +242,14 @@ fn tendril_action_subcommand(
             writer.writeln(&format!(
                 "{ERR_PREFIX}: Could not read the tendrils.json file."
             ));
-            return exitcode::NOINPUT;
+            return Err(exitcode::NOINPUT);
         }
         Err(GetTendrilsError::ParseError(e)) => {
             writer.writeln(&format!(
                 "{ERR_PREFIX}: Could not parse the tendrils.json file."
             ));
             writer.writeln(&e);
-            return exitcode::DATAERR;
+            return Err(exitcode::DATAERR);
         }
     };
 
@@ -285,7 +290,8 @@ fn tendril_action_subcommand(
         Err(_) => true,
         Ok(log) => log.result.is_err(),
     }) {
-        return exitcode::SOFTWARE;
+        return Err(exitcode::SOFTWARE);
     }
-    0
+
+    Ok(())
 }
