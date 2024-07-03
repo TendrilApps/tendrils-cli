@@ -1,5 +1,6 @@
 # Preamble
 Core library for Tendrils.
+https://github.com/TendrilApps/tendrils-cli
 
 Copyright 2024  Cole Markle
 
