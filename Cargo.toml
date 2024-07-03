@@ -1,11 +1,44 @@
-[workspace.package]
+[package]
+name = "td"
 description = "Manage specific files/folders strewn about the computer from a single location"
+license.workspace = true
+repository.workspace = true
+version = "0.0.1"
+edition = "2018"
+
+[features]
+default = ["logo"]
+logo = ["metadata"] # Embeds the logo in the executable
+metadata = ["dep:winresource"] # Embeds metadata in the executable
+
+[dependencies]
+clap = { version = "4.4.11", features = ["derive"] }
+exitcode = "1.1.2"
+inline_colorization = "0.1.6"
+tabled = { version = "0.15.0", features = ["ansi"] }
+tendrils = { path = "./tendrils" } # See also the usage in dev-dependencies
+
+[dev-dependencies]
+rstest = "0.18.2"
+serial_test = "2.0.0"
+tempdir = "0.3.7"
+# Despite being a dev-dependency, in order to prevent "_test_utils"
+# from being included in non-testing builds the resolver "2" must
+# be used (see workspace Cargo.toml).
+tendrils = { path = "./tendrils", features = ["_test_utils"] }
+
+[target.'cfg(windows)'.build-dependencies]
+winresource = { version = "0.1.17", optional = true } # See "metadata" feature
+
+[lints]
+workspace = true
+
+[workspace.package]
 license = "GPL-3.0-or-later"
 repository = "https://github.com/TendrilApps/tendrils-cli"
 
 [workspace]
 members = [
-    "td",
     "tendrils",
 ]
 resolver = "2" # Required to use 2 vs 1 to prevent _test_utils

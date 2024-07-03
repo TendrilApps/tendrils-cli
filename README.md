@@ -1,3 +1,7 @@
+<div align="center" >
+    <img src="./assets/logo.svg" width="200" />
+</div>
+
 # General
 - *Tendrils* is a tool to manage specific files/folders strewn about the computer from a single location
     - Each file/folder is defined by a tendril in the [`tendrils.json`](#tendrilsjson) file
