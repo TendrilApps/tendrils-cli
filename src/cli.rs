@@ -186,10 +186,10 @@ pub fn print_reports(
 
     let mut tbl = TdTable::new();
     tbl.set_header(&[
-        "Group".to_string(),
-        "Name".to_string(),
-        "Path".to_string(),
-        "Report".to_string(),
+        String::from("Group"),
+        String::from("Name"),
+        String::from("Path"),
+        String::from("Report"),
     ]);
 
     for report in reports {
@@ -200,7 +200,7 @@ pub fn print_reports(
             ),
             Err(e) => (
                 // Print the resolving error in the result column
-                "".to_string(),
+                String::from(""),
                 ansi_styled_resolved_path(&Err(e.clone())),
             ),
         };
@@ -236,12 +236,12 @@ fn print_totals(
         "Total: {total}, Successful: {}, Failed: {}",
         ansi_style(
             &total_successes.to_string(),
-            color_bright_green.to_string(),
+            String::from(color_bright_green),
             color_reset
         ),
         ansi_style(
             &total_failures.to_string(),
-            color_bright_red.to_string(),
+            String::from(color_bright_red),
             color_reset
         ),
     ));

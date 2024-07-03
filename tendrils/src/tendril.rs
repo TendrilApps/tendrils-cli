@@ -60,7 +60,7 @@ impl<'a> Tendril<'a> {
     pub fn full_path(&self) -> PathBuf {
         use std::path::{MAIN_SEPARATOR, MAIN_SEPARATOR_STR};
 
-        let mut full_path_str = self.parent.to_string_lossy().to_string();
+        let mut full_path_str = String::from(self.parent.to_string_lossy());
         if !full_path_str.ends_with('/') && !full_path_str.ends_with('\\') {
             full_path_str.push(MAIN_SEPARATOR);
         }
