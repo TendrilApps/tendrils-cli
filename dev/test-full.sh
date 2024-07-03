@@ -1,10 +1,10 @@
 exitCodeSum=0
 
-cargo test --all-features -q --workspace
+cargo test --all-features -q --workspace --release
 exitCodeSum=$(($exitCodeSum + $?))
 
-# Check that the td binary builds (at least in debug mode)
-cargo build --all-features 
+# Check that the td binary builds
+cargo build --all-features --release
 exitCodeSum=$(($exitCodeSum + $?))
 
 # Check that the tempdirs folder is empty
@@ -14,7 +14,7 @@ if [[ "$(ls $repoFolder/target/tempdirs)" != "" ]]; then
     exitCodeSum=$(($exitCodeSum + 1))
 fi
 
-cargo doc --all-features --document-private-items --no-deps
+cargo doc --all-features --document-private-items --no-deps --workspace --release
 exitCodeSum=$(($exitCodeSum + $?))
 
 exit $exitCodeSum
