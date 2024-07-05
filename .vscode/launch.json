@@ -7,39 +7,11 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'tendrils'",
-            "cargo": {
-                "args": [
-                    "build",
-                    "--bin=tendrils",
-                    "--package=tendrils"
-                ],
-                "filter": {
-                    "name": "tendrils",
-                    "kind": "bin"
-                }
-            },
+            "name": "Debug executable 'td'",
+            "program": "${workspaceRoot}/target/debug/td",
             "args": [],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug unit tests in executable 'tendrils'",
-            "cargo": {
-                "args": [
-                    "test",
-                    "--no-run",
-                    "--bin=tendrils",
-                    "--package=tendrils"
-                ],
-                "filter": {
-                    "name": "tendrils",
-                    "kind": "bin"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceRoot}/target/debug/",
+            "sourceLanguages": ["rust"]
         }
     ]
 }
