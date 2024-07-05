@@ -14,7 +14,6 @@ def main [third_party_mdata_path: string] {
 
         $formatted_cargo_deps = ($formatted_cargo_deps | insert $cargo_dep.id {
             name: $cargo_dep.name
-            version: $cargo_dep.version
             license: $cargo_dep.license
             license_files: $old_license_files # Preserve this field
             desc: $cargo_dep.description

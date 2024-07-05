@@ -4,7 +4,7 @@
 Tendrils makes use of the open source libraries listed below.
 
 # Third Party Dependencies
-## aho-corasick - v1.1.3
+## aho-corasick
 The `aho-corasick` software is included in this product.
 The source code is available here: https://github.com/BurntSushi/aho-corasick.
 Its license(s) and notice(s) are as follows:
@@ -32,7 +32,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
 
-## ansi-str - v0.8.0
+## ansi-str
 The `ansi-str` software is included in this product.
 The source code is available here: https://github.com/zhiburt/ansi-str.
 Its license(s) and notice(s) are as follows:
@@ -60,7 +60,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 
-## ansitok - v0.2.0
+## ansitok
 The `ansitok` software is included in this product.
 The source code is available here: https://gitlab.com/zhiburt/ansitok.
 Its license(s) and notice(s) are as follows:
@@ -88,7 +88,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 
-## anstream - v0.6.14
+## anstream
 The `anstream` software is included in this product.
 The source code is available here: https://github.com/rust-cli/anstyle.git.
 Its license(s) and notice(s) are as follows:
@@ -114,7 +114,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 
-## anstyle-parse - v0.2.4
+## anstyle-parse
 The `anstyle-parse` software is included in this product.
 The source code is available here: https://github.com/rust-cli/anstyle.git.
 Its license(s) and notice(s) are as follows:
@@ -146,7 +146,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## anstyle-query - v1.0.3
+## anstyle-query
 The `anstyle-query` software is included in this product.
 The source code is available here: https://github.com/rust-cli/anstyle.
 Its license(s) and notice(s) are as follows:
@@ -172,7 +172,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 
-## anstyle-wincon - v3.0.3
+## anstyle-wincon
 The `anstyle-wincon` software is included in this product.
 The source code is available here: https://github.com/rust-cli/anstyle.git.
 Its license(s) and notice(s) are as follows:
@@ -198,7 +198,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 
-## anstyle - v1.0.7
+## anstyle
 The `anstyle` software is included in this product.
 The source code is available here: https://github.com/rust-cli/anstyle.git.
 Its license(s) and notice(s) are as follows:
@@ -224,7 +224,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 
-## arrayvec - v0.5.2
+## arrayvec
 The `arrayvec` software is included in this product.
 The source code is available here: https://github.com/bluss/arrayvec.
 Its license(s) and notice(s) are as follows:
@@ -459,7 +459,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 
-## autocfg - v1.3.0
+## autocfg
 The `autocfg` software is included in this product.
 The source code is available here: https://github.com/cuviper/autocfg.
 Its license(s) and notice(s) are as follows:
@@ -491,7 +491,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## bitflags - v2.5.0
+## bitflags
 The `bitflags` software is included in this product.
 The source code is available here: https://github.com/bitflags/bitflags.
 Its license(s) and notice(s) are as follows:
@@ -523,7 +523,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## bytecount - v0.6.8
+## bytecount
 The `bytecount` software is included in this product.
 The source code is available here: https://github.com/llogiq/bytecount.
 Its license(s) and notice(s) are as follows:
@@ -752,7 +752,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 
-## cfg-if - v1.0.0
+## cfg-if
 The `cfg-if` software is included in this product.
 The source code is available here: https://github.com/alexcrichton/cfg-if.
 Its license(s) and notice(s) are as follows:
@@ -987,7 +987,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 
-## clap - v4.5.4
+## clap
 The `clap` software is included in this product.
 The source code is available here: https://github.com/clap-rs/clap.
 Its license(s) and notice(s) are as follows:
@@ -1013,7 +1013,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 
-## clap_builder - v4.5.2
+## clap_builder
 The `clap_builder` software is included in this product.
 The source code is available here: https://github.com/clap-rs/clap.
 Its license(s) and notice(s) are as follows:
@@ -1041,7 +1041,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 
-## clap_derive - v4.5.4
+## clap_derive
 The `clap_derive` software is included in this product.
 The source code is available here: https://github.com/clap-rs/clap/tree/master/clap_derive.
 Its license(s) and notice(s) are as follows:
@@ -1069,7 +1069,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 
-## clap_lex - v0.7.0
+## clap_lex
 The `clap_lex` software is included in this product.
 The source code is available here: https://github.com/clap-rs/clap/tree/master/clap_lex.
 Its license(s) and notice(s) are as follows:
@@ -1097,7 +1097,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 
-## colorchoice - v1.0.1
+## colorchoice
 The `colorchoice` software is included in this product.
 The source code is available here: https://github.com/rust-cli/anstyle.
 Its license(s) and notice(s) are as follows:
@@ -1123,7 +1123,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 
-## dashmap - v5.5.3
+## dashmap
 The `dashmap` software is included in this product.
 The source code is available here: https://github.com/xacrimon/dashmap.
 Its license(s) and notice(s) are as follows:
@@ -1151,7 +1151,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 
-## equivalent - v1.0.1
+## equivalent
 The `equivalent` software is included in this product.
 The source code is available here: https://github.com/cuviper/equivalent.
 Its license(s) and notice(s) are as follows:
@@ -1183,7 +1183,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## exitcode - v1.1.2
+## exitcode
 The `exitcode` software is included in this product.
 The source code is available here: https://github.com/benwilber/exitcode.
 Its license(s) and notice(s) are as follows:
@@ -1391,7 +1391,7 @@ Its license(s) and notice(s) are as follows:
    limitations under the License.
 
 
-## fnv - v1.0.7
+## fnv
 The `fnv` software is included in this product.
 The source code is available here: https://github.com/servo/rust-fnv.
 Its license(s) and notice(s) are as follows:
@@ -1626,7 +1626,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## fs_extra - v1.3.0
+## fs_extra
 The `fs_extra` software is included in this product.
 The source code is available here: https://github.com/webdesus/fs_extra.
 Its license(s) and notice(s) are as follows:
@@ -1654,7 +1654,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 
-## fuchsia-cprng - v0.1.1
+## fuchsia-cprng
 The `fuchsia-cprng` software is included in this product.
 The source code is available here: https://fuchsia.googlesource.com/fuchsia/+/master/garnet/public/rust/fuchsia-cprng.
 Its license(s) and notice(s) are as follows:
@@ -1688,7 +1688,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-## futures-channel - v0.3.30
+## futures-channel
 The `futures-channel` software is included in this product.
 The source code is available here: https://github.com/rust-lang/futures-rs.
 Its license(s) and notice(s) are as follows:
@@ -1721,7 +1721,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## futures-core - v0.3.30
+## futures-core
 The `futures-core` software is included in this product.
 The source code is available here: https://github.com/rust-lang/futures-rs.
 Its license(s) and notice(s) are as follows:
@@ -1754,7 +1754,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## futures-executor - v0.3.30
+## futures-executor
 The `futures-executor` software is included in this product.
 The source code is available here: https://github.com/rust-lang/futures-rs.
 Its license(s) and notice(s) are as follows:
@@ -1787,7 +1787,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## futures-io - v0.3.30
+## futures-io
 The `futures-io` software is included in this product.
 The source code is available here: https://github.com/rust-lang/futures-rs.
 Its license(s) and notice(s) are as follows:
@@ -1820,7 +1820,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## futures-macro - v0.3.30
+## futures-macro
 The `futures-macro` software is included in this product.
 The source code is available here: https://github.com/rust-lang/futures-rs.
 Its license(s) and notice(s) are as follows:
@@ -1853,7 +1853,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## futures-sink - v0.3.30
+## futures-sink
 The `futures-sink` software is included in this product.
 The source code is available here: https://github.com/rust-lang/futures-rs.
 Its license(s) and notice(s) are as follows:
@@ -1886,7 +1886,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## futures-task - v0.3.30
+## futures-task
 The `futures-task` software is included in this product.
 The source code is available here: https://github.com/rust-lang/futures-rs.
 Its license(s) and notice(s) are as follows:
@@ -1919,7 +1919,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## futures-timer - v3.0.3
+## futures-timer
 The `futures-timer` software is included in this product.
 The source code is available here: https://github.com/async-rs/futures-timer.
 Its license(s) and notice(s) are as follows:
@@ -2154,7 +2154,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## futures-util - v0.3.30
+## futures-util
 The `futures-util` software is included in this product.
 The source code is available here: https://github.com/rust-lang/futures-rs.
 Its license(s) and notice(s) are as follows:
@@ -2187,7 +2187,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## futures - v0.3.30
+## futures
 The `futures` software is included in this product.
 The source code is available here: https://github.com/rust-lang/futures-rs.
 Its license(s) and notice(s) are as follows:
@@ -2220,7 +2220,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## getrandom - v0.2.15
+## getrandom
 The `getrandom` software is included in this product.
 The source code is available here: https://github.com/rust-random/getrandom.
 Its license(s) and notice(s) are as follows:
@@ -2253,7 +2253,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## glob-match - v0.2.1
+## glob-match
 The `glob-match` software is included in this product.
 The source code is available here: .
 Its license(s) and notice(s) are as follows:
@@ -2281,7 +2281,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 
-## glob - v0.3.1
+## glob
 The `glob` software is included in this product.
 The source code is available here: https://github.com/rust-lang/glob.
 Its license(s) and notice(s) are as follows:
@@ -2313,7 +2313,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## hashbrown - v0.14.5
+## hashbrown
 The `hashbrown` software is included in this product.
 The source code is available here: https://github.com/rust-lang/hashbrown.
 Its license(s) and notice(s) are as follows:
@@ -2345,7 +2345,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## heck - v0.4.1
+## heck
 The `heck` software is included in this product.
 The source code is available here: https://github.com/withoutboats/heck.
 Its license(s) and notice(s) are as follows:
@@ -2377,7 +2377,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## heck - v0.5.0
+## heck
 The `heck` software is included in this product.
 The source code is available here: https://github.com/withoutboats/heck.
 Its license(s) and notice(s) are as follows:
@@ -2409,7 +2409,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## indexmap - v2.2.6
+## indexmap
 The `indexmap` software is included in this product.
 The source code is available here: https://github.com/indexmap-rs/indexmap.
 Its license(s) and notice(s) are as follows:
@@ -2441,7 +2441,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## inline_colorization - v0.1.6
+## inline_colorization
 The `inline_colorization` software is included in this product.
 The source code is available here: .
 Its license(s) and notice(s) are as follows:
@@ -2469,7 +2469,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 
-## is-root - v0.1.3
+## is-root
 The `is-root` software is included in this product.
 The source code is available here: https://gitlab.com/caralice/is-root.
 Its license(s) and notice(s) are as follows:
@@ -2497,7 +2497,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 
-## is_terminal_polyfill - v1.70.0
+## is_terminal_polyfill
 The `is_terminal_polyfill` software is included in this product.
 The source code is available here: https://github.com/polyfill-rs/is_terminal_polyfill.
 Its license(s) and notice(s) are as follows:
@@ -2523,7 +2523,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 
-## itoa - v1.0.11
+## itoa
 The `itoa` software is included in this product.
 The source code is available here: https://github.com/dtolnay/itoa.
 Its license(s) and notice(s) are as follows:
@@ -2553,7 +2553,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## lazy_static - v1.4.0
+## lazy_static
 The `lazy_static` software is included in this product.
 The source code is available here: https://github.com/rust-lang-nursery/lazy-static.rs.
 Its license(s) and notice(s) are as follows:
@@ -2788,7 +2788,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## libc - v0.2.154
+## libc
 The `libc` software is included in this product.
 The source code is available here: https://github.com/rust-lang/libc.
 Its license(s) and notice(s) are as follows:
@@ -2820,7 +2820,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## lock_api - v0.4.12
+## lock_api
 The `lock_api` software is included in this product.
 The source code is available here: https://github.com/Amanieu/parking_lot.
 Its license(s) and notice(s) are as follows:
@@ -2852,7 +2852,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## log - v0.4.21
+## log
 The `log` software is included in this product.
 The source code is available here: https://github.com/rust-lang/log.
 Its license(s) and notice(s) are as follows:
@@ -2884,7 +2884,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## memchr - v2.7.2
+## memchr
 The `memchr` software is included in this product.
 The source code is available here: https://github.com/BurntSushi/memchr.
 Its license(s) and notice(s) are as follows:
@@ -2912,7 +2912,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
 
-## minimal-lexical - v0.2.1
+## minimal-lexical
 The `minimal-lexical` software is included in this product.
 The source code is available here: https://github.com/Alexhuszagh/minimal-lexical.
 Its license(s) and notice(s) are as follows:
@@ -3145,7 +3145,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 
-## nom - v7.1.3
+## nom
 The `nom` software is included in this product.
 The source code is available here: https://github.com/Geal/nom.
 Its license(s) and notice(s) are as follows:
@@ -3172,7 +3172,7 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
-## once_cell - v1.19.0
+## once_cell
 The `once_cell` software is included in this product.
 The source code is available here: https://github.com/matklad/once_cell.
 Its license(s) and notice(s) are as follows:
@@ -3202,7 +3202,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## papergrid - v0.11.0
+## papergrid
 The `papergrid` software is included in this product.
 The source code is available here: https://github.com/zhiburt/tabled.
 Its license(s) and notice(s) are as follows:
@@ -3230,7 +3230,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 
-## parking_lot - v0.12.2
+## parking_lot
 The `parking_lot` software is included in this product.
 The source code is available here: https://github.com/Amanieu/parking_lot.
 Its license(s) and notice(s) are as follows:
@@ -3262,7 +3262,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## parking_lot_core - v0.9.10
+## parking_lot_core
 The `parking_lot_core` software is included in this product.
 The source code is available here: https://github.com/Amanieu/parking_lot.
 Its license(s) and notice(s) are as follows:
@@ -3294,7 +3294,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## pin-project-lite - v0.2.14
+## pin-project-lite
 The `pin-project-lite` software is included in this product.
 The source code is available here: https://github.com/taiki-e/pin-project-lite.
 Its license(s) and notice(s) are as follows:
@@ -3324,7 +3324,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## pin-utils - v0.1.0
+## pin-utils
 The `pin-utils` software is included in this product.
 The source code is available here: https://github.com/rust-lang-nursery/pin-utils.
 Its license(s) and notice(s) are as follows:
@@ -3356,7 +3356,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## ppv-lite86 - v0.2.17
+## ppv-lite86
 The `ppv-lite86` software is included in this product.
 The source code is available here: https://github.com/cryptocorrosion/cryptocorrosion.
 Its license(s) and notice(s) are as follows:
@@ -3591,7 +3591,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 
-## proc-macro-error-attr - v1.0.4
+## proc-macro-error-attr
 The `proc-macro-error-attr` software is included in this product.
 The source code is available here: https://gitlab.com/CreepySkeleton/proc-macro-error.
 Its license(s) and notice(s) are as follows:
@@ -3619,7 +3619,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 
-## proc-macro-error - v1.0.4
+## proc-macro-error
 The `proc-macro-error` software is included in this product.
 The source code is available here: https://gitlab.com/CreepySkeleton/proc-macro-error.
 Its license(s) and notice(s) are as follows:
@@ -3647,7 +3647,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 
-## proc-macro2 - v1.0.82
+## proc-macro2
 The `proc-macro2` software is included in this product.
 The source code is available here: https://github.com/dtolnay/proc-macro2.
 Its license(s) and notice(s) are as follows:
@@ -3677,7 +3677,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## quote - v1.0.36
+## quote
 The `quote` software is included in this product.
 The source code is available here: https://github.com/dtolnay/quote.
 Its license(s) and notice(s) are as follows:
@@ -3707,7 +3707,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## rand - v0.4.6
+## rand
 The `rand` software is included in this product.
 The source code is available here: https://github.com/rust-lang-nursery/rand.
 Its license(s) and notice(s) are as follows:
@@ -3942,7 +3942,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## rand - v0.8.5
+## rand
 The `rand` software is included in this product.
 The source code is available here: https://github.com/rust-random/rand.
 Its license(s) and notice(s) are as follows:
@@ -3975,7 +3975,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## rand_chacha - v0.3.1
+## rand_chacha
 The `rand_chacha` software is included in this product.
 The source code is available here: https://github.com/rust-random/rand.
 Its license(s) and notice(s) are as follows:
@@ -4008,7 +4008,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## rand_core - v0.3.1
+## rand_core
 The `rand_core` software is included in this product.
 The source code is available here: https://github.com/rust-random/rand.
 Its license(s) and notice(s) are as follows:
@@ -4244,7 +4244,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## rand_core - v0.4.2
+## rand_core
 The `rand_core` software is included in this product.
 The source code is available here: https://github.com/rust-random/rand.
 Its license(s) and notice(s) are as follows:
@@ -4480,7 +4480,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## rand_core - v0.6.4
+## rand_core
 The `rand_core` software is included in this product.
 The source code is available here: https://github.com/rust-random/rand.
 Its license(s) and notice(s) are as follows:
@@ -4513,7 +4513,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## rdrand - v0.4.0
+## rdrand
 The `rdrand` software is included in this product.
 The source code is available here: https://github.com/nagisa/rust_rdrand/.
 Its license(s) and notice(s) are as follows:
@@ -4532,7 +4532,7 @@ NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE US
 THIS SOFTWARE.
 
 
-## redox_syscall - v0.5.1
+## redox_syscall
 The `redox_syscall` software is included in this product.
 The source code is available here: https://gitlab.redox-os.org/redox-os/syscall.
 Its license(s) and notice(s) are as follows:
@@ -4561,7 +4561,7 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
-## regex-automata - v0.4.6
+## regex-automata
 The `regex-automata` software is included in this product.
 The source code is available here: https://github.com/rust-lang/regex/tree/master/regex-automata.
 Its license(s) and notice(s) are as follows:
@@ -4593,7 +4593,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## regex-syntax - v0.8.3
+## regex-syntax
 The `regex-syntax` software is included in this product.
 The source code is available here: https://github.com/rust-lang/regex/tree/master/regex-syntax.
 Its license(s) and notice(s) are as follows:
@@ -4625,7 +4625,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## regex - v1.10.4
+## regex
 The `regex` software is included in this product.
 The source code is available here: https://github.com/rust-lang/regex.
 Its license(s) and notice(s) are as follows:
@@ -4657,7 +4657,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## relative-path - v1.9.3
+## relative-path
 The `relative-path` software is included in this product.
 The source code is available here: https://github.com/udoprog/relative-path.
 Its license(s) and notice(s) are as follows:
@@ -4688,7 +4688,8 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
 IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
-## remove_dir_all - v0.5.3
+
+## remove_dir_all
 The `remove_dir_all` software is included in this product.
 The source code is available here: https://github.com/XAMPPRocky/remove_dir_all.git.
 Its license(s) and notice(s) are as follows:
@@ -4914,7 +4915,7 @@ DEALINGS IN THE SOFTWARE.
 
 
 
-## rstest - v0.18.2
+## rstest
 The `rstest` software is included in this product.
 The source code is available here: https://github.com/la10736/rstest.
 Its license(s) and notice(s) are as follows:
@@ -4938,7 +4939,8 @@ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTIO
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-## rstest_macros - v0.18.2
+
+## rstest_macros
 The `rstest_macros` software is included in this product.
 The source code is available here: https://github.com/la10736/rstest.
 Its license(s) and notice(s) are as follows:
@@ -4962,7 +4964,8 @@ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTIO
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-## rstest_reuse - v0.6.0
+
+## rstest_reuse
 The `rstest_reuse` software is included in this product.
 The source code is available here: https://github.com/la10736/rstest.
 Its license(s) and notice(s) are as follows:
@@ -4985,6 +4988,7 @@ PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIG
 HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
 ---
 Copyright 2018-19 Michele d'Amico
 
@@ -5000,7 +5004,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-## rustc_version - v0.4.0
+
+## rustc_version
 The `rustc_version` software is included in this product.
 The source code is available here: https://github.com/Kimundi/rustc-version-rs.
 Its license(s) and notice(s) are as follows:
@@ -5235,7 +5240,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 
-## ryu - v1.0.18
+## ryu
 The `ryu` software is included in this product.
 The source code is available here: https://github.com/dtolnay/ryu.
 Its license(s) and notice(s) are as follows:
@@ -5265,7 +5270,7 @@ ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## scopeguard - v1.2.0
+## scopeguard
 The `scopeguard` software is included in this product.
 The source code is available here: https://github.com/bluss/scopeguard.
 Its license(s) and notice(s) are as follows:
@@ -5297,7 +5302,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## semver - v1.0.23
+## semver
 The `semver` software is included in this product.
 The source code is available here: https://github.com/dtolnay/semver.
 Its license(s) and notice(s) are as follows:
@@ -5327,7 +5332,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## serde - v1.0.201
+## serde
 The `serde` software is included in this product.
 The source code is available here: https://github.com/serde-rs/serde.
 Its license(s) and notice(s) are as follows:
@@ -5357,7 +5362,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## serde_derive - v1.0.201
+## serde_derive
 The `serde_derive` software is included in this product.
 The source code is available here: https://github.com/serde-rs/serde.
 Its license(s) and notice(s) are as follows:
@@ -5387,7 +5392,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## serde_json - v1.0.117
+## serde_json
 The `serde_json` software is included in this product.
 The source code is available here: https://github.com/serde-rs/json.
 Its license(s) and notice(s) are as follows:
@@ -5417,7 +5422,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## serde_spanned - v0.6.6
+## serde_spanned
 The `serde_spanned` software is included in this product.
 The source code is available here: https://github.com/toml-rs/toml.
 Its license(s) and notice(s) are as follows:
@@ -5443,7 +5448,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 
-## serial_test - v2.0.0
+## serial_test
 The `serial_test` software is included in this product.
 The source code is available here: https://github.com/palfrey/serial_test/.
 Its license(s) and notice(s) are as follows:
@@ -5468,7 +5473,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-## serial_test_derive - v2.0.0
+
+## serial_test_derive
 The `serial_test_derive` software is included in this product.
 The source code is available here: https://github.com/palfrey/serial_test/.
 Its license(s) and notice(s) are as follows:
@@ -5493,7 +5499,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-## slab - v0.4.9
+
+## slab
 The `slab` software is included in this product.
 The source code is available here: https://github.com/tokio-rs/slab.
 Its license(s) and notice(s) are as follows:
@@ -5525,7 +5532,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## smallvec - v1.13.2
+## smallvec
 The `smallvec` software is included in this product.
 The source code is available here: https://github.com/servo/rust-smallvec.
 Its license(s) and notice(s) are as follows:
@@ -5557,7 +5564,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## strsim - v0.11.1
+## strsim
 The `strsim` software is included in this product.
 The source code is available here: https://github.com/rapidfuzz/strsim-rs.
 Its license(s) and notice(s) are as follows:
@@ -5587,7 +5594,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 
-## syn - v1.0.109
+## syn
 The `syn` software is included in this product.
 The source code is available here: https://github.com/dtolnay/syn.
 Its license(s) and notice(s) are as follows:
@@ -5617,7 +5624,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## syn - v2.0.62
+## syn
 The `syn` software is included in this product.
 The source code is available here: https://github.com/dtolnay/syn.
 Its license(s) and notice(s) are as follows:
@@ -5647,7 +5654,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## tabled - v0.15.0
+## tabled
 The `tabled` software is included in this product.
 The source code is available here: https://github.com/zhiburt/tabled.
 Its license(s) and notice(s) are as follows:
@@ -5675,7 +5682,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 
-## tabled_derive - v0.7.0
+## tabled_derive
 The `tabled_derive` software is included in this product.
 The source code is available here: https://github.com/zhiburt/tabled.
 Its license(s) and notice(s) are as follows:
@@ -5703,7 +5710,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 
-## tempdir - v0.3.7
+## tempdir
 The `tempdir` software is included in this product.
 The source code is available here: https://github.com/rust-lang/tempdir.
 Its license(s) and notice(s) are as follows:
@@ -5938,7 +5945,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 
-## toml - v0.7.8
+## toml
 The `toml` software is included in this product.
 The source code is available here: https://github.com/toml-rs/toml.
 Its license(s) and notice(s) are as follows:
@@ -5964,7 +5971,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 
-## toml_datetime - v0.6.6
+## toml_datetime
 The `toml_datetime` software is included in this product.
 The source code is available here: https://github.com/toml-rs/toml.
 Its license(s) and notice(s) are as follows:
@@ -5990,7 +5997,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 
-## toml_edit - v0.19.15
+## toml_edit
 The `toml_edit` software is included in this product.
 The source code is available here: https://github.com/toml-rs/toml.
 Its license(s) and notice(s) are as follows:
@@ -6016,7 +6023,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 
-## unicode-ident - v1.0.12
+## unicode-ident
 The `unicode-ident` software is included in this product.
 The source code is available here: https://github.com/dtolnay/unicode-ident.
 Its license(s) and notice(s) are as follows:
@@ -6094,7 +6101,7 @@ use or other dealings in these Data Files or Software without prior
 written authorization of the copyright holder.
 
 
-## unicode-width - v0.1.12
+## unicode-width
 The `unicode-width` software is included in this product.
 The source code is available here: https://github.com/unicode-rs/unicode-width.
 Its license(s) and notice(s) are as follows:
@@ -6126,7 +6133,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## users - v0.11.0
+## users
 The `users` software is included in this product.
 The source code is available here: https://github.com/ogham/rust-users.
 Its license(s) and notice(s) are as follows:
@@ -6154,7 +6161,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 
-## utf8parse - v0.2.1
+## utf8parse
 The `utf8parse` software is included in this product.
 The source code is available here: https://github.com/alacritty/vte.
 Its license(s) and notice(s) are as follows:
@@ -6186,7 +6193,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## version_check - v0.9.4
+## version_check
 The `version_check` software is included in this product.
 The source code is available here: https://github.com/SergioBenitez/version_check.
 Its license(s) and notice(s) are as follows:
@@ -6415,7 +6422,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 
-## vte - v0.10.1
+## vte
 The `vte` software is included in this product.
 The source code is available here: https://github.com/alacritty/vte.
 Its license(s) and notice(s) are as follows:
@@ -6447,7 +6454,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## vte_generate_state_changes - v0.1.1
+## vte_generate_state_changes
 The `vte_generate_state_changes` software is included in this product.
 The source code is available here: https://github.com/jwilm/vte.
 Its license(s) and notice(s) are as follows:
@@ -6478,7 +6485,8 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
 IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
-## wasi - v0.11.0+wasi-snapshot-preview1
+
+## wasi
 The `wasi` software is included in this product.
 The source code is available here: https://github.com/bytecodealliance/wasi.
 Its license(s) and notice(s) are as follows:
@@ -6508,7 +6516,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 
-## winapi-i686-pc-windows-gnu - v0.4.0
+## winapi-i686-pc-windows-gnu
 The `winapi-i686-pc-windows-gnu` software is included in this product.
 The source code is available here: https://github.com/retep998/winapi-rs.
 Its license(s) and notice(s) are as follows:
@@ -6532,6 +6540,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
 ---
                                  Apache License
                            Version 2.0, January 2004
@@ -6735,7 +6744,8 @@ SOFTWARE.
    See the License for the specific language governing permissions and
    limitations under the License.
 
-## winapi-x86_64-pc-windows-gnu - v0.4.0
+
+## winapi-x86_64-pc-windows-gnu
 The `winapi-x86_64-pc-windows-gnu` software is included in this product.
 The source code is available here: https://github.com/retep998/winapi-rs.
 Its license(s) and notice(s) are as follows:
@@ -6759,6 +6769,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
 ---
                                  Apache License
                            Version 2.0, January 2004
@@ -6962,7 +6973,8 @@ SOFTWARE.
    See the License for the specific language governing permissions and
    limitations under the License.
 
-## winapi - v0.3.9
+
+## winapi
 The `winapi` software is included in this product.
 The source code is available here: https://github.com/retep998/winapi-rs.
 Its license(s) and notice(s) are as follows:
@@ -7191,7 +7203,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 
-## windows-sys - v0.48.0
+## windows-sys
 The `windows-sys` software is included in this product.
 The source code is available here: https://github.com/microsoft/windows-rs.
 Its license(s) and notice(s) are as follows:
@@ -7219,7 +7231,7 @@ Its license(s) and notice(s) are as follows:
     SOFTWARE
 
 
-## windows-sys - v0.52.0
+## windows-sys
 The `windows-sys` software is included in this product.
 The source code is available here: https://github.com/microsoft/windows-rs.
 Its license(s) and notice(s) are as follows:
@@ -7247,7 +7259,7 @@ Its license(s) and notice(s) are as follows:
     SOFTWARE
 
 
-## windows-targets - v0.48.5
+## windows-targets
 The `windows-targets` software is included in this product.
 The source code is available here: https://github.com/microsoft/windows-rs.
 Its license(s) and notice(s) are as follows:
@@ -7275,7 +7287,7 @@ Its license(s) and notice(s) are as follows:
     SOFTWARE
 
 
-## windows-targets - v0.52.5
+## windows-targets
 The `windows-targets` software is included in this product.
 The source code is available here: https://github.com/microsoft/windows-rs.
 Its license(s) and notice(s) are as follows:
@@ -7303,7 +7315,7 @@ Its license(s) and notice(s) are as follows:
     SOFTWARE
 
 
-## windows_aarch64_gnullvm - v0.48.5
+## windows_aarch64_gnullvm
 The `windows_aarch64_gnullvm` software is included in this product.
 The source code is available here: https://github.com/microsoft/windows-rs.
 Its license(s) and notice(s) are as follows:
@@ -7331,7 +7343,7 @@ Its license(s) and notice(s) are as follows:
     SOFTWARE
 
 
-## windows_aarch64_gnullvm - v0.52.5
+## windows_aarch64_gnullvm
 The `windows_aarch64_gnullvm` software is included in this product.
 The source code is available here: https://github.com/microsoft/windows-rs.
 Its license(s) and notice(s) are as follows:
@@ -7359,7 +7371,7 @@ Its license(s) and notice(s) are as follows:
     SOFTWARE
 
 
-## windows_aarch64_msvc - v0.48.5
+## windows_aarch64_msvc
 The `windows_aarch64_msvc` software is included in this product.
 The source code is available here: https://github.com/microsoft/windows-rs.
 Its license(s) and notice(s) are as follows:
@@ -7387,7 +7399,7 @@ Its license(s) and notice(s) are as follows:
     SOFTWARE
 
 
-## windows_aarch64_msvc - v0.52.5
+## windows_aarch64_msvc
 The `windows_aarch64_msvc` software is included in this product.
 The source code is available here: https://github.com/microsoft/windows-rs.
 Its license(s) and notice(s) are as follows:
@@ -7415,7 +7427,7 @@ Its license(s) and notice(s) are as follows:
     SOFTWARE
 
 
-## windows_i686_gnu - v0.48.5
+## windows_i686_gnu
 The `windows_i686_gnu` software is included in this product.
 The source code is available here: https://github.com/microsoft/windows-rs.
 Its license(s) and notice(s) are as follows:
@@ -7443,7 +7455,7 @@ Its license(s) and notice(s) are as follows:
     SOFTWARE
 
 
-## windows_i686_gnu - v0.52.5
+## windows_i686_gnu
 The `windows_i686_gnu` software is included in this product.
 The source code is available here: https://github.com/microsoft/windows-rs.
 Its license(s) and notice(s) are as follows:
@@ -7471,7 +7483,7 @@ Its license(s) and notice(s) are as follows:
     SOFTWARE
 
 
-## windows_i686_gnullvm - v0.52.5
+## windows_i686_gnullvm
 The `windows_i686_gnullvm` software is included in this product.
 The source code is available here: https://github.com/microsoft/windows-rs.
 Its license(s) and notice(s) are as follows:
@@ -7499,7 +7511,7 @@ Its license(s) and notice(s) are as follows:
     SOFTWARE
 
 
-## windows_i686_msvc - v0.48.5
+## windows_i686_msvc
 The `windows_i686_msvc` software is included in this product.
 The source code is available here: https://github.com/microsoft/windows-rs.
 Its license(s) and notice(s) are as follows:
@@ -7527,7 +7539,7 @@ Its license(s) and notice(s) are as follows:
     SOFTWARE
 
 
-## windows_i686_msvc - v0.52.5
+## windows_i686_msvc
 The `windows_i686_msvc` software is included in this product.
 The source code is available here: https://github.com/microsoft/windows-rs.
 Its license(s) and notice(s) are as follows:
@@ -7555,7 +7567,7 @@ Its license(s) and notice(s) are as follows:
     SOFTWARE
 
 
-## windows_x86_64_gnu - v0.48.5
+## windows_x86_64_gnu
 The `windows_x86_64_gnu` software is included in this product.
 The source code is available here: https://github.com/microsoft/windows-rs.
 Its license(s) and notice(s) are as follows:
@@ -7583,7 +7595,7 @@ Its license(s) and notice(s) are as follows:
     SOFTWARE
 
 
-## windows_x86_64_gnu - v0.52.5
+## windows_x86_64_gnu
 The `windows_x86_64_gnu` software is included in this product.
 The source code is available here: https://github.com/microsoft/windows-rs.
 Its license(s) and notice(s) are as follows:
@@ -7611,7 +7623,7 @@ Its license(s) and notice(s) are as follows:
     SOFTWARE
 
 
-## windows_x86_64_gnullvm - v0.48.5
+## windows_x86_64_gnullvm
 The `windows_x86_64_gnullvm` software is included in this product.
 The source code is available here: https://github.com/microsoft/windows-rs.
 Its license(s) and notice(s) are as follows:
@@ -7639,7 +7651,7 @@ Its license(s) and notice(s) are as follows:
     SOFTWARE
 
 
-## windows_x86_64_gnullvm - v0.52.5
+## windows_x86_64_gnullvm
 The `windows_x86_64_gnullvm` software is included in this product.
 The source code is available here: https://github.com/microsoft/windows-rs.
 Its license(s) and notice(s) are as follows:
@@ -7667,7 +7679,7 @@ Its license(s) and notice(s) are as follows:
     SOFTWARE
 
 
-## windows_x86_64_msvc - v0.48.5
+## windows_x86_64_msvc
 The `windows_x86_64_msvc` software is included in this product.
 The source code is available here: https://github.com/microsoft/windows-rs.
 Its license(s) and notice(s) are as follows:
@@ -7695,7 +7707,7 @@ Its license(s) and notice(s) are as follows:
     SOFTWARE
 
 
-## windows_x86_64_msvc - v0.52.5
+## windows_x86_64_msvc
 The `windows_x86_64_msvc` software is included in this product.
 The source code is available here: https://github.com/microsoft/windows-rs.
 Its license(s) and notice(s) are as follows:
@@ -7723,7 +7735,7 @@ Its license(s) and notice(s) are as follows:
     SOFTWARE
 
 
-## winnow - v0.5.40
+## winnow
 The `winnow` software is included in this product.
 The source code is available here: https://github.com/winnow-rs/winnow.
 Its license(s) and notice(s) are as follows:
@@ -7748,7 +7760,7 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
-## winreg - v0.52.0
+## winreg
 The `winreg` software is included in this product.
 The source code is available here: https://github.com/gentoo90/winreg-rs.
 Its license(s) and notice(s) are as follows:
@@ -7774,7 +7786,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
 
-## winresource - v0.1.17
+## winresource
 The `winresource` software is included in this product.
 The source code is available here: https://github.com/BenjaminRi/winresource.
 Its license(s) and notice(s) are as follows:
@@ -7804,3 +7816,5 @@ CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
 IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
+
+
