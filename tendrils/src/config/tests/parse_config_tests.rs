@@ -5,21 +5,66 @@ use crate::tests::sample_tendrils::SampleTendrils;
 fn empty_string_returns_error() {
     let given = "";
 
-    assert!(parse_config(&given).is_err());
+    let actual = parse_config(&given);
+
+    assert!(actual.is_err());
+    assert!(format!("{:?}", actual).contains("EOF while parsing a value"));
 }
 
 #[test]
 fn invalid_json_returns_error() {
     let given = "I'm not JSON";
 
-    assert!(parse_config(&given).is_err());
+    let actual = parse_config(&given);
+
+    assert!(actual.is_err());
+    assert!(format!("{:?}", actual).contains("expected value"));
 }
 
 #[test]
-fn tendril_json_not_in_array_returns_error() {
+fn tendril_json_not_in_array_returns_empty() {
     let given = SampleTendrils::tendril_1_json();
 
-    assert!(parse_config(&given).is_err());
+    let actual = parse_config(&given).unwrap().tendrils;
+
+    assert!(actual.is_empty());
+}
+
+#[test]
+fn tendrils_field_is_missing_returns_empty() {
+    let given = "{}";
+
+    assert!(parse_config(&given).unwrap().tendrils.is_empty());
+}
+
+#[test]
+fn tendrils_field_is_null_returns_error() {
+    let given = "{\"tendrils\": null}";
+
+    let actual = parse_config(&given);
+
+    assert!(actual.is_err());
+    assert!(format!("{:?}", actual).contains("invalid type: null"));
+}
+
+#[test]
+fn tendrils_field_is_empty_array_returns_empty() {
+    let given = SampleTendrils::build_tendrils_json(&vec![]);
+
+    assert!(parse_config(&given).unwrap().tendrils.is_empty());
+}
+
+#[test]
+fn ignores_extra_top_level_fields() {
+    let original_json = SampleTendrils::build_tendrils_json(&vec![
+        SampleTendrils::tendril_1_json()
+    ]);
+    let given = original_json.replacen("{", r#"{"extra-field": true, "#, 1);
+    let expected = [SampleTendrils::tendril_1()].to_vec();
+
+    let actual = parse_config(&given).unwrap().tendrils;
+
+    assert_eq!(actual, expected);
 }
 
 #[test]
@@ -35,10 +80,11 @@ fn json_missing_group_returns_error() {
     let actual = parse_config(&given);
 
     assert!(actual.is_err());
+    assert!(format!("{:?}", actual).contains("missing field `group`"));
 }
 
 #[test]
-fn json_missing_name_returns_error() {
+fn json_missing_names_returns_error() {
     let original_tendril_json = SampleTendrils::tendril_1_json();
     let partial_tendril_json =
         original_tendril_json.replace(r#""names": "settings.json","#, "");
@@ -50,6 +96,7 @@ fn json_missing_name_returns_error() {
     let actual = parse_config(&given);
 
     assert!(actual.is_err());
+    assert!(format!("{:?}", actual).contains("missing field `names`"));
 }
 
 #[test]
@@ -65,6 +112,7 @@ fn json_missing_parents_returns_error() {
     let actual = parse_config(&given);
 
     assert!(actual.is_err());
+    assert!(format!("{:?}", actual).contains("missing field `parents`"));
 }
 
 #[test]
@@ -133,6 +181,7 @@ fn json_group_is_null_returns_error() {
     let actual = parse_config(&given);
 
     assert!(actual.is_err());
+    assert!(format!("{:?}", actual).contains("invalid type: null, expected a string"));
 }
 
 #[test]
@@ -148,6 +197,7 @@ fn json_names_is_null_returns_error() {
     let actual = parse_config(&given);
 
     assert!(actual.is_err());
+    assert!(format!("{:?}", actual).contains("data did not match any variant of untagged enum OneOrMany"));
 }
 
 #[test]
@@ -165,6 +215,7 @@ fn json_individual_name_is_null_returns_error() {
     let actual = parse_config(&given);
 
     assert!(actual.is_err());
+    assert!(format!("{:?}", actual).contains("data did not match any variant of untagged enum OneOrMany"));
 }
 
 #[test]
@@ -180,6 +231,7 @@ fn json_parents_is_null_returns_error() {
     let actual = parse_config(&given);
 
     assert!(actual.is_err());
+    assert!(format!("{:?}", actual).contains("data did not match any variant of untagged enum OneOrMany"));
 }
 
 #[test]
@@ -197,6 +249,7 @@ fn json_individual_parent_is_null_returns_error() {
     let actual = parse_config(&given);
 
     assert!(actual.is_err());
+    assert!(format!("{:?}", actual).contains("data did not match any variant of untagged enum OneOrMany"));
 }
 
 #[test]
@@ -212,6 +265,7 @@ fn json_dir_merge_is_null_returns_error() {
     let actual = parse_config(&given);
 
     assert!(actual.is_err());
+    assert!(format!("{:?}", actual).contains("invalid type: null, expected a boolean"));
 }
 
 #[test]
@@ -227,6 +281,7 @@ fn json_link_is_null_returns_error() {
     let actual = parse_config(&given);
 
     assert!(actual.is_err());
+    assert!(format!("{:?}", actual).contains("invalid type: null, expected a boolean"));
 }
 
 #[test]
@@ -242,6 +297,7 @@ fn json_profiles_is_null_returns_error() {
     let actual = parse_config(&given);
 
     assert!(actual.is_err());
+    assert!(format!("{:?}", actual).contains("data did not match any variant of untagged enum OneOrMany"));
 }
 
 #[test]
@@ -257,16 +313,7 @@ fn json_individual_profile_is_null_returns_error() {
     let actual = parse_config(&given);
 
     assert!(actual.is_err());
-}
-
-#[test]
-fn empty_json_array_returns_empty() {
-    let given = SampleTendrils::build_tendrils_json(&vec![]);
-    let expected = [].to_vec();
-
-    let actual = parse_config(&given).unwrap().tendrils;
-
-    assert_eq!(actual, expected);
+    assert!(format!("{:?}", actual).contains("data did not match any variant of untagged enum OneOrMany"));
 }
 
 #[test]
@@ -283,7 +330,7 @@ fn single_tendril_in_json_returns_tendril() {
 }
 
 #[test]
-fn multiple_tendrils_in_json_returns_tendrils() {
+fn multiple_tendrils_in_json_returns_tendrils_in_given_order() {
     let given = SampleTendrils::build_tendrils_json(
         &SampleTendrils::all_tendril_jsons(),
     );
@@ -296,11 +343,11 @@ fn multiple_tendrils_in_json_returns_tendrils() {
 }
 
 #[test]
-fn ignores_extra_json_field_returns_tendril() {
+fn ignores_extra_tendril_json_field() {
     let original_tendril_json = SampleTendrils::tendril_1_json();
     let extra_field_tendril_json = original_tendril_json.replace(
         r#""names": "settings.json","#,
-        r#""names": "settings.json", "extra field": true,"#,
+        r#""names": "settings.json", "extra-field": true,"#,
     );
     assert_ne!(original_tendril_json, extra_field_tendril_json);
 

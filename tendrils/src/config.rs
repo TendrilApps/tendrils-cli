@@ -10,6 +10,7 @@ mod tests;
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Config {
     /// The tendrils that are defined in a Tendrils folder.
+    #[serde(default)]
     pub tendrils: Vec<TendrilBundle>
 }
 
