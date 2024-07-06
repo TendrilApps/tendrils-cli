@@ -40,6 +40,25 @@ impl From<std::io::Error> for InitError {
     }
 }
 
+impl ToString for InitError {
+    fn to_string(&self) -> String {
+        match self {
+            InitError::IoError { kind: e_kind } => {
+                format!("IO error - {e_kind}")
+            }
+            InitError::AlreadyInitialized => {
+                String::from("This folder is already a Tendrils folder")
+            }
+            InitError::NotEmpty => {
+                String::from(
+                    "This folder is not empty. Creating a Tendrils \
+                    folder here may interfere with the existing \
+                    contents.")
+            }
+        }
+    }
+}
+
 /// Indicates an error while reading/parsing a
 /// configuration file.
 #[derive(Clone, Debug, Eq, PartialEq)]

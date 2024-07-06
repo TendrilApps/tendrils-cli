@@ -146,7 +146,7 @@ fn init_no_path_given_uses_current_dir(#[case] force: bool) {
     assert_eq!(
         writer.all_output,
         format!(
-            "Created a Tendrils folder at: {}.\n",
+            "Created a Tendrils folder at: {}\n",
             temp_dir.path().to_string_lossy()
         )
     );
@@ -186,7 +186,7 @@ fn init_path_given_uses_given_path_and_ignores_valid_current_dir(
     assert_eq!(
         writer.all_output,
         format!(
-            "Created a Tendrils folder at: {}.\n",
+            "Created a Tendrils folder at: {}\n",
             given_dir.to_string_lossy()
         )
     );
@@ -232,7 +232,7 @@ fn init_path_given_uses_given_path_and_ignores_invalid_current_dir(
     assert_eq!(
         writer.all_output,
         format!(
-            "Created a Tendrils folder at: {}.\n",
+            "Created a Tendrils folder at: {}\n",
             given_dir.to_string_lossy()
         )
     );
@@ -273,7 +273,7 @@ fn init_path_given_uses_given_path_and_ignores_missing_current_dir(
     assert_eq!(
         writer.all_output,
         format!(
-            "Created a Tendrils folder at: {}.\n",
+            "Created a Tendrils folder at: {}\n",
             given_dir.to_string_lossy()
         )
     );
@@ -331,7 +331,7 @@ fn init_non_empty_dir_prints_error_message_unless_forced(#[case] force: bool) {
         assert_eq!(
             writer.all_output,
             format!(
-                "Created a Tendrils folder at: {}.\n",
+                "Created a Tendrils folder at: {}\n",
                 given_dir.to_string_lossy()
             )
         );
@@ -372,7 +372,7 @@ fn init_dir_is_already_tendrils_dir_prints_error_message(#[case] force: bool) {
     assert_eq!(actual_exit_code, Err(exitcode::DATAERR));
     assert_eq!(
         writer.all_output,
-        format!("{ERR_PREFIX}: This folder is already a Tendrils folder.\n"),
+        format!("{ERR_PREFIX}: This folder is already a Tendrils folder\n"),
     );
 }
 
@@ -393,7 +393,7 @@ fn init_dir_does_not_exist_prints_io_error_message(#[case] force: bool) {
     let actual_exit_code = run(args, &mut writer);
 
     assert_eq!(actual_exit_code, Err(exitcode::IOERR));
-    assert_eq!(writer.all_output, format!("{ERR_PREFIX}: entity not found.\n"));
+    assert_eq!(writer.all_output, format!("{ERR_PREFIX}: IO error - entity not found\n"));
 }
 
 #[test]

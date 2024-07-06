@@ -110,7 +110,7 @@ fn init(
             Ok(v) => v,
             Err(_err) => {
                 writer.writeln(&format!(
-                    "{ERR_PREFIX}: Could not get the current directory."
+                    "{ERR_PREFIX}: Could not get the current directory"
                 ));
                 return Err(exitcode::OSERR);
             }
@@ -120,31 +120,29 @@ fn init(
     match init_tendrils_dir(&td_dir, force) {
         Ok(()) => {
             writer.writeln(&format!(
-                "Created a Tendrils folder at: {}.",
+                "Created a Tendrils folder at: {}",
                 &td_dir.to_string_lossy()
             ));
         }
-        Err(InitError::IoError { kind: e_kind }) => {
-            writer.writeln(&format!("{ERR_PREFIX}: {e_kind}."));
-            return Err(exitcode::IOERR);
-        }
-        Err(InitError::AlreadyInitialized) => {
-            writer.writeln(&format!(
-                "{ERR_PREFIX}: This folder is already a Tendrils folder."
-            ));
-            return Err(exitcode::DATAERR);
-        }
-        Err(InitError::NotEmpty) => {
-            writer.writeln(&format!(
-                "{ERR_PREFIX}: This folder is not empty. Creating a Tendrils \
-                 folder here may interfere with the existing contents."
-            ));
-            writer.writeln(
-                "Consider running with the 'force' flag to ignore this \
-                 error:\n",
-            );
-            writer.writeln("td init --force");
-            return Err(exitcode::DATAERR);
+        Err(e) => {
+            writer.writeln(&format!("{ERR_PREFIX}: {}", e.to_string()));
+
+            return match e {
+                InitError::IoError { kind: _ } => {
+                    Err(exitcode::IOERR)
+                }
+                InitError::AlreadyInitialized => {
+                    Err(exitcode::DATAERR)
+                }
+                InitError::NotEmpty => {
+                    writer.writeln(
+                        "Consider running with the 'force' flag to ignore this \
+                         error:\n",
+                    );
+                    writer.writeln("td init --force");
+                    Err(exitcode::DATAERR)
+                }
+            }
         }
     };
 
