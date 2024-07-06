@@ -1,11 +1,12 @@
 use crate::{
-    parse_tendrils,
     symlink,
     Fso,
     Tendril,
     TendrilBundle,
+    Config,
     TendrilMode,
 };
+use crate::config::parse_config;
 use std::fs::{create_dir_all, read_to_string, write};
 use std::path::{Path, PathBuf};
 use tempdir::TempDir;
@@ -40,10 +41,10 @@ pub fn is_empty(dir: &Path) -> bool {
 }
 
 /// Exposes the otherwise private function
-pub fn parse_tendrils_expose(
+pub fn parse_config_expose(
     json: &str,
-) -> Result<Vec<TendrilBundle>, serde_json::Error> {
-    parse_tendrils(json)
+) -> Result<Config, serde_json::Error> {
+    parse_config(json)
 }
 
 pub fn set_parents(tendril: &mut TendrilBundle, paths: &[PathBuf]) {
@@ -204,7 +205,8 @@ impl Setup {
 
     pub fn make_td_json_file(&self, tendrils: &[TendrilBundle]) {
         self.make_td_dir();
-        let json = serde_json::to_string(tendrils).unwrap();
+        let config = Config { tendrils: tendrils.to_vec() };
+        let json = serde_json::to_string(&config).unwrap();
         write(&self.td_json_file, json).unwrap();
     }
 

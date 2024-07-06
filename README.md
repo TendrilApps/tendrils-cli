@@ -78,26 +78,28 @@ td init
 ## Schema
 - The json schema is intended to be flexible and to allow defining multiple tendrils in a compact form
 ```json
-[
-    {
-        "group": "Group/app Name",
-        "names": [
-            "file1.txt",
-            "file2.md",
-            "folder1"
-        ],
-        "parents": [
-            "~/path/to/parent/folder",
-            "parent/with/<ENV_VAR>",
-        ],
-        "dir-merge": false,
-        "link": false,
-        "profiles": [
-            "home",
-            "work",
-        ]
-    }
-] // Note the square outer brackets
+{
+    "tendrils": [
+        {
+            "group": "Group/app Name",
+            "names": [
+                "file1.txt",
+                "file2.md",
+                "folder1"
+            ],
+            "parents": [
+                "~/path/to/parent/folder",
+                "parent/with/<ENV_VAR>",
+            ],
+            "dir-merge": false,
+            "link": false,
+            "profiles": [
+                "home",
+                "work",
+            ]
+        }
+    ]
+}
 ```
 - The example above would define 6 tendrils
     - One for each of the 3 names in each of the 2 parent folders

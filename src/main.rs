@@ -16,14 +16,14 @@ use std::path::PathBuf;
 use tendrils::{
     can_symlink,
     filter_tendrils,
-    get_tendrils,
+    get_config,
     get_tendrils_dir,
     init_tendrils_dir,
     is_tendrils_dir,
     tendril_action,
     ActionMode,
     FilterSpec,
-    GetTendrilsError,
+    GetConfigError,
     InitError,
 };
 mod writer;
@@ -236,15 +236,15 @@ fn tendril_action_subcommand(
         return Err(exitcode::CANTCREAT);
     }
 
-    let all_tendrils = match get_tendrils(&td_dir) {
-        Ok(v) => v,
-        Err(GetTendrilsError::IoError { kind: _ }) => {
+    let all_tendrils = match get_config(&td_dir) {
+        Ok(v) => v.tendrils,
+        Err(GetConfigError::IoError { kind: _ }) => {
             writer.writeln(&format!(
                 "{ERR_PREFIX}: Could not read the tendrils.json file."
             ));
             return Err(exitcode::NOINPUT);
         }
-        Err(GetTendrilsError::ParseError(e)) => {
+        Err(GetConfigError::ParseError(e)) => {
             writer.writeln(&format!(
                 "{ERR_PREFIX}: Could not parse the tendrils.json file."
             ));

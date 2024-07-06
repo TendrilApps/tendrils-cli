@@ -1,11 +1,12 @@
+use crate::config::parse_config;
 use crate::test_utils::get_disposable_dir;
 use crate::{
-    get_tendrils,
+    get_config,
     init_tendrils_dir,
     is_tendrils_dir,
-    parse_tendrils,
     InitError,
     TendrilBundle,
+    Config,
 };
 use rstest::rstest;
 use std::fs::{create_dir_all, read_to_string, write};
@@ -39,14 +40,15 @@ fn creates_valid_tendrils_json_file_in_empty_dir(#[case] force: bool) {
         link: true,
         profiles: vec!["home".to_string(), "work".to_string()],
     };
-    let exptected_tendrils = [expected_t1, expected_t2];
+    let expected_tendrils = vec![expected_t1, expected_t2];
+    let expected = Config { tendrils: expected_tendrils };
 
     let actual = init_tendrils_dir(temp_init_dir.path(), force);
 
     let td_json_contents = read_to_string(td_json_file).unwrap();
     assert_eq!(actual, Ok(()));
     assert_eq!(td_json_contents, crate::INIT_TD_TENDRILS_JSON);
-    assert_eq!(get_tendrils(temp_init_dir.path()).unwrap(), exptected_tendrils);
+    assert_eq!(get_config(temp_init_dir.path()).unwrap(), expected);
 }
 
 #[rstest]
@@ -135,7 +137,7 @@ fn dir_contains_a_td_json_file_returns_already_init_error_even_if_invalid_json(
     let json_content = "Invalid json content";
     write(&td_json_file, json_content).unwrap();
     assert!(is_tendrils_dir(temp_init_dir.path()));
-    assert!(parse_tendrils(json_content).is_err());
+    assert!(parse_config(json_content).is_err());
 
     let actual = init_tendrils_dir(&temp_init_dir.path(), force);
 

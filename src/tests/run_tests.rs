@@ -15,7 +15,7 @@ use std::path::PathBuf;
 use tendrils::test_utils::{
     get_disposable_dir,
     is_empty,
-    parse_tendrils_expose,
+    parse_config_expose,
     set_parents,
     symlink_expose,
     Setup,
@@ -525,8 +525,9 @@ fn tendril_action_given_path_and_cd_are_both_tendrils_dirs_uses_given_path(
     setup.make_td_json_file(&[]);
     create_dir_all(&given_path).unwrap();
     write(given_path.join("tendrils.json"), "").unwrap();
-    assert!(parse_tendrils_expose("[]").unwrap().is_empty());
-    assert!(parse_tendrils_expose("").is_err());
+    assert!(parse_config_expose("{\"tendrils\":[]}")
+        .unwrap().tendrils.is_empty());
+    assert!(parse_config_expose("").is_err());
     std::env::set_current_dir(&setup.td_dir).unwrap();
 
     let mut writer = MockWriter::new();

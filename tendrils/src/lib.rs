@@ -1,11 +1,13 @@
 //! Provides tools for managing tendrils.
 //! See also the [`td` CLI](..//td/index.html)
 
+mod config;
+pub use config::{Config, get_config};
 mod enums;
 pub use enums::{
     ActionMode,
     FsoType,
-    GetTendrilsError,
+    GetConfigError,
     InitError,
     InvalidTendrilError,
     Location,
@@ -267,20 +269,6 @@ fn get_local_path(tendril: &Tendril, td_dir: &Path) -> PathBuf {
     td_dir.join(tendril.group()).join(tendril.name())
 }
 
-/// Parses the `tendrils.json` file in the given *Tendrils* folder
-/// and returns the tendril bundles in the order they are defined in the file.
-///
-/// # Arguments
-/// - `td_dir` - Path to the *Tendrils* folder.
-pub fn get_tendrils(
-    td_dir: &Path,
-) -> Result<Vec<TendrilBundle>, GetTendrilsError> {
-    let tendrils_file_path = Path::new(&td_dir).join("tendrils.json");
-    let tendrils_file_contents = std::fs::read_to_string(tendrils_file_path)?;
-    let tendrils = parse_tendrils(&tendrils_file_contents)?;
-    Ok(tendrils)
-}
-
 /// Looks for a *Tendrils* folder (as defined by [`is_tendrils_dir`])
 /// - Begins looking at the `starting_path`. If it is a *Tendrils*
 /// folder, the given path is returned.
@@ -309,25 +297,27 @@ pub fn get_tendrils_dir(starting_path: &Path) -> Option<PathBuf> {
     }
 }
 
-const INIT_TD_TENDRILS_JSON: &str = r#"[
-    {
-        "group": "SomeApp",
-        "names": "SomeFile.ext",
-        "parents": "path/to/containing/folder"
-    },
-    {
-        "group": "SomeApp2",
-        "names": ["SomeFile2.ext", "SomeFolder3"],
-        "parents": [
-            "path/to/containing/folder2",
-            "path/to/containing/folder3",
-            "path/to/containing/folder4"
-        ],
-        "dir-merge": false,
-        "link": true,
-        "profiles": ["home", "work"]
-    }
-]
+const INIT_TD_TENDRILS_JSON: &str = r#"{
+    "tendrils": [
+        {
+            "group": "SomeApp",
+            "names": "SomeFile.ext",
+            "parents": "path/to/containing/folder"
+        },
+        {
+            "group": "SomeApp2",
+            "names": ["SomeFile2.ext", "SomeFolder3"],
+            "parents": [
+                "path/to/containing/folder2",
+                "path/to/containing/folder3",
+                "path/to/containing/folder4"
+            ],
+            "dir-merge": false,
+            "link": true,
+            "profiles": ["home", "work"]
+        }
+    ]
+}
 "#;
 
 /// Initializes a *Tendrils* folder with a pre-populated `tendrils.json` file.
@@ -431,12 +421,6 @@ fn link_tendril(
     );
 
     log
-}
-
-/// # Arguments
-/// - `json` - JSON array of tendril bundles
-fn parse_tendrils(json: &str) -> Result<Vec<TendrilBundle>, serde_json::Error> {
-    serde_json::from_str::<Vec<TendrilBundle>>(json)
 }
 
 fn pull_tendril(

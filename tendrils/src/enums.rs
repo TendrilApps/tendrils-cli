@@ -40,27 +40,27 @@ impl From<std::io::Error> for InitError {
     }
 }
 
-/// Indicates an error while reading/parsing the
-/// tendrils from file.
+/// Indicates an error while reading/parsing a
+/// configuration file.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum GetTendrilsError {
+pub enum GetConfigError {
     /// A general file system error while reading the
-    /// `tendrils.json` file.
+    /// file.
     IoError { kind: std::io::ErrorKind },
 
     /// An error while parsing the json from the file.
     ParseError(String),
 }
 
-impl From<std::io::Error> for GetTendrilsError {
+impl From<std::io::Error> for GetConfigError {
     fn from(err: std::io::Error) -> Self {
-        GetTendrilsError::IoError { kind: err.kind() }
+        GetConfigError::IoError { kind: err.kind() }
     }
 }
 
-impl From<serde_json::Error> for GetTendrilsError {
+impl From<serde_json::Error> for GetConfigError {
     fn from(err: serde_json::Error) -> Self {
-        GetTendrilsError::ParseError(err.to_string())
+        GetConfigError::ParseError(err.to_string())
     }
 }
 

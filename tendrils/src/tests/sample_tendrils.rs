@@ -167,7 +167,7 @@ impl SampleTendrils {
 
     pub fn build_tendrils_json(json_tendrils: &Vec<String>) -> String {
         let json_chunks: Vec<String> =
-            ["[".to_string(), json_tendrils.join(","), "]".to_string()]
+            ["{\"tendrils\": [".to_string(), json_tendrils.join(","), "]}".to_string()]
                 .to_vec();
         json_chunks.join("")
     }
