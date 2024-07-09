@@ -14,10 +14,6 @@ use cli::{
 };
 use std::path::PathBuf;
 use tendrils::{
-    can_symlink,
-    filter_tendrils,
-    get_config,
-    get_tendrils_dir,
     init_tendrils_dir,
     is_tendrils_dir,
     tendril_action,
@@ -25,6 +21,7 @@ use tendrils::{
     FilterSpec,
     GetConfigError,
     InitError,
+    SetupError,
 };
 mod writer;
 use writer::Writer;
@@ -160,13 +157,13 @@ fn path(writer: &mut impl Writer) -> Result<(), i32> {
         }
         Err(std::env::VarError::NotPresent) => {
             writer.writeln(&format!(
-                "The '{ENV_NAME}' environment variable is not set."
+                "The '{ENV_NAME}' environment variable is not set"
             ));
         }
         Err(std::env::VarError::NotUnicode(_v)) => {
             writer.writeln(&format!(
                 "{ERR_PREFIX}: The '{ENV_NAME}' environment variable is not \
-                 valid UTF-8."
+                 valid UTF-8"
             ));
             return Err(exitcode::DATAERR);
         }
@@ -184,70 +181,16 @@ fn tendril_action_subcommand(
     writer: &mut impl Writer,
 ) -> Result<(), i32> {
     let td_dir = match action_args.path {
-        Some(v) => {
-            let test_path = PathBuf::from(v);
-            if is_tendrils_dir(&test_path) {
-                test_path
-            }
-            else {
+        Some(v) => Some(PathBuf::from(v)),
+        None => match std::env::current_dir() {
+            Ok(cd) if is_tendrils_dir(&cd) => Some(cd),
+            Ok(_) => None,
+            Err(_err) => {
                 writer.writeln(&format!(
-                    "{ERR_PREFIX}: The given path is not a Tendrils folder."
+                    "{ERR_PREFIX}: Could not get the current directory"
                 ));
-                return Err(exitcode::NOINPUT);
+                return Err(exitcode::OSERR);
             }
-        }
-        None => {
-            let starting_dir = match std::env::current_dir() {
-                Ok(v) => v,
-                Err(_err) => {
-                    writer.writeln(&format!(
-                        "{ERR_PREFIX}: Could not get the current directory."
-                    ));
-                    return Err(exitcode::OSERR);
-                }
-            };
-            match get_tendrils_dir(&starting_dir) {
-                Some(v) => v,
-                None => {
-                    writer.writeln(&format!(
-                        "{ERR_PREFIX}: Could not find a Tendrils folder."
-                    ));
-                    return Err(exitcode::NOINPUT);
-                }
-            }
-        }
-    };
-
-    use std::env::consts::OS;
-    if mode == ActionMode::Link && OS == "windows" && !can_symlink() {
-        writer.writeln(&format!(
-            "{ERR_PREFIX}: Missing the permissions required to create \
-             symlinks on Windows. Consider:"
-        ));
-        writer.writeln("    - Running this command in an elevated terminal");
-        writer.writeln(
-            "    - Enabling developer mode (this allows creating symlinks \
-             without requiring administrator priviledges)",
-        );
-        writer
-            .writeln("    - Changing these tendrils to non-link modes instead");
-        return Err(exitcode::CANTCREAT);
-    }
-
-    let all_tendrils = match get_config(&td_dir) {
-        Ok(v) => v.tendrils,
-        Err(GetConfigError::IoError { kind: _ }) => {
-            writer.writeln(&format!(
-                "{ERR_PREFIX}: Could not read the tendrils.json file."
-            ));
-            return Err(exitcode::NOINPUT);
-        }
-        Err(GetConfigError::ParseError(e)) => {
-            writer.writeln(&format!(
-                "{ERR_PREFIX}: Could not parse the tendrils.json file."
-            ));
-            writer.writeln(&e);
-            return Err(exitcode::DATAERR);
         }
     };
 
@@ -264,23 +207,31 @@ fn tendril_action_subcommand(
         parents: &filter_args.parents,
         profiles: &filter_args.profiles,
     };
-    let all_tendrils_is_empty = all_tendrils.is_empty();
-    let filtered_tendrils = filter_tendrils(all_tendrils, filter);
 
-    if all_tendrils_is_empty {
-        writer.writeln("No tendrils were found.");
-    }
-    else if filtered_tendrils.is_empty() {
-        writer.writeln("No tendrils matched the given filter(s).");
-    }
-
-    let action_reports = tendril_action(
+    let batch_result = tendril_action(
         mode,
-        &td_dir,
-        &filtered_tendrils,
+        td_dir.as_ref().map(|p| p.as_path()),
+        filter,
         action_args.dry_run,
         action_args.force,
     );
+
+    let action_reports = match batch_result {
+        Err(e) => {
+            writer.writeln(&format!("{ERR_PREFIX}: {}", e.to_string()));
+            return match e {
+                SetupError::CannotSymlink => Err(exitcode::CANTCREAT),
+                SetupError::ConfigError(GetConfigError::IoError { .. }) => {
+                    Err(exitcode::NOINPUT)
+                }
+                SetupError::ConfigError(GetConfigError::ParseError(_)) => {
+                    Err(exitcode::DATAERR)
+                }
+                SetupError::NoValidTendrilsDir { .. } => Err(exitcode::NOINPUT),
+            }
+        }
+        Ok(v) => v,
+    };
 
     print_reports(&action_reports, writer);
 

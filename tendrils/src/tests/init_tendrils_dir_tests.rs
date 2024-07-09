@@ -1,4 +1,4 @@
-use crate::config::parse_config;
+use crate::config::{Config, parse_config};
 use crate::test_utils::get_disposable_dir;
 use crate::{
     get_config,
@@ -6,7 +6,6 @@ use crate::{
     is_tendrils_dir,
     InitError,
     TendrilBundle,
-    Config,
 };
 use rstest::rstest;
 use std::fs::{create_dir_all, read_to_string, write};

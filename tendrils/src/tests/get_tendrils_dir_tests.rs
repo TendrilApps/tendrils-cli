@@ -16,7 +16,7 @@ fn starting_dir_invalid_env_var_not_set_returns_none() {
     remove_var(ENV_NAME);
     assert!(!is_tendrils_dir(&starting_td_dir));
 
-    let actual = get_tendrils_dir(temp.path());
+    let actual = get_tendrils_dir(Some(temp.path()));
 
     assert!(actual.is_none());
 }
@@ -31,7 +31,7 @@ fn starting_dir_invalid_env_var_invalid_returns_none() {
     assert!(!is_tendrils_dir(&starting_td_dir));
     assert!(!is_tendrils_dir(&PathBuf::from(env_value)));
 
-    let actual = get_tendrils_dir(&starting_td_dir);
+    let actual = get_tendrils_dir(Some(&starting_td_dir));
 
     assert!(actual.is_none());
 }
@@ -46,7 +46,7 @@ fn starting_dir_valid_env_var_not_set_returns_starting_dir() {
     remove_var(ENV_NAME);
     assert!(is_tendrils_dir(&starting_td_dir));
 
-    let actual = get_tendrils_dir(&starting_td_dir).unwrap();
+    let actual = get_tendrils_dir(Some(&starting_td_dir)).unwrap();
 
     assert_eq!(actual, starting_td_dir);
 }
@@ -65,14 +65,14 @@ fn starting_dir_valid_env_var_valid_returns_starting_dir() {
     assert!(is_tendrils_dir(&starting_td_dir));
     assert!(is_tendrils_dir(&env_var_td_dir));
 
-    let actual = get_tendrils_dir(&starting_td_dir).unwrap();
+    let actual = get_tendrils_dir(Some(&starting_td_dir)).unwrap();
 
     assert_eq!(actual, starting_td_dir);
 }
 
 #[test]
 #[serial("mut-env-var-td-folder")]
-fn starting_dir_invalid_env_var_valid_returns_env_var() {
+fn starting_dir_invalid_env_var_valid_returns_none() {
     let temp = TempDir::new_in(get_disposable_dir(), "Temp").unwrap();
     let starting_td_dir = temp.path().join("I don't exist");
     let env_var_td_dir = temp.path().join("EnvVarTendrilsDir");
@@ -82,7 +82,7 @@ fn starting_dir_invalid_env_var_valid_returns_env_var() {
     assert!(!is_tendrils_dir(&starting_td_dir));
     assert!(is_tendrils_dir(&env_var_td_dir));
 
-    let actual = get_tendrils_dir(&starting_td_dir).unwrap();
+    let actual = get_tendrils_dir(Some(&starting_td_dir));
 
-    assert_eq!(actual, env_var_td_dir);
+    assert!(actual.is_none());
 }

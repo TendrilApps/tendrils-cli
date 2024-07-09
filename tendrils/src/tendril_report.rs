@@ -9,12 +9,12 @@ use std::path::PathBuf;
 
 /// Generic report format for any operation on a [`TendrilBundle`]
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct TendrilReport<'a, T: TendrilLog> {
+pub struct TendrilReport<T: TendrilLog> {
     /// The original tendril bundle that this tendril was expanded from
-    pub orig_tendril: &'a TendrilBundle,
+    pub orig_tendril: std::rc::Rc<TendrilBundle>,
     /// The name of the tendril that was expanded. If this `orig_tendril`
     /// contains many names, this indicate which was used
-    pub name: &'a str,
+    pub name: String,
     /// Result containing the log from the operation, provided
     /// the tendril was valid.
     /// Otherwise, it contains the [`InvalidTendrilError`]

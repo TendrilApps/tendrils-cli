@@ -2,7 +2,7 @@
 //! See also the [`td` CLI](..//td/index.html)
 
 mod config;
-pub use config::{Config, get_config};
+use config::get_config;
 mod enums;
 pub use enums::{
     ActionMode,
@@ -13,10 +13,12 @@ pub use enums::{
     Location,
     TendrilActionError,
     TendrilActionSuccess,
+    SetupError,
     TendrilMode,
 };
 mod filtering;
-pub use filtering::{filter_tendrils, FilterSpec};
+use filtering::filter_tendrils;
+pub use filtering::FilterSpec;
 use std::ffi::OsString;
 use std::fs::{create_dir_all, remove_dir_all, remove_file};
 use std::path::{Path, PathBuf};
@@ -270,16 +272,21 @@ fn get_local_path(tendril: &Tendril, td_dir: &Path) -> PathBuf {
 }
 
 /// Looks for a *Tendrils* folder (as defined by [`is_tendrils_dir`])
-/// - Begins looking at the `starting_path`. If it is a *Tendrils*
-/// folder, the given path is returned.
-/// - If it is not a *Tendrils* folder, the environment variable `TENDRILS_DIR`
-/// is used. If this variable does not exist or does not point to a
-/// valid *Tendrils* folder, then `None` is returned.
+/// - If given a `starting_path`, it begins looking at the `starting_path`. If
+/// it is a Tendrils folder, the given path is returned, otherwise `None`.
+/// - If a `starting_path` is not provided, the environment variable
+/// `TENDRILS_DIR` is used. If this variable does not exist or does not point to
+/// a valid *Tendrils* folder, then `None` is returned.
 // TODO: Recursively look through all parent folders before
 // checking environment variable
-pub fn get_tendrils_dir(starting_path: &Path) -> Option<PathBuf> {
-    if is_tendrils_dir(starting_path) {
-        Some(starting_path.to_owned())
+fn get_tendrils_dir(starting_path: Option<&Path>) -> Option<PathBuf> {
+    if let Some(v) = starting_path {
+        if is_tendrils_dir(v) {
+            Some(v.to_path_buf())
+        }
+        else {
+            None
+        }
     }
     else {
         match std::env::var("TENDRILS_FOLDER") {
@@ -648,7 +655,7 @@ fn resolve_tendril_bundle(
 /// This is mainly applicable on Windows, where creating symlinks
 /// requires administrator priviledges, or enabling *Developer Mode*.
 /// On Unix platforms this always returns `true`.
-pub fn can_symlink() -> bool {
+fn can_symlink() -> bool {
     #[cfg(windows)]
     match std::env::consts::FAMILY {
         "windows" => is_root::is_root() || is_dev_mode(),
@@ -814,16 +821,35 @@ fn symlink_win(
     Ok(())
 }
 
-/// Performs a tendril action on the list of given tendrils and returns
-/// reports for each action.
+/// Reads the `tendrils.json` file in the given Tendrils folder, and
+/// performs the action on each tendril that matches the
+/// filter.
+///
+/// The order of the actions maintains the order of the tendril bundles found in
+/// the `tendrils.json`, but each one is expanded into individual tendrils firstly by
+/// each of its `names`, then by each of its `parents`. For example, for a
+/// list of two tendril bundles [t1, t2], each having multiple names [n1, n2] and
+/// multiple parents [p1, p2], the list will be expanded to:
+/// - t1_n1_p1
+/// - t1_n1_p2
+/// - t1_n2_p1
+/// - t1_n2_p2
+/// - t2_n1_p1
+/// - t2_n1_p2
+/// - t2_n2_p1
+/// - t2_n2_p2
 ///
 /// # Arguments
 /// - `update_fn` - Updater function that will be passed the most recent
 /// report as each action is completed. This allows the calling function to
 /// receive updates as progress is made.
 /// - `mode` - The action mode to be performed.
-/// - `td_dir` - The *Tendrils* folder to perform the actions on.
-/// - `td_bundles` - The list of tendril bundles to perform the actions on.
+/// - `td_dir` - The Tendrils folder to perform the actions on. If given
+/// `None`, the `TENDRILS_DIR` environment variable will be
+/// checked for a valid Tendrils folder. If neither the given `td_dir` or the
+/// `TENDRILS_DIR` environment variable folder are valid Tendrils folders, a 
+/// [`SetupError::NoValidTendrilsDir`] is returned. 
+/// - `filter` - Only tendrils matching this filter will be included.
 /// - `dry_run`
 ///     - `true` will perform the internal checks for the action but does not
 /// modify anything on the file system. If the action is expected to fail, the
@@ -842,25 +868,58 @@ fn symlink_win(
 /// # Returns
 /// A [`TendrilReport`] containing an [`ActionLog`] for each tendril action.
 /// A given [`TendrilBundle`] may result in many actions if it includes
-/// multiple names and/or parents.
-/// The order of the actions & reports maintains the order of the given
-/// tendrils, but each one is expanded into individual tendrils firstly by
-/// each of its `names`, then by each of its `parents`. For example, for a
-/// list of two tendrils [t1, t2], each having multiple names [n1, n2] and
-/// multiple parents [p1, p2], the list will be expanded to:
-/// - t1_n1_p1
-/// - t1_n1_p2
-/// - t1_n2_p1
-/// - t1_n2_p2
-/// - t2_n1_p1
-/// - t2_n1_p2
-/// - t2_n2_p1
-/// - t2_n2_p2
-pub fn tendril_action_updating<'a, F: FnMut(TendrilReport<'a, ActionLog>)>(
+/// multiple names and/or parents. Returns a [`SetupError`] if there are
+/// any issues in setting up the batch of actions.
+pub fn tendril_action_updating<F: FnMut(TendrilReport<ActionLog>)>(
+    update_fn: F,
+    mode: ActionMode,
+    td_dir: Option<&Path>,
+    filter: FilterSpec,
+    dry_run: bool,
+    force: bool,
+) -> Result<(), SetupError> {
+    let td_dir= match get_tendrils_dir(td_dir) {
+        // TODO: Move this logic to get_tendrils_dir, return error, separate msg when the global td dir is missing vs when it's invalid
+        Some(p) => p,
+        None => {
+            let msg = match td_dir {
+                Some(p) => format!("{} is not a Tendrils folder", p.to_string_lossy()),
+                None => "Could not find a Tendrils folder".to_string(),
+            };
+            return Err(SetupError::NoValidTendrilsDir { msg })
+        },
+    };
+
+    let config = get_config(&td_dir)?;
+    let all_tendrils = config.tendrils;
+
+    let filtered_tendrils = filter_tendrils(all_tendrils, filter);
+
+    batch_tendril_action_updating(update_fn, mode, &td_dir, filtered_tendrils, dry_run, force);
+    Ok(())
+}
+
+/// Same behaviour as [`tendril_action_updating`] except reports are only
+/// returned once all actions have completed.
+pub fn tendril_action(
+    mode: ActionMode,
+    td_dir: Option<&Path>,
+    filter: FilterSpec,
+    dry_run: bool,
+    force: bool,
+) -> Result<Vec<TendrilReport<ActionLog>>, SetupError> {
+    let mut reports = vec![];
+    let updater = |r| reports.push(r);
+
+    tendril_action_updating(updater, mode, td_dir, filter, dry_run, force)?;
+    Ok(reports)
+}
+
+fn batch_tendril_action_updating<F: FnMut(TendrilReport<ActionLog>)>(
     mut update_fn: F,
     mode: ActionMode,
     td_dir: &Path,
-    td_bundles: &'a [TendrilBundle],
+    td_bundles: Vec<TendrilBundle>,
     dry_run: bool,
     force: bool,
 ) {
@@ -868,14 +927,15 @@ pub fn tendril_action_updating<'a, F: FnMut(TendrilReport<'a, ActionLog>)>(
     let can_symlink =
         mode == ActionMode::Link || mode == ActionMode::Out && can_symlink();
 
-    for bundle in td_bundles.iter() {
-        let tendrils = resolve_tendril_bundle(bundle, first_only);
+    for bundle in td_bundles.into_iter() {
+        let bundle_rc = std::rc::Rc::new(bundle);
+        let tendrils = resolve_tendril_bundle(&bundle_rc, first_only);
 
         // The number of parents that were considered when
         // resolving the tendril bundle
         let num_parents = match first_only {
             true => 1,
-            false => bundle.parents.len(),
+            false => bundle_rc.parents.len(),
         };
 
         for (i, tendril) in tendrils.into_iter().enumerate() {
@@ -923,30 +983,15 @@ pub fn tendril_action_updating<'a, F: FnMut(TendrilReport<'a, ActionLog>)>(
             };
 
             let name_idx = ((i / num_parents) as f32).floor() as usize;
+            let name = bundle_rc.names[name_idx].clone();
 
             let report = TendrilReport {
-                orig_tendril: bundle,
-                name: &bundle.names[name_idx],
+                orig_tendril: std::rc::Rc::clone(&bundle_rc),
+                name,
                 log,
             };
 
             update_fn(report);
         }
     }
-}
-
-/// Same behaviour as [`tendril_action_updating`] except reports are only
-/// returned once all actions have completed.
-pub fn tendril_action<'a>(
-    mode: ActionMode,
-    td_dir: &Path,
-    td_bundles: &'a [TendrilBundle],
-    dry_run: bool,
-    force: bool,
-) -> Vec<TendrilReport<'a, ActionLog>> {
-    let mut reports = vec![];
-    let updater = |r| reports.push(r);
-
-    tendril_action_updating(updater, mode, td_dir, td_bundles, dry_run, force);
-    reports
 }

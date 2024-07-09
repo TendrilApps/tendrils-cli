@@ -1,15 +1,35 @@
 use crate::{
+    batch_tendril_action_updating,
     symlink,
+    ActionMode,
+    ActionLog,
     Fso,
     Tendril,
     TendrilBundle,
-    Config,
     TendrilMode,
+    TendrilReport,
 };
-use crate::config::parse_config;
+use crate::config::{Config, parse_config};
 use std::fs::{create_dir_all, read_to_string, write};
 use std::path::{Path, PathBuf};
 use tempdir::TempDir;
+
+/// Same behaviour as `batch_tendril_action_updating` except reports are only
+/// returned once all actions have completed.
+/// Easier API for testing.
+pub fn batch_tendril_action(
+    mode: ActionMode,
+    td_dir: &Path,
+    td_bundles: Vec<TendrilBundle>,
+    dry_run: bool,
+    force: bool,
+) -> Vec<TendrilReport<ActionLog>> {
+    let mut reports = vec![];
+    let updater = |r| reports.push(r);
+
+    batch_tendril_action_updating(updater, mode, td_dir, td_bundles, dry_run, force);
+    reports
+}
 
 pub fn get_disposable_dir() -> PathBuf {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))

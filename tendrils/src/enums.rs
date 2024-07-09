@@ -83,6 +83,49 @@ impl From<serde_json::Error> for GetConfigError {
     }
 }
 
+/// Indicates an error with the setup of a Tendrils folder.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum SetupError {
+    /// The runtime context on Windows does not permit creating symlinks.
+    CannotSymlink,
+    /// An error in importing the configuration.
+    ConfigError(GetConfigError),
+    /// No valid Tendrils folder was found.
+    NoValidTendrilsDir {
+        /// Error message
+        msg: String,
+    },
+}
+     
+
+impl ToString for SetupError {
+    fn to_string(&self) -> String {
+        match self {
+            SetupError::CannotSymlink => String::from(
+                "Missing the permissions required to create symlinks on \
+                Windows. Consider:\n \
+                    - Running this command in an elevated terminal\n \
+                    - Enabling developer mode (this allows creating symlinks \
+                without requiring administrator priviledges) \
+                    - Changing these tendrils to non-link modes instead"
+            ),
+            SetupError::ConfigError(GetConfigError::IoError { .. }) => {
+                format!("Could not read the tendrils.json file")
+            }
+            SetupError::ConfigError(GetConfigError::ParseError(msg)) => {
+                format!("Could not parse the tendrils.json file:\n{msg}")
+            },
+            SetupError::NoValidTendrilsDir { msg } => msg.clone(),
+        }
+    }
+}
+
+impl From<GetConfigError> for SetupError {
+    fn from(err: GetConfigError) -> Self {
+        SetupError::ConfigError(err)
+    }
+}
+
 /// Indicates a successful tendril action.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum TendrilActionSuccess {
