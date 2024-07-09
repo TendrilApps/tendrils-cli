@@ -194,14 +194,8 @@ fn tendril_action_subcommand(
         }
     };
 
-    let mode_filter = if mode == ActionMode::Out {
-        None
-    }
-    else {
-        Some(mode.clone())
-    };
     let filter = FilterSpec {
-        mode: mode_filter,
+        mode: Some(mode.clone()),
         groups: &filter_args.groups,
         names: &filter_args.names,
         parents: &filter_args.parents,

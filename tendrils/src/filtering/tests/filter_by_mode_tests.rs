@@ -6,6 +6,7 @@ use rstest::rstest;
 #[case(ActionMode::Link)]
 #[case(ActionMode::Push)]
 #[case(ActionMode::Pull)]
+#[case(ActionMode::Out)]
 fn empty_tendril_list_returns_empty(#[case] action_mode: ActionMode) {
     let tendrils = vec![];
 
@@ -46,4 +47,19 @@ fn non_link_action_only_includes_tendrils_with_link_false(
     let actual = filter_by_mode(tendrils, action_mode);
 
     assert_eq!(actual, vec![t1, t3]);
+}
+
+#[test]
+fn out_action_includes_all() {
+    let mut t1 = TendrilBundle::new("SomeApp", vec!["misc.txt"]);
+    t1.link = false;
+    let mut t2 = TendrilBundle::new("SomeApp", vec!["misc2.txt"]);
+    t2.link = true;
+    let mut t3 = TendrilBundle::new("SomeApp", vec!["misc3.txt"]);
+    t3.link = false;
+    let tendrils = vec![t1.clone(), t2.clone(), t3.clone()];
+
+    let actual = filter_by_mode(tendrils, ActionMode::Out);
+
+    assert_eq!(actual, vec![t1, t2, t3]);
 }

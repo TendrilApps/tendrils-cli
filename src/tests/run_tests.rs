@@ -625,6 +625,7 @@ fn tendril_action_dry_run_does_not_modify(
 #[case(ActionMode::Pull)]
 #[case(ActionMode::Push)]
 #[case(ActionMode::Link)]
+#[case(ActionMode::Out)]
 fn tendril_action_tendrils_are_filtered_by_mode(
     #[case] mode: ActionMode,
     #[values(true, false)] dry_run: bool,
@@ -677,6 +678,22 @@ fn tendril_action_tendrils_are_filtered_by_mode(
             )
         );
         assert_eq!(writer.all_output_lines().len(), 8);
+    }
+    else if mode == ActionMode::Out {
+        assert!(writer.all_output_lines()[3].contains("misc1.txt"));
+        assert!(writer.all_output_lines()[3].contains(" not found"));
+        assert!(writer.all_output_lines()[5].contains("misc2.txt"));
+        assert!(writer.all_output_lines()[5].contains(" not found"));
+        assert!(writer.all_output_lines()[7].contains("misc3.txt"));
+        assert!(writer.all_output_lines()[7].contains(" not found"));
+        assert_eq!(
+            writer.all_output_lines().last().unwrap(),
+            &format!(
+                "Total: 3, Successful: {color_bright_green}0{color_reset}, \
+                 Failed: {color_bright_red}3{color_reset}"
+            )
+        );
+        assert_eq!(writer.all_output_lines().len(), 10);
     }
     else {
         assert!(writer.all_output_lines()[3].contains("misc1.txt"));

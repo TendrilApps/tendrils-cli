@@ -10,7 +10,7 @@ mod tests;
 pub struct FilterSpec<'a> {
     /// Matches only link style tendrils if the action mode is `Link`,
     /// otherwise it matches only the push/pull style tendrils. If
-    /// `None`, all tendrils will match.
+    /// `None`, or [`ActionMode::Out`] all tendrils will match.
     pub mode: Option<ActionMode>,
 
     /// Matches only those tendrils whose group matches any of the given
@@ -58,6 +58,10 @@ fn filter_by_mode(
     tendrils: Vec<TendrilBundle>,
     mode: ActionMode,
 ) -> Vec<TendrilBundle> {
+    if mode == ActionMode::Out {
+        return tendrils;
+    }
+
     tendrils
         .into_iter()
         .filter(|t| t.link == (mode == ActionMode::Link))
