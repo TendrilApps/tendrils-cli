@@ -213,16 +213,7 @@ fn tendril_action_subcommand(
     let action_reports = match batch_result {
         Err(e) => {
             writer.writeln(&format!("{ERR_PREFIX}: {}", e.to_string()));
-            return match e {
-                SetupError::CannotSymlink => Err(exitcode::CANTCREAT),
-                SetupError::ConfigError(GetConfigError::IoError { .. }) => {
-                    Err(exitcode::NOINPUT)
-                }
-                SetupError::ConfigError(GetConfigError::ParseError(_)) => {
-                    Err(exitcode::DATAERR)
-                }
-                SetupError::NoValidTendrilsDir { .. } => Err(exitcode::NOINPUT),
-            }
+            return Err(setup_err_to_exit_code(e));
         }
         Ok(v) => v,
     };
@@ -237,4 +228,17 @@ fn tendril_action_subcommand(
     }
 
     Ok(())
+}
+
+fn setup_err_to_exit_code(err: SetupError) -> i32 {
+    match err {
+        SetupError::CannotSymlink => exitcode::CANTCREAT,
+        SetupError::ConfigError(GetConfigError::IoError { .. }) => {
+            exitcode::NOINPUT
+        }
+        SetupError::ConfigError(GetConfigError::ParseError(_)) => {
+            exitcode::DATAERR
+        }
+        SetupError::NoValidTendrilsDir { .. } => exitcode::NOINPUT,
+    }
 }
