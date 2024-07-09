@@ -146,7 +146,7 @@ fn init_no_path_given_uses_current_dir(#[case] force: bool) {
     assert_eq!(
         writer.all_output,
         format!(
-            "Created a Tendrils folder at: {}.\n",
+            "Created a Tendrils folder at: {}\n",
             temp_dir.path().to_string_lossy()
         )
     );
@@ -186,7 +186,7 @@ fn init_path_given_uses_given_path_and_ignores_valid_current_dir(
     assert_eq!(
         writer.all_output,
         format!(
-            "Created a Tendrils folder at: {}.\n",
+            "Created a Tendrils folder at: {}\n",
             given_dir.to_string_lossy()
         )
     );
@@ -232,7 +232,7 @@ fn init_path_given_uses_given_path_and_ignores_invalid_current_dir(
     assert_eq!(
         writer.all_output,
         format!(
-            "Created a Tendrils folder at: {}.\n",
+            "Created a Tendrils folder at: {}\n",
             given_dir.to_string_lossy()
         )
     );
@@ -273,7 +273,7 @@ fn init_path_given_uses_given_path_and_ignores_missing_current_dir(
     assert_eq!(
         writer.all_output,
         format!(
-            "Created a Tendrils folder at: {}.\n",
+            "Created a Tendrils folder at: {}\n",
             given_dir.to_string_lossy()
         )
     );
@@ -302,7 +302,7 @@ fn init_no_path_given_and_no_cd_prints_error_message(#[case] force: bool) {
     assert!(!cd.exists());
     assert_eq!(
         writer.all_output,
-        format!("{ERR_PREFIX}: Could not get the current directory.\n")
+        format!("{ERR_PREFIX}: Could not get the current directory\n")
     );
 }
 
@@ -331,7 +331,7 @@ fn init_non_empty_dir_prints_error_message_unless_forced(#[case] force: bool) {
         assert_eq!(
             writer.all_output,
             format!(
-                "Created a Tendrils folder at: {}.\n",
+                "Created a Tendrils folder at: {}\n",
                 given_dir.to_string_lossy()
             )
         );
@@ -372,7 +372,7 @@ fn init_dir_is_already_tendrils_dir_prints_error_message(#[case] force: bool) {
     assert_eq!(actual_exit_code, Err(exitcode::DATAERR));
     assert_eq!(
         writer.all_output,
-        format!("{ERR_PREFIX}: This folder is already a Tendrils folder.\n"),
+        format!("{ERR_PREFIX}: This folder is already a Tendrils folder\n"),
     );
 }
 
@@ -393,7 +393,7 @@ fn init_dir_does_not_exist_prints_io_error_message(#[case] force: bool) {
     let actual_exit_code = run(args, &mut writer);
 
     assert_eq!(actual_exit_code, Err(exitcode::IOERR));
-    assert_eq!(writer.all_output, format!("{ERR_PREFIX}: entity not found.\n"));
+    assert_eq!(writer.all_output, format!("{ERR_PREFIX}: IO error - entity not found\n"));
 }
 
 #[test]
@@ -403,7 +403,7 @@ fn path_with_env_var_unset_prints_message() {
     let args = TendrilCliArgs { tendrils_command: TendrilsSubcommands::Path };
     std::env::remove_var(TENDRILS_VAR_NAME);
     let expected = format!(
-        "The '{}' environment variable is not set.\n",
+        "The '{}' environment variable is not set\n",
         TENDRILS_VAR_NAME
     );
 
@@ -459,7 +459,7 @@ fn tendril_action_no_path_given_and_no_cd_prints_message(
     let args = TendrilCliArgs { tendrils_command };
 
     let expected =
-        format!("{ERR_PREFIX}: Could not get the current directory.\n");
+        format!("{ERR_PREFIX}: Could not get the current directory\n");
 
     let actual_exit_code = run(args, &mut writer);
 
@@ -499,7 +499,7 @@ fn tendril_action_given_path_is_not_tendrils_dir_but_cd_is_should_print_message(
     let args = TendrilCliArgs { tendrils_command };
 
     let expected =
-        format!("{ERR_PREFIX}: The given path is not a Tendrils folder.\n");
+        format!("{ERR_PREFIX}: SomePathThatDoesn'tExist is not a Tendrils folder\n");
 
     let actual_exit_code = run(args, &mut writer);
 
@@ -545,7 +545,7 @@ fn tendril_action_given_path_and_cd_are_both_tendrils_dirs_uses_given_path(
     let args = TendrilCliArgs { tendrils_command };
 
     let expected = format!(
-        "{ERR_PREFIX}: Could not parse the tendrils.json file.\nEOF while \
+        "{ERR_PREFIX}: Could not parse the tendrils.json file:\nEOF while \
          parsing a value at line 1 column 0\n"
     );
 
@@ -964,7 +964,7 @@ fn tendril_action_empty_tendrils_array_should_print_message(
     let actual_exit_code = run(args, &mut writer);
 
     assert_eq!(actual_exit_code, Ok(()));
-    assert_eq!(writer.all_output, "No tendrils were found.\n");
+    assert_eq!(writer.all_output, "No tendrils matched the given filter(s)\n");
 }
 
 #[rstest]
@@ -1003,7 +1003,7 @@ fn tendril_action_empty_filtered_tendrils_array_should_print_message(
     let actual_exit_code = run(args, &mut writer);
 
     assert_eq!(actual_exit_code, Ok(()));
-    assert_eq!(writer.all_output, "No tendrils matched the given filter(s).\n");
+    assert_eq!(writer.all_output, "No tendrils matched the given filter(s)\n");
 }
 
 // TODO: Test multiple_paths_only_copies_first for pull (see old commits in

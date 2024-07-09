@@ -40,6 +40,25 @@ impl From<std::io::Error> for InitError {
     }
 }
 
+impl ToString for InitError {
+    fn to_string(&self) -> String {
+        match self {
+            InitError::IoError { kind: e_kind } => {
+                format!("IO error - {e_kind}")
+            }
+            InitError::AlreadyInitialized => {
+                String::from("This folder is already a Tendrils folder")
+            }
+            InitError::NotEmpty => {
+                String::from(
+                    "This folder is not empty. Creating a Tendrils \
+                    folder here may interfere with the existing \
+                    contents.")
+            }
+        }
+    }
+}
+
 /// Indicates an error while reading/parsing a
 /// configuration file.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -61,6 +80,49 @@ impl From<std::io::Error> for GetConfigError {
 impl From<serde_json::Error> for GetConfigError {
     fn from(err: serde_json::Error) -> Self {
         GetConfigError::ParseError(err.to_string())
+    }
+}
+
+/// Indicates an error with the setup of a Tendrils folder.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum SetupError {
+    /// The runtime context on Windows does not permit creating symlinks.
+    CannotSymlink,
+    /// An error in importing the configuration.
+    ConfigError(GetConfigError),
+    /// No valid Tendrils folder was found.
+    NoValidTendrilsDir {
+        /// Error message
+        msg: String,
+    },
+}
+     
+
+impl ToString for SetupError {
+    fn to_string(&self) -> String {
+        match self {
+            SetupError::CannotSymlink => String::from(
+                "Missing the permissions required to create symlinks on \
+                Windows. Consider:\n \
+                    - Running this command in an elevated terminal\n \
+                    - Enabling developer mode (this allows creating symlinks \
+                without requiring administrator priviledges) \
+                    - Changing these tendrils to non-link modes instead"
+            ),
+            SetupError::ConfigError(GetConfigError::IoError { .. }) => {
+                format!("Could not read the tendrils.json file")
+            }
+            SetupError::ConfigError(GetConfigError::ParseError(msg)) => {
+                format!("Could not parse the tendrils.json file:\n{msg}")
+            },
+            SetupError::NoValidTendrilsDir { msg } => msg.clone(),
+        }
+    }
+}
+
+impl From<GetConfigError> for SetupError {
+    fn from(err: GetConfigError) -> Self {
+        SetupError::ConfigError(err)
     }
 }
 

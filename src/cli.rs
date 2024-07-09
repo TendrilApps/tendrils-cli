@@ -181,6 +181,7 @@ pub fn print_reports(
     writer: &mut impl Writer,
 ) {
     if reports.is_empty() {
+        writer.writeln("No tendrils matched the given filter(s)");
         return;
     }
 
@@ -207,7 +208,7 @@ pub fn print_reports(
 
         tbl.push_row(&[
             report.orig_tendril.group.clone(),
-            String::from(report.name),
+            report.name.clone(),
             styled_path,
             styled_result,
         ]);
