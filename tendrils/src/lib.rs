@@ -275,7 +275,7 @@ fn get_local_path(tendril: &Tendril, td_dir: &Path) -> PathBuf {
 /// - If given a `starting_path`, it begins looking at the `starting_path`. If
 /// it is a Tendrils folder, the given path is returned, otherwise `None`.
 /// - If a `starting_path` is not provided, the environment variable
-/// `TENDRILS_DIR` is used. If this variable does not exist or does not point to
+/// `TENDRILS_FOLDER` is used. If this variable does not exist or does not point to
 /// a valid *Tendrils* folder, then `None` is returned.
 // TODO: Recursively look through all parent folders before
 // checking environment variable
@@ -845,9 +845,9 @@ fn symlink_win(
 /// receive updates as progress is made.
 /// - `mode` - The action mode to be performed.
 /// - `td_dir` - The Tendrils folder to perform the actions on. If given
-/// `None`, the `TENDRILS_DIR` environment variable will be
+/// `None`, the `TENDRILS_FOLDER` environment variable will be
 /// checked for a valid Tendrils folder. If neither the given `td_dir` or the
-/// `TENDRILS_DIR` environment variable folder are valid Tendrils folders, a 
+/// `TENDRILS_FOLDER` environment variable folder are valid Tendrils folders, a 
 /// [`SetupError::NoValidTendrilsDir`] is returned. 
 /// - `filter` - Only tendrils matching this filter will be included.
 /// - `dry_run`
