@@ -889,6 +889,9 @@ pub fn tendril_action_updating<F: FnMut(TendrilReport<ActionLog>)>(
             return Err(SetupError::NoValidTendrilsDir { msg })
         },
     };
+    if mode == ActionMode::Link && !can_symlink() {
+        return Err(SetupError::CannotSymlink);
+    }
 
     let config = get_config(&td_dir)?;
     let all_tendrils = config.tendrils;
@@ -925,7 +928,7 @@ fn batch_tendril_action_updating<F: FnMut(TendrilReport<ActionLog>)>(
 ) {
     let first_only = mode == ActionMode::Pull;
     let can_symlink =
-        mode == ActionMode::Link || mode == ActionMode::Out && can_symlink();
+        (mode == ActionMode::Link || mode == ActionMode::Out) && can_symlink();
 
     for bundle in td_bundles.into_iter() {
         let bundle_rc = std::rc::Rc::new(bundle);
@@ -946,38 +949,28 @@ fn batch_tendril_action_updating<F: FnMut(TendrilReport<ActionLog>)>(
                 (Ok(v), ActionMode::Push, _) => {
                     Ok(push_tendril(td_dir, &v, dry_run, force))
                 }
-                (Ok(v), ActionMode::Link, true) => {
+                (Ok(v), ActionMode::Out, _) if v.mode != TendrilMode::Link => {
+                    Ok(push_tendril(td_dir, &v, dry_run, force))
+                }
+                (Ok(v), ActionMode::Out | ActionMode::Link, true) => {
                     Ok(link_tendril(td_dir, &v, dry_run, force))
                 }
-                (Ok(v), ActionMode::Out, true) => {
-                    if v.mode == TendrilMode::Link {
-                        Ok(link_tendril(td_dir, &v, dry_run, force))
-                    }
-                    else {
-                        Ok(push_tendril(td_dir, &v, dry_run, force))
-                    }
-                }
                 (Ok(v), ActionMode::Link | ActionMode::Out, false) => {
-                    if v.mode == TendrilMode::Link {
-                        // Do not attempt to symlink if it has already been
-                        // determined that the process
-                        // does not have the required permissions.
-                        // This prevents deleting any of the remote files
-                        // unnecessarily.
-                        let remote = v.full_path();
-                        Ok(ActionLog::new(
-                            get_local_path(&v, td_dir).get_type(),
-                            remote.get_type(),
-                            remote,
-                            Err(TendrilActionError::IoError {
-                                kind: std::io::ErrorKind::PermissionDenied,
-                                loc: Location::Dest,
-                            }),
-                        ))
-                    }
-                    else {
-                        Ok(push_tendril(td_dir, &v, dry_run, force))
-                    }
+                    // Do not attempt to symlink if it has already been
+                    // determined that the process
+                    // does not have the required permissions.
+                    // This prevents deleting any of the remote files
+                    // unnecessarily.
+                    let remote = v.full_path();
+                    Ok(ActionLog::new(
+                        get_local_path(&v, td_dir).get_type(),
+                        remote.get_type(),
+                        remote,
+                        Err(TendrilActionError::IoError {
+                            kind: std::io::ErrorKind::PermissionDenied,
+                            loc: Location::Dest,
+                        }),
+                    ))
                 }
                 (Err(e), _, _) => Err(e),
             };
