@@ -946,38 +946,28 @@ fn batch_tendril_action_updating<F: FnMut(TendrilReport<ActionLog>)>(
                 (Ok(v), ActionMode::Push, _) => {
                     Ok(push_tendril(td_dir, &v, dry_run, force))
                 }
-                (Ok(v), ActionMode::Link, true) => {
+                (Ok(v), ActionMode::Out, _) if v.mode != TendrilMode::Link => {
+                    Ok(push_tendril(td_dir, &v, dry_run, force))
+                }
+                (Ok(v), ActionMode::Out | ActionMode::Link, true) => {
                     Ok(link_tendril(td_dir, &v, dry_run, force))
                 }
-                (Ok(v), ActionMode::Out, true) => {
-                    if v.mode == TendrilMode::Link {
-                        Ok(link_tendril(td_dir, &v, dry_run, force))
-                    }
-                    else {
-                        Ok(push_tendril(td_dir, &v, dry_run, force))
-                    }
-                }
                 (Ok(v), ActionMode::Link | ActionMode::Out, false) => {
-                    if v.mode == TendrilMode::Link {
-                        // Do not attempt to symlink if it has already been
-                        // determined that the process
-                        // does not have the required permissions.
-                        // This prevents deleting any of the remote files
-                        // unnecessarily.
-                        let remote = v.full_path();
-                        Ok(ActionLog::new(
-                            get_local_path(&v, td_dir).get_type(),
-                            remote.get_type(),
-                            remote,
-                            Err(TendrilActionError::IoError {
-                                kind: std::io::ErrorKind::PermissionDenied,
-                                loc: Location::Dest,
-                            }),
-                        ))
-                    }
-                    else {
-                        Ok(push_tendril(td_dir, &v, dry_run, force))
-                    }
+                    // Do not attempt to symlink if it has already been
+                    // determined that the process
+                    // does not have the required permissions.
+                    // This prevents deleting any of the remote files
+                    // unnecessarily.
+                    let remote = v.full_path();
+                    Ok(ActionLog::new(
+                        get_local_path(&v, td_dir).get_type(),
+                        remote.get_type(),
+                        remote,
+                        Err(TendrilActionError::IoError {
+                            kind: std::io::ErrorKind::PermissionDenied,
+                            loc: Location::Dest,
+                        }),
+                    ))
                 }
                 (Err(e), _, _) => Err(e),
             };
