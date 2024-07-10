@@ -925,7 +925,7 @@ fn batch_tendril_action_updating<F: FnMut(TendrilReport<ActionLog>)>(
 ) {
     let first_only = mode == ActionMode::Pull;
     let can_symlink =
-        mode == ActionMode::Link || mode == ActionMode::Out && can_symlink();
+        (mode == ActionMode::Link || mode == ActionMode::Out) && can_symlink();
 
     for bundle in td_bundles.into_iter() {
         let bundle_rc = std::rc::Rc::new(bundle);
