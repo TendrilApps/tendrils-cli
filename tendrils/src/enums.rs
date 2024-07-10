@@ -103,11 +103,11 @@ impl ToString for SetupError {
         match self {
             SetupError::CannotSymlink => String::from(
                 "Missing the permissions required to create symlinks on \
-                Windows. Consider:\n \
-                    - Running this command in an elevated terminal\n \
-                    - Enabling developer mode (this allows creating symlinks \
-                without requiring administrator priviledges) \
-                    - Changing these tendrils to non-link modes instead"
+                Windows. Consider:\n    \
+                - Running this command in an elevated terminal\n    \
+                - Enabling developer mode (this allows creating symlinks \
+                without requiring administrator priviledges)\n    \
+                - Changing these tendrils to non-link modes instead"
             ),
             SetupError::ConfigError(GetConfigError::IoError { .. }) => {
                 format!("Could not read the tendrils.json file")

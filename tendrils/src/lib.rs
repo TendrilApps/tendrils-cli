@@ -889,6 +889,9 @@ pub fn tendril_action_updating<F: FnMut(TendrilReport<ActionLog>)>(
             return Err(SetupError::NoValidTendrilsDir { msg })
         },
     };
+    if mode == ActionMode::Link && !can_symlink() {
+        return Err(SetupError::CannotSymlink);
+    }
 
     let config = get_config(&td_dir)?;
     let all_tendrils = config.tendrils;
