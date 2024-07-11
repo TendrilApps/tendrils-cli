@@ -37,7 +37,7 @@ fn invalid_json_returns_parse_error() {
 fn valid_json_returns_tendrils_in_same_order_as_file() {
     let temp_td_dir =
         TempDir::new_in(get_disposable_dir(), "TendrilsDir").unwrap();
-    let json = SampleTendrils::build_tendrils_json(&vec![
+    let json = SampleTendrils::build_tendrils_json(&[
         SampleTendrils::tendril_1_json(),
         SampleTendrils::tendril_4_json(),
         SampleTendrils::tendril_2_json(),
