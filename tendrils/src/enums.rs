@@ -1,4 +1,5 @@
 use serde::Deserialize;
+use std::path::PathBuf;
 
 /// Indicates the tendril action to be performed.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -62,6 +63,36 @@ impl ToString for InitError {
 /// Indicates an error while reading/parsing a
 /// configuration file.
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub enum GetTendrilsDirError {
+    /// The given path is not a valid Tendrils folder.
+    GivenInvalid { path: PathBuf },
+
+    /// The global Tendrils folder is not a valid Tendrils folder.
+    GlobalInvalid { path: PathBuf },
+
+    /// The global Tendrils folder is not set.
+    GlobalNotSet,
+}
+
+impl ToString for GetTendrilsDirError {
+    fn to_string(&self) -> String {
+        match self {
+            GetTendrilsDirError::GivenInvalid { path } => {
+                format!("{} is not a Tendrils folder", path.to_string_lossy())
+            }
+            GetTendrilsDirError::GlobalInvalid { path } => {
+                format!("The global path \"{}\" is not a Tendrils folder", path.to_string_lossy())
+            }
+            GetTendrilsDirError::GlobalNotSet => {
+                String::from("The global Tendrils folder path is not set")
+            }
+        }
+    }
+}
+
+/// Indicates an error while reading/parsing a
+/// configuration file.
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum GetConfigError {
     /// A general file system error while reading the
     /// file.
@@ -91,10 +122,7 @@ pub enum SetupError {
     /// An error in importing the configuration.
     ConfigError(GetConfigError),
     /// No valid Tendrils folder was found.
-    NoValidTendrilsDir {
-        /// Error message
-        msg: String,
-    },
+    NoValidTendrilsDir(GetTendrilsDirError),
 }
      
 
@@ -115,8 +143,14 @@ impl ToString for SetupError {
             SetupError::ConfigError(GetConfigError::ParseError(msg)) => {
                 format!("Could not parse the tendrils.json file:\n{msg}")
             },
-            SetupError::NoValidTendrilsDir { msg } => msg.clone(),
+            SetupError::NoValidTendrilsDir(err) => err.to_string(),
         }
+    }
+}
+
+impl From<GetTendrilsDirError> for SetupError {
+    fn from(err: GetTendrilsDirError) -> Self {
+        SetupError::NoValidTendrilsDir(err)
     }
 }
 

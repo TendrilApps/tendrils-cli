@@ -8,6 +8,7 @@ pub use enums::{
     ActionMode,
     FsoType,
     GetConfigError,
+    GetTendrilsDirError,
     InitError,
     InvalidTendrilError,
     Location,
@@ -272,34 +273,35 @@ fn get_local_path(tendril: &Tendril, td_dir: &Path) -> PathBuf {
 }
 
 /// Looks for a *Tendrils* folder (as defined by [`is_tendrils_dir`])
-/// - If given a `starting_path`, it begins looking at the `starting_path`. If
-/// it is a Tendrils folder, the given path is returned, otherwise `None`.
+/// - If given a `starting_path`, it begins looking in that folder.
+///     - If it is a Tendrils folder, `starting_path` is returned
+///     - Otherwise [`GetTendrilsDirError::GivenInvalid`] is returned.
 /// - If a `starting_path` is not provided, the environment variable
-/// `TENDRILS_FOLDER` is used. If this variable does not exist or does not point to
-/// a valid *Tendrils* folder, then `None` is returned.
+/// `TENDRILS_FOLDER` is used.
+///     - If it points to a valid folder, that path is returned
+///     - If this variable does not exist,
+/// [`GetTendrilsDirError::GlobalNotSet`] is returned
+///     - If it points to an invalid folder,
+/// [`GetTendrilsDirError::GlobalInvalid`] is returned
 // TODO: Recursively look through all parent folders before
 // checking environment variable
-fn get_tendrils_dir(starting_path: Option<&Path>) -> Option<PathBuf> {
-    if let Some(v) = starting_path {
-        if is_tendrils_dir(v) {
-            Some(v.to_path_buf())
-        }
-        else {
-            None
-        }
-    }
-    else {
-        match std::env::var("TENDRILS_FOLDER") {
+fn get_tendrils_dir(starting_path: Option<&Path>) -> Result<PathBuf, GetTendrilsDirError> {
+    match starting_path {
+        Some(v) if is_tendrils_dir(v) => Ok(v.to_path_buf()),
+        Some(v) => Err(GetTendrilsDirError::GivenInvalid {
+            path: v.to_path_buf()
+        }),
+        None => match std::env::var("TENDRILS_FOLDER") {
             Ok(v) => {
                 let test_path = PathBuf::from(v);
                 if is_tendrils_dir(&test_path) {
-                    Some(test_path)
+                    Ok(test_path)
                 }
                 else {
-                    None
+                    Err(GetTendrilsDirError::GlobalInvalid { path: test_path })
                 }
             }
-            _ => None,
+            _ => Err(GetTendrilsDirError::GlobalNotSet),
         }
     }
 }
@@ -878,22 +880,12 @@ pub fn tendril_action_updating<F: FnMut(TendrilReport<ActionLog>)>(
     dry_run: bool,
     force: bool,
 ) -> Result<(), SetupError> {
-    let td_dir= match get_tendrils_dir(td_dir) {
-        // TODO: Move this logic to get_tendrils_dir, return error, separate msg when the global td dir is missing vs when it's invalid
-        Some(p) => p,
-        None => {
-            let msg = match td_dir {
-                Some(p) => format!("{} is not a Tendrils folder", p.to_string_lossy()),
-                None => "Could not find a Tendrils folder".to_string(),
-            };
-            return Err(SetupError::NoValidTendrilsDir { msg })
-        },
-    };
+    let td_dir= get_tendrils_dir(td_dir)?;
+    let config = get_config(&td_dir)?;
     if mode == ActionMode::Link && !can_symlink() {
         return Err(SetupError::CannotSymlink);
     }
 
-    let config = get_config(&td_dir)?;
     let all_tendrils = config.tendrils;
 
     let filtered_tendrils = filter_tendrils(all_tendrils, filter);
