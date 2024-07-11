@@ -882,13 +882,12 @@ pub fn tendril_action_updating<F: FnMut(TendrilReport<ActionLog>)>(
 ) -> Result<(), SetupError> {
     let td_dir= get_tendrils_dir(td_dir)?;
     let config = get_config(&td_dir)?;
-    if mode == ActionMode::Link && !can_symlink() {
-        return Err(SetupError::CannotSymlink);
-    }
-
     let all_tendrils = config.tendrils;
 
     let filtered_tendrils = filter_tendrils(all_tendrils, filter);
+    if mode == ActionMode::Link && !filtered_tendrils.is_empty() && !can_symlink() {
+        return Err(SetupError::CannotSymlink);
+    }
 
     batch_tendril_action_updating(update_fn, mode, &td_dir, filtered_tendrils, dry_run, force);
     Ok(())
