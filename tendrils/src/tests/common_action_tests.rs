@@ -835,7 +835,7 @@ fn cases_that_do_not_modify_local(
 }
 
 #[apply(cases_that_do_not_modify_local)]
-pub(crate) fn local_is_unchanged(
+fn local_is_unchanged(
     #[case] action: fn(&Path, &Tendril, bool, bool) -> ActionLog,
     #[case] dry_run: bool,
     #[values(true, false)] force: bool,
@@ -904,7 +904,7 @@ pub(crate) fn local_is_unchanged(
 }
 
 #[apply(cases_that_do_not_modify_local)]
-pub(crate) fn local_symlink_is_unchanged(
+fn local_symlink_is_unchanged(
     #[case] action: fn(&Path, &Tendril, bool, bool) -> ActionLog,
     #[case] dry_run: bool,
     #[values(true, false)] force: bool,
@@ -1013,7 +1013,7 @@ fn cases_that_do_not_modify_remote(
 }
 
 #[apply(cases_that_do_not_modify_remote)]
-pub(crate) fn remote_is_unchanged(
+fn remote_is_unchanged(
     #[case] action: fn(&Path, &Tendril, bool, bool) -> ActionLog,
     #[case] dry_run: bool,
     #[values(true, false)] force: bool,
@@ -1080,7 +1080,7 @@ pub(crate) fn remote_is_unchanged(
 }
 
 #[apply(cases_that_do_not_modify_remote)]
-pub(crate) fn remote_symlink_is_unchanged(
+fn remote_symlink_is_unchanged(
     #[case] action: fn(&Path, &Tendril, bool, bool) -> ActionLog,
     #[case] dry_run: bool,
     #[values(true, false)] force: bool,
