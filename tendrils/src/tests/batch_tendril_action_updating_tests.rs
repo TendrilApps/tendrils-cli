@@ -1,3 +1,6 @@
+//! Tests that the updater function behaves properly, for additional
+//! tests see the similar [`super::batch_tendril_action_tests`] module
+
 use crate::test_utils::{get_disposable_dir, is_empty, Setup};
 use crate::{
     batch_tendril_action_updating,

@@ -1,32 +1,43 @@
-use crate::test_utils::{get_disposable_dir, is_empty, Setup};
+//! Tests that the updater function behaves properly. For additional
+//! tests see the similar [`super::tendril_action_tests`] module
+
+use crate::test_utils::Setup;
 use crate::{
     tendril_action_updating,
     ActionLog,
     ActionMode,
+    FilterSpec,
     FsoType,
     TendrilActionSuccess,
     TendrilReport,
 };
 use rstest::rstest;
-use tempdir::TempDir;
+use std::rc::Rc;
 
 #[rstest]
-fn given_empty_list_returns_empty(
+fn empty_tendrils_list_returns_empty(
     #[values(ActionMode::Push, ActionMode::Pull, ActionMode::Link)]
     mode: ActionMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
-    let temp_parent_dir =
-        TempDir::new_in(get_disposable_dir(), "ParentDir").unwrap();
-    let given_td_dir = temp_parent_dir.path().join("TendrilsDir");
+    let setup = Setup::new();
+    setup.make_td_json_file(&[]);
     let mut actual = vec![];
     let updater = |r| actual.push(r);
+    let filter = FilterSpec::new();
 
-    tendril_action_updating(updater, mode, &given_td_dir, &[], dry_run, force);
+    tendril_action_updating(
+        updater,
+        mode,
+        Some(&setup.td_dir),
+        filter,
+        dry_run,
+        force)
+        .unwrap();
 
     assert!(actual.is_empty());
-    assert!(is_empty(&given_td_dir))
+    assert!(!setup.local_file.exists())
 }
 
 #[rstest]
@@ -37,9 +48,10 @@ fn returns_result_after_each_operation(
     let setup = Setup::new();
     setup.make_remote_file();
     setup.make_remote_nested_file();
-    setup.make_td_dir();
     let mut bundle = setup.file_tendril_bundle();
     bundle.names.push("misc".to_string()); // Add the folder
+    setup.make_td_json_file(&[bundle.clone()]);
+    let filter = FilterSpec::new();
 
     let expected_success = match dry_run {
         true => Ok(TendrilActionSuccess::NewSkipped),
@@ -51,8 +63,8 @@ fn returns_result_after_each_operation(
         call_counter += 1;
         if call_counter == 1 {
             assert_eq!(r, TendrilReport {
-                orig_tendril: &bundle,
-                name: &bundle.names[0],
+                orig_tendril: Rc::new(bundle.clone()),
+                name: bundle.names[0].clone(),
                 log: Ok(ActionLog::new(
                     None,
                     Some(FsoType::File),
@@ -70,8 +82,8 @@ fn returns_result_after_each_operation(
         }
         else if call_counter == 2 {
             assert_eq!(r, TendrilReport {
-                orig_tendril: &bundle,
-                name: &bundle.names[1],
+                orig_tendril: Rc::new(bundle.clone()),
+                name: bundle.names[1].clone(),
                 log: Ok(ActionLog::new(
                     None,
                     Some(FsoType::Dir),
@@ -101,11 +113,12 @@ fn returns_result_after_each_operation(
     tendril_action_updating(
         updater,
         ActionMode::Pull,
-        &setup.td_dir,
-        &vec![bundle.clone()],
+        Some(&setup.td_dir),
+        filter,
         dry_run,
         force,
-    );
+    )
+    .unwrap();
 
     assert_eq!(call_counter, 2);
 }

@@ -36,6 +36,18 @@ pub struct FilterSpec<'a> {
     pub profiles: &'a [String],
 }
 
+impl<'a> FilterSpec<'a> {
+    pub fn new() -> FilterSpec<'a> {
+        FilterSpec {
+            mode: None,
+            groups: &[],
+            names: &[],
+            parents: &[],
+            profiles: &[],
+        }
+    }
+}
+
 /// Filters a list of given tendrils according to the given [`FilterSpec`].
 /// The filters are cumulative (i.e. the tendril must match all filters to
 /// be included in the final result).
