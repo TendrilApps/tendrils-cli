@@ -4,8 +4,6 @@
 
 use crate::test_utils::Setup;
 use crate::{
-    is_tendrils_dir,
-    tendril_action,
     ActionLog,
     ActionMode,
     FilterSpec,
@@ -15,7 +13,9 @@ use crate::{
     SetupError,
     TendrilActionError,
     TendrilReport,
+    TendrilsApi,
 };
+use crate::TendrilsActor as Act;
 use rstest::rstest;
 use serial_test::serial;
 use std::fs::write;
@@ -32,7 +32,7 @@ fn empty_tendrils_list_returns_empty(
     setup.make_td_json_file(&[]);
     let filter = FilterSpec::new();
 
-    let actual = tendril_action(
+    let actual = Act::tendril_action(
         mode,
         Some(&setup.td_dir),
         filter,
@@ -59,7 +59,7 @@ fn empty_filtered_tendrils_list_returns_empty(
     let name_filter = ["I don't exist".to_string()];
     filter.names = &name_filter;
 
-    let actual = tendril_action(
+    let actual = Act::tendril_action(
         mode,
         Some(&setup.td_dir),
         filter,
@@ -81,9 +81,9 @@ fn given_td_dir_is_invalid_returns_no_valid_td_dir_err(
 ) {
     let setup = Setup::new();
     let filter = FilterSpec::new();
-    assert!(!is_tendrils_dir(&setup.td_dir));
+    assert!(!Act::is_tendrils_dir(&setup.td_dir));
 
-    let actual = tendril_action(
+    let actual = Act::tendril_action(
         mode,
         Some(&setup.td_dir),
         filter,
@@ -109,10 +109,10 @@ fn given_td_dir_is_none_global_td_dir_invalid_returns_no_valid_td_dir_err(
 ) {
     let setup = Setup::new();
     let filter = FilterSpec::new();
-    assert!(!is_tendrils_dir(&setup.td_dir));
+    assert!(!Act::is_tendrils_dir(&setup.td_dir));
     std::env::set_var("TENDRILS_FOLDER", setup.td_dir.clone());
 
-    let actual = tendril_action(
+    let actual = Act::tendril_action(
         mode,
         None,
         filter,
@@ -138,10 +138,10 @@ fn given_td_dir_is_none_global_td_dir_not_set_returns_no_valid_td_dir_err(
 ) {
     let setup = Setup::new();
     let filter = FilterSpec::new();
-    assert!(!is_tendrils_dir(&setup.td_dir));
+    assert!(!Act::is_tendrils_dir(&setup.td_dir));
     std::env::remove_var("TENDRILS_FOLDER");
 
-    let actual = tendril_action(
+    let actual = Act::tendril_action(
         mode,
         None,
         filter,
@@ -170,7 +170,7 @@ fn given_td_dir_is_none_global_td_dir_is_valid_uses_global_td_dir(
     std::env::set_var("TENDRILS_FOLDER", setup.td_dir.clone());
     let filter = FilterSpec::new();
 
-    let actual = tendril_action(
+    let actual = Act::tendril_action(
         mode,
         None,
         filter,
@@ -209,7 +209,7 @@ fn tendrils_json_invalid_returns_config_error(
     setup.make_td_dir();
     write(setup.td_json_file, "I'm not JSON").unwrap();
 
-    let actual = tendril_action(
+    let actual = Act::tendril_action(
         mode,
         Some(&setup.td_dir),
         filter,
@@ -241,7 +241,7 @@ fn tendrils_are_filtered_before_action(
     let name_filter = ["misc.txt".to_string()];
     filter.names = &name_filter;
 
-    let actual = tendril_action(
+    let actual = Act::tendril_action(
         mode,
         Some(&setup.td_dir),
         filter,

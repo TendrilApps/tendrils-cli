@@ -2,11 +2,11 @@ use crate::config::{Config, parse_config};
 use crate::test_utils::get_disposable_dir;
 use crate::{
     get_config,
-    init_tendrils_dir,
-    is_tendrils_dir,
     InitError,
     TendrilBundle,
+    TendrilsApi,
 };
+use crate::TendrilsActor as Act;
 use rstest::rstest;
 use std::fs::{create_dir_all, read_to_string, write};
 use std::path::PathBuf;
@@ -42,7 +42,7 @@ fn creates_valid_tendrils_json_file_in_empty_dir(#[case] force: bool) {
     let expected_tendrils = vec![expected_t1, expected_t2];
     let expected = Config { tendrils: expected_tendrils };
 
-    let actual = init_tendrils_dir(temp_init_dir.path(), force);
+    let actual = Act::init_tendrils_dir(temp_init_dir.path(), force);
 
     let td_json_contents = read_to_string(td_json_file).unwrap();
     assert_eq!(actual, Ok(()));
@@ -56,7 +56,7 @@ fn creates_valid_tendrils_json_file_in_empty_dir(#[case] force: bool) {
 fn dir_doesnt_exist_returns_io_error_not_found(#[case] force: bool) {
     let dir = PathBuf::from("I do not exist");
 
-    let actual = init_tendrils_dir(&dir, force);
+    let actual = Act::init_tendrils_dir(&dir, force);
 
     assert!(!dir.join("tendrils.json").exists());
     assert_eq!(
@@ -78,7 +78,7 @@ fn dir_contains_another_misc_file_returns_not_empty_error_unless_forced(
     let misc_file = temp_init_dir.path().join("misc.txt");
     write(&misc_file, "Misc file contents").unwrap();
 
-    let actual = init_tendrils_dir(&temp_init_dir.path(), force);
+    let actual = Act::init_tendrils_dir(&temp_init_dir.path(), force);
 
     assert_eq!(read_to_string(misc_file).unwrap(), "Misc file contents");
     if force {
@@ -108,7 +108,7 @@ fn dir_contains_another_misc_dir_returns_not_empty_error_unless_forced(
     create_dir_all(&misc_dir).unwrap();
     write(&misc_nested, "Nested file contents").unwrap();
 
-    let actual = init_tendrils_dir(&temp_init_dir.path(), force);
+    let actual = Act::init_tendrils_dir(&temp_init_dir.path(), force);
 
     assert_eq!(read_to_string(misc_nested).unwrap(), "Nested file contents");
     if force {
@@ -135,10 +135,10 @@ fn dir_contains_a_td_json_file_returns_already_init_error_even_if_invalid_json(
     let td_json_file = temp_init_dir.path().join("tendrils.json");
     let json_content = "Invalid json content";
     write(&td_json_file, json_content).unwrap();
-    assert!(is_tendrils_dir(temp_init_dir.path()));
+    assert!(Act::is_tendrils_dir(temp_init_dir.path()));
     assert!(parse_config(json_content).is_err());
 
-    let actual = init_tendrils_dir(&temp_init_dir.path(), force);
+    let actual = Act::init_tendrils_dir(&temp_init_dir.path(), force);
 
     assert_eq!(read_to_string(td_json_file).unwrap(), json_content);
     assert_eq!(actual, Err(InitError::AlreadyInitialized));

@@ -3,14 +3,15 @@
 
 use crate::test_utils::Setup;
 use crate::{
-    tendril_action_updating,
     ActionLog,
     ActionMode,
     FilterSpec,
     FsoType,
     TendrilActionSuccess,
     TendrilReport,
+    TendrilsApi,
 };
+use crate::TendrilsActor as Act;
 use rstest::rstest;
 use std::rc::Rc;
 
@@ -27,7 +28,7 @@ fn empty_tendrils_list_returns_empty(
     let updater = |r| actual.push(r);
     let filter = FilterSpec::new();
 
-    tendril_action_updating(
+    Act::tendril_action_updating(
         updater,
         mode,
         Some(&setup.td_dir),
@@ -110,7 +111,7 @@ fn returns_result_after_each_operation(
         actual.push(r);
     };
 
-    tendril_action_updating(
+    Act::tendril_action_updating(
         updater,
         ActionMode::Pull,
         Some(&setup.td_dir),
