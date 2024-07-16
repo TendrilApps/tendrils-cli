@@ -30,9 +30,10 @@ mod tests;
 
 fn main() {
     let mut stdout_writer = writer::StdOutWriter {};
+    let api = TendrilsActor {};
     let args = cli::TendrilCliArgs::parse();
 
-    let exit_code = run::<TendrilsActor>(args, &mut stdout_writer);
+    let exit_code = run(args, &api, &mut stdout_writer);
     if let Err(e) = exit_code {
         std::process::exit(e)
     }
@@ -40,44 +41,49 @@ fn main() {
 
 /// Returns, but does not set, the suggested exit code in case of error.
 /// It is up to the calling function to handle exiting with this code.
-fn run<T>(args: TendrilCliArgs, writer: &mut impl Writer) -> Result<(), i32>
-where T: TendrilsApi {
+fn run(
+    args: TendrilCliArgs, api: &impl TendrilsApi, writer: &mut impl Writer
+) -> Result<(), i32> {
     match args.tendrils_command {
         TendrilsSubcommands::About { about_subcommand } => {
             about(about_subcommand, writer);
             Ok(())
         }
-        TendrilsSubcommands::Init { path, force } => init::<T>(path, force, writer),
+        TendrilsSubcommands::Init { path, force } => init(path, force, api, writer),
         TendrilsSubcommands::Path => path(writer),
         TendrilsSubcommands::Pull { action_args, filter_args } => {
-            tendril_action_subcommand::<T>(
+            tendril_action_subcommand(
                 ActionMode::Pull,
                 action_args,
                 filter_args,
+                api,
                 writer,
             )
         }
         TendrilsSubcommands::Push { action_args, filter_args } => {
-            tendril_action_subcommand::<T>(
+            tendril_action_subcommand(
                 ActionMode::Push,
                 action_args,
                 filter_args,
+                api,
                 writer,
             )
         }
         TendrilsSubcommands::Link { action_args, filter_args } => {
-            tendril_action_subcommand::<T>(
+            tendril_action_subcommand(
                 ActionMode::Link,
                 action_args,
                 filter_args,
+                api,
                 writer,
             )
         }
         TendrilsSubcommands::Out { action_args, filter_args } => {
-            tendril_action_subcommand::<T>(
+            tendril_action_subcommand(
                 ActionMode::Out,
                 action_args,
                 filter_args,
+                api,
                 writer,
             )
         }
@@ -98,10 +104,12 @@ fn about(about_subcommand: AboutSubcommands, writer: &mut impl Writer) {
 
 /// Returns, but does not set, the suggested exit code in case of error.
 /// It is up to the calling function to handle exiting with this code.
-fn init<T>(
-    path: Option<String>, force: bool, writer: &mut impl Writer
-) -> Result<(), i32>
-where T: TendrilsApi {
+fn init(
+    path: Option<String>,
+    force: bool,
+    api: &impl TendrilsApi,
+    writer: &mut impl Writer
+) -> Result<(), i32> {
     let td_dir = match path {
         Some(v) => PathBuf::from(v),
         None => match std::env::current_dir() {
@@ -115,7 +123,7 @@ where T: TendrilsApi {
         },
     };
 
-    match T::init_tendrils_dir(&td_dir, force) {
+    match api.init_tendrils_dir(&td_dir, force) {
         Ok(()) => {
             writer.writeln(&format!(
                 "Created a Tendrils folder at: {}",
@@ -175,17 +183,17 @@ fn path(writer: &mut impl Writer) -> Result<(), i32> {
 
 /// Returns, but does not set, the suggested exit code in case of error.
 /// It is up to the calling function to handle exiting with this code.
-fn tendril_action_subcommand<T>(
+fn tendril_action_subcommand(
     mode: ActionMode,
     action_args: ActionArgs,
     filter_args: FilterArgs,
+    api: &impl TendrilsApi,
     writer: &mut impl Writer,
-) -> Result<(), i32>
-where T: TendrilsApi {
+) -> Result<(), i32> {
     let td_dir = match action_args.path {
         Some(v) => Some(PathBuf::from(v)),
         None => match std::env::current_dir() {
-            Ok(cd) if T::is_tendrils_dir(&cd) => Some(cd),
+            Ok(cd) if api.is_tendrils_dir(&cd) => Some(cd),
             Ok(_) => None,
             Err(_err) => {
                 writer.writeln(&format!(
@@ -204,7 +212,7 @@ where T: TendrilsApi {
         profiles: &filter_args.profiles,
     };
 
-    let batch_result = T::tendril_action(
+    let batch_result = api.tendril_action(
         mode,
         td_dir.as_ref().map(|p| p.as_path()),
         filter,

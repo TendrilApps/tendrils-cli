@@ -13,9 +13,9 @@ use crate::{
     SetupError,
     TendrilActionError,
     TendrilReport,
+    TendrilsActor,
     TendrilsApi,
 };
-use crate::TendrilsActor as Act;
 use rstest::rstest;
 use serial_test::serial;
 use std::fs::write;
@@ -28,11 +28,12 @@ fn empty_tendrils_list_returns_empty(
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
+    let api = TendrilsActor {};
     let setup = Setup::new();
     setup.make_td_json_file(&[]);
     let filter = FilterSpec::new();
 
-    let actual = Act::tendril_action(
+    let actual = api.tendril_action(
         mode,
         Some(&setup.td_dir),
         filter,
@@ -52,6 +53,7 @@ fn empty_filtered_tendrils_list_returns_empty(
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
+    let api = TendrilsActor {};
     let setup = Setup::new();
     let tendril = setup.file_tendril_bundle();
     setup.make_td_json_file(&[tendril]);
@@ -59,7 +61,7 @@ fn empty_filtered_tendrils_list_returns_empty(
     let name_filter = ["I don't exist".to_string()];
     filter.names = &name_filter;
 
-    let actual = Act::tendril_action(
+    let actual = api.tendril_action(
         mode,
         Some(&setup.td_dir),
         filter,
@@ -79,11 +81,12 @@ fn given_td_dir_is_invalid_returns_no_valid_td_dir_err(
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
+    let api = TendrilsActor {};
     let setup = Setup::new();
     let filter = FilterSpec::new();
-    assert!(!Act::is_tendrils_dir(&setup.td_dir));
+    assert!(!api.is_tendrils_dir(&setup.td_dir));
 
-    let actual = Act::tendril_action(
+    let actual = api.tendril_action(
         mode,
         Some(&setup.td_dir),
         filter,
@@ -107,12 +110,13 @@ fn given_td_dir_is_none_global_td_dir_invalid_returns_no_valid_td_dir_err(
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
+    let api = TendrilsActor {};
     let setup = Setup::new();
     let filter = FilterSpec::new();
-    assert!(!Act::is_tendrils_dir(&setup.td_dir));
+    assert!(!api.is_tendrils_dir(&setup.td_dir));
     std::env::set_var("TENDRILS_FOLDER", setup.td_dir.clone());
 
-    let actual = Act::tendril_action(
+    let actual = api.tendril_action(
         mode,
         None,
         filter,
@@ -136,12 +140,13 @@ fn given_td_dir_is_none_global_td_dir_not_set_returns_no_valid_td_dir_err(
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
+    let api = TendrilsActor {};
     let setup = Setup::new();
     let filter = FilterSpec::new();
-    assert!(!Act::is_tendrils_dir(&setup.td_dir));
+    assert!(!api.is_tendrils_dir(&setup.td_dir));
     std::env::remove_var("TENDRILS_FOLDER");
 
-    let actual = Act::tendril_action(
+    let actual = api.tendril_action(
         mode,
         None,
         filter,
@@ -163,6 +168,7 @@ fn given_td_dir_is_none_global_td_dir_is_valid_uses_global_td_dir(
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
+    let api = TendrilsActor {};
     let setup = Setup::new();
     let mut tendril = setup.file_tendril_bundle();
     tendril.link = mode == ActionMode::Link;
@@ -170,7 +176,7 @@ fn given_td_dir_is_none_global_td_dir_is_valid_uses_global_td_dir(
     std::env::set_var("TENDRILS_FOLDER", setup.td_dir.clone());
     let filter = FilterSpec::new();
 
-    let actual = Act::tendril_action(
+    let actual = api.tendril_action(
         mode,
         None,
         filter,
@@ -204,12 +210,13 @@ fn tendrils_json_invalid_returns_config_error(
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
+    let api = TendrilsActor {};
     let setup = Setup::new();
     let filter = FilterSpec::new();
     setup.make_td_dir();
     write(setup.td_json_file, "I'm not JSON").unwrap();
 
-    let actual = Act::tendril_action(
+    let actual = api.tendril_action(
         mode,
         Some(&setup.td_dir),
         filter,
@@ -232,6 +239,7 @@ fn tendrils_are_filtered_before_action(
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
+    let api = TendrilsActor {};
     let setup = Setup::new();
     let mut tendril = setup.file_tendril_bundle();
     tendril.names.push("misc".to_string()); // Add folder
@@ -241,7 +249,7 @@ fn tendrils_are_filtered_before_action(
     let name_filter = ["misc.txt".to_string()];
     filter.names = &name_filter;
 
-    let actual = Act::tendril_action(
+    let actual = api.tendril_action(
         mode,
         Some(&setup.td_dir),
         filter,

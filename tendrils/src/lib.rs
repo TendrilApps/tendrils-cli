@@ -40,13 +40,26 @@ use rstest_reuse;
 pub mod test_utils;
 
 /// Represents the public Tendrils API.
+/// Although the API functions are not static (i.e. they
+/// require an API instance), this is mainly to facilitate easier mocking
+/// for testing. The actual API implementation should have little to no state.
 pub trait TendrilsApi {
+    /// Initializes a *Tendrils* folder with a pre-populated `tendrils.json` file.
+    /// This will fail if the folder is already a *Tendrils* folder or if there are
+    /// general file-system errors. This will also fail if the folder is not empty
+    /// and `force` is false.
+    ///
+    /// # Arguments
+    /// - `dir` - The folder to initialize
+    /// - `force` - Ignores the [`InitError::NotEmpty`] error
+    fn init_tendrils_dir(&self, dir: &Path, force: bool) -> Result<(), InitError>;
+
     /// Returns `true` if the given folder is a *Tendrils* folder, otherwise
     /// `false`.
     /// - A *Tendrils* folder is defined by having a `tendrils.json` file in its top
     ///   level.
     /// - Note: This does *not* check that the `tendrils.json` contents are valid.
-    fn is_tendrils_dir(dir: &Path) -> bool;
+    fn is_tendrils_dir(&self, dir: &Path) -> bool;
 
     /// Reads the `tendrils.json` file in the given Tendrils folder, and
     /// performs the action on each tendril that matches the
@@ -98,6 +111,7 @@ pub trait TendrilsApi {
     /// multiple names and/or parents. Returns a [`SetupError`] if there are
     /// any issues in setting up the batch of actions.
     fn tendril_action_updating<F: FnMut(TendrilReport<ActionLog>)>(
+        &self,
         update_fn: F,
         mode: ActionMode,
         td_dir: Option<&Path>,
@@ -109,36 +123,23 @@ pub trait TendrilsApi {
     /// Same behaviour as [`tendril_action_updating`](`TendrilsApi::tendril_action_updating`) except reports are only
     /// returned once all actions have completed.
     fn tendril_action(
+        &self,
         mode: ActionMode,
         td_dir: Option<&Path>,
         filter: FilterSpec,
         dry_run: bool,
         force: bool,
     ) -> Result<Vec<TendrilReport<ActionLog>>, SetupError>;
-
-    /// Initializes a *Tendrils* folder with a pre-populated `tendrils.json` file.
-    /// This will fail if the folder is already a *Tendrils* folder or if there are
-    /// general file-system errors. This will also fail if the folder is not empty
-    /// and `force` is false.
-    ///
-    /// # Arguments
-    /// - `dir` - The folder to initialize
-    /// - `force` - Ignores the [`InitError::NotEmpty`] error
-    fn init_tendrils_dir(dir: &Path, force: bool) -> Result<(), InitError>;
 }
 
 pub struct TendrilsActor {}
 
 impl TendrilsApi for TendrilsActor {
-    fn is_tendrils_dir(dir: &Path) -> bool {
-        dir.join("tendrils.json").is_file()
-    }
-
-    fn init_tendrils_dir(dir: &Path, force: bool) -> Result<(), InitError> {
+    fn init_tendrils_dir(&self, dir: &Path, force: bool) -> Result<(), InitError> {
         if !dir.exists() {
             return Err(InitError::IoError { kind: std::io::ErrorKind::NotFound });
         }
-        else if TendrilsActor::is_tendrils_dir(dir) {
+        else if self.is_tendrils_dir(dir) {
             return Err(InitError::AlreadyInitialized);
         }
         else if !force && std::fs::read_dir(dir)?.count() > 0 {
@@ -149,7 +150,12 @@ impl TendrilsApi for TendrilsActor {
         Ok(std::fs::write(td_json_file, INIT_TD_TENDRILS_JSON)?)
     }
 
+    fn is_tendrils_dir(&self, dir: &Path) -> bool {
+        dir.join("tendrils.json").is_file()
+    }
+
     fn tendril_action_updating<F: FnMut(TendrilReport<ActionLog>)>(
+        &self,
         update_fn: F,
         mode: ActionMode,
         td_dir: Option<&Path>,
@@ -157,7 +163,7 @@ impl TendrilsApi for TendrilsActor {
         dry_run: bool,
         force: bool,
     ) -> Result<(), SetupError> {
-        let td_dir= get_tendrils_dir(td_dir)?;
+        let td_dir= get_tendrils_dir(td_dir, self)?;
         let config = get_config(&td_dir)?;
         let all_tendrils = config.tendrils;
 
@@ -171,6 +177,7 @@ impl TendrilsApi for TendrilsActor {
     }
 
     fn tendril_action(
+        &self,
         mode: ActionMode,
         td_dir: Option<&Path>,
         filter: FilterSpec,
@@ -180,7 +187,7 @@ impl TendrilsApi for TendrilsActor {
         let mut reports = vec![];
         let updater = |r| reports.push(r);
 
-        TendrilsActor::tendril_action_updating(updater, mode, td_dir, filter, dry_run, force)?;
+        self.tendril_action_updating(updater, mode, td_dir, filter, dry_run, force)?;
         Ok(reports)
     }
 }
@@ -454,16 +461,19 @@ fn get_local_path(tendril: &Tendril, td_dir: &Path) -> PathBuf {
 /// [`GetTendrilsDirError::GlobalInvalid`] is returned
 // TODO: Recursively look through all parent folders before
 // checking environment variable
-fn get_tendrils_dir(starting_path: Option<&Path>) -> Result<PathBuf, GetTendrilsDirError> {
+fn get_tendrils_dir(
+    starting_path: Option<&Path>,
+    api: &impl TendrilsApi,
+) -> Result<PathBuf, GetTendrilsDirError> {
     match starting_path {
-        Some(v) if TendrilsActor::is_tendrils_dir(v) => Ok(v.to_path_buf()),
+        Some(v) if api.is_tendrils_dir(v) => Ok(v.to_path_buf()),
         Some(v) => Err(GetTendrilsDirError::GivenInvalid {
             path: v.to_path_buf()
         }),
         None => match std::env::var("TENDRILS_FOLDER") {
             Ok(v) => {
                 let test_path = PathBuf::from(v);
-                if TendrilsActor::is_tendrils_dir(&test_path) {
+                if api.is_tendrils_dir(&test_path) {
                     Ok(test_path)
                 }
                 else {

@@ -9,9 +9,9 @@ use crate::{
     FsoType,
     TendrilActionSuccess,
     TendrilReport,
+    TendrilsActor,
     TendrilsApi,
 };
-use crate::TendrilsActor as Act;
 use rstest::rstest;
 use std::rc::Rc;
 
@@ -22,13 +22,14 @@ fn empty_tendrils_list_returns_empty(
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
+    let api = TendrilsActor {};
     let setup = Setup::new();
     setup.make_td_json_file(&[]);
     let mut actual = vec![];
     let updater = |r| actual.push(r);
     let filter = FilterSpec::new();
 
-    Act::tendril_action_updating(
+    api.tendril_action_updating(
         updater,
         mode,
         Some(&setup.td_dir),
@@ -46,6 +47,7 @@ fn returns_result_after_each_operation(
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
+    let api = TendrilsActor {};
     let setup = Setup::new();
     setup.make_remote_file();
     setup.make_remote_nested_file();
@@ -111,7 +113,7 @@ fn returns_result_after_each_operation(
         actual.push(r);
     };
 
-    Act::tendril_action_updating(
+    api.tendril_action_updating(
         updater,
         ActionMode::Pull,
         Some(&setup.td_dir),
