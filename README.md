@@ -329,7 +329,7 @@ td push -P home mac
 - Are not officially supported and their behaviour is undefined
 
 # Developer Notes
-- Prior to running tests, run the [`setup-tendrils.sh`](./dev/setup-tendrils.sh) script
+- Prior to development, run the [`setup-tendrils.sh`](./dev/setup-tendrils.sh) script
 - Running tests on Windows may require running in an elevated process due to Windows preventing the creation of symlinks without admin rights
     - Running the terminal as administrator will allow these tests to pass
     - Enabling developer mode will allow these tests to pass without running as administrator

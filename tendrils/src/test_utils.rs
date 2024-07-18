@@ -12,6 +12,7 @@ use crate::{
 use crate::config::{Config, parse_config};
 use std::fs::{create_dir_all, read_to_string, write};
 use std::path::{Path, PathBuf};
+use std::process::Command;
 use tempdir::TempDir;
 
 /// Same behaviour as `batch_tendril_action_updating` except reports are only
@@ -91,6 +92,79 @@ pub fn symlink_expose(
     )
 }
 
+#[cfg(windows)]
+fn get_username() -> String {
+    std::env::var("USERNAME").unwrap()
+}
+
+/// File or folder must already exist
+pub fn set_ra(path: &Path, can_read: bool) {
+    #[cfg(windows)]
+    {
+        if can_read {
+            let mut cmd = Command::new("ICACLS");
+            let output = cmd
+                .arg(path)
+                .arg("/grant")
+                .arg(format!("{}:(RX)", get_username()))
+                .output()
+                .unwrap();
+            if !output.status.success() {
+                let err = format!("ICACLS command failed: {:?}", output);
+                println!("{err}");
+            }
+        }
+        else {
+            let mut cmd = Command::new("ICACLS");
+            let output = cmd
+                .arg(path)
+                .arg("/inheritance:r")
+                .output().unwrap();
+            if !output.status.success() {
+                let err = format!("ICACLS command failed: {:?}", output);
+                println!("{err}");
+            }
+
+            let mut cmd = Command::new("ICACLS");
+            let output = cmd
+                .arg(path)
+                .arg("/grant")
+                .arg(format!("{}:(W)", get_username()))
+                .output()
+                .unwrap();
+            if !output.status.success() {
+                let err = format!("ICACLS command failed: {:?}", output);
+                println!("{err}");
+            }
+        }
+    }
+    #[cfg(not(windows))]
+    {
+        if can_read {
+            let mut cmd = Command::new("chmod");
+            let output = cmd
+                .arg("u+rw")
+                .arg(path)
+                .output().unwrap();
+            if !output.status.success() {
+                let err = format!("chmod command failed: {:?}", output);
+                println!("{err}");
+            }
+        }
+        else {
+            let mut cmd = Command::new("chmod");
+            let output = cmd
+                .arg("u-rw")
+                .arg(path)
+                .output().unwrap();
+            if !output.status.success() {
+                let err = format!("chmod command failed: {:?}", output);
+                println!("{err}");
+            }
+        }
+    }
+}
+
 pub struct Setup {
     pub temp_dir: TempDir, // Must return a reference to keep it in scope
     pub parent_dir: PathBuf,
@@ -112,6 +186,12 @@ pub struct Setup {
     pub target_file: PathBuf,
     pub target_dir: PathBuf,
     pub target_nested_file: PathBuf,
+    pub remote_nra_file: PathBuf,
+    pub remote_nra_dir: PathBuf,
+    pub remote_nra_nested_file: PathBuf,
+    pub local_nra_file: PathBuf,
+    pub local_nra_dir: PathBuf,
+    pub local_nra_nested_file: PathBuf,
 }
 
 impl Default for Setup {
@@ -144,6 +224,12 @@ impl Setup {
         let target_file = parent_dir.join("target.txt");
         let target_dir = parent_dir.join("target");
         let target_nested_file = target_dir.join("nested.txt");
+        let remote_nra_file = parent_dir.join("nra.txt");
+        let remote_nra_dir = parent_dir.join("nra");
+        let remote_nra_nested_file = remote_nra_dir.join("misc.txt");
+        let local_nra_file = group_dir.join("nra.txt");
+        let local_nra_dir = group_dir.join("nra");
+        let local_nra_nested_file = remote_nra_dir.join("misc.txt");
 
         Setup {
             temp_dir,
@@ -166,6 +252,12 @@ impl Setup {
             target_file,
             target_dir,
             target_nested_file,
+            remote_nra_file,
+            remote_nra_dir,
+            remote_nra_nested_file,
+            local_nra_file,
+            local_nra_dir,
+            local_nra_nested_file,
         }
     }
 
@@ -340,5 +432,39 @@ impl Setup {
 
     pub fn remote_subdir_nested_file_contents(&self) -> String {
         read_to_string(&self.remote_subdir_nested_file).unwrap()
+    }
+
+    /// Create a file without read access
+    pub fn make_remote_nra_file(&self) {
+        write(&self.remote_nra_file, "Remote file contents").unwrap();
+        set_ra(&self.remote_nra_file, false);
+    }
+
+    pub fn make_remote_nra_dir(&self) {
+        create_dir_all(&self.remote_nra_dir).unwrap();
+        set_ra(&self.remote_nra_dir, false);
+    }
+
+    pub fn make_remote_nested_nra_file(&self) {
+        create_dir_all(&self.remote_nra_dir).unwrap();
+        write(&self.remote_nra_nested_file, "Remote nested file contents").unwrap();
+        set_ra(&self.remote_nra_nested_file, false);
+    }
+
+    pub fn make_local_nra_file(&self) {
+        create_dir_all(&self.group_dir).unwrap();
+        write(&self.local_nra_file, "Local file contents").unwrap();
+        set_ra(&self.local_nra_file, false);
+    }
+
+    pub fn make_local_nra_dir(&self) {
+        create_dir_all(&self.local_nra_dir).unwrap();
+        set_ra(&self.local_nra_dir, false);
+    }
+
+    pub fn make_local_nested_nra_file(&self) {
+        create_dir_all(&self.local_nra_dir).unwrap();
+        write(&self.local_nra_nested_file, "Local nested file contents").unwrap();
+        create_dir_all(&self.local_nra_nested_file).unwrap();
     }
 }

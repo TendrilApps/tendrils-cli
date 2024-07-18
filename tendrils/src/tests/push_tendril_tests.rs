@@ -2,9 +2,7 @@
 //! See also [`crate::tests::common_action_tests`].
 
 use crate::test_utils::{
-    get_disposable_dir,
-    get_samples_dir,
-    is_empty,
+    set_ra,
     symlink_expose,
     Setup,
 };
@@ -27,7 +25,6 @@ use std::fs::{
     set_permissions,
     write,
 };
-use tempdir::TempDir;
 
 /// See also [`crate::tests::common_action_tests::remote_is_unchanged`] for
 /// `dry_run` case
@@ -558,22 +555,19 @@ fn no_read_access_from_local_file_returns_io_error_permission_denied_unless_dry_
     #[case] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
-    let temp_parent_dir =
-        TempDir::new_in(get_disposable_dir(), "ParentDir").unwrap();
-
-    // Note: This test sample is not version controlled and must first
-    // be created using the setup script - See dev/setup-tendrils.nu
-    let td_dir = get_samples_dir();
+    let setup = Setup::new();
+    setup.make_td_dir();
+    setup.make_local_nra_file();
 
     let tendril = Tendril::new(
-        "NoReadAccess",
-        "no_read_access.txt",
-        temp_parent_dir.path().to_path_buf(),
+        "SomeApp",
+        "nra.txt",
+        setup.parent_dir.clone(),
         TendrilMode::DirOverwrite,
     )
     .unwrap();
 
-    let actual = push_tendril(&td_dir, &tendril, dry_run, force);
+    let actual = push_tendril(&setup.td_dir, &tendril, dry_run, force);
 
     let exp_result;
     if dry_run {
@@ -590,11 +584,11 @@ fn no_read_access_from_local_file_returns_io_error_permission_denied_unless_dry_
         ActionLog::new(
             Some(FsoType::File),
             None,
-            temp_parent_dir.path().join("no_read_access.txt"),
+            setup.remote_nra_file.clone(),
             exp_result,
         )
     );
-    assert!(is_empty(temp_parent_dir.path()));
+    assert!(!setup.remote_nra_file.exists());
 }
 
 #[rstest]
@@ -604,23 +598,21 @@ fn no_read_access_from_local_dir_returns_io_error_permission_denied_unless_dry_r
     #[case] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
-    let temp_parent_dir =
-        TempDir::new_in(get_disposable_dir(), "ParentDir").unwrap();
-
-    // Note: This test sample is not version controlled and must first
-    // be created using the setup script - See dev/setup-tendrils.nu
-    let td_dir = get_samples_dir();
+    let setup = Setup::new();
+    setup.make_td_dir();
+    setup.make_local_nra_dir();
 
     let tendril = Tendril::new(
-        "NoReadAccess",
-        "no_read_access_dir",
-        temp_parent_dir.path().to_path_buf(),
+        "SomeApp",
+        "nra",
+        setup.parent_dir.clone(),
         TendrilMode::DirOverwrite,
     )
     .unwrap();
 
-    let actual = push_tendril(&td_dir, &tendril, dry_run, force);
+    let actual = push_tendril(&setup.td_dir, &tendril, dry_run, force);
 
+    set_ra(&setup.local_nra_dir, true);
     let exp_result;
     if dry_run {
         exp_result = Ok(TendrilActionSuccess::NewSkipped);
@@ -636,11 +628,11 @@ fn no_read_access_from_local_dir_returns_io_error_permission_denied_unless_dry_r
         ActionLog::new(
             Some(FsoType::Dir),
             None,
-            temp_parent_dir.path().join("no_read_access_dir"),
+            setup.remote_nra_dir.clone(),
             exp_result,
         )
     );
-    assert!(is_empty(temp_parent_dir.path()));
+    assert!(!setup.remote_nra_dir.exists());
 }
 
 #[rstest]
