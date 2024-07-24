@@ -42,14 +42,18 @@ fn main() {
 /// Returns, but does not set, the suggested exit code in case of error.
 /// It is up to the calling function to handle exiting with this code.
 fn run(
-    args: TendrilCliArgs, api: &impl TendrilsApi, writer: &mut impl Writer
+    args: TendrilCliArgs,
+    api: &impl TendrilsApi,
+    writer: &mut impl Writer,
 ) -> Result<(), i32> {
     match args.tendrils_command {
         TendrilsSubcommands::About { about_subcommand } => {
             about(about_subcommand, writer);
             Ok(())
         }
-        TendrilsSubcommands::Init { path, force } => init(path, force, api, writer),
+        TendrilsSubcommands::Init { path, force } => {
+            init(path, force, api, writer)
+        }
         TendrilsSubcommands::Path => path(writer),
         TendrilsSubcommands::Pull { action_args, filter_args } => {
             tendril_action_subcommand(
@@ -108,7 +112,7 @@ fn init(
     path: Option<String>,
     force: bool,
     api: &impl TendrilsApi,
-    writer: &mut impl Writer
+    writer: &mut impl Writer,
 ) -> Result<(), i32> {
     let td_dir = match path {
         Some(v) => PathBuf::from(v),
@@ -134,21 +138,17 @@ fn init(
             writer.writeln(&format!("{ERR_PREFIX}: {}", e.to_string()));
 
             return match e {
-                InitError::IoError { kind: _ } => {
-                    Err(exitcode::IOERR)
-                }
-                InitError::AlreadyInitialized => {
-                    Err(exitcode::DATAERR)
-                }
+                InitError::IoError { kind: _ } => Err(exitcode::IOERR),
+                InitError::AlreadyInitialized => Err(exitcode::DATAERR),
                 InitError::NotEmpty => {
                     writer.writeln(
-                        "Consider running with the 'force' flag to ignore this \
-                         error:\n",
+                        "Consider running with the 'force' flag to ignore \
+                         this error:\n",
                     );
                     writer.writeln("td init --force");
                     Err(exitcode::DATAERR)
                 }
-            }
+            };
         }
     };
 
@@ -201,7 +201,7 @@ fn tendril_action_subcommand(
                 ));
                 return Err(exitcode::OSERR);
             }
-        }
+        },
     };
 
     let filter = FilterSpec {
