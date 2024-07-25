@@ -8,7 +8,6 @@
 use crate::test_utils::{get_disposable_dir, symlink_expose, Setup};
 use crate::{
     is_rofs_err,
-    is_tendrils_dir,
     link_tendril,
     pull_tendril,
     push_tendril,
@@ -18,6 +17,8 @@ use crate::{
     Tendril,
     TendrilActionError,
     TendrilActionSuccess,
+    TendrilsActor,
+    TendrilsApi,
     TendrilMode,
 };
 use rstest::rstest;
@@ -244,11 +245,12 @@ fn remote_is_another_td_dir_proceeds_normally(
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
+    let api = TendrilsActor {};
     let setup = Setup::new();
     setup.make_local_nested_file();
     setup.make_remote_nested_file();
     write(&setup.remote_dir.join("tendrils.json"), "").unwrap();
-    assert!(is_tendrils_dir(&setup.remote_dir));
+    assert!(api.is_tendrils_dir(&setup.remote_dir));
 
     let mut tendril = setup.dir_tendril();
     if action == link_tendril {

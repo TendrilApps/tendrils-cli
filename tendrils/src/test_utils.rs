@@ -3,11 +3,15 @@ use crate::{
     symlink,
     ActionMode,
     ActionLog,
+    FilterSpec,
     Fso,
+    InitError,
+    SetupError,
     Tendril,
     TendrilBundle,
     TendrilMode,
     TendrilReport,
+    TendrilsApi,
 };
 use crate::config::{Config, parse_config};
 use std::fs::{create_dir_all, read_to_string, write};
@@ -161,6 +165,122 @@ pub fn set_ra(path: &Path, can_read: bool) {
                 let err = format!("chmod command failed: {:?}", output);
                 println!("{err}");
             }
+        }
+    }
+}
+
+pub struct MockTendrilsApi<'a> {
+    pub init_const_rt: Result<(), InitError>,
+    pub init_fn: Option<Box<dyn Fn(&Path, bool) -> Result<(), InitError>>>,
+    pub init_exp_dir_arg: PathBuf,
+    pub init_exp_force_arg: bool,
+    pub is_tendrils_dir_const_rt: bool,
+    pub is_tendrils_dir_fn: Option<Box<dyn Fn(&Path) -> bool>>,
+    pub tau_const_updater_rts: Vec<TendrilReport<ActionLog>>,
+    pub tau_const_rt: Result<(), SetupError>,
+    pub ta_const_rt: Result<Vec<TendrilReport<ActionLog>>, SetupError>,
+    pub ta_fn: Option<
+        Box<
+            dyn Fn(
+                ActionMode,
+                Option<&Path>,
+                FilterSpec,
+                bool,
+                bool,
+            )
+                -> Result<Vec<TendrilReport<ActionLog>>, SetupError>,
+        >,
+    >,
+    pub ta_exp_mode: ActionMode,
+    pub ta_exp_path: Option<&'a Path>,
+    pub ta_exp_filter: FilterSpec<'a>,
+    pub ta_exp_dry_run: bool,
+    pub ta_exp_force: bool,
+}
+
+impl<'a> MockTendrilsApi<'a> {
+    pub fn new() -> MockTendrilsApi<'a> {
+        MockTendrilsApi {
+            init_const_rt: Ok(()),
+            init_exp_dir_arg: PathBuf::from(""),
+            init_exp_force_arg: false,
+            init_fn: None,
+            is_tendrils_dir_const_rt: true,
+            is_tendrils_dir_fn: None,
+            tau_const_updater_rts: vec![],
+            tau_const_rt: Ok(()),
+            ta_const_rt: Ok(vec![]),
+            ta_fn: None,
+            ta_exp_mode: ActionMode::Pull,
+            ta_exp_path: None,
+            ta_exp_filter: FilterSpec::new(),
+            ta_exp_dry_run: false,
+            ta_exp_force: false,
+        }
+    }
+}
+
+impl TendrilsApi for MockTendrilsApi<'_> {
+    fn init_tendrils_dir(
+        &self,
+        dir: &Path,
+        force: bool,
+    ) -> Result<(), InitError> {
+        assert_eq!(dir, self.init_exp_dir_arg);
+        assert_eq!(force, self.init_exp_force_arg);
+
+        if let Some(f) = self.init_fn.as_ref() {
+            f(dir, force)
+        }
+        else {
+            self.init_const_rt.clone()
+        }
+    }
+
+    fn is_tendrils_dir(&self, dir: &Path) -> bool {
+        if let Some(f) = self.is_tendrils_dir_fn.as_ref() {
+            f(dir)
+        }
+        else {
+            self.is_tendrils_dir_const_rt
+        }
+    }
+
+    fn tendril_action_updating<F: FnMut(TendrilReport<ActionLog>)>(
+        &self,
+        mut update_fn: F,
+        _: ActionMode,
+        _: Option<&Path>,
+        _: FilterSpec,
+        _: bool,
+        _: bool,
+    ) -> Result<(), SetupError> {
+        for update_rt in self.tau_const_updater_rts.iter() {
+            update_fn(update_rt.clone());
+        }
+
+        self.tau_const_rt.clone()
+    }
+
+    fn tendril_action(
+        &self,
+        mode: ActionMode,
+        td_dir: Option<&Path>,
+        filter: FilterSpec,
+        dry_run: bool,
+        force: bool,
+    ) -> Result<Vec<TendrilReport<ActionLog>>, SetupError> {
+        assert_eq!(mode, self.ta_exp_mode);
+        assert_eq!(td_dir, self.ta_exp_path);
+        assert_eq!(filter, self.ta_exp_filter);
+        assert_eq!(dry_run, self.ta_exp_dry_run);
+        assert_eq!(force, self.ta_exp_force);
+
+        if let Some(f) = self.ta_fn.as_ref() {
+            f(mode, td_dir, filter, dry_run, force)
+        }
+        else {
+            self.ta_const_rt.clone()
         }
     }
 }

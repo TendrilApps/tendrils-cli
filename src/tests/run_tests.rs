@@ -7,20 +7,34 @@ use crate::cli::{
     TendrilsSubcommands,
 };
 use crate::{run, Writer, ERR_PREFIX};
-use inline_colorization::{color_bright_green, color_bright_red, color_reset};
+use inline_colorization::{
+    color_bright_green,
+    color_bright_red,
+    color_reset,
+    style_reset,
+    style_underline,
+};
 use rstest::rstest;
 use serial_test::serial;
-use std::fs::{create_dir_all, write};
+use std::fs::create_dir_all;
 use std::path::PathBuf;
-use tendrils::test_utils::{
-    get_disposable_dir,
-    is_empty,
-    parse_config_expose,
-    set_parents,
-    symlink_expose,
-    Setup,
+use tendrils::test_utils::{get_disposable_dir, MockTendrilsApi};
+use tendrils::{
+    ActionLog,
+    ActionMode,
+    FilterSpec,
+    FsoType,
+    GetConfigError,
+    GetTendrilsDirError,
+    InitError,
+    Location,
+    SetupError,
+    TendrilActionError,
+    TendrilActionSuccess,
+    TendrilBundle,
+    TendrilReport,
+    TendrilsActor,
 };
-use tendrils::{is_tendrils_dir, ActionMode};
 
 const TENDRILS_VAR_NAME: &str = "TENDRILS_FOLDER";
 
@@ -76,6 +90,7 @@ impl Writer for MockWriter {
 
 #[test]
 fn about_license_returns_license_type_and_hyperlink_to_repo_license_file() {
+    let api = TendrilsActor {};
     let mut writer = MockWriter::new();
     let version = env!["CARGO_PKG_VERSION"];
     let mut url = format![
@@ -93,7 +108,7 @@ fn about_license_returns_license_type_and_hyperlink_to_repo_license_file() {
         },
     };
 
-    let actual_exit_code = run(args, &mut writer);
+    let actual_exit_code = run(args, &api, &mut writer);
 
     assert_eq!(writer.all_output, expected);
     assert_eq!(actual_exit_code, Ok(()));
@@ -102,6 +117,7 @@ fn about_license_returns_license_type_and_hyperlink_to_repo_license_file() {
 #[test]
 fn about_acknowledgements_returns_message_and_hyperlink_to_repo_third_party_file(
 ) {
+    let api = TendrilsActor {};
     let mut writer = MockWriter::new();
     let version = env!["CARGO_PKG_VERSION"];
     let mut url = format![
@@ -119,7 +135,7 @@ fn about_acknowledgements_returns_message_and_hyperlink_to_repo_third_party_file
         },
     };
 
-    let actual_exit_code = run(args, &mut writer);
+    let actual_exit_code = run(args, &api, &mut writer);
 
     assert_eq!(writer.all_output, expected);
     assert_eq!(actual_exit_code, Ok(()));
@@ -130,25 +146,28 @@ fn about_acknowledgements_returns_message_and_hyperlink_to_repo_third_party_file
 #[case(false)]
 #[serial("cd")]
 fn init_no_path_given_uses_current_dir(#[case] force: bool) {
+    let mut api = MockTendrilsApi::new();
     let mut writer = MockWriter::new();
     let temp_dir =
-        tempdir::TempDir::new_in(get_disposable_dir(), "InitFolder").unwrap();
-    std::env::set_current_dir(temp_dir.path()).unwrap();
+        tempdir::TempDir::new_in(get_disposable_dir(), "TempDir").unwrap();
+    let cd = temp_dir.path().join("CurrentDir");
+    create_dir_all(&cd).unwrap();
+    std::env::set_current_dir(&cd).unwrap();
+
+    api.init_exp_dir_arg = cd.clone();
+    api.init_exp_force_arg = force;
+    api.init_const_rt = Ok(());
 
     let args = TendrilCliArgs {
         tendrils_command: TendrilsSubcommands::Init { force, path: None },
     };
 
-    let actual_exit_code = run(args, &mut writer);
+    let actual_exit_code = run(args, &api, &mut writer);
 
     assert_eq!(actual_exit_code, Ok(()));
-    assert!(temp_dir.path().join("tendrils.json").exists());
     assert_eq!(
         writer.all_output,
-        format!(
-            "Created a Tendrils folder at: {}\n",
-            temp_dir.path().to_string_lossy()
-        )
+        format!("Created a Tendrils folder at: {}\n", cd.to_string_lossy())
     );
 
     // Cleanup
@@ -159,18 +178,21 @@ fn init_no_path_given_uses_current_dir(#[case] force: bool) {
 #[case(true)]
 #[case(false)]
 #[serial("cd")]
-fn init_path_given_uses_given_path_and_ignores_valid_current_dir(
+fn init_path_given_valid_uses_given_path_and_ignores_valid_current_dir(
     #[case] force: bool,
 ) {
+    let mut api = MockTendrilsApi::new();
     let mut writer = MockWriter::new();
     let temp_dir =
         tempdir::TempDir::new_in(get_disposable_dir(), "TempDir").unwrap();
     let cd = temp_dir.path().join("CurrentDir");
-    let given_dir = temp_dir.path().join("GivenDir");
+    let given_dir = PathBuf::from("SomeGivenDir");
     create_dir_all(&cd).unwrap();
-    create_dir_all(&given_dir).unwrap();
     std::env::set_current_dir(&cd).unwrap();
-    assert!(is_empty(&cd));
+
+    api.init_exp_dir_arg = given_dir.clone();
+    api.init_exp_force_arg = force;
+    api.init_const_rt = Ok(());
 
     let args = TendrilCliArgs {
         tendrils_command: TendrilsSubcommands::Init {
@@ -179,56 +201,9 @@ fn init_path_given_uses_given_path_and_ignores_valid_current_dir(
         },
     };
 
-    let actual_exit_code = run(args, &mut writer);
+    let actual_exit_code = run(args, &api, &mut writer);
 
     assert_eq!(actual_exit_code, Ok(()));
-    assert!(given_dir.join("tendrils.json").exists());
-    assert_eq!(
-        writer.all_output,
-        format!(
-            "Created a Tendrils folder at: {}\n",
-            given_dir.to_string_lossy()
-        )
-    );
-
-    // Cleanup
-    std::env::set_current_dir(temp_dir.path().parent().unwrap()).unwrap();
-}
-
-#[rstest]
-#[case(true)]
-#[case(false)]
-#[serial("cd")]
-fn init_path_given_uses_given_path_and_ignores_invalid_current_dir(
-    #[case] force: bool,
-) {
-    let mut writer = MockWriter::new();
-    let temp_dir =
-        tempdir::TempDir::new_in(get_disposable_dir(), "TempDir").unwrap();
-    let cd = temp_dir.path().join("CurrentDir");
-    let given_dir = temp_dir.path().join("GivenDir");
-    create_dir_all(&cd).unwrap();
-    create_dir_all(&given_dir).unwrap();
-    std::env::set_current_dir(&cd).unwrap();
-    // Current dir is already a Tendrils folder
-    // and has other misc files in it making it
-    // invalid for init
-    write(cd.join("tendrils.json"), "").unwrap();
-    write(cd.join("misc.txt"), "").unwrap();
-    create_dir_all(cd.join("misc")).unwrap();
-    assert!(is_tendrils_dir(&cd));
-
-    let args = TendrilCliArgs {
-        tendrils_command: TendrilsSubcommands::Init {
-            force,
-            path: Some(given_dir.to_string_lossy().into()),
-        },
-    };
-
-    let actual_exit_code = run(args, &mut writer);
-
-    assert_eq!(actual_exit_code, Ok(()));
-    assert!(given_dir.join("tendrils.json").exists());
     assert_eq!(
         writer.all_output,
         format!(
@@ -246,18 +221,22 @@ fn init_path_given_uses_given_path_and_ignores_invalid_current_dir(
 #[case(false)]
 #[cfg_attr(windows, ignore)]
 #[serial("cd")]
-fn init_path_given_uses_given_path_and_ignores_missing_current_dir(
+fn init_path_given_valid_uses_given_path_and_ignores_missing_current_dir(
     #[case] force: bool,
 ) {
+    let mut api = MockTendrilsApi::new();
     let mut writer = MockWriter::new();
     let temp_dir =
         tempdir::TempDir::new_in(get_disposable_dir(), "TempDir").unwrap();
     let cd = temp_dir.path().join("CurrentDir");
-    let given_dir = temp_dir.path().join("GivenDir");
+    let given_dir = PathBuf::from("SomeGivenDir");
     create_dir_all(&cd).unwrap();
-    create_dir_all(&given_dir).unwrap();
     std::env::set_current_dir(&cd).unwrap();
     std::fs::remove_dir(&cd).unwrap();
+
+    api.init_exp_dir_arg = given_dir.to_path_buf();
+    api.init_exp_force_arg = force;
+    api.init_const_rt = Ok(());
 
     let args = TendrilCliArgs {
         tendrils_command: TendrilsSubcommands::Init {
@@ -266,10 +245,9 @@ fn init_path_given_uses_given_path_and_ignores_missing_current_dir(
         },
     };
 
-    let actual_exit_code = run(args, &mut writer);
+    let actual_exit_code = run(args, &api, &mut writer);
 
     assert_eq!(actual_exit_code, Ok(()));
-    assert!(given_dir.join("tendrils.json").exists());
     assert_eq!(
         writer.all_output,
         format!(
@@ -285,18 +263,24 @@ fn init_path_given_uses_given_path_and_ignores_missing_current_dir(
 #[cfg_attr(windows, ignore)]
 #[serial("cd")]
 fn init_no_path_given_and_no_cd_prints_error_message(#[case] force: bool) {
+    let mut api = MockTendrilsApi::new();
     let mut writer = MockWriter::new();
     let temp_dir =
-        tempdir::TempDir::new_in(get_disposable_dir(), "CurrentDir").unwrap();
-    let cd = temp_dir.path();
-    std::env::set_current_dir(cd).unwrap();
-    std::fs::remove_dir(cd).unwrap();
+        tempdir::TempDir::new_in(get_disposable_dir(), "TempDir").unwrap();
+    let cd = temp_dir.path().join("CurrentDir");
+    create_dir_all(&cd).unwrap();
+    std::env::set_current_dir(&cd).unwrap();
+    std::fs::remove_dir(&cd).unwrap();
+
+    api.init_exp_dir_arg = cd.to_path_buf();
+    api.init_exp_force_arg = force;
+    api.init_fn = Some(Box::new(|_, _| panic!()));
 
     let args = TendrilCliArgs {
         tendrils_command: TendrilsSubcommands::Init { force, path: None },
     };
 
-    let actual_exit_code = run(args, &mut writer);
+    let actual_exit_code = run(args, &api, &mut writer);
 
     assert_eq!(actual_exit_code, Err(exitcode::OSERR));
     assert!(!cd.exists());
@@ -310,11 +294,16 @@ fn init_no_path_given_and_no_cd_prints_error_message(#[case] force: bool) {
 #[case(true)]
 #[case(false)]
 fn init_non_empty_dir_prints_error_message_unless_forced(#[case] force: bool) {
+    let mut api = MockTendrilsApi::new();
     let mut writer = MockWriter::new();
-    let temp_dir =
-        tempdir::TempDir::new_in(get_disposable_dir(), "TempDir").unwrap();
-    let given_dir = temp_dir.path();
-    write(given_dir.join("misc.txt"), "").unwrap();
+    let given_dir = PathBuf::from("SomeGivenDir");
+
+    api.init_exp_dir_arg = given_dir.to_path_buf();
+    api.init_exp_force_arg = force;
+    api.init_fn = Some(Box::new(|_, force| match force {
+        true => Ok(()),
+        false => Err(InitError::NotEmpty),
+    }));
 
     let args = TendrilCliArgs {
         tendrils_command: TendrilsSubcommands::Init {
@@ -323,11 +312,10 @@ fn init_non_empty_dir_prints_error_message_unless_forced(#[case] force: bool) {
         },
     };
 
-    let actual_exit_code = run(args, &mut writer);
+    let actual_exit_code = run(args, &api, &mut writer);
 
     if force {
         assert_eq!(actual_exit_code, Ok(()));
-        assert!(given_dir.join("tendrils.json").exists());
         assert_eq!(
             writer.all_output,
             format!(
@@ -338,7 +326,6 @@ fn init_non_empty_dir_prints_error_message_unless_forced(#[case] force: bool) {
     }
     else {
         assert_eq!(actual_exit_code, Err(exitcode::DATAERR));
-        assert!(!given_dir.join("tendrils.json").exists());
         let expected = format!(
             "{ERR_PREFIX}: This folder is not empty. Creating a Tendrils \
              folder here may interfere with the existing contents.\nConsider \
@@ -353,12 +340,13 @@ fn init_non_empty_dir_prints_error_message_unless_forced(#[case] force: bool) {
 #[case(true)]
 #[case(false)]
 fn init_dir_is_already_tendrils_dir_prints_error_message(#[case] force: bool) {
+    let mut api = MockTendrilsApi::new();
     let mut writer = MockWriter::new();
-    let temp_dir =
-        tempdir::TempDir::new_in(get_disposable_dir(), "TempDir").unwrap();
-    let given_dir = temp_dir.path();
-    write(given_dir.join("tendrils.json"), "").unwrap();
-    assert!(is_tendrils_dir(given_dir));
+    let given_dir = PathBuf::from("SomeGivenDir");
+
+    api.init_exp_dir_arg = given_dir.to_path_buf();
+    api.init_exp_force_arg = force;
+    api.init_const_rt = Err(InitError::AlreadyInitialized);
 
     let args = TendrilCliArgs {
         tendrils_command: TendrilsSubcommands::Init {
@@ -367,7 +355,7 @@ fn init_dir_is_already_tendrils_dir_prints_error_message(#[case] force: bool) {
         },
     };
 
-    let actual_exit_code = run(args, &mut writer);
+    let actual_exit_code = run(args, &api, &mut writer);
 
     assert_eq!(actual_exit_code, Err(exitcode::DATAERR));
     assert_eq!(
@@ -380,8 +368,14 @@ fn init_dir_is_already_tendrils_dir_prints_error_message(#[case] force: bool) {
 #[case(true)]
 #[case(false)]
 fn init_dir_does_not_exist_prints_io_error_message(#[case] force: bool) {
+    let mut api = MockTendrilsApi::new();
     let mut writer = MockWriter::new();
     let given_dir = PathBuf::from("I do not exist");
+
+    api.init_exp_dir_arg = given_dir.to_path_buf();
+    api.init_exp_force_arg = force;
+    api.init_const_rt =
+        Err(InitError::IoError { kind: std::io::ErrorKind::NotFound });
 
     let args = TendrilCliArgs {
         tendrils_command: TendrilsSubcommands::Init {
@@ -390,15 +384,19 @@ fn init_dir_does_not_exist_prints_io_error_message(#[case] force: bool) {
         },
     };
 
-    let actual_exit_code = run(args, &mut writer);
+    let actual_exit_code = run(args, &api, &mut writer);
 
     assert_eq!(actual_exit_code, Err(exitcode::IOERR));
-    assert_eq!(writer.all_output, format!("{ERR_PREFIX}: IO error - entity not found\n"));
+    assert_eq!(
+        writer.all_output,
+        format!("{ERR_PREFIX}: IO error - entity not found\n")
+    );
 }
 
 #[test]
 #[serial("mut-env-var-td-folder")]
 fn path_with_env_var_unset_prints_message() {
+    let api = TendrilsActor {};
     let mut writer = MockWriter::new();
     let args = TendrilCliArgs { tendrils_command: TendrilsSubcommands::Path };
     std::env::remove_var(TENDRILS_VAR_NAME);
@@ -407,7 +405,7 @@ fn path_with_env_var_unset_prints_message() {
         TENDRILS_VAR_NAME
     );
 
-    let actual_exit_code = run(args, &mut writer);
+    let actual_exit_code = run(args, &api, &mut writer);
 
     assert_eq!(actual_exit_code, Ok(()));
     assert_eq!(writer.all_output, expected);
@@ -416,6 +414,7 @@ fn path_with_env_var_unset_prints_message() {
 #[test]
 #[serial("mut-env-var-td-folder")]
 fn path_with_env_var_set_prints_path() {
+    let api = TendrilsActor {};
     let mut writer = MockWriter::new();
     let args = TendrilCliArgs { tendrils_command: TendrilsSubcommands::Path };
     std::env::set_var(TENDRILS_VAR_NAME, "SomePath");
@@ -423,7 +422,7 @@ fn path_with_env_var_set_prints_path() {
     // Formatted as hyperlink
     let expected = "\u{1b}]8;;SomePath\u{1b}\\SomePath\u{1b}]8;;\u{1b}\\\n";
 
-    let actual_exit_code = run(args, &mut writer);
+    let actual_exit_code = run(args, &api, &mut writer);
 
     assert_eq!(actual_exit_code, Ok(()));
     assert_eq!(writer.all_output, expected);
@@ -435,17 +434,20 @@ fn path_with_env_var_set_prints_path() {
 fn tendril_action_no_path_given_and_no_cd_prints_message(
     #[values(ActionMode::Pull, ActionMode::Push, ActionMode::Link)]
     mode: ActionMode,
-
     #[values(true, false)] dry_run: bool,
-
     #[values(true, false)] force: bool,
 ) {
-    let delete_me =
-        tempdir::TempDir::new_in(get_disposable_dir(), "DeleteMe").unwrap();
-    std::env::set_current_dir(delete_me.path()).unwrap();
-    std::fs::remove_dir_all(delete_me.path()).unwrap();
-
+    let mut api = MockTendrilsApi::new();
     let mut writer = MockWriter::new();
+    let temp_dir =
+        tempdir::TempDir::new_in(get_disposable_dir(), "TempDir").unwrap();
+    let cd = temp_dir.path().join("CurrentDir");
+    create_dir_all(&cd).unwrap();
+    std::env::set_current_dir(&cd).unwrap();
+    std::fs::remove_dir(&cd).unwrap();
+
+    api.ta_fn = Some(Box::new(|_, _, _, _, _| panic!()));
+
     let tendrils_command = build_action_subcommand(
         None,
         mode,
@@ -461,7 +463,7 @@ fn tendril_action_no_path_given_and_no_cd_prints_message(
     let expected =
         format!("{ERR_PREFIX}: Could not get the current directory\n");
 
-    let actual_exit_code = run(args, &mut writer);
+    let actual_exit_code = run(args, &api, &mut writer);
 
     assert_eq!(actual_exit_code, Err(exitcode::OSERR));
     assert_eq!(writer.all_output, expected);
@@ -478,14 +480,35 @@ fn tendril_action_given_path_is_not_tendrils_dir_but_cd_is_should_print_message(
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
-    let setup = Setup::new();
-    let given_path = PathBuf::from("SomePathThatDoesn'tExist");
-    setup.make_td_dir();
-    write(&setup.td_json_file, "[]").unwrap();
-    std::env::set_current_dir(&setup.td_dir).unwrap();
-
+    let mut api = MockTendrilsApi::new();
     let mut writer = MockWriter::new();
-    let path = Some(given_path.to_str().unwrap().to_string());
+    let temp_dir =
+        tempdir::TempDir::new_in(get_disposable_dir(), "TempDir").unwrap();
+    let cd = temp_dir.path().join("CurrentDir");
+    let cd_for_closure = cd.clone();
+    let given_dir = PathBuf::from("SomeGivenDir");
+    create_dir_all(&cd).unwrap();
+    std::env::set_current_dir(&cd).unwrap();
+
+    api.is_tendrils_dir_fn = Some(Box::new(move |dir| {
+        if dir == cd_for_closure {
+            true
+        }
+        else {
+            false
+        }
+    }));
+    api.ta_exp_mode = mode.clone();
+    api.ta_exp_path = Some(&given_dir);
+    api.ta_exp_filter = FilterSpec::new();
+    api.ta_exp_filter.mode = Some(mode.clone());
+    api.ta_exp_dry_run = dry_run;
+    api.ta_exp_force = force;
+    api.ta_const_rt = Err(SetupError::NoValidTendrilsDir(
+        GetTendrilsDirError::GivenInvalid { path: given_dir.clone() },
+    ));
+
+    let path = Some(given_dir.to_str().unwrap().to_string());
     let tendrils_command = build_action_subcommand(
         path,
         mode,
@@ -499,16 +522,14 @@ fn tendril_action_given_path_is_not_tendrils_dir_but_cd_is_should_print_message(
     let args = TendrilCliArgs { tendrils_command };
 
     let expected =
-        format!("{ERR_PREFIX}: SomePathThatDoesn'tExist is not a Tendrils folder\n");
+        format!("{ERR_PREFIX}: SomeGivenDir is not a Tendrils folder\n");
 
-    let actual_exit_code = run(args, &mut writer);
+    let actual_exit_code = run(args, &api, &mut writer);
 
     // To free the TempDir from use
-    std::env::set_current_dir(setup.temp_dir.path().parent().unwrap()).unwrap();
+    std::env::set_current_dir(temp_dir.path().parent().unwrap()).unwrap();
 
     assert_eq!(actual_exit_code, Err(exitcode::NOINPUT));
-    assert!(is_tendrils_dir(&setup.td_dir));
-    assert!(!is_tendrils_dir(&given_path));
     assert_eq!(writer.all_output, expected);
 }
 
@@ -520,18 +541,27 @@ fn tendril_action_given_path_and_cd_are_both_tendrils_dirs_uses_given_path(
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
-    let setup = Setup::new();
-    let given_path = setup.parent_dir.join("GivenDir");
-    setup.make_td_json_file(&[]);
-    create_dir_all(&given_path).unwrap();
-    write(given_path.join("tendrils.json"), "").unwrap();
-    assert!(parse_config_expose("{\"tendrils\":[]}")
-        .unwrap().tendrils.is_empty());
-    assert!(parse_config_expose("").is_err());
-    std::env::set_current_dir(&setup.td_dir).unwrap();
-
+    let mut api = MockTendrilsApi::new();
     let mut writer = MockWriter::new();
-    let path = Some(given_path.to_str().unwrap().to_string());
+    let temp_dir =
+        tempdir::TempDir::new_in(get_disposable_dir(), "TempDir").unwrap();
+    let cd = temp_dir.path().join("CurrentDir");
+    let given_dir = PathBuf::from("SomeGivenDir");
+    create_dir_all(&cd).unwrap();
+    std::env::set_current_dir(&cd).unwrap();
+
+    api.is_tendrils_dir_const_rt = true;
+    api.ta_exp_mode = mode.clone();
+    api.ta_exp_path = Some(&given_dir);
+    api.ta_exp_filter = FilterSpec::new();
+    api.ta_exp_filter.mode = Some(mode.clone());
+    api.ta_exp_dry_run = dry_run;
+    api.ta_exp_force = force;
+    api.ta_const_rt = Err(SetupError::ConfigError(GetConfigError::ParseError(
+        "Some parse error msg".to_string(),
+    )));
+
+    let path = Some(given_dir.to_str().unwrap().to_string());
     let tendrils_command = build_action_subcommand(
         path,
         mode,
@@ -545,18 +575,16 @@ fn tendril_action_given_path_and_cd_are_both_tendrils_dirs_uses_given_path(
     let args = TendrilCliArgs { tendrils_command };
 
     let expected = format!(
-        "{ERR_PREFIX}: Could not parse the tendrils.json file:\nEOF while \
-         parsing a value at line 1 column 0\n"
+        "{ERR_PREFIX}: Could not parse the tendrils.json file:\nSome parse \
+         error msg\n"
     );
 
-    let actual_exit_code = run(args, &mut writer);
+    let actual_exit_code = run(args, &api, &mut writer);
 
     // To free the TempDir from use
-    std::env::set_current_dir(setup.temp_dir.path().parent().unwrap()).unwrap();
+    std::env::set_current_dir(temp_dir.path().parent().unwrap()).unwrap();
 
     assert_eq!(actual_exit_code, Err(exitcode::DATAERR));
-    assert!(is_tendrils_dir(&setup.td_dir));
-    assert!(is_tendrils_dir(&given_path));
     assert_eq!(writer.all_output, expected);
 }
 
@@ -564,33 +592,63 @@ fn tendril_action_given_path_and_cd_are_both_tendrils_dirs_uses_given_path(
 #[case(ActionMode::Pull)]
 #[case(ActionMode::Push)]
 #[case(ActionMode::Link)]
-fn tendril_action_dry_run_does_not_modify(
+#[case(ActionMode::Out)]
+fn tendril_action_prints_table_in_specific_format(
     #[case] mode: ActionMode,
+    #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
-    let setup = Setup::new();
-    setup.make_local_file();
-    setup.make_target_file();
-    if mode == ActionMode::Link {
-        // Setup remote file as symlink to some random (non-tendril) file
-        symlink_expose(&setup.remote_file, &setup.target_file, false, false)
-            .unwrap();
-    }
-    else {
-        setup.make_remote_file();
-    }
+    let mut api = MockTendrilsApi::new();
+    let given_dir = PathBuf::from("SomeGivenDir");
+    let link = mode == ActionMode::Link;
+    let orig_tendril = std::rc::Rc::new(TendrilBundle {
+        group: "SomeApp".to_string(),
+        names: vec!["n1".to_string(), "n2".to_string()],
+        parents: vec!["p1".to_string()],
+        profiles: vec![],
+        link,
+        dir_merge: false,
+    });
+    let ok_result = Ok(TendrilActionSuccess::New);
+    let err_result = Err(TendrilActionError::IoError {
+        kind: std::io::ErrorKind::NotFound,
+        loc: Location::Source,
+    });
 
-    let mut tendril = setup.file_tendril_bundle();
-    tendril.link = mode == ActionMode::Link;
-    set_parents(&mut tendril, &[setup.parent_dir.clone()]);
-    setup.make_td_json_file(&[tendril]);
+    api.ta_exp_mode = mode.clone();
+    api.ta_exp_path = Some(&given_dir);
+    api.ta_exp_filter = FilterSpec::new();
+    api.ta_exp_filter.mode = Some(mode.clone());
+    api.ta_exp_dry_run = dry_run;
+    api.ta_exp_force = force;
+    api.ta_const_rt = Ok(vec![
+        TendrilReport {
+            orig_tendril: orig_tendril.clone(),
+            name: "n1".to_string(),
+            log: Ok(ActionLog::new(
+                Some(FsoType::File),
+                None,
+                PathBuf::from("p1n1"),
+                ok_result,
+            )),
+        },
+        TendrilReport {
+            orig_tendril: orig_tendril.clone(),
+            name: "n2".to_string(),
+            log: Ok(ActionLog::new(
+                Some(FsoType::File),
+                None,
+                PathBuf::from("p1n2"),
+                err_result,
+            )),
+        },
+    ]);
 
     let mut writer = MockWriter::new();
-    let path = Some(setup.td_dir.to_str().unwrap().to_string());
-    let dry_run = true;
+    let path = Some(given_dir.to_str().unwrap().to_string());
     let tendrils_command = build_action_subcommand(
         path,
-        mode.clone(),
+        mode,
         dry_run,
         force,
         vec![],
@@ -600,25 +658,44 @@ fn tendril_action_dry_run_does_not_modify(
     );
     let args = TendrilCliArgs { tendrils_command };
 
-    let actual_exit_code = run(args, &mut writer);
+    let _ = run(args, &api, &mut writer);
 
-    assert_eq!(actual_exit_code, Ok(()));
-    if mode == ActionMode::Link {
-        assert_eq!(setup.remote_file_contents(), "Target file contents");
+    // Update this example table as format changes in the future
+    // ╭─────────┬──────┬──────┬──────────────────╮
+    // │ Group   │ Name │ Path │ Report           │
+    // ├─────────┼──────┼──────┼──────────────────┤
+    // │ SomeApp │ n1   │ p1n1 │ Created          │
+    // ├─────────┼──────┼──────┼──────────────────┤
+    // │ SomeApp │ n2   │ p1n2 │ Source not found │
+    // ╰─────────┴──────┴──────┴──────────────────╯
+    let exp_link_n1 = ansi_hyperlink("p1n1", "p1n1");
+    let exp_link_n2 = ansi_hyperlink("p1n2", "p1n2");
+    let exp_output_lines = vec![
+        "╭─────────┬──────┬──────┬──────────────────╮".to_string(),
+        format!(
+            "│ {color_bright_green}{style_underline}Group{color_reset}{style_reset}   \
+            │ {color_bright_green}{style_underline}Name{color_reset}{style_reset} \
+            │ {color_bright_green}{style_underline}Path{color_reset}{style_reset} \
+            │ {color_bright_green}{style_underline}Report{color_reset}{style_reset}           │"
+        ),
+        "├─────────┼──────┼──────┼──────────────────┤".to_string(),
+        format!(
+            "│ SomeApp │ n1   │ {exp_link_n1} │ {color_bright_green}Created{color_reset}          │"
+        ),
+        "├─────────┼──────┼──────┼──────────────────┤".to_string(),
+        format!(
+            "│ SomeApp │ n2   │ {exp_link_n2} │ {color_bright_red}Source not found{color_reset} │"
+        ),
+        "╰─────────┴──────┴──────┴──────────────────╯".to_string(),
+    ];
+
+    for (i, exp_line) in exp_output_lines.into_iter().enumerate() {
+        assert_eq!(
+            writer.all_output_lines()[i],
+            exp_line,
+            "Failed on line: {i}"
+        );
     }
-    else {
-        assert_eq!(setup.remote_file_contents(), "Remote file contents");
-    }
-    assert_eq!(setup.local_file_contents(), "Local file contents");
-    assert!(writer.all_output_lines()[3].contains("Skipped"));
-    assert_eq!(
-        writer.all_output_lines().last().unwrap(),
-        &format!(
-            "Total: 1, Successful: {color_bright_green}1{color_reset}, \
-             Failed: {color_bright_red}0{color_reset}"
-        )
-    );
-    assert_eq!(setup.td_dir.read_dir().unwrap().count(), 2);
 }
 
 #[rstest]
@@ -626,346 +703,418 @@ fn tendril_action_dry_run_does_not_modify(
 #[case(ActionMode::Push)]
 #[case(ActionMode::Link)]
 #[case(ActionMode::Out)]
-fn tendril_action_tendrils_are_filtered_by_mode(
+fn tendril_action_if_all_pass_they_are_totalled_and_returns_ok(
     #[case] mode: ActionMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
-    let setup = Setup::new();
+    let mut api = MockTendrilsApi::new();
+    let given_dir = PathBuf::from("SomeGivenDir");
+    let link = mode == ActionMode::Link;
+    let orig_tendril = std::rc::Rc::new(TendrilBundle {
+        group: "SomeApp".to_string(),
+        names: vec!["n1".to_string(), "n2".to_string(), "n3".to_string()],
+        parents: vec!["p1".to_string()],
+        profiles: vec![],
+        link,
+        dir_merge: false,
+    });
+    let ok_result = Ok(TendrilActionSuccess::New);
 
-    let mut t1 = setup.file_tendril_bundle();
-    let mut t2 = setup.file_tendril_bundle();
-    let mut t3 = setup.file_tendril_bundle();
-    t1.names = vec!["misc1.txt".to_string()];
-    t2.names = vec!["misc2.txt".to_string()];
-    t3.names = vec!["misc3.txt".to_string()];
-    t1.link = false;
-    t2.link = true;
-    t3.link = true;
-    set_parents(&mut t1, &[setup.parent_dir.clone()]);
-    set_parents(&mut t2, &[setup.parent_dir.clone()]);
-    set_parents(&mut t3, &[setup.parent_dir.clone()]);
-
-    setup.make_td_json_file(&[t1, t2, t3]);
+    api.ta_exp_mode = mode.clone();
+    api.ta_exp_path = Some(&given_dir);
+    api.ta_exp_filter = FilterSpec::new();
+    api.ta_exp_filter.mode = Some(mode.clone());
+    api.ta_exp_dry_run = dry_run;
+    api.ta_exp_force = force;
+    api.ta_const_rt = Ok(vec![
+        TendrilReport {
+            orig_tendril: orig_tendril.clone(),
+            name: "n1".to_string(),
+            log: Ok(ActionLog::new(
+                Some(FsoType::File),
+                None,
+                PathBuf::from("p1n1"),
+                ok_result.clone(),
+            )),
+        },
+        TendrilReport {
+            orig_tendril: orig_tendril.clone(),
+            name: "n2".to_string(),
+            log: Ok(ActionLog::new(
+                None,
+                None,
+                PathBuf::from("p1n2"),
+                ok_result.clone(),
+            )),
+        },
+        TendrilReport {
+            orig_tendril: orig_tendril.clone(),
+            name: "n3".to_string(),
+            log: Ok(ActionLog::new(
+                Some(FsoType::Dir),
+                None,
+                PathBuf::from("p1n3"),
+                ok_result,
+            )),
+        },
+    ]);
 
     let mut writer = MockWriter::new();
-    let path = Some(setup.td_dir.to_str().unwrap().to_string());
+    let path = Some(given_dir.to_str().unwrap().to_string());
+    let tendrils_command = build_action_subcommand(
+        path,
+        mode,
+        dry_run,
+        force,
+        vec![],
+        vec![],
+        vec![],
+        vec![],
+    );
+    let args = TendrilCliArgs { tendrils_command };
+
+    let actual_exit_code = run(args, &api, &mut writer);
+
+    assert_eq!(actual_exit_code, Ok(()));
+    assert_eq!(
+        writer.all_output_lines().last().unwrap().to_string(),
+        format!(
+            "Total: 3, Successful: {color_bright_green}3{color_reset}, \
+             Failed: {color_bright_red}0{color_reset}"
+        )
+    );
+}
+
+#[rstest]
+#[case(ActionMode::Pull)]
+#[case(ActionMode::Push)]
+#[case(ActionMode::Link)]
+#[case(ActionMode::Out)]
+fn tendril_action_if_any_fail_they_are_totalled_and_returns_exit_code(
+    #[case] mode: ActionMode,
+    #[values(true, false)] dry_run: bool,
+    #[values(true, false)] force: bool,
+) {
+    let mut api = MockTendrilsApi::new();
+    let given_dir = PathBuf::from("SomeGivenDir");
+    let link = mode == ActionMode::Link;
+    let orig_tendril = std::rc::Rc::new(TendrilBundle {
+        group: "SomeApp".to_string(),
+        names: vec!["n1".to_string(), "n2".to_string(), "n3".to_string()],
+        parents: vec!["p1".to_string()],
+        profiles: vec![],
+        link,
+        dir_merge: false,
+    });
+    let ok_result = Ok(TendrilActionSuccess::New);
+    let err_result = Err(TendrilActionError::IoError {
+        kind: std::io::ErrorKind::NotFound,
+        loc: Location::Source,
+    });
+
+    api.ta_exp_mode = mode.clone();
+    api.ta_exp_path = Some(&given_dir);
+    api.ta_exp_filter = FilterSpec::new();
+    api.ta_exp_filter.mode = Some(mode.clone());
+    api.ta_exp_dry_run = dry_run;
+    api.ta_exp_force = force;
+    api.ta_const_rt = Ok(vec![
+        TendrilReport {
+            orig_tendril: orig_tendril.clone(),
+            name: "n1".to_string(),
+            log: Ok(ActionLog::new(
+                Some(FsoType::File),
+                None,
+                PathBuf::from("p1n1"),
+                ok_result.clone(),
+            )),
+        },
+        TendrilReport {
+            orig_tendril: orig_tendril.clone(),
+            name: "n2".to_string(),
+            log: Ok(ActionLog::new(
+                None,
+                None,
+                PathBuf::from("p1n2"),
+                err_result,
+            )),
+        },
+        TendrilReport {
+            orig_tendril: orig_tendril.clone(),
+            name: "n3".to_string(),
+            log: Ok(ActionLog::new(
+                Some(FsoType::Dir),
+                None,
+                PathBuf::from("p1n3"),
+                ok_result,
+            )),
+        },
+    ]);
+
+    let mut writer = MockWriter::new();
+    let path = Some(given_dir.to_str().unwrap().to_string());
+    let tendrils_command = build_action_subcommand(
+        path,
+        mode,
+        dry_run,
+        force,
+        vec![],
+        vec![],
+        vec![],
+        vec![],
+    );
+    let args = TendrilCliArgs { tendrils_command };
+
+    let actual_exit_code = run(args, &api, &mut writer);
+
+    assert_eq!(actual_exit_code, Err(exitcode::SOFTWARE));
+    assert_eq!(
+        writer.all_output_lines().last().unwrap().to_string(),
+        format!(
+            "Total: 3, Successful: {color_bright_green}2{color_reset}, \
+             Failed: {color_bright_red}1{color_reset}"
+        )
+    );
+}
+
+#[rstest]
+#[case(ActionMode::Pull)]
+#[case(ActionMode::Push)]
+#[case(ActionMode::Link)]
+#[case(ActionMode::Out)]
+fn tendril_action_order_of_reports_is_unchanged(
+    #[case] mode: ActionMode,
+    #[values(true, false)] dry_run: bool,
+    #[values(true, false)] force: bool,
+) {
+    let mut api = MockTendrilsApi::new();
+    let given_dir = PathBuf::from("SomeGivenDir");
+    let link = mode == ActionMode::Link;
+    let orig_tendril = std::rc::Rc::new(TendrilBundle {
+        group: "SomeApp".to_string(),
+        // Non alphabetical order
+        names: vec!["n2".to_string(), "n1".to_string(), "n3".to_string()],
+        // Non alphabetical order
+        parents: vec!["p3".to_string(), "p1".to_string(), "p2".to_string()],
+        profiles: vec![],
+        link,
+        dir_merge: false,
+    });
+    let result = Err(TendrilActionError::IoError {
+        kind: std::io::ErrorKind::NotFound,
+        loc: Location::Source,
+    });
+
+    api.ta_exp_mode = mode.clone();
+    api.ta_exp_path = Some(&given_dir);
+    api.ta_exp_filter = FilterSpec::new();
+    api.ta_exp_filter.mode = Some(mode.clone());
+    api.ta_exp_dry_run = dry_run;
+    api.ta_exp_force = force;
+    api.ta_const_rt = Ok(vec![
+        TendrilReport {
+            orig_tendril: orig_tendril.clone(),
+            name: "n2".to_string(),
+            log: Ok(ActionLog::new(
+                None,
+                None,
+                PathBuf::from("p3n2"),
+                result.clone(),
+            )),
+        },
+        TendrilReport {
+            orig_tendril: orig_tendril.clone(),
+            name: "n2".to_string(),
+            log: Ok(ActionLog::new(
+                None,
+                None,
+                PathBuf::from("p1n2"),
+                result.clone(),
+            )),
+        },
+        TendrilReport {
+            orig_tendril: orig_tendril.clone(),
+            name: "n2".to_string(),
+            log: Ok(ActionLog::new(
+                None,
+                None,
+                PathBuf::from("p2n2"),
+                result.clone(),
+            )),
+        },
+        TendrilReport {
+            orig_tendril: orig_tendril.clone(),
+            name: "n1".to_string(),
+            log: Ok(ActionLog::new(
+                None,
+                None,
+                PathBuf::from("p3n1"),
+                result.clone(),
+            )),
+        },
+        TendrilReport {
+            orig_tendril: orig_tendril.clone(),
+            name: "n1".to_string(),
+            log: Ok(ActionLog::new(
+                None,
+                None,
+                PathBuf::from("p1n1"),
+                result.clone(),
+            )),
+        },
+        TendrilReport {
+            orig_tendril: orig_tendril.clone(),
+            name: "n1".to_string(),
+            log: Ok(ActionLog::new(
+                None,
+                None,
+                PathBuf::from("p2n1"),
+                result.clone(),
+            )),
+        },
+        TendrilReport {
+            orig_tendril: orig_tendril.clone(),
+            name: "n3".to_string(),
+            log: Ok(ActionLog::new(
+                None,
+                None,
+                PathBuf::from("p3n3"),
+                result.clone(),
+            )),
+        },
+        TendrilReport {
+            orig_tendril: orig_tendril.clone(),
+            name: "n3".to_string(),
+            log: Ok(ActionLog::new(
+                None,
+                None,
+                PathBuf::from("p1n3"),
+                result.clone(),
+            )),
+        },
+        TendrilReport {
+            orig_tendril: orig_tendril.clone(),
+            name: "n3".to_string(),
+            log: Ok(ActionLog::new(
+                None,
+                None,
+                PathBuf::from("p2n3"),
+                result.clone(),
+            )),
+        },
+    ]);
+
+    let mut writer = MockWriter::new();
+    let path = Some(given_dir.to_str().unwrap().to_string());
+    let tendrils_command = build_action_subcommand(
+        path,
+        mode,
+        dry_run,
+        force,
+        vec![],
+        vec![],
+        vec![],
+        vec![],
+    );
+    let args = TendrilCliArgs { tendrils_command };
+
+    let actual_exit_code = run(args, &api, &mut writer);
+
+    println!("{}", writer.all_output);
+    assert_eq!(actual_exit_code, Err(exitcode::SOFTWARE));
+    assert_eq!(
+        writer.all_output_lines().last().unwrap().to_string(),
+        format!(
+            "Total: 9, Successful: {color_bright_green}0{color_reset}, \
+             Failed: {color_bright_red}9{color_reset}"
+        )
+    );
+    assert!(writer.all_output_lines()[3].contains("p3n2"));
+    assert!(writer.all_output_lines()[5].contains("p1n2"));
+    assert!(writer.all_output_lines()[7].contains("p2n2"));
+    assert!(writer.all_output_lines()[9].contains("p3n1"));
+    assert!(writer.all_output_lines()[11].contains("p1n1"));
+    assert!(writer.all_output_lines()[13].contains("p2n1"));
+    assert!(writer.all_output_lines()[15].contains("p3n3"));
+    assert!(writer.all_output_lines()[17].contains("p1n3"));
+    assert!(writer.all_output_lines()[19].contains("p2n3"));
+}
+
+#[rstest]
+#[case(ActionMode::Pull)]
+#[case(ActionMode::Push)]
+#[case(ActionMode::Link)]
+#[case(ActionMode::Out)]
+fn tendril_action_filters_are_passed_properly(
+    #[case] mode: ActionMode,
+    #[values(true, false)] dry_run: bool,
+    #[values(true, false)] force: bool,
+) {
+    let mut api = MockTendrilsApi::new();
+    let given_dir = PathBuf::from("SomeGivenDir");
+    let groups_filter = vec!["App1".to_string(), "App2".to_string()];
+    let names_filter = vec!["misc1.txt".to_string(), "misc2.txt".to_string()];
+    let parents_filter = vec!["p/1".to_string(), "p/2".to_string()];
+    let profiles_filter = vec!["P/1".to_string(), "P/2".to_string()];
+    let filter = FilterSpec {
+        mode: Some(mode.clone()),
+        groups: &groups_filter.clone(),
+        names: &names_filter.clone(),
+        parents: &parents_filter.clone(),
+        profiles: &profiles_filter.clone(),
+    };
+
+    // These assertions occur in the mock run call
+    api.ta_exp_mode = mode.clone();
+    api.ta_exp_path = Some(&given_dir);
+    api.ta_exp_filter = filter;
+    api.ta_exp_dry_run = dry_run;
+    api.ta_exp_force = force;
+    api.ta_const_rt = Ok(vec![]);
+
+    let mut writer = MockWriter::new();
+    let path = Some(given_dir.to_str().unwrap().to_string());
     let tendrils_command = build_action_subcommand(
         path,
         mode.clone(),
         dry_run,
         force,
-        vec![],
-        vec![],
-        vec![],
-        vec![],
-    );
-    let args = TendrilCliArgs { tendrils_command };
-
-    let actual_exit_code = run(args, &mut writer);
-
-    assert_eq!(actual_exit_code, Err(exitcode::SOFTWARE));
-    if mode == ActionMode::Link {
-        assert!(writer.all_output_lines()[3].contains("misc2.txt"));
-        assert!(writer.all_output_lines()[3].contains(" not found"));
-        assert!(writer.all_output_lines()[5].contains("misc3.txt"));
-        assert!(writer.all_output_lines()[5].contains(" not found"));
-        assert_eq!(
-            writer.all_output_lines().last().unwrap(),
-            &format!(
-                "Total: 2, Successful: {color_bright_green}0{color_reset}, \
-                 Failed: {color_bright_red}2{color_reset}"
-            )
-        );
-        assert_eq!(writer.all_output_lines().len(), 8);
-    }
-    else if mode == ActionMode::Out {
-        assert!(writer.all_output_lines()[3].contains("misc1.txt"));
-        assert!(writer.all_output_lines()[3].contains(" not found"));
-        assert!(writer.all_output_lines()[5].contains("misc2.txt"));
-        assert!(writer.all_output_lines()[5].contains(" not found"));
-        assert!(writer.all_output_lines()[7].contains("misc3.txt"));
-        assert!(writer.all_output_lines()[7].contains(" not found"));
-        assert_eq!(
-            writer.all_output_lines().last().unwrap(),
-            &format!(
-                "Total: 3, Successful: {color_bright_green}0{color_reset}, \
-                 Failed: {color_bright_red}3{color_reset}"
-            )
-        );
-        assert_eq!(writer.all_output_lines().len(), 10);
-    }
-    else {
-        assert!(writer.all_output_lines()[3].contains("misc1.txt"));
-        assert!(writer.all_output_lines()[3].contains(" not found"));
-        assert_eq!(
-            writer.all_output_lines().last().unwrap(),
-            &format!(
-                "Total: 1, Successful: {color_bright_green}0{color_reset}, \
-                 Failed: {color_bright_red}1{color_reset}"
-            )
-        );
-        assert_eq!(writer.all_output_lines().len(), 6);
-    }
-}
-
-#[rstest]
-#[case(ActionMode::Pull)]
-#[case(ActionMode::Push)]
-#[case(ActionMode::Link)]
-fn tendril_action_tendrils_are_filtered_by_group(
-    #[case] mode: ActionMode,
-    #[values(true, false)] dry_run: bool,
-    #[values(true, false)] force: bool,
-) {
-    let setup = Setup::new();
-
-    let mut t1 = setup.file_tendril_bundle();
-    let mut t2 = setup.file_tendril_bundle();
-    let mut t3 = setup.file_tendril_bundle();
-    t1.group = "App1".to_string();
-    t2.group = "App2".to_string();
-    t3.group = "App3".to_string();
-    t1.link = mode == ActionMode::Link;
-    t2.link = mode == ActionMode::Link;
-    t3.link = mode == ActionMode::Link;
-    set_parents(&mut t1, &[setup.parent_dir.clone()]);
-    set_parents(&mut t2, &[setup.parent_dir.clone()]);
-    set_parents(&mut t3, &[setup.parent_dir.clone()]);
-
-    setup.make_td_json_file(&[t1, t2, t3]);
-
-    let group_filters = vec!["App2".to_string(), "App3".to_string()];
-
-    let mut writer = MockWriter::new();
-    let path = Some(setup.td_dir.to_str().unwrap().to_string());
-    let tendrils_command = build_action_subcommand(
-        path,
-        mode,
-        dry_run,
-        force,
-        group_filters,
-        vec![],
-        vec![],
-        vec![],
-    );
-    let args = TendrilCliArgs { tendrils_command };
-
-    let actual_exit_code = run(args, &mut writer);
-
-    assert_eq!(actual_exit_code, Err(exitcode::SOFTWARE));
-    assert!(writer.all_output_lines()[3].contains("App2"));
-    assert!(writer.all_output_lines()[3].contains(" not found"));
-    assert!(writer.all_output_lines()[5].contains("App3"));
-    assert!(writer.all_output_lines()[5].contains(" not found"));
-    assert_eq!(
-        writer.all_output_lines().last().unwrap(),
-        &format!(
-            "Total: 2, Successful: {color_bright_green}0{color_reset}, \
-             Failed: {color_bright_red}2{color_reset}"
-        )
-    );
-    assert_eq!(writer.all_output_lines().len(), 8);
-}
-
-#[rstest]
-#[case(ActionMode::Pull)]
-#[case(ActionMode::Push)]
-#[case(ActionMode::Link)]
-fn tendril_action_tendrils_are_filtered_by_names(
-    #[case] mode: ActionMode,
-    #[values(true, false)] dry_run: bool,
-    #[values(true, false)] force: bool,
-) {
-    let setup = Setup::new();
-
-    let mut t1 = setup.file_tendril_bundle();
-    let mut t2 = setup.file_tendril_bundle();
-    let mut t3 = setup.file_tendril_bundle();
-    t1.names = vec!["misc1.txt".to_string()];
-    t2.names = vec!["misc2.txt".to_string()];
-    t3.names = vec!["misc3.txt".to_string()];
-    t1.link = mode == ActionMode::Link;
-    t2.link = mode == ActionMode::Link;
-    t3.link = mode == ActionMode::Link;
-    set_parents(&mut t1, &[setup.parent_dir.clone()]);
-    set_parents(&mut t2, &[setup.parent_dir.clone()]);
-    set_parents(&mut t3, &[setup.parent_dir.clone()]);
-
-    setup.make_td_json_file(&[t1, t2, t3]);
-
-    let names_filter = vec!["misc2.txt".to_string(), "misc3.txt".to_string()];
-
-    let mut writer = MockWriter::new();
-    let path = Some(setup.td_dir.to_str().unwrap().to_string());
-    let tendrils_command = build_action_subcommand(
-        path,
-        mode,
-        dry_run,
-        force,
-        vec![],
+        groups_filter,
         names_filter,
-        vec![],
-        vec![],
-    );
-    let args = TendrilCliArgs { tendrils_command };
-
-    let actual_exit_code = run(args, &mut writer);
-
-    assert_eq!(actual_exit_code, Err(exitcode::SOFTWARE));
-    assert!(writer.all_output_lines()[3].contains("misc2.txt"));
-    assert!(writer.all_output_lines()[3].contains(" not found"));
-    assert!(writer.all_output_lines()[5].contains("misc3.txt"));
-    assert!(writer.all_output_lines()[5].contains(" not found"));
-    assert_eq!(
-        writer.all_output_lines().last().unwrap(),
-        &format!(
-            "Total: 2, Successful: {color_bright_green}0{color_reset}, \
-             Failed: {color_bright_red}2{color_reset}"
-        )
-    );
-    assert_eq!(writer.all_output_lines().len(), 8);
-}
-
-#[rstest]
-#[case(ActionMode::Pull)]
-#[case(ActionMode::Push)]
-#[case(ActionMode::Link)]
-fn tendril_action_tendrils_are_filtered_by_parents(
-    #[case] mode: ActionMode,
-    #[values(true, false)] dry_run: bool,
-    #[values(true, false)] force: bool,
-) {
-    let setup = Setup::new();
-
-    let mut t1 = setup.file_tendril_bundle();
-    let mut t2 = setup.file_tendril_bundle();
-    let mut t3 = setup.file_tendril_bundle();
-    t1.parents = vec!["p/1".to_string()];
-    t2.parents = vec!["p/2".to_string()];
-    t3.parents = vec!["p/3".to_string()];
-    t1.link = mode == ActionMode::Link;
-    t2.link = mode == ActionMode::Link;
-    t3.link = mode == ActionMode::Link;
-
-    setup.make_td_json_file(&[t1, t2, t3]);
-
-    let parents_filter = vec!["p/2".to_string(), "p/3".to_string()];
-
-    let mut writer = MockWriter::new();
-    let path = Some(setup.td_dir.to_str().unwrap().to_string());
-    let tendrils_command = build_action_subcommand(
-        path,
-        mode,
-        dry_run,
-        force,
-        vec![],
-        vec![],
         parents_filter,
-        vec![],
-    );
-    let args = TendrilCliArgs { tendrils_command };
-
-    let actual_exit_code = run(args, &mut writer);
-
-    assert_eq!(actual_exit_code, Err(exitcode::SOFTWARE));
-    use std::path::MAIN_SEPARATOR;
-    assert!(
-        writer.all_output_lines()[3].contains(&format!("p{MAIN_SEPARATOR}2"))
-    );
-    assert!(writer.all_output_lines()[3].contains(" not found"));
-    assert!(
-        writer.all_output_lines()[5].contains(&format!("p{MAIN_SEPARATOR}3"))
-    );
-    assert!(writer.all_output_lines()[5].contains(" not found"));
-    assert_eq!(
-        writer.all_output_lines().last().unwrap(),
-        &format!(
-            "Total: 2, Successful: {color_bright_green}0{color_reset}, \
-             Failed: {color_bright_red}2{color_reset}"
-        )
-    );
-    assert_eq!(writer.all_output_lines().len(), 8);
-}
-
-#[rstest]
-#[case(ActionMode::Pull)]
-#[case(ActionMode::Push)]
-#[case(ActionMode::Link)]
-fn tendril_action_tendrils_are_filtered_by_profile(
-    #[case] mode: ActionMode,
-    #[values(true, false)] dry_run: bool,
-    #[values(true, false)] force: bool,
-) {
-    let setup = Setup::new();
-
-    let mut t1 = setup.file_tendril_bundle();
-    let mut t2 = setup.file_tendril_bundle();
-    let mut t3 = setup.file_tendril_bundle();
-    t1.names = vec!["misc1.txt".to_string()];
-    t2.names = vec!["misc2.txt".to_string()];
-    t3.names = vec!["misc3.txt".to_string()];
-    t1.link = mode == ActionMode::Link;
-    t2.link = mode == ActionMode::Link;
-    t3.link = mode == ActionMode::Link;
-    t1.profiles = vec!["ExcludeMe".to_string()];
-    t2.profiles = vec!["p1".to_string()];
-    t3.profiles = vec![];
-    set_parents(&mut t1, &[setup.parent_dir.clone()]);
-    set_parents(&mut t2, &[setup.parent_dir.clone()]);
-    set_parents(&mut t3, &[setup.parent_dir.clone()]);
-
-    setup.make_td_json_file(&[t1, t2, t3]);
-
-    let profiles_filter = vec!["p1".to_string(), "p2".to_string()];
-
-    let mut writer = MockWriter::new();
-    let path = Some(setup.td_dir.to_str().unwrap().to_string());
-    let tendrils_command = build_action_subcommand(
-        path,
-        mode,
-        dry_run,
-        force,
-        vec![],
-        vec![],
-        vec![],
         profiles_filter,
     );
     let args = TendrilCliArgs { tendrils_command };
 
-    let actual_exit_code = run(args, &mut writer);
+    let actual_exit_code = run(args, &api, &mut writer);
 
-    assert_eq!(actual_exit_code, Err(exitcode::SOFTWARE));
-    assert!(writer.all_output_lines()[3].contains("misc2.txt"));
-    assert!(writer.all_output_lines()[3].contains(" not found"));
-    assert!(writer.all_output_lines()[5].contains("misc3.txt"));
-    assert!(writer.all_output_lines()[5].contains(" not found"));
-    assert_eq!(
-        writer.all_output_lines().last().unwrap(),
-        &format!(
-            "Total: 2, Successful: {color_bright_green}0{color_reset}, \
-             Failed: {color_bright_red}2{color_reset}"
-        )
-    );
-    assert_eq!(writer.all_output_lines().len(), 8);
+    assert_eq!(actual_exit_code, Ok(()));
 }
 
 #[rstest]
 #[case(ActionMode::Pull)]
 #[case(ActionMode::Push)]
 #[case(ActionMode::Link)]
-fn tendril_action_empty_tendrils_array_should_print_message(
+#[case(ActionMode::Out)]
+fn tendril_action_empty_reports_list_prints_message(
     #[case] mode: ActionMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
-    let setup = Setup::new();
-    setup.make_td_json_file(&[]);
+    let mut api = MockTendrilsApi::new();
+    let given_dir = PathBuf::from("SomeGivenDir");
 
-    let given_profiles = vec![];
+    api.ta_exp_mode = mode.clone();
+    api.ta_exp_path = Some(&given_dir);
+    api.ta_exp_filter = FilterSpec::new();
+    api.ta_exp_filter.mode = Some(mode.clone());
+    api.ta_exp_dry_run = dry_run;
+    api.ta_exp_force = force;
+    api.ta_const_rt = Ok(vec![]);
 
     let mut writer = MockWriter::new();
-    let path = Some(setup.td_dir.to_str().unwrap().to_string());
+    let path = Some(given_dir.to_str().unwrap().to_string());
     let tendrils_command = build_action_subcommand(
         path,
         mode,
@@ -974,58 +1123,12 @@ fn tendril_action_empty_tendrils_array_should_print_message(
         vec![],
         vec![],
         vec![],
-        given_profiles,
+        vec![],
     );
     let args = TendrilCliArgs { tendrils_command };
 
-    let actual_exit_code = run(args, &mut writer);
+    let actual_exit_code = run(args, &api, &mut writer);
 
     assert_eq!(actual_exit_code, Ok(()));
     assert_eq!(writer.all_output, "No tendrils matched the given filter(s)\n");
 }
-
-#[rstest]
-#[case(ActionMode::Pull)]
-#[case(ActionMode::Push)]
-#[case(ActionMode::Link)]
-fn tendril_action_empty_filtered_tendrils_array_should_print_message(
-    #[case] mode: ActionMode,
-    #[values(true, false)] dry_run: bool,
-    #[values(true, false)] force: bool,
-) {
-    let setup = Setup::new();
-    let mut t1 = setup.file_tendril_bundle();
-    t1.names = vec!["misc1.txt".to_string()];
-    t1.link = mode == ActionMode::Link;
-    t1.profiles = vec!["ExcludeMe".to_string()];
-    set_parents(&mut t1, &[setup.parent_dir.clone()]);
-    setup.make_td_json_file(&[t1]);
-
-    let given_profiles = vec!["NoMatch".to_string()];
-
-    let mut writer = MockWriter::new();
-    let path = Some(setup.td_dir.to_str().unwrap().to_string());
-    let tendrils_command = build_action_subcommand(
-        path,
-        mode,
-        dry_run,
-        force,
-        vec![],
-        vec![],
-        vec![],
-        given_profiles,
-    );
-    let args = TendrilCliArgs { tendrils_command };
-
-    let actual_exit_code = run(args, &mut writer);
-
-    assert_eq!(actual_exit_code, Ok(()));
-    assert_eq!(writer.all_output, "No tendrils matched the given filter(s)\n");
-}
-
-// TODO: Test multiple_paths_only_copies_first for pull (see old commits in
-// pull_tendril_tests) TODO: Test
-// multiple_paths_first_is_missing_returns_not_found_error (see old commits in
-// pull_tendril_tests) TODO: Test
-// duplicate_tendrils_returns_duplicate_error_for_second_occurence_onward (see
-// old pull_tests)
