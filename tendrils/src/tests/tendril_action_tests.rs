@@ -8,7 +8,7 @@ use crate::{
     ActionMode,
     FilterSpec,
     GetConfigError,
-    GetTendrilsDirError,
+    GetTendrilsRepoError,
     Location,
     SetupError,
     TendrilActionError,
@@ -36,7 +36,7 @@ fn empty_tendrils_list_returns_empty(
 
     let actual = api.tendril_action(
         mode,
-        Some(&setup.td_dir),
+        Some(&setup.td_repo),
         filter,
         dry_run,
         force
@@ -64,7 +64,7 @@ fn empty_filtered_tendrils_list_returns_empty(
 
     let actual = api.tendril_action(
         mode,
-        Some(&setup.td_dir),
+        Some(&setup.td_repo),
         filter,
         dry_run,
         force
@@ -76,7 +76,7 @@ fn empty_filtered_tendrils_list_returns_empty(
 }
 
 #[rstest]
-fn given_td_dir_is_invalid_returns_no_valid_td_dir_err(
+fn given_td_repo_is_invalid_returns_no_valid_td_repo_err(
     #[values(ActionMode::Push, ActionMode::Pull, ActionMode::Link)]
     mode: ActionMode,
     #[values(true, false)] dry_run: bool,
@@ -85,11 +85,11 @@ fn given_td_dir_is_invalid_returns_no_valid_td_dir_err(
     let api = TendrilsActor {};
     let setup = Setup::new();
     let filter = FilterSpec::new();
-    assert!(!api.is_tendrils_dir(&setup.td_dir));
+    assert!(!api.is_tendrils_repo(&setup.td_repo));
 
     let actual = api.tendril_action(
         mode,
-        Some(&setup.td_dir),
+        Some(&setup.td_repo),
         filter,
         dry_run,
         force
@@ -97,15 +97,15 @@ fn given_td_dir_is_invalid_returns_no_valid_td_dir_err(
 
     assert_eq!(
         actual,
-        Err(SetupError::NoValidTendrilsDir(GetTendrilsDirError::GivenInvalid {
-            path: setup.td_dir
+        Err(SetupError::NoValidTendrilsRepo(GetTendrilsRepoError::GivenInvalid {
+            path: setup.td_repo
         }))
     );
 }
 
 #[rstest]
-#[serial("mut-env-var-td-folder")]
-fn given_td_dir_is_none_global_td_dir_invalid_returns_no_valid_td_dir_err(
+#[serial("mut-env-var-td-repo")]
+fn given_td_repo_is_none_global_td_repo_invalid_returns_no_valid_td_repo_err(
     #[values(ActionMode::Push, ActionMode::Pull, ActionMode::Link)]
     mode: ActionMode,
     #[values(true, false)] dry_run: bool,
@@ -114,8 +114,8 @@ fn given_td_dir_is_none_global_td_dir_invalid_returns_no_valid_td_dir_err(
     let api = TendrilsActor {};
     let setup = Setup::new();
     let filter = FilterSpec::new();
-    assert!(!api.is_tendrils_dir(&setup.td_dir));
-    std::env::set_var("TENDRILS_FOLDER", setup.td_dir.clone());
+    assert!(!api.is_tendrils_repo(&setup.td_repo));
+    std::env::set_var("TENDRILS_REPO", setup.td_repo.clone());
 
     let actual = api.tendril_action(
         mode,
@@ -127,15 +127,15 @@ fn given_td_dir_is_none_global_td_dir_invalid_returns_no_valid_td_dir_err(
 
     assert_eq!(
         actual,
-        Err(SetupError::NoValidTendrilsDir(GetTendrilsDirError::GlobalInvalid {
-            path: setup.td_dir
+        Err(SetupError::NoValidTendrilsRepo(GetTendrilsRepoError::GlobalInvalid {
+            path: setup.td_repo
         }))
     );
 }
 
 #[rstest]
-#[serial("mut-env-var-td-folder")]
-fn given_td_dir_is_none_global_td_dir_not_set_returns_no_valid_td_dir_err(
+#[serial("mut-env-var-td-repo")]
+fn given_td_repo_is_none_global_td_repo_not_set_returns_no_valid_td_repo_err(
     #[values(ActionMode::Push, ActionMode::Pull, ActionMode::Link)]
     mode: ActionMode,
     #[values(true, false)] dry_run: bool,
@@ -144,8 +144,8 @@ fn given_td_dir_is_none_global_td_dir_not_set_returns_no_valid_td_dir_err(
     let api = TendrilsActor {};
     let setup = Setup::new();
     let filter = FilterSpec::new();
-    assert!(!api.is_tendrils_dir(&setup.td_dir));
-    std::env::remove_var("TENDRILS_FOLDER");
+    assert!(!api.is_tendrils_repo(&setup.td_repo));
+    std::env::remove_var("TENDRILS_REPO");
 
     let actual = api.tendril_action(
         mode,
@@ -157,13 +157,13 @@ fn given_td_dir_is_none_global_td_dir_not_set_returns_no_valid_td_dir_err(
 
     assert_eq!(
         actual,
-        Err(SetupError::NoValidTendrilsDir(GetTendrilsDirError::GlobalNotSet))
+        Err(SetupError::NoValidTendrilsRepo(GetTendrilsRepoError::GlobalNotSet))
     );
 }
 
 #[rstest]
-#[serial("mut-env-var-td-folder")]
-fn given_td_dir_is_none_global_td_dir_is_valid_uses_global_td_dir(
+#[serial("mut-env-var-td-repo")]
+fn given_td_repo_is_none_global_td_repo_is_valid_uses_global_td_repo(
     #[values(ActionMode::Push, ActionMode::Pull, ActionMode::Link)]
     mode: ActionMode,
     #[values(true, false)] dry_run: bool,
@@ -174,7 +174,7 @@ fn given_td_dir_is_none_global_td_dir_is_valid_uses_global_td_dir(
     let mut tendril = setup.file_tendril_bundle();
     tendril.link = mode == ActionMode::Link;
     setup.make_td_json_file(&[tendril.clone()]);
-    std::env::set_var("TENDRILS_FOLDER", setup.td_dir.clone());
+    std::env::set_var("TENDRILS_REPO", setup.td_repo.clone());
     let filter = FilterSpec::new();
 
     let actual = api.tendril_action(
@@ -214,12 +214,12 @@ fn tendrils_json_invalid_returns_config_error(
     let api = TendrilsActor {};
     let setup = Setup::new();
     let filter = FilterSpec::new();
-    setup.make_td_dir();
+    setup.make_dot_td_dir();
     write(setup.td_json_file, "I'm not JSON").unwrap();
 
     let actual = api.tendril_action(
         mode,
-        Some(&setup.td_dir),
+        Some(&setup.td_repo),
         filter,
         dry_run,
         force
@@ -252,7 +252,7 @@ fn tendrils_are_filtered_before_action(
 
     let actual = api.tendril_action(
         mode,
-        Some(&setup.td_dir),
+        Some(&setup.td_repo),
         filter,
         dry_run,
         force
@@ -309,7 +309,7 @@ fn tendril_action_dry_run_does_not_modify(
 
     api.tendril_action(
         mode.clone(),
-        Some(&setup.td_dir),
+        Some(&setup.td_repo),
         filter,
         dry_run,
         force
@@ -391,7 +391,7 @@ fn tendril_action_tendrils_are_filtered_by_mode(
 
     let actual = api.tendril_action(
         mode.clone(),
-        Some(&setup.td_dir),
+        Some(&setup.td_repo),
         filter,
         dry_run,
         force
@@ -469,7 +469,7 @@ fn tendril_action_tendrils_are_filtered_by_group(
 
     let actual = api.tendril_action(
         mode.clone(),
-        Some(&setup.td_dir),
+        Some(&setup.td_repo),
         filter,
         dry_run,
         force
@@ -544,7 +544,7 @@ fn tendril_action_tendrils_are_filtered_by_parents(
 
     let actual = api.tendril_action(
         mode.clone(),
-        Some(&setup.td_dir),
+        Some(&setup.td_repo),
         filter,
         dry_run,
         force
@@ -614,7 +614,7 @@ fn tendril_action_tendrils_are_filtered_by_profile(
 
     let actual = api.tendril_action(
         mode.clone(),
-        Some(&setup.td_dir),
+        Some(&setup.td_repo),
         filter,
         dry_run,
         force

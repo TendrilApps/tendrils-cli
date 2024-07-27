@@ -32,7 +32,7 @@ fn empty_tendrils_list_returns_empty(
     api.tendril_action_updating(
         updater,
         mode,
-        Some(&setup.td_dir),
+        Some(&setup.td_repo),
         filter,
         dry_run,
         force)
@@ -116,7 +116,7 @@ fn returns_result_after_each_operation(
     api.tendril_action_updating(
         updater,
         ActionMode::Pull,
-        Some(&setup.td_dir),
+        Some(&setup.td_repo),
         filter,
         dry_run,
         force,

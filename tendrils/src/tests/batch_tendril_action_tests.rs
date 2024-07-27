@@ -33,12 +33,12 @@ fn given_empty_list_returns_empty(
 ) {
     let temp_parent_dir =
         TempDir::new_in(get_disposable_dir(), "ParentDir").unwrap();
-    let given_td_dir = temp_parent_dir.path().join("TendrilsDir");
+    let given_td_repo = temp_parent_dir.path().join("TendrilsRepo");
 
-    let actual = batch_tendril_action(mode, &given_td_dir, vec![], dry_run, force);
+    let actual = batch_tendril_action(mode, &given_td_repo, vec![], dry_run, force);
 
     assert!(actual.is_empty());
-    assert!(is_empty(&given_td_dir))
+    assert!(is_empty(&given_td_repo))
 }
 
 #[rstest]
@@ -50,7 +50,7 @@ fn pull_returns_tendril_and_result_for_each_given(
 ) {
     let temp_grandparent_dir =
         TempDir::new_in(get_disposable_dir(), "ParentDir").unwrap();
-    let given_td_dir = temp_grandparent_dir.path().join("TendrilsDir");
+    let given_td_repo = temp_grandparent_dir.path().join("TendrilsRepo");
     let given_parent_dir_a = temp_grandparent_dir.path().join("ParentA");
     let given_parent_dir_b = temp_grandparent_dir.path().join("ParentB");
     let remote_app1_file = given_parent_dir_a.join("misc1.txt");
@@ -58,12 +58,12 @@ fn pull_returns_tendril_and_result_for_each_given(
     let remote_app1_nested_file = remote_app1_dir.join("nested1.txt");
     let remote_app2_file = given_parent_dir_a.join("misc2.txt");
     let remote_app3_fileb_pa = given_parent_dir_a.join("misc3.txt");
-    let local_app1_file = given_td_dir.join("App1").join("misc1.txt");
-    let local_app1_dir = given_td_dir.join("App1").join("App1 Dir");
+    let local_app1_file = given_td_repo.join("App1").join("misc1.txt");
+    let local_app1_dir = given_td_repo.join("App1").join("App1 Dir");
     let local_app1_nested_file = local_app1_dir.join("nested1.txt");
-    let local_app2_file = given_td_dir.join("App2").join("misc2.txt");
-    let local_app3_file_b = given_td_dir.join("App3").join("misc3.txt");
-    create_dir_all(&given_td_dir).unwrap();
+    let local_app2_file = given_td_repo.join("App2").join("misc2.txt");
+    let local_app3_file_b = given_td_repo.join("App3").join("misc3.txt");
+    create_dir_all(&given_td_repo).unwrap();
     create_dir_all(&remote_app1_dir).unwrap();
     write(&remote_app1_file, "Remote app 1 file contents").unwrap();
     write(&remote_app2_file, "Remote app 2 file contents").unwrap();
@@ -149,7 +149,7 @@ fn pull_returns_tendril_and_result_for_each_given(
     ];
 
     let actual =
-        batch_tendril_action(ActionMode::Pull, &given_td_dir, given, dry_run, force);
+        batch_tendril_action(ActionMode::Pull, &given_td_repo, given, dry_run, force);
 
     assert_eq!(actual, expected);
 
@@ -191,7 +191,7 @@ fn push_returns_tendril_and_result_for_each_given(
 ) {
     let temp_grandparent_dir =
         TempDir::new_in(get_disposable_dir(), "ParentDir").unwrap();
-    let given_td_dir = temp_grandparent_dir.path().join("TendrilsDir");
+    let given_td_repo = temp_grandparent_dir.path().join("TendrilsRepo");
     let given_parent_dir_a = temp_grandparent_dir.path().join("ParentA");
     let given_parent_dir_b = temp_grandparent_dir.path().join("ParentB");
     let remote_app1_file = given_parent_dir_a.join("misc1.txt");
@@ -200,16 +200,16 @@ fn push_returns_tendril_and_result_for_each_given(
     let remote_app2_file = given_parent_dir_a.join("misc2.txt");
     let remote_app3_fileb_pa = given_parent_dir_a.join("misc3.txt");
     let remote_app3_fileb_pb = given_parent_dir_b.join("misc3.txt");
-    let local_app1_file = given_td_dir.join("App1").join("misc1.txt");
-    let local_app1_dir = given_td_dir.join("App1").join("App1 Dir");
+    let local_app1_file = given_td_repo.join("App1").join("misc1.txt");
+    let local_app1_dir = given_td_repo.join("App1").join("App1 Dir");
     let local_nested_app1_file = local_app1_dir.join("nested1.txt");
-    let local_app2_file = given_td_dir.join("App2").join("misc2.txt");
-    let local_app3_file_b = given_td_dir.join("App3").join("misc3.txt");
+    let local_app2_file = given_td_repo.join("App2").join("misc2.txt");
+    let local_app3_file_b = given_td_repo.join("App3").join("misc3.txt");
     create_dir_all(given_parent_dir_a.clone()).unwrap();
     create_dir_all(given_parent_dir_b.clone()).unwrap();
     create_dir_all(&local_app1_dir).unwrap();
-    create_dir_all(&given_td_dir.join("App2")).unwrap();
-    create_dir_all(&given_td_dir.join("App3")).unwrap();
+    create_dir_all(&given_td_repo.join("App2")).unwrap();
+    create_dir_all(&given_td_repo.join("App3")).unwrap();
     write(&local_app1_file, "Local app 1 file contents").unwrap();
     write(&local_app2_file, "Local app 2 file contents").unwrap();
     write(&local_app3_file_b, "Local app 3 file b contents").unwrap();
@@ -314,7 +314,7 @@ fn push_returns_tendril_and_result_for_each_given(
     ];
 
     let actual =
-        batch_tendril_action(ActionMode::Push, &given_td_dir, given, dry_run, force);
+        batch_tendril_action(ActionMode::Push, &given_td_repo, given, dry_run, force);
 
     assert_eq!(actual, expected);
 
@@ -368,7 +368,7 @@ fn link_returns_tendril_and_result_for_each_given(
 ) {
     let temp_grandparent_dir =
         TempDir::new_in(get_disposable_dir(), "ParentDir").unwrap();
-    let given_td_dir = temp_grandparent_dir.path().join("TendrilsDir");
+    let given_td_repo = temp_grandparent_dir.path().join("TendrilsRepo");
     let given_parent_dir_a = temp_grandparent_dir.path().join("ParentA");
     let given_parent_dir_b = temp_grandparent_dir.path().join("ParentB");
     let remote_app1_file = given_parent_dir_a.join("misc1.txt");
@@ -377,16 +377,16 @@ fn link_returns_tendril_and_result_for_each_given(
     let remote_app2_file = given_parent_dir_a.join("misc2.txt");
     let remote_app3_fileb_pa = given_parent_dir_a.join("misc3.txt");
     let remote_app3_fileb_pb = given_parent_dir_b.join("misc3.txt");
-    let local_app1_file = given_td_dir.join("App1").join("misc1.txt");
-    let local_app1_dir = given_td_dir.join("App1").join("App1 Dir");
+    let local_app1_file = given_td_repo.join("App1").join("misc1.txt");
+    let local_app1_dir = given_td_repo.join("App1").join("App1 Dir");
     let local_nested_app1_file = local_app1_dir.join("nested1.txt");
-    let local_app2_file = given_td_dir.join("App2").join("misc2.txt");
-    let local_app3_file_b = given_td_dir.join("App3").join("misc3.txt");
+    let local_app2_file = given_td_repo.join("App2").join("misc2.txt");
+    let local_app3_file_b = given_td_repo.join("App3").join("misc3.txt");
     create_dir_all(given_parent_dir_a.clone()).unwrap();
     create_dir_all(given_parent_dir_b.clone()).unwrap();
     create_dir_all(&local_app1_dir).unwrap();
-    create_dir_all(&given_td_dir.join("App2")).unwrap();
-    create_dir_all(&given_td_dir.join("App3")).unwrap();
+    create_dir_all(&given_td_repo.join("App2")).unwrap();
+    create_dir_all(&given_td_repo.join("App3")).unwrap();
     write(&local_app1_file, "Local app 1 file contents").unwrap();
     write(&local_app2_file, "Local app 2 file contents").unwrap();
     write(&local_app3_file_b, "Local app 3 file b contents").unwrap();
@@ -496,7 +496,7 @@ fn link_returns_tendril_and_result_for_each_given(
     ];
 
     let actual =
-        batch_tendril_action(ActionMode::Link, &given_td_dir, given, dry_run, force);
+        batch_tendril_action(ActionMode::Link, &given_td_repo, given, dry_run, force);
 
     assert_eq!(actual, expected);
 
@@ -550,7 +550,7 @@ fn out_returns_tendril_and_result_for_each_given_link_or_push_style(
 ) {
     let temp_grandparent_dir =
         TempDir::new_in(get_disposable_dir(), "ParentDir").unwrap();
-    let given_td_dir = temp_grandparent_dir.path().join("TendrilsDir");
+    let given_td_repo = temp_grandparent_dir.path().join("TendrilsRepo");
     let given_parent_dir_a = temp_grandparent_dir.path().join("ParentA");
     let given_parent_dir_b = temp_grandparent_dir.path().join("ParentB");
     let remote_app1_file = given_parent_dir_a.join("misc1.txt");
@@ -559,16 +559,16 @@ fn out_returns_tendril_and_result_for_each_given_link_or_push_style(
     let remote_app2_file = given_parent_dir_a.join("misc2.txt");
     let remote_app3_fileb_pa = given_parent_dir_a.join("misc3.txt");
     let remote_app3_fileb_pb = given_parent_dir_b.join("misc3.txt");
-    let local_app1_file = given_td_dir.join("App1").join("misc1.txt");
-    let local_app1_dir = given_td_dir.join("App1").join("App1 Dir");
+    let local_app1_file = given_td_repo.join("App1").join("misc1.txt");
+    let local_app1_dir = given_td_repo.join("App1").join("App1 Dir");
     let local_nested_app1_file = local_app1_dir.join("nested1.txt");
-    let local_app2_file = given_td_dir.join("App2").join("misc2.txt");
-    let local_app3_file_b = given_td_dir.join("App3").join("misc3.txt");
+    let local_app2_file = given_td_repo.join("App2").join("misc2.txt");
+    let local_app3_file_b = given_td_repo.join("App3").join("misc3.txt");
     create_dir_all(given_parent_dir_a.clone()).unwrap();
     create_dir_all(given_parent_dir_b.clone()).unwrap();
     create_dir_all(&local_app1_dir).unwrap();
-    create_dir_all(&given_td_dir.join("App2")).unwrap();
-    create_dir_all(&given_td_dir.join("App3")).unwrap();
+    create_dir_all(&given_td_repo.join("App2")).unwrap();
+    create_dir_all(&given_td_repo.join("App3")).unwrap();
     write(&local_app1_file, "Local app 1 file contents").unwrap();
     write(&local_app2_file, "Local app 2 file contents").unwrap();
     write(&local_app3_file_b, "Local app 3 file b contents").unwrap();
@@ -678,7 +678,7 @@ fn out_returns_tendril_and_result_for_each_given_link_or_push_style(
     ];
 
     let actual =
-        batch_tendril_action(ActionMode::Out, &given_td_dir, given, dry_run, force);
+        batch_tendril_action(ActionMode::Out, &given_td_repo, given, dry_run, force);
 
     assert_eq!(actual, expected);
 
@@ -732,7 +732,7 @@ fn parent_path_vars_are_resolved(
     #[values(true, false)] force: bool,
 ) {
     let setup = Setup::new();
-    setup.make_td_dir();
+    setup.make_td_repo_dir();
     let mut tendril = setup.file_tendril_bundle();
     tendril.link = mode == ActionMode::Link;
     set_parents(&mut tendril, &[PathBuf::from("~/I_do_not_exist/<var>/")]);
@@ -762,7 +762,7 @@ fn parent_path_vars_are_resolved(
         )),
     }];
 
-    let actual = batch_tendril_action(mode, &setup.td_dir, tendrils, dry_run, force);
+    let actual = batch_tendril_action(mode, &setup.td_repo, tendrils, dry_run, force);
 
     let actual_result_path = &actual[0].log.as_ref().unwrap().resolved_path();
 

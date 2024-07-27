@@ -9,21 +9,21 @@ mod tests;
 /// Contains the configuration context for Tendrils.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Config {
-    /// The tendrils that are defined in a Tendrils folder.
+    /// The tendrils that are defined in a Tendrils repo.
     #[serde(default)]
     pub tendrils: Vec<TendrilBundle>
 }
 
-/// Parses the `tendrils.json` file in the given *Tendrils* folder and returns
+/// Parses the `tendrils.json` file in the given *Tendrils* repo and returns
 /// the configuration within.
 /// The tendril bundles are returned in the order they are defined in the file.
 ///
 /// # Arguments
-/// - `td_dir` - Path to the *Tendrils* folder.
+/// - `td_repo` - Path to the *Tendrils* folder.
 pub fn get_config(
-    td_dir: &Path,
+    td_repo: &Path,
 ) -> Result<Config, GetConfigError> {
-    let tendrils_file_path = Path::new(&td_dir).join("tendrils.json");
+    let tendrils_file_path = Path::new(&td_repo).join(".tendrils/tendrils.json");
     let tendrils_file_contents = std::fs::read_to_string(tendrils_file_path)?;
     let tendrils = parse_config(&tendrils_file_contents)?;
     Ok(tendrils)

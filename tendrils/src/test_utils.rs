@@ -24,7 +24,7 @@ use tempdir::TempDir;
 /// Easier API for testing.
 pub fn batch_tendril_action(
     mode: ActionMode,
-    td_dir: &Path,
+    td_repo: &Path,
     td_bundles: Vec<TendrilBundle>,
     dry_run: bool,
     force: bool,
@@ -32,7 +32,7 @@ pub fn batch_tendril_action(
     let mut reports = vec![];
     let updater = |r| reports.push(r);
 
-    batch_tendril_action_updating(updater, mode, td_dir, td_bundles, dry_run, force);
+    batch_tendril_action_updating(updater, mode, td_repo, td_bundles, dry_run, force);
     reports
 }
 
@@ -174,8 +174,8 @@ pub struct MockTendrilsApi<'a> {
     pub init_fn: Option<Box<dyn Fn(&Path, bool) -> Result<(), InitError>>>,
     pub init_exp_dir_arg: PathBuf,
     pub init_exp_force_arg: bool,
-    pub is_tendrils_dir_const_rt: bool,
-    pub is_tendrils_dir_fn: Option<Box<dyn Fn(&Path) -> bool>>,
+    pub is_tendrils_repo_const_rt: bool,
+    pub is_tendrils_repo_fn: Option<Box<dyn Fn(&Path) -> bool>>,
     pub tau_const_updater_rts: Vec<TendrilReport<ActionLog>>,
     pub tau_const_rt: Result<(), SetupError>,
     pub ta_const_rt: Result<Vec<TendrilReport<ActionLog>>, SetupError>,
@@ -205,8 +205,8 @@ impl<'a> MockTendrilsApi<'a> {
             init_exp_dir_arg: PathBuf::from(""),
             init_exp_force_arg: false,
             init_fn: None,
-            is_tendrils_dir_const_rt: true,
-            is_tendrils_dir_fn: None,
+            is_tendrils_repo_const_rt: true,
+            is_tendrils_repo_fn: None,
             tau_const_updater_rts: vec![],
             tau_const_rt: Ok(()),
             ta_const_rt: Ok(vec![]),
@@ -221,7 +221,7 @@ impl<'a> MockTendrilsApi<'a> {
 }
 
 impl TendrilsApi for MockTendrilsApi<'_> {
-    fn init_tendrils_dir(
+    fn init_tendrils_repo(
         &self,
         dir: &Path,
         force: bool,
@@ -237,12 +237,12 @@ impl TendrilsApi for MockTendrilsApi<'_> {
         }
     }
 
-    fn is_tendrils_dir(&self, dir: &Path) -> bool {
-        if let Some(f) = self.is_tendrils_dir_fn.as_ref() {
+    fn is_tendrils_repo(&self, dir: &Path) -> bool {
+        if let Some(f) = self.is_tendrils_repo_fn.as_ref() {
             f(dir)
         }
         else {
-            self.is_tendrils_dir_const_rt
+            self.is_tendrils_repo_const_rt
         }
     }
 
@@ -265,19 +265,19 @@ impl TendrilsApi for MockTendrilsApi<'_> {
     fn tendril_action(
         &self,
         mode: ActionMode,
-        td_dir: Option<&Path>,
+        td_repo: Option<&Path>,
         filter: FilterSpec,
         dry_run: bool,
         force: bool,
     ) -> Result<Vec<TendrilReport<ActionLog>>, SetupError> {
         assert_eq!(mode, self.ta_exp_mode);
-        assert_eq!(td_dir, self.ta_exp_path);
+        assert_eq!(td_repo, self.ta_exp_path);
         assert_eq!(filter, self.ta_exp_filter);
         assert_eq!(dry_run, self.ta_exp_dry_run);
         assert_eq!(force, self.ta_exp_force);
 
         if let Some(f) = self.ta_fn.as_ref() {
-            f(mode, td_dir, filter, dry_run, force)
+            f(mode, td_repo, filter, dry_run, force)
         }
         else {
             self.ta_const_rt.clone()
@@ -288,7 +288,8 @@ impl TendrilsApi for MockTendrilsApi<'_> {
 pub struct Setup {
     pub temp_dir: TempDir, // Must return a reference to keep it in scope
     pub parent_dir: PathBuf,
-    pub td_dir: PathBuf,
+    pub td_repo: PathBuf,
+    pub dot_td_dir: PathBuf,
     pub td_json_file: PathBuf,
     pub group_dir: PathBuf,
     pub remote_file: PathBuf,
@@ -326,9 +327,10 @@ impl Setup {
         let temp_dir =
             TempDir::new_in(get_disposable_dir(), "ParentDir").unwrap();
         let parent_dir = temp_dir.path().to_owned();
-        let td_dir = temp_dir.path().join("TendrilsDir");
-        let td_json_file = td_dir.join("tendrils.json");
-        let group_dir = td_dir.join("SomeApp");
+        let td_repo = temp_dir.path().join("TendrilsRepo");
+        let dot_td_dir = td_repo.join(".tendrils");
+        let td_json_file = dot_td_dir.join("tendrils.json");
+        let group_dir = td_repo.join("SomeApp");
         let remote_file = parent_dir.join("misc.txt");
         let remote_dir = parent_dir.join("misc");
         let remote_nested_file = remote_dir.join("nested.txt");
@@ -354,7 +356,8 @@ impl Setup {
         Setup {
             temp_dir,
             parent_dir,
-            td_dir,
+            td_repo,
+            dot_td_dir,
             td_json_file,
             group_dir,
             remote_file,
@@ -431,12 +434,16 @@ impl Setup {
         create_dir_all(&self.parent_dir).unwrap();
     }
 
-    pub fn make_td_dir(&self) {
-        create_dir_all(&self.td_dir).unwrap();
+    pub fn make_td_repo_dir(&self) {
+        create_dir_all(&self.td_repo).unwrap();
+    }
+
+    pub fn make_dot_td_dir(&self) {
+        create_dir_all(&self.dot_td_dir).unwrap();
     }
 
     pub fn make_td_json_file(&self, tendrils: &[TendrilBundle]) {
-        self.make_td_dir();
+        self.make_dot_td_dir();
         let config = Config { tendrils: tendrils.to_vec() };
         let json = serde_json::to_string(&config).unwrap();
         write(&self.td_json_file, json).unwrap();
@@ -520,6 +527,10 @@ impl Setup {
     pub fn make_target_nested_file(&self) {
         self.make_target_dir();
         write(&self.target_nested_file, "Target nested file contents").unwrap();
+    }
+
+    pub fn td_json_file_contents(&self) -> String {
+        read_to_string(&self.td_json_file).unwrap()
     }
 
     pub fn local_file_contents(&self) -> String {

@@ -25,7 +25,7 @@ use tendrils::{
     FilterSpec,
     FsoType,
     GetConfigError,
-    GetTendrilsDirError,
+    GetTendrilsRepoError,
     InitError,
     Location,
     SetupError,
@@ -36,7 +36,7 @@ use tendrils::{
     TendrilsActor,
 };
 
-const TENDRILS_VAR_NAME: &str = "TENDRILS_FOLDER";
+const TENDRILS_VAR_NAME: &str = "TENDRILS_REPO";
 
 struct MockWriter {
     all_output: String,
@@ -167,7 +167,7 @@ fn init_no_path_given_uses_current_dir(#[case] force: bool) {
     assert_eq!(actual_exit_code, Ok(()));
     assert_eq!(
         writer.all_output,
-        format!("Created a Tendrils folder at: {}\n", cd.to_string_lossy())
+        format!("Created a Tendrils repo at: {}\n", cd.to_string_lossy())
     );
 
     // Cleanup
@@ -207,7 +207,7 @@ fn init_path_given_valid_uses_given_path_and_ignores_valid_current_dir(
     assert_eq!(
         writer.all_output,
         format!(
-            "Created a Tendrils folder at: {}\n",
+            "Created a Tendrils repo at: {}\n",
             given_dir.to_string_lossy()
         )
     );
@@ -251,7 +251,7 @@ fn init_path_given_valid_uses_given_path_and_ignores_missing_current_dir(
     assert_eq!(
         writer.all_output,
         format!(
-            "Created a Tendrils folder at: {}\n",
+            "Created a Tendrils repo at: {}\n",
             given_dir.to_string_lossy()
         )
     );
@@ -319,7 +319,7 @@ fn init_non_empty_dir_prints_error_message_unless_forced(#[case] force: bool) {
         assert_eq!(
             writer.all_output,
             format!(
-                "Created a Tendrils folder at: {}\n",
+                "Created a Tendrils repo at: {}\n",
                 given_dir.to_string_lossy()
             )
         );
@@ -339,7 +339,7 @@ fn init_non_empty_dir_prints_error_message_unless_forced(#[case] force: bool) {
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn init_dir_is_already_tendrils_dir_prints_error_message(#[case] force: bool) {
+fn init_dir_is_already_tendrils_repo_prints_error_message(#[case] force: bool) {
     let mut api = MockTendrilsApi::new();
     let mut writer = MockWriter::new();
     let given_dir = PathBuf::from("SomeGivenDir");
@@ -360,7 +360,7 @@ fn init_dir_is_already_tendrils_dir_prints_error_message(#[case] force: bool) {
     assert_eq!(actual_exit_code, Err(exitcode::DATAERR));
     assert_eq!(
         writer.all_output,
-        format!("{ERR_PREFIX}: This folder is already a Tendrils folder\n"),
+        format!("{ERR_PREFIX}: This folder is already a Tendrils repo\n"),
     );
 }
 
@@ -394,7 +394,7 @@ fn init_dir_does_not_exist_prints_io_error_message(#[case] force: bool) {
 }
 
 #[test]
-#[serial("mut-env-var-td-folder")]
+#[serial("mut-env-var-td-repo")]
 fn path_with_env_var_unset_prints_message() {
     let api = TendrilsActor {};
     let mut writer = MockWriter::new();
@@ -412,7 +412,7 @@ fn path_with_env_var_unset_prints_message() {
 }
 
 #[test]
-#[serial("mut-env-var-td-folder")]
+#[serial("mut-env-var-td-repo")]
 fn path_with_env_var_set_prints_path() {
     let api = TendrilsActor {};
     let mut writer = MockWriter::new();
@@ -469,12 +469,12 @@ fn tendril_action_no_path_given_and_no_cd_prints_message(
     assert_eq!(writer.all_output, expected);
 }
 
-// TODO: Test no path given and cd is not tendrils folder
-// TODO: Test no path given and cd is tendrils folder
+// TODO: Test no path given and cd is not Tendrils repo
+// TODO: Test no path given and cd is Tendrils repo
 
 #[rstest]
 #[serial("cd")]
-fn tendril_action_given_path_is_not_tendrils_dir_but_cd_is_should_print_message(
+fn tendril_action_given_path_is_not_tendrils_repo_but_cd_is_should_print_message(
     #[values(ActionMode::Pull, ActionMode::Push, ActionMode::Link)]
     mode: ActionMode,
     #[values(true, false)] dry_run: bool,
@@ -490,7 +490,7 @@ fn tendril_action_given_path_is_not_tendrils_dir_but_cd_is_should_print_message(
     create_dir_all(&cd).unwrap();
     std::env::set_current_dir(&cd).unwrap();
 
-    api.is_tendrils_dir_fn = Some(Box::new(move |dir| {
+    api.is_tendrils_repo_fn = Some(Box::new(move |dir| {
         if dir == cd_for_closure {
             true
         }
@@ -504,8 +504,8 @@ fn tendril_action_given_path_is_not_tendrils_dir_but_cd_is_should_print_message(
     api.ta_exp_filter.mode = Some(mode.clone());
     api.ta_exp_dry_run = dry_run;
     api.ta_exp_force = force;
-    api.ta_const_rt = Err(SetupError::NoValidTendrilsDir(
-        GetTendrilsDirError::GivenInvalid { path: given_dir.clone() },
+    api.ta_const_rt = Err(SetupError::NoValidTendrilsRepo(
+        GetTendrilsRepoError::GivenInvalid { path: given_dir.clone() },
     ));
 
     let path = Some(given_dir.to_str().unwrap().to_string());
@@ -522,7 +522,7 @@ fn tendril_action_given_path_is_not_tendrils_dir_but_cd_is_should_print_message(
     let args = TendrilCliArgs { tendrils_command };
 
     let expected =
-        format!("{ERR_PREFIX}: SomeGivenDir is not a Tendrils folder\n");
+        format!("{ERR_PREFIX}: SomeGivenDir is not a Tendrils repo\n");
 
     let actual_exit_code = run(args, &api, &mut writer);
 
@@ -535,7 +535,7 @@ fn tendril_action_given_path_is_not_tendrils_dir_but_cd_is_should_print_message(
 
 #[rstest]
 #[serial("cd")]
-fn tendril_action_given_path_and_cd_are_both_tendrils_dirs_uses_given_path(
+fn tendril_action_given_path_and_cd_are_both_tendrils_repos_uses_given_path(
     #[values(ActionMode::Pull, ActionMode::Push, ActionMode::Link)]
     mode: ActionMode,
     #[values(true, false)] dry_run: bool,
@@ -550,7 +550,7 @@ fn tendril_action_given_path_and_cd_are_both_tendrils_dirs_uses_given_path(
     create_dir_all(&cd).unwrap();
     std::env::set_current_dir(&cd).unwrap();
 
-    api.is_tendrils_dir_const_rt = true;
+    api.is_tendrils_repo_const_rt = true;
     api.ta_exp_mode = mode.clone();
     api.ta_exp_path = Some(&given_dir);
     api.ta_exp_filter = FilterSpec::new();

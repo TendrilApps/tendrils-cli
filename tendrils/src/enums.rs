@@ -4,16 +4,16 @@ use std::path::PathBuf;
 /// Indicates the tendril action to be performed.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ActionMode {
-    /// Copy tendrils from the *Tendrils* folder to their various locations
+    /// Copy tendrils from the *Tendrils* repo to their various locations
     /// on the computer.
     Push,
 
     /// Copy tendrils from their various locations on the computer to the
-    /// *Tendrils* folder.
+    /// *Tendrils* repo.
     Pull,
 
     /// Create symlinks at the various locations on the computer to the
-    /// tendrils in the *Tendrils* folder.
+    /// tendrils in the *Tendrils* repo.
     Link,
 
     /// Perform all outward bound actions (link & push)
@@ -21,14 +21,14 @@ pub enum ActionMode {
 }
 
 /// Indicates an error while initializing a new
-/// *Tendrils* folder.
+/// *Tendrils* repo.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum InitError {
     /// A general file system error
     IoError { kind: std::io::ErrorKind },
 
     /// The folder to initialize is already a
-    /// *Tendrils* folder
+    /// *Tendrils* repo
     AlreadyInitialized,
 
     /// The folder to initialize is not empty.
@@ -48,7 +48,7 @@ impl ToString for InitError {
                 format!("IO error - {e_kind}")
             }
             InitError::AlreadyInitialized => {
-                String::from("This folder is already a Tendrils folder")
+                String::from("This folder is already a Tendrils repo")
             }
             InitError::NotEmpty => {
                 String::from(
@@ -63,28 +63,28 @@ impl ToString for InitError {
 /// Indicates an error while reading/parsing a
 /// configuration file.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum GetTendrilsDirError {
-    /// The given path is not a valid Tendrils folder.
+pub enum GetTendrilsRepoError {
+    /// The given path is not a valid Tendrils repo.
     GivenInvalid { path: PathBuf },
 
-    /// The global Tendrils folder is not a valid Tendrils folder.
+    /// The global Tendrils repo is not a valid Tendrils repo.
     GlobalInvalid { path: PathBuf },
 
-    /// The global Tendrils folder is not set.
+    /// The global Tendrils repo is not set.
     GlobalNotSet,
 }
 
-impl ToString for GetTendrilsDirError {
+impl ToString for GetTendrilsRepoError {
     fn to_string(&self) -> String {
         match self {
-            GetTendrilsDirError::GivenInvalid { path } => {
-                format!("{} is not a Tendrils folder", path.to_string_lossy())
+            GetTendrilsRepoError::GivenInvalid { path } => {
+                format!("{} is not a Tendrils repo", path.to_string_lossy())
             }
-            GetTendrilsDirError::GlobalInvalid { path } => {
-                format!("The global path \"{}\" is not a Tendrils folder", path.to_string_lossy())
+            GetTendrilsRepoError::GlobalInvalid { path } => {
+                format!("The global path \"{}\" is not a Tendrils repo", path.to_string_lossy())
             }
-            GetTendrilsDirError::GlobalNotSet => {
-                String::from("The global Tendrils folder path is not set")
+            GetTendrilsRepoError::GlobalNotSet => {
+                String::from("The global Tendrils repo path is not set")
             }
         }
     }
@@ -114,15 +114,15 @@ impl From<serde_json::Error> for GetConfigError {
     }
 }
 
-/// Indicates an error with the setup of a Tendrils folder.
+/// Indicates an error with the setup of a Tendrils repo.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum SetupError {
     /// The runtime context on Windows does not permit creating symlinks.
     CannotSymlink,
     /// An error in importing the configuration.
     ConfigError(GetConfigError),
-    /// No valid Tendrils folder was found.
-    NoValidTendrilsDir(GetTendrilsDirError),
+    /// No valid Tendrils repo was found.
+    NoValidTendrilsRepo(GetTendrilsRepoError),
 }
      
 
@@ -143,14 +143,14 @@ impl ToString for SetupError {
             SetupError::ConfigError(GetConfigError::ParseError(msg)) => {
                 format!("Could not parse the tendrils.json file:\n{msg}")
             },
-            SetupError::NoValidTendrilsDir(err) => err.to_string(),
+            SetupError::NoValidTendrilsRepo(err) => err.to_string(),
         }
     }
 }
 
-impl From<GetTendrilsDirError> for SetupError {
-    fn from(err: GetTendrilsDirError) -> Self {
-        SetupError::NoValidTendrilsDir(err)
+impl From<GetTendrilsRepoError> for SetupError {
+    fn from(err: GetTendrilsRepoError) -> Self {
+        SetupError::NoValidTendrilsRepo(err)
     }
 }
 
@@ -216,9 +216,9 @@ pub enum TendrilActionError {
     ModeMismatch,
 
     /// The tendril action would result in recursive copying/linking, such as:
-    /// - Including the *Tendrils* folder as a tendril
-    /// - A folder tendril that is an ancestor to the *Tendrils* folder
-    /// - A tendril that is inside the *Tendrils* folder
+    /// - Including the *Tendrils* repo as a tendril
+    /// - A folder tendril that is an ancestor to the *Tendrils* repo
+    /// - A tendril that is inside the *Tendrils* repo
     Recursion,
 
     /// The type of the remote and local file system objects do not match, or

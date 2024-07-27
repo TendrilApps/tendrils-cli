@@ -23,7 +23,7 @@ pub struct TendrilReport<T: TendrilLog> {
 
 /// Generic log information for any operation on a tendril
 pub trait TendrilLog {
-    /// The type of the file system object in the Tendrils folder.
+    /// The type of the file system object in the Tendrils repo.
     /// `None` if it does not exist.
     fn local_type(&self) -> &Option<FsoType>;
 
