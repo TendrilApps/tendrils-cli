@@ -8,6 +8,7 @@ use crate::{
     TendrilsApi,
 };
 use rstest::rstest;
+use serial_test::serial;
 use std::fs::{create_dir_all, read_to_string, write};
 use std::path::PathBuf;
 
@@ -52,6 +53,26 @@ fn creates_dot_tendrils_dir_and_contents_in_empty_dir(#[case] force: bool) {
 #[rstest]
 #[case(true)]
 #[case(false)]
+#[serial("cd")]
+fn does_not_change_cd(#[case] force: bool) {
+    let api = TendrilsActor {};
+    let setup = Setup::new();
+    setup.make_td_repo_dir();
+    let cd = setup.td_repo.clone();
+    std::env::set_current_dir(&cd).unwrap();
+
+    let actual = api.init_tendrils_repo(&cd, force);
+
+    assert_eq!(std::env::current_dir().unwrap(), cd);
+    std::env::set_current_dir(&setup.temp_dir.path().parent().unwrap()).unwrap();
+
+    assert_eq!(actual, Ok(()));
+    assert!(api.is_tendrils_repo(&cd));
+}
+
+#[rstest]
+#[case(true)]
+#[case(false)]
 fn dir_doesnt_exist_returns_io_error_not_found(#[case] force: bool) {
     let api = TendrilsActor {};
     let dir = PathBuf::from("I do not exist");
@@ -64,6 +85,23 @@ fn dir_doesnt_exist_returns_io_error_not_found(#[case] force: bool) {
         Err(InitError::IoError { kind: std::io::ErrorKind::NotFound })
     );
     assert!(!api.is_tendrils_repo(&dir))
+}
+
+#[rstest]
+#[case(true)]
+#[case(false)]
+fn dir_is_a_file_returns_io_err(
+    #[case] force: bool,
+) {
+    let api = TendrilsActor {};
+    let setup = Setup::new();
+    write(&setup.td_repo, "I'm not a folder!").unwrap();
+
+    let actual = api.init_tendrils_repo(&setup.td_repo, force);
+
+    let file_contents = read_to_string(setup.td_repo).unwrap();
+    assert_eq!(file_contents, "I'm not a folder!");
+    matches!(actual, Err(InitError::IoError { kind: _ }));
 }
 
 #[rstest]
@@ -172,7 +210,7 @@ fn dir_contains_non_empty_dot_tendrils_dir_returns_not_empty_error_unless_forced
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn dir_is_already_td_dir_returns_already_init_error_even_if_invalid_json(
+fn dir_is_already_td_repo_returns_already_init_error_even_if_invalid_json(
     #[case] force: bool,
 ) {
     let api = TendrilsActor {};
