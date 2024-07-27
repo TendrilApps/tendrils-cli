@@ -9,7 +9,7 @@ fn empty_top_level_dir_returns_false() {
     let api = TendrilsActor {};
     let td_dir = TempDir::new_in(get_disposable_dir(), "Temp").unwrap();
 
-    assert!(!api.is_tendrils_dir(&td_dir.path()));
+    assert!(!api.is_tendrils_repo(&td_dir.path()));
 }
 
 #[test]
@@ -19,7 +19,7 @@ fn empty_dot_tendrils_dir_returns_false() {
     let dot_tendrils_dir = td_dir.path().join(".tendrils");
     create_dir_all(&dot_tendrils_dir).unwrap();
 
-    assert!(!api.is_tendrils_dir(&td_dir.path()));
+    assert!(!api.is_tendrils_repo(&td_dir.path()));
 }
 
 #[test]
@@ -28,7 +28,7 @@ fn misc_other_files_only_in_top_level_returns_false() {
     let td_dir = TempDir::new_in(get_disposable_dir(), "Temp").unwrap();
     write(td_dir.path().join("misc.txt"), "").unwrap();
 
-    assert!(!api.is_tendrils_dir(&td_dir.path()));
+    assert!(!api.is_tendrils_repo(&td_dir.path()));
 }
 
 #[test]
@@ -40,7 +40,7 @@ fn valid_tendrils_json_in_top_level_returns_false() {
     write(td_json_file, json).unwrap();
     assert!(parse_config(json).is_ok());
 
-    assert!(!api.is_tendrils_dir(&td_dir.path()));
+    assert!(!api.is_tendrils_repo(&td_dir.path()));
 }
 
 #[test]
@@ -49,7 +49,7 @@ fn tendrils_json_dir_returns_false() {
     let td_dir = TempDir::new_in(get_disposable_dir(), "Temp").unwrap();
     create_dir_all(td_dir.path().join(".tendrils/tendrils.json")).unwrap();
 
-    assert!(!api.is_tendrils_dir(&td_dir.path()));
+    assert!(!api.is_tendrils_repo(&td_dir.path()));
 }
 
 #[test]
@@ -60,7 +60,7 @@ fn empty_tendrils_json_file_returns_true() {
     create_dir_all(&dot_tendrils_dir).unwrap();
     write(dot_tendrils_dir.join("tendrils.json"), "").unwrap();
 
-    assert!(api.is_tendrils_dir(&td_dir.path()));
+    assert!(api.is_tendrils_repo(&td_dir.path()));
 }
 
 #[test]
@@ -74,7 +74,7 @@ fn invalid_tendrils_json_file_returns_true() {
     write(td_json_file, json).unwrap();
     assert!(parse_config(json).is_err());
 
-    assert!(api.is_tendrils_dir(&td_dir.path()));
+    assert!(api.is_tendrils_repo(&td_dir.path()));
 }
 
 #[test]
@@ -88,5 +88,5 @@ fn valid_tendrils_json_file_returns_true() {
     write(td_json_file, json).unwrap();
     assert!(parse_config(json).is_ok());
 
-    assert!(api.is_tendrils_dir(&td_dir.path()));
+    assert!(api.is_tendrils_repo(&td_dir.path()));
 }

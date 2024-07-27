@@ -23,14 +23,14 @@ fn given_empty_list_returns_empty(
 ) {
     let temp_parent_dir =
         TempDir::new_in(get_disposable_dir(), "ParentDir").unwrap();
-    let given_td_dir = temp_parent_dir.path().join("TendrilsDir");
+    let given_td_repo = temp_parent_dir.path().join("TendrilsRepo");
     let mut actual = vec![];
     let updater = |r| actual.push(r);
 
-    batch_tendril_action_updating(updater, mode, &given_td_dir, vec![], dry_run, force);
+    batch_tendril_action_updating(updater, mode, &given_td_repo, vec![], dry_run, force);
 
     assert!(actual.is_empty());
-    assert!(is_empty(&given_td_dir))
+    assert!(is_empty(&given_td_repo))
 }
 
 #[rstest]
@@ -41,7 +41,7 @@ fn returns_result_after_each_operation(
     let setup = Setup::new();
     setup.make_remote_file();
     setup.make_remote_nested_file();
-    setup.make_td_dir();
+    setup.make_td_repo_dir();
     let mut bundle = setup.file_tendril_bundle();
     bundle.names.push("misc".to_string()); // Add the folder
 
@@ -105,7 +105,7 @@ fn returns_result_after_each_operation(
     batch_tendril_action_updating(
         updater,
         ActionMode::Pull,
-        &setup.td_dir,
+        &setup.td_repo,
         vec![bundle.clone()],
         dry_run,
         force,

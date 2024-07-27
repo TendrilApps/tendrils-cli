@@ -13,6 +13,13 @@ use tendrils::{
     TendrilReport,
 };
 
+
+
+
+// UPDATE
+
+
+
 /// A CLI tool for managing tendrils
 #[derive(Parser, Debug)]
 #[command(version)]
@@ -29,23 +36,23 @@ pub enum TendrilsSubcommands {
         about_subcommand: AboutSubcommands,
     },
 
-    /// Initializes a new Tendrils folder in the current directory
+    /// Initializes a new Tendrils repo in the current directory
     Init {
         /// Ignores errors due to a non-empty folder
         #[arg(short, long)]
         force: bool,
 
-        /// Explicitly sets the path to the Tendrils folder, instead of the
+        /// Explicitly sets the path to the Tendrils repo, instead of the
         /// current directory
         #[arg(long)]
         path: Option<String>,
     },
 
-    /// Gets the Tendrils folder path environment variable
+    /// Gets the Tendrils repo path environment variable
     /// if it is set
     Path,
 
-    /// Copies tendrils from their various locations to the Tendrils folder
+    /// Copies tendrils from their various locations to the Tendrils repo
     Pull {
         #[clap(flatten)]
         action_args: ActionArgs,
@@ -54,7 +61,7 @@ pub enum TendrilsSubcommands {
         filter_args: FilterArgs,
     },
 
-    /// Copies tendrils from the Tendrils folder to their various locations
+    /// Copies tendrils from the Tendrils repo to their various locations
     Push {
         #[clap(flatten)]
         action_args: ActionArgs,
@@ -64,7 +71,7 @@ pub enum TendrilsSubcommands {
     },
 
     /// Creates symlinks at their various locations to the tendrils in the
-    /// Tendrils folder
+    /// Tendrils repo
     Link {
         #[clap(flatten)]
         action_args: ActionArgs,
@@ -94,7 +101,7 @@ pub enum AboutSubcommands {
 
 #[derive(Args, Clone, Debug, Eq, PartialEq)]
 pub struct ActionArgs {
-    /// Explicitly sets the path to the Tendrils folder
+    /// Explicitly sets the path to the Tendrils repo
     #[arg(long)]
     pub path: Option<String>,
 

@@ -18,15 +18,15 @@ fn no_tendrils_json_file_returns_io_not_found_error() {
 
 #[test]
 fn invalid_json_returns_parse_error() {
-    let temp_td_dir =
-        TempDir::new_in(get_disposable_dir(), "TendrilsDir").unwrap();
+    let temp_td_repo =
+        TempDir::new_in(get_disposable_dir(), "TendrilsRepo").unwrap();
 
-    let dot_td_dir = temp_td_dir.path().join(".tendrils");
+    let dot_td_dir = temp_td_repo.path().join(".tendrils");
     let td_json_file = dot_td_dir.join("tendrils.json");
     create_dir_all(dot_td_dir).unwrap();
     write(&td_json_file, "I'm not JSON").unwrap();
 
-    let actual = get_config(&temp_td_dir.path());
+    let actual = get_config(&temp_td_repo.path());
 
     assert_eq!(
         actual,
@@ -38,14 +38,14 @@ fn invalid_json_returns_parse_error() {
 
 #[test]
 fn valid_json_returns_tendrils_in_same_order_as_file() {
-    let temp_td_dir =
-        TempDir::new_in(get_disposable_dir(), "TendrilsDir").unwrap();
+    let temp_td_repo =
+        TempDir::new_in(get_disposable_dir(), "TendrilsRepo").unwrap();
     let json = SampleTendrils::build_tendrils_json(&[
         SampleTendrils::tendril_1_json(),
         SampleTendrils::tendril_4_json(),
         SampleTendrils::tendril_2_json(),
     ]);
-    let dot_td_dir = temp_td_dir.path().join(".tendrils");
+    let dot_td_dir = temp_td_repo.path().join(".tendrils");
     let td_json_file = dot_td_dir.join("tendrils.json");
     create_dir_all(dot_td_dir).unwrap();
     write(&td_json_file, &json).unwrap();
@@ -57,7 +57,7 @@ fn valid_json_returns_tendrils_in_same_order_as_file() {
     ];
 
     let actual: Vec<TendrilBundle> =
-        get_config(&temp_td_dir.path()).unwrap().tendrils;
+        get_config(&temp_td_repo.path()).unwrap().tendrils;
 
     assert_eq!(actual, expected);
 }

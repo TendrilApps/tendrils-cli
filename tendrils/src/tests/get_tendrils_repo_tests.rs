@@ -1,27 +1,27 @@
 use crate::test_utils::get_disposable_dir;
-use crate::{get_tendrils_dir, GetTendrilsDirError, TendrilsActor, TendrilsApi};
+use crate::{get_tendrils_repo, GetTendrilsRepoError, TendrilsActor, TendrilsApi};
 use serial_test::serial;
 use std::env::{remove_var, set_var};
 use std::fs::{create_dir_all, File};
 use std::path::PathBuf;
 use tempdir::TempDir;
 
-const ENV_NAME: &str = "TENDRILS_FOLDER";
+const ENV_NAME: &str = "TENDRILS_REPO";
 
 #[test]
 #[serial("mut-env-var-td-folder")]
 fn starting_dir_invalid_env_var_not_set_returns_given_invalid_err() {
     let api = TendrilsActor {};
     let temp = TempDir::new_in(get_disposable_dir(), "Temp").unwrap();
-    let starting_td_dir = temp.path().join("StartingTendrilsDir");
+    let starting_td_repo = temp.path().join("StartingTendrilsRepo");
     remove_var(ENV_NAME);
-    assert!(!api.is_tendrils_dir(&starting_td_dir));
+    assert!(!api.is_tendrils_repo(&starting_td_repo));
 
-    let actual = get_tendrils_dir(Some(&starting_td_dir), &api);
+    let actual = get_tendrils_repo(Some(&starting_td_repo), &api);
 
     assert_eq!(
         actual,
-        Err(GetTendrilsDirError::GivenInvalid {path: starting_td_dir })
+        Err(GetTendrilsRepoError::GivenInvalid {path: starting_td_repo })
     );
 }
 
@@ -30,17 +30,17 @@ fn starting_dir_invalid_env_var_not_set_returns_given_invalid_err() {
 fn starting_dir_invalid_env_var_invalid_returns_given_invalid_err() {
     let api = TendrilsActor {};
     let temp = TempDir::new_in(get_disposable_dir(), "Temp").unwrap();
-    let starting_td_dir = temp.path().join("StartingTendrilsDir");
+    let starting_td_repo = temp.path().join("StartingTendrilsRepo");
     let global_td_dir = "I DON'T EXIST";
     set_var(ENV_NAME, global_td_dir);
-    assert!(!api.is_tendrils_dir(&starting_td_dir));
-    assert!(!api.is_tendrils_dir(&PathBuf::from(global_td_dir)));
+    assert!(!api.is_tendrils_repo(&starting_td_repo));
+    assert!(!api.is_tendrils_repo(&PathBuf::from(global_td_dir)));
 
-    let actual = get_tendrils_dir(Some(&starting_td_dir), &api);
+    let actual = get_tendrils_repo(Some(&starting_td_repo), &api);
 
     assert_eq!(
         actual,
-        Err(GetTendrilsDirError::GivenInvalid {path: starting_td_dir })
+        Err(GetTendrilsRepoError::GivenInvalid {path: starting_td_repo })
     );
 }
 
@@ -49,21 +49,21 @@ fn starting_dir_invalid_env_var_invalid_returns_given_invalid_err() {
 fn starting_dir_invalid_env_var_valid_returns_given_invalid_err() {
     let api = TendrilsActor {};
     let temp = TempDir::new_in(get_disposable_dir(), "Temp").unwrap();
-    let starting_td_dir = temp.path().join("I don't exist");
-    let global_td_dir = temp.path().join("EnvVarTendrilsDir");
+    let starting_td_repo = temp.path().join("I don't exist");
+    let global_td_dir = temp.path().join("EnvVarTendrilsRepo");
     let global_dot_td_dir = global_td_dir.join(".tendrils");
     let global_td_json_file = global_dot_td_dir.join("tendrils.json");
     create_dir_all(&global_dot_td_dir).unwrap();
     File::create(global_td_json_file).unwrap();
     set_var(ENV_NAME, global_td_dir.to_str().unwrap());
-    assert!(!api.is_tendrils_dir(&starting_td_dir));
-    assert!(api.is_tendrils_dir(&global_td_dir));
+    assert!(!api.is_tendrils_repo(&starting_td_repo));
+    assert!(api.is_tendrils_repo(&global_td_dir));
 
-    let actual = get_tendrils_dir(Some(&starting_td_dir), &api);
+    let actual = get_tendrils_repo(Some(&starting_td_repo), &api);
 
     assert_eq!(
         actual,
-        Err(GetTendrilsDirError::GivenInvalid {path: starting_td_dir })
+        Err(GetTendrilsRepoError::GivenInvalid {path: starting_td_repo })
     );
 }
 
@@ -72,16 +72,16 @@ fn starting_dir_invalid_env_var_valid_returns_given_invalid_err() {
 fn starting_dir_valid_env_var_not_set_returns_starting_dir() {
     let api = TendrilsActor {};
     let temp = TempDir::new_in(get_disposable_dir(), "Temp").unwrap();
-    let starting_td_dir = temp.path().join("StartingTendrilsDir");
-    let starting_dot_td_dir = starting_td_dir.join(".tendrils");
+    let starting_td_repo = temp.path().join("StartingTendrilsRepo");
+    let starting_dot_td_dir = starting_td_repo.join(".tendrils");
     create_dir_all(&starting_dot_td_dir).unwrap();
     File::create(starting_dot_td_dir.join("tendrils.json")).unwrap();
     remove_var(ENV_NAME);
-    assert!(api.is_tendrils_dir(&starting_td_dir));
+    assert!(api.is_tendrils_repo(&starting_td_repo));
 
-    let actual = get_tendrils_dir(Some(&starting_td_dir), &api).unwrap();
+    let actual = get_tendrils_repo(Some(&starting_td_repo), &api).unwrap();
 
-    assert_eq!(actual, starting_td_dir);
+    assert_eq!(actual, starting_td_repo);
 }
 
 #[test]
@@ -89,21 +89,21 @@ fn starting_dir_valid_env_var_not_set_returns_starting_dir() {
 fn starting_dir_valid_env_var_valid_returns_starting_dir() {
     let api = TendrilsActor {};
     let temp = TempDir::new_in(get_disposable_dir(), "Temp").unwrap();
-    let starting_td_dir = temp.path().join("StartingTendrilsDir");
-    let starting_dot_td_dir = starting_td_dir.join(".tendrils");
-    let global_td_dir = temp.path().join("EnvVarTendrilsDir");
+    let starting_td_repo = temp.path().join("StartingTendrilsRepo");
+    let starting_dot_td_dir = starting_td_repo.join(".tendrils");
+    let global_td_dir = temp.path().join("EnvVarTendrilsRepo");
     let global_dot_td_dir = global_td_dir.join(".tendrils");
     create_dir_all(&starting_dot_td_dir).unwrap();
     create_dir_all(&global_dot_td_dir).unwrap();
     File::create(starting_dot_td_dir.join("tendrils.json")).unwrap();
     File::create(global_dot_td_dir.join("tendrils.json")).unwrap();
     set_var(ENV_NAME, global_td_dir.to_str().unwrap());
-    assert!(api.is_tendrils_dir(&starting_td_dir));
-    assert!(api.is_tendrils_dir(&global_td_dir));
+    assert!(api.is_tendrils_repo(&starting_td_repo));
+    assert!(api.is_tendrils_repo(&global_td_dir));
 
-    let actual = get_tendrils_dir(Some(&starting_td_dir), &api).unwrap();
+    let actual = get_tendrils_repo(Some(&starting_td_repo), &api).unwrap();
 
-    assert_eq!(actual, starting_td_dir);
+    assert_eq!(actual, starting_td_repo);
 }
 
 #[test]
@@ -111,18 +111,18 @@ fn starting_dir_valid_env_var_valid_returns_starting_dir() {
 fn starting_dir_valid_env_var_invalid_returns_starting_dir() {
     let api = TendrilsActor {};
     let temp = TempDir::new_in(get_disposable_dir(), "Temp").unwrap();
-    let starting_td_dir = temp.path().join("StartingTendrilsDir");
-    let starting_dot_td_dir = starting_td_dir.join(".tendrils");
-    let global_td_dir = temp.path().join("EnvVarTendrilsDir");
+    let starting_td_repo = temp.path().join("StartingTendrilsRepo");
+    let starting_dot_td_dir = starting_td_repo.join(".tendrils");
+    let global_td_dir = temp.path().join("EnvVarTendrilsRepo");
     create_dir_all(&starting_dot_td_dir).unwrap();
     File::create(starting_dot_td_dir.join("tendrils.json")).unwrap();
     set_var(ENV_NAME, global_td_dir.to_str().unwrap());
-    assert!(api.is_tendrils_dir(&starting_td_dir));
-    assert!(!api.is_tendrils_dir(&global_td_dir));
+    assert!(api.is_tendrils_repo(&starting_td_repo));
+    assert!(!api.is_tendrils_repo(&global_td_dir));
 
-    let actual = get_tendrils_dir(Some(&starting_td_dir), &api).unwrap();
+    let actual = get_tendrils_repo(Some(&starting_td_repo), &api).unwrap();
 
-    assert_eq!(actual, starting_td_dir);
+    assert_eq!(actual, starting_td_repo);
 }
 
 #[test]
@@ -130,13 +130,13 @@ fn starting_dir_valid_env_var_invalid_returns_starting_dir() {
 fn starting_dir_none_env_var_not_set_returns_global_not_set_err() {
     let api = TendrilsActor {};
     let temp = TempDir::new_in(get_disposable_dir(), "Temp").unwrap();
-    let starting_td_dir = temp.path().join("StartingTendrilsDir");
+    let starting_td_repo = temp.path().join("StartingTendrilsRepo");
     remove_var(ENV_NAME);
-    assert!(!api.is_tendrils_dir(&starting_td_dir));
+    assert!(!api.is_tendrils_repo(&starting_td_repo));
 
-    let actual = get_tendrils_dir(None, &api);
+    let actual = get_tendrils_repo(None, &api);
 
-    assert_eq!(actual, Err(GetTendrilsDirError::GlobalNotSet));
+    assert_eq!(actual, Err(GetTendrilsRepoError::GlobalNotSet));
 }
 
 #[test]
@@ -144,17 +144,17 @@ fn starting_dir_none_env_var_not_set_returns_global_not_set_err() {
 fn starting_dir_none_env_var_invalid_returns_global_invalid_err() {
     let api = TendrilsActor {};
     let temp = TempDir::new_in(get_disposable_dir(), "Temp").unwrap();
-    let starting_td_dir = temp.path().join("StartingTendrilsDir");
+    let starting_td_repo = temp.path().join("StartingTendrilsRepo");
     let global_td_dir = "I DON'T EXIST";
     set_var(ENV_NAME, global_td_dir);
-    assert!(!api.is_tendrils_dir(&starting_td_dir));
-    assert!(!api.is_tendrils_dir(&PathBuf::from(global_td_dir)));
+    assert!(!api.is_tendrils_repo(&starting_td_repo));
+    assert!(!api.is_tendrils_repo(&PathBuf::from(global_td_dir)));
 
-    let actual = get_tendrils_dir(None, &api);
+    let actual = get_tendrils_repo(None, &api);
 
     assert_eq!(
         actual,
-        Err(GetTendrilsDirError::GlobalInvalid {path: PathBuf::from(global_td_dir) })
+        Err(GetTendrilsRepoError::GlobalInvalid {path: PathBuf::from(global_td_dir) })
     );
 }
 
@@ -163,16 +163,16 @@ fn starting_dir_none_env_var_invalid_returns_global_invalid_err() {
 fn starting_dir_none_env_var_valid_returns_global() {
     let api = TendrilsActor {};
     let temp = TempDir::new_in(get_disposable_dir(), "Temp").unwrap();
-    let starting_td_dir = temp.path().join("I don't exist");
-    let global_td_dir = temp.path().join("EnvVarTendrilsDir");
+    let starting_td_repo = temp.path().join("I don't exist");
+    let global_td_dir = temp.path().join("EnvVarTendrilsRepo");
     let global_dot_td_dir = global_td_dir.join(".tendrils");
     create_dir_all(&global_dot_td_dir).unwrap();
     File::create(global_dot_td_dir.join("tendrils.json")).unwrap();
     set_var(ENV_NAME, global_td_dir.to_str().unwrap());
-    assert!(!api.is_tendrils_dir(&starting_td_dir));
-    assert!(api.is_tendrils_dir(&global_td_dir));
+    assert!(!api.is_tendrils_repo(&starting_td_repo));
+    assert!(api.is_tendrils_repo(&global_td_dir));
 
-    let actual = get_tendrils_dir(None, &api).unwrap();
+    let actual = get_tendrils_repo(None, &api).unwrap();
 
     assert_eq!(actual, global_td_dir);
 }

@@ -17,7 +17,7 @@ use std::path::PathBuf;
 fn creates_dot_tendrils_dir_and_contents_in_empty_dir(#[case] force: bool) {
     let api = TendrilsActor {};
     let setup = Setup::new();
-    setup.make_td_dir();
+    setup.make_td_repo_dir();
     let expected_t1 = TendrilBundle {
         group: "SomeApp".to_string(),
         names: vec!["SomeFile.ext".to_string()],
@@ -41,12 +41,12 @@ fn creates_dot_tendrils_dir_and_contents_in_empty_dir(#[case] force: bool) {
     let expected_tendrils = vec![expected_t1, expected_t2];
     let expected = Config { tendrils: expected_tendrils };
 
-    let actual = api.init_tendrils_dir(&setup.td_dir, force);
+    let actual = api.init_tendrils_repo(&setup.td_repo, force);
 
     assert_eq!(actual, Ok(()));
     assert_eq!(setup.td_json_file_contents(), crate::INIT_TD_TENDRILS_JSON);
-    assert!(api.is_tendrils_dir(&setup.td_dir));
-    assert_eq!(get_config(&setup.td_dir).unwrap(), expected);
+    assert!(api.is_tendrils_repo(&setup.td_repo));
+    assert_eq!(get_config(&setup.td_repo).unwrap(), expected);
 }
 
 #[rstest]
@@ -56,14 +56,14 @@ fn dir_doesnt_exist_returns_io_error_not_found(#[case] force: bool) {
     let api = TendrilsActor {};
     let dir = PathBuf::from("I do not exist");
 
-    let actual = api.init_tendrils_dir(&dir, force);
+    let actual = api.init_tendrils_repo(&dir, force);
 
     assert!(!dir.join("tendrils.json").exists());
     assert_eq!(
         actual,
         Err(InitError::IoError { kind: std::io::ErrorKind::NotFound })
     );
-    assert!(!api.is_tendrils_dir(&dir))
+    assert!(!api.is_tendrils_repo(&dir))
 }
 
 #[rstest]
@@ -75,21 +75,21 @@ fn dir_contains_another_misc_file_returns_not_empty_error_unless_forced(
 ) {
     let api = TendrilsActor {};
     let setup = Setup::new();
-    setup.make_td_dir();
-    let misc_file = setup.td_dir.join("misc.txt");
+    setup.make_td_repo_dir();
+    let misc_file = setup.td_repo.join("misc.txt");
     write(&misc_file, "Misc file contents").unwrap();
 
-    let actual = api.init_tendrils_dir(&setup.td_dir, force);
+    let actual = api.init_tendrils_repo(&setup.td_repo, force);
 
     assert_eq!(read_to_string(misc_file).unwrap(), "Misc file contents");
     if force {
         assert_eq!(actual, Ok(()));
         assert_eq!(setup.td_json_file_contents(), crate::INIT_TD_TENDRILS_JSON);
-        assert!(api.is_tendrils_dir(&setup.td_dir))
+        assert!(api.is_tendrils_repo(&setup.td_repo))
     }
     else {
         assert_eq!(actual, Err(InitError::NotEmpty));
-        assert!(!api.is_tendrils_dir(&setup.td_dir))
+        assert!(!api.is_tendrils_repo(&setup.td_repo))
     }
 }
 
@@ -101,22 +101,22 @@ fn dir_contains_another_misc_dir_returns_not_empty_error_unless_forced(
 ) {
     let api = TendrilsActor {};
     let setup = Setup::new();
-    let misc_dir = setup.td_dir.join("misc");
+    let misc_dir = setup.td_repo.join("misc");
     let misc_nested = misc_dir.join("nested.txt");
     create_dir_all(&misc_dir).unwrap();
     write(&misc_nested, "Nested file contents").unwrap();
 
-    let actual = api.init_tendrils_dir(&setup.td_dir, force);
+    let actual = api.init_tendrils_repo(&setup.td_repo, force);
 
     assert_eq!(read_to_string(misc_nested).unwrap(), "Nested file contents");
     if force {
         assert_eq!(actual, Ok(()));
         assert_eq!(setup.td_json_file_contents(), crate::INIT_TD_TENDRILS_JSON);
-        assert!(api.is_tendrils_dir(&setup.td_dir))
+        assert!(api.is_tendrils_repo(&setup.td_repo))
     }
     else {
         assert_eq!(actual, Err(InitError::NotEmpty));
-        assert!(!api.is_tendrils_dir(&setup.td_dir))
+        assert!(!api.is_tendrils_repo(&setup.td_repo))
     }
 }
 
@@ -130,16 +130,16 @@ fn dir_contains_empty_dot_tendrils_dir_returns_not_empty_error_unless_forced(
     let setup = Setup::new();
     setup.make_dot_td_dir();
 
-    let actual = api.init_tendrils_dir(&setup.td_dir, force);
+    let actual = api.init_tendrils_repo(&setup.td_repo, force);
 
     if force {
         assert_eq!(actual, Ok(()));
         assert_eq!(setup.td_json_file_contents(), crate::INIT_TD_TENDRILS_JSON);
-        assert!(api.is_tendrils_dir(&setup.td_dir))
+        assert!(api.is_tendrils_repo(&setup.td_repo))
     }
     else {
         assert_eq!(actual, Err(InitError::NotEmpty));
-        assert!(!api.is_tendrils_dir(&setup.td_dir))
+        assert!(!api.is_tendrils_repo(&setup.td_repo))
     }
 }
 
@@ -155,17 +155,17 @@ fn dir_contains_non_empty_dot_tendrils_dir_returns_not_empty_error_unless_forced
     setup.make_dot_td_dir();
     write(&misc_nested, "Nested file contents").unwrap();
 
-    let actual = api.init_tendrils_dir(&setup.td_dir, force);
+    let actual = api.init_tendrils_repo(&setup.td_repo, force);
 
     assert_eq!(read_to_string(misc_nested).unwrap(), "Nested file contents");
     if force {
         assert_eq!(actual, Ok(()));
         assert_eq!(setup.td_json_file_contents(), crate::INIT_TD_TENDRILS_JSON);
-        assert!(api.is_tendrils_dir(&setup.td_dir))
+        assert!(api.is_tendrils_repo(&setup.td_repo))
     }
     else {
         assert_eq!(actual, Err(InitError::NotEmpty));
-        assert!(!api.is_tendrils_dir(&setup.td_dir))
+        assert!(!api.is_tendrils_repo(&setup.td_repo))
     }
 }
 
@@ -180,10 +180,10 @@ fn dir_is_already_td_dir_returns_already_init_error_even_if_invalid_json(
     setup.make_dot_td_dir();
     let json_content = "Invalid json content";
     write(&setup.td_json_file, json_content).unwrap();
-    assert!(api.is_tendrils_dir(&setup.td_dir));
+    assert!(api.is_tendrils_repo(&setup.td_repo));
     assert!(parse_config(json_content).is_err());
 
-    let actual = api.init_tendrils_dir(&setup.td_dir, force);
+    let actual = api.init_tendrils_repo(&setup.td_repo, force);
 
     assert_eq!(setup.td_json_file_contents(), json_content);
     assert_eq!(actual, Err(InitError::AlreadyInitialized));

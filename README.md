@@ -5,7 +5,7 @@
 # General
 - *Tendrils* is a tool to manage specific files/folders strewn about the computer from a single location
     - Each file/folder is defined by a tendril in the [`tendrils.json`](#tendrilsjson) file
-    - They are all stored in a common [Tendrils folder](#tendrils-folder)
+    - They are all stored in a common [Tendrils repo](#tendrils-repo)
     - `td` is the CLI tool to manage these tendrils
 - Main uses include:
     - Versioning/syncing configuration files that are expected to be in specific locations on the machine (video game saves, application settings, `.bashrc`, `.vim`, etc)
@@ -40,7 +40,7 @@ cargo build --release # For a 'release' build
 - Once built, it is recommended to update your `PATH` variable to include this location (or copy the executable to somewhere in your `PATH`)
 
 ## Set Up
-1. Create a new empty folder that will become the [Tendrils folder](#tendrils-folder)
+1. Create a new empty folder that will become the [Tendrils repo](#tendrils-repo)
 2. `cd` into the new folder, then run the `td init` command
     -  This will create a starter [`tendrils.json`](#tendrilsjson) file inside the new folder
 ``` bash
@@ -49,31 +49,31 @@ td init
 ```
 
 3. Define some tendrils in the file following the [schema](#schema)
-4. Run a [`pull`](#pulling) to make an initial copy of any [push/pull style](#pushpull-style) tendrils to the [Tendrils folder](#tendrils-folder)
+4. Run a [`pull`](#pulling) to make an initial copy of any [push/pull style](#pushpull-style) tendrils to the [Tendrils repo](#tendrils-repo)
 5. Run a [`link`](#linking) to setup any [link style](#link-style) tendrils
 
-# Tendrils Folder
+# Tendrils Repo
 - Serves as a common location for all of the tendrils defined in the [`tendrils.json`](#tendrilsjson) file
-- Any folder with a `.tendrils` subfolder containing a [`tendrils.json`](#tendrilsjson) file is considered a Tendrils folder
+- Any folder with a `.tendrils` subfolder containing a [`tendrils.json`](#tendrilsjson) file is considered a Tendrils repo
 - Items are grouped into subfolders by their [`group`](#schema) name
 
 ## Version Control & Synchronization
 - *Tendrils* itself does not have versioning or synchronization functionality, but the *Tendrils* folder is often placed inside a synchronized folder such as *OneDrive*, or under a version control system such as *Git*
-    - In the case of *Git*, the `.git` folder would be at the top level of the *Tendrils* folder
+    - In the case of *Git*, the `.git` folder would be at the top level of the *Tendrils* folder. The folder would be both a *Git* repo and a *Tendrils* repo
 
 # Tendril Styles
 ## Push/Pull Style
-- These tendrils rely on copying back and forth between the various locations on the computer and the [Tendrils folder](#tendrils-folder)
+- These tendrils rely on copying back and forth between the various locations on the computer and the [Tendrils repo](#tendrils-repo)
 - Designated by setting [`link`](#link) to `false`
 
 ## Link Style
 - These tendrils are setup as symlinks rather than being copied back and forth
-- The symlinks are created at the various locations on the computer and all target the same file/folder in the [Tendrils folder](#tendrils-folder)
+- The symlinks are created at the various locations on the computer and all target the same file/folder in the [Tendrils repo](#tendrils-repo)
 - Designated by setting [`link`](#link) to `true`
 
 # `tendrils.json`
 - Specifies all of the files and directories to be considered as tendrils
-- Stored in the `.tendrils` folder inside a [Tendrils folder](#tendrils-folder)
+- Stored in the `.tendrils` folder inside a [Tendrils repo](#tendrils-repo)
 
 ## Schema
 - The json schema is intended to be flexible and to allow defining multiple tendrils in a compact form
@@ -109,9 +109,9 @@ td init
 
 ### `group`
 - The name of the group/app that the tendril belongs to
-- Items in the [Tendrils folder](#tendrils-folder) will be placed into subfolders with this `group` name 
+- Items in the [Tendrils repo](#tendrils-repo) will be placed into subfolders with this `group` name 
 - Group cannot be an empty string, cannot contain line breaks, and cannot be a path (i.e cannot contain `/` or `\`)
-- Some specific values are invalid to prevent interfering with other common files/folders that may also be in the [Tendrils folder](#tendrils-folder). These invalid values are not case sensitive:
+- Some specific values are invalid to prevent interfering with other common files/folders that may also be in the [Tendrils repo](#tendrils-repo). These invalid values are not case sensitive:
     - `.tendrils`
     - `.git`
 - See [Filtering by Group](#filtering-by-group)
@@ -130,7 +130,7 @@ td init
 ```
 - If a name is a path with one or more subdirectory levels, it will append this
 structure to [parent](#parents)
-    - This structure will also be maintained within the [Tendrils folder](#tendrils-folder)
+    - This structure will also be maintained within the [Tendrils repo](#tendrils-repo)
 - Names cannot be empty strings and cannot contain line breaks
 - See [Filtering by Name](#filtering-by-name)
 
@@ -151,7 +151,7 @@ structure to [parent](#parents)
 - Parents cannot be empty strings, and cannot contain line breaks
 
 ### `dir-merge`
-- Specifies the merge strategy when folders are copied to or from the [Tendrils folder](#tendrils-folder)
+- Specifies the merge strategy when folders are copied to or from the [Tendrils repo](#tendrils-repo)
 - `true` - Add any new files, overwrite any conflicting files, but do not delete any files already in the destination folder
 - `false` - Entirely replace the destination folder with the source folder
 - If this field is omitted, it defaults to `false`
@@ -184,11 +184,11 @@ structure to [parent](#parents)
 # Tendril Actions
 - There are several actions for working with tendrils 
 - `td` is the CLI tool that performs these commands
-- Each action must be called from or pointed to a [Tendrils folder](#tendrils-folder)
-    - See [specifying a tendrils folder](#specifying-the-tendrils-folder)
+- Each action must be called from or pointed to a [Tendrils repo](#tendrils-repo)
+    - See [specifying a Tendrils repo](#specifying-the-tendrils-repo)
 
 ## Pulling
-- Copies tendrils from their locations on the computer to the [Tendrils folder](#tendrils-folder)
+- Copies tendrils from their locations on the computer to the [Tendrils repo](#tendrils-repo)
 - Only operates on [push/pull style](#pushpull-style) tendrils
 - Only the *first* [parent](#parents) is used
 
@@ -205,7 +205,7 @@ td push
 ```
 
 ## Linking
-- Creates symlinks at the various locations on the computer to the tendrils in the [Tendrils folder](#tendrils-folder)
+- Creates symlinks at the various locations on the computer to the tendrils in the [Tendrils repo](#tendrils-repo)
 - Only operates on [link style](#link-style) tendrils
 - *Each* [parent](#parents) is used
 ``` bash
@@ -242,13 +242,13 @@ td push --dry-run (-d)
 td push --force (-f)
 ```
 
-## Specifying the Tendrils Folder
+## Specifying the Tendrils repo
 - If no path argument is provided:
-    1. *Tendrils* will first check if the current working directory is a [Tendrils folder](#tendrils-folder). If it is, this folder (and the tendrils defined in its [`tendrils.json`](#tendrilsjson)) will be used for the command
-    2. If the CWD is not a *Tendrils* folder, then the `TENDRILS_FOLDER` environment variable will be checked
+    1. *Tendrils* will first check if the current working directory is a [Tendrils repo](#tendrils-repo). If it is, this folder (and the tendrils defined in its [`tendrils.json`](#tendrilsjson)) will be used for the command
+    2. If the CWD is not a *Tendrils* folder, then the `TENDRILS_REPO` environment variable will be checked
 - A path can be explicitly set using the `--path` argument
     - Available on all of the actions listed above
-    - If a path is provided, the current working directory and the value of the `TENDRILS_FOLDER` environment variable are not considered
+    - If a path is provided, the current working directory and the value of the `TENDRILS_REPO` environment variable are not considered
 ``` bash
 td push --path some/tendrils/folder
 ```

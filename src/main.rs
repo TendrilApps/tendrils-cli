@@ -114,7 +114,7 @@ fn init(
     api: &impl TendrilsApi,
     writer: &mut impl Writer,
 ) -> Result<(), i32> {
-    let td_dir = match path {
+    let td_repo = match path {
         Some(v) => PathBuf::from(v),
         None => match std::env::current_dir() {
             Ok(v) => v,
@@ -127,11 +127,11 @@ fn init(
         },
     };
 
-    match api.init_tendrils_dir(&td_dir, force) {
+    match api.init_tendrils_repo(&td_repo, force) {
         Ok(()) => {
             writer.writeln(&format!(
-                "Created a Tendrils folder at: {}",
-                &td_dir.to_string_lossy()
+                "Created a Tendrils repo at: {}",
+                &td_repo.to_string_lossy()
             ));
         }
         Err(e) => {
@@ -158,7 +158,7 @@ fn init(
 /// Returns, but does not set, the suggested exit code in case of error.
 /// It is up to the calling function to handle exiting with this code.
 fn path(writer: &mut impl Writer) -> Result<(), i32> {
-    const ENV_NAME: &str = "TENDRILS_FOLDER";
+    const ENV_NAME: &str = "TENDRILS_REPO";
     match std::env::var(ENV_NAME) {
         Ok(v) => {
             let styled_text = ansi_hyperlink(&v, &v);
@@ -190,10 +190,10 @@ fn tendril_action_subcommand(
     api: &impl TendrilsApi,
     writer: &mut impl Writer,
 ) -> Result<(), i32> {
-    let td_dir = match action_args.path {
+    let td_repo = match action_args.path {
         Some(v) => Some(PathBuf::from(v)),
         None => match std::env::current_dir() {
-            Ok(cd) if api.is_tendrils_dir(&cd) => Some(cd),
+            Ok(cd) if api.is_tendrils_repo(&cd) => Some(cd),
             Ok(_) => None,
             Err(_err) => {
                 writer.writeln(&format!(
@@ -214,7 +214,7 @@ fn tendril_action_subcommand(
 
     let batch_result = api.tendril_action(
         mode,
-        td_dir.as_ref().map(|p| p.as_path()),
+        td_repo.as_ref().map(|p| p.as_path()),
         filter,
         action_args.dry_run,
         action_args.force,
@@ -249,6 +249,6 @@ fn setup_err_to_exit_code(err: SetupError) -> i32 {
         SetupError::ConfigError(GetConfigError::ParseError(_)) => {
             exitcode::DATAERR
         }
-        SetupError::NoValidTendrilsDir { .. } => exitcode::NOINPUT,
+        SetupError::NoValidTendrilsRepo { .. } => exitcode::NOINPUT,
     }
 }

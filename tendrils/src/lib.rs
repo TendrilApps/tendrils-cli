@@ -8,7 +8,7 @@ pub use enums::{
     ActionMode,
     FsoType,
     GetConfigError,
-    GetTendrilsDirError,
+    GetTendrilsRepoError,
     InitError,
     InvalidTendrilError,
     Location,
@@ -44,24 +44,24 @@ pub mod test_utils;
 /// require an API instance), this is mainly to facilitate easier mocking
 /// for testing. The actual API implementation should have little to no state.
 pub trait TendrilsApi {
-    /// Initializes a *Tendrils* folder with a `.tendrils` folder and a
+    /// Initializes a *Tendrils* repo with a `.tendrils` folder and a
     /// pre-populated `tendrils.json` file. This will fail if the folder is
-    /// already a *Tendrils* folder or if there are general file-system errors.
+    /// already a *Tendrils* repo or if there are general file-system errors.
     /// This will also fail if the folder is not empty and `force` is false.
     ///
     /// # Arguments
     /// - `dir` - The folder to initialize
     /// - `force` - Ignores the [`InitError::NotEmpty`] error
-    fn init_tendrils_dir(&self, dir: &Path, force: bool) -> Result<(), InitError>;
+    fn init_tendrils_repo(&self, dir: &Path, force: bool) -> Result<(), InitError>;
 
-    /// Returns `true` if the given folder is a *Tendrils* folder, otherwise
+    /// Returns `true` if the given folder is a *Tendrils* repo, otherwise
     /// `false`.
-    /// - A *Tendrils* folder is defined by having a `.tendrils` subfolder with
+    /// - A *Tendrils* repo is defined by having a `.tendrils` subfolder with
     /// a `tendrils.json` file in it.
     /// - Note: This does *not* check that the `tendrils.json` contents are valid.
-    fn is_tendrils_dir(&self, dir: &Path) -> bool;
+    fn is_tendrils_repo(&self, dir: &Path) -> bool;
 
-    /// Reads the `tendrils.json` file in the given Tendrils folder, and
+    /// Reads the `tendrils.json` file in the given Tendrils repo, and
     /// performs the action on each tendril that matches the
     /// filter.
     ///
@@ -84,11 +84,11 @@ pub trait TendrilsApi {
     /// report as each action is completed. This allows the calling function to
     /// receive updates as progress is made.
     /// - `mode` - The action mode to be performed.
-    /// - `td_dir` - The Tendrils folder to perform the actions on. If given
-    /// `None`, the `TENDRILS_FOLDER` environment variable will be
-    /// checked for a valid Tendrils folder. If neither the given `td_dir` or the
-    /// `TENDRILS_FOLDER` environment variable folder are valid Tendrils folders, a 
-    /// [`SetupError::NoValidTendrilsDir`] is returned. 
+    /// - `td_repo` - The Tendrils repo to perform the actions on. If given
+    /// `None`, the `TENDRILS_REPO` environment variable will be
+    /// checked for a valid Tendrils repo. If neither the given `td_repo` or
+    /// the `TENDRILS_REPO` environment variable folder are valid Tendrils
+    /// folders, a [`SetupError::NoValidTendrilsRepo`] is returned. 
     /// - `filter` - Only tendrils matching this filter will be included.
     /// - `dry_run`
     ///     - `true` will perform the internal checks for the action but does not
@@ -114,7 +114,7 @@ pub trait TendrilsApi {
         &self,
         update_fn: F,
         mode: ActionMode,
-        td_dir: Option<&Path>,
+        td_repo: Option<&Path>,
         filter: FilterSpec,
         dry_run: bool,
         force: bool,
@@ -125,7 +125,7 @@ pub trait TendrilsApi {
     fn tendril_action(
         &self,
         mode: ActionMode,
-        td_dir: Option<&Path>,
+        td_repo: Option<&Path>,
         filter: FilterSpec,
         dry_run: bool,
         force: bool,
@@ -135,11 +135,11 @@ pub trait TendrilsApi {
 pub struct TendrilsActor {}
 
 impl TendrilsApi for TendrilsActor {
-    fn init_tendrils_dir(&self, dir: &Path, force: bool) -> Result<(), InitError> {
+    fn init_tendrils_repo(&self, dir: &Path, force: bool) -> Result<(), InitError> {
         if !dir.exists() {
             return Err(InitError::IoError { kind: std::io::ErrorKind::NotFound });
         }
-        else if self.is_tendrils_dir(dir) {
+        else if self.is_tendrils_repo(dir) {
             return Err(InitError::AlreadyInitialized);
         }
         else if !force && std::fs::read_dir(dir)?.count() > 0 {
@@ -154,7 +154,7 @@ impl TendrilsApi for TendrilsActor {
         Ok(std::fs::write(td_json_file, INIT_TD_TENDRILS_JSON)?)
     }
 
-    fn is_tendrils_dir(&self, dir: &Path) -> bool {
+    fn is_tendrils_repo(&self, dir: &Path) -> bool {
         dir.join(".tendrils/tendrils.json").is_file()
     }
 
@@ -162,13 +162,13 @@ impl TendrilsApi for TendrilsActor {
         &self,
         update_fn: F,
         mode: ActionMode,
-        td_dir: Option<&Path>,
+        td_repo: Option<&Path>,
         filter: FilterSpec,
         dry_run: bool,
         force: bool,
     ) -> Result<(), SetupError> {
-        let td_dir= get_tendrils_dir(td_dir, self)?;
-        let config = get_config(&td_dir)?;
+        let td_repo= get_tendrils_repo(td_repo, self)?;
+        let config = get_config(&td_repo)?;
         let all_tendrils = config.tendrils;
 
         let filtered_tendrils = filter_tendrils(all_tendrils, filter);
@@ -176,14 +176,14 @@ impl TendrilsApi for TendrilsActor {
             return Err(SetupError::CannotSymlink);
         }
 
-        batch_tendril_action_updating(update_fn, mode, &td_dir, filtered_tendrils, dry_run, force);
+        batch_tendril_action_updating(update_fn, mode, &td_repo, filtered_tendrils, dry_run, force);
         Ok(())
     }
 
     fn tendril_action(
         &self,
         mode: ActionMode,
-        td_dir: Option<&Path>,
+        td_repo: Option<&Path>,
         filter: FilterSpec,
         dry_run: bool,
         force: bool,
@@ -191,7 +191,7 @@ impl TendrilsApi for TendrilsActor {
         let mut reports = vec![];
         let updater = |r| reports.push(r);
 
-        self.tendril_action_updating(updater, mode, td_dir, filter, dry_run, force)?;
+        self.tendril_action_updating(updater, mode, td_repo, filter, dry_run, force)?;
         Ok(reports)
     }
 }
@@ -448,60 +448,60 @@ fn is_rofs_err(e_kind: &std::io::ErrorKind) -> bool {
     format!("{:?}", e_kind).contains("ReadOnlyFilesystem")
 }
 
-fn get_local_path(tendril: &Tendril, td_dir: &Path) -> PathBuf {
-    td_dir.join(tendril.group()).join(tendril.name())
+fn get_local_path(tendril: &Tendril, td_repo: &Path) -> PathBuf {
+    td_repo.join(tendril.group()).join(tendril.name())
 }
 
-/// Looks for a *Tendrils* folder (as defined by [`TendrilsApi::is_tendrils_dir`])
+/// Looks for a *Tendrils* repo (as defined by [`TendrilsApi::is_tendrils_repo`])
 /// - If given a `starting_path`, it begins looking in that folder.
-///     - If it is a Tendrils folder, `starting_path` is returned
-///     - Otherwise [`GetTendrilsDirError::GivenInvalid`] is returned.
+///     - If it is a Tendrils repo, `starting_path` is returned
+///     - Otherwise [`GetTendrilsRepoError::GivenInvalid`] is returned.
 /// - If a `starting_path` is not provided, the environment variable
-/// `TENDRILS_FOLDER` is used.
-///     - If it points to a valid folder, that path is returned
+/// `TENDRILS_REPO` is used.
+///     - If it points to a valid repo, that path is returned
 ///     - If this variable does not exist,
-/// [`GetTendrilsDirError::GlobalNotSet`] is returned
+/// [`GetTendrilsRepoError::GlobalNotSet`] is returned
 ///     - If it points to an invalid folder,
-/// [`GetTendrilsDirError::GlobalInvalid`] is returned
+/// [`GetTendrilsRepoError::GlobalInvalid`] is returned
 // TODO: Recursively look through all parent folders before
 // checking environment variable
-fn get_tendrils_dir(
+fn get_tendrils_repo(
     starting_path: Option<&Path>,
     api: &impl TendrilsApi,
-) -> Result<PathBuf, GetTendrilsDirError> {
+) -> Result<PathBuf, GetTendrilsRepoError> {
     match starting_path {
-        Some(v) if api.is_tendrils_dir(v) => Ok(v.to_path_buf()),
-        Some(v) => Err(GetTendrilsDirError::GivenInvalid {
+        Some(v) if api.is_tendrils_repo(v) => Ok(v.to_path_buf()),
+        Some(v) => Err(GetTendrilsRepoError::GivenInvalid {
             path: v.to_path_buf()
         }),
-        None => match std::env::var("TENDRILS_FOLDER") {
+        None => match std::env::var("TENDRILS_REPO") {
             Ok(v) => {
                 let test_path = PathBuf::from(v);
-                if api.is_tendrils_dir(&test_path) {
+                if api.is_tendrils_repo(&test_path) {
                     Ok(test_path)
                 }
                 else {
-                    Err(GetTendrilsDirError::GlobalInvalid { path: test_path })
+                    Err(GetTendrilsRepoError::GlobalInvalid { path: test_path })
                 }
             }
-            _ => Err(GetTendrilsDirError::GlobalNotSet),
+            _ => Err(GetTendrilsRepoError::GlobalNotSet),
         }
     }
 }
 
-fn is_recursive_tendril(td_dir: &Path, tendril_full_path: &Path) -> bool {
-    td_dir == tendril_full_path
-        || td_dir.ancestors().any(|p| p == tendril_full_path)
-        || tendril_full_path.ancestors().any(|p| p == td_dir)
+fn is_recursive_tendril(td_repo: &Path, tendril_full_path: &Path) -> bool {
+    td_repo == tendril_full_path
+        || td_repo.ancestors().any(|p| p == tendril_full_path)
+        || tendril_full_path.ancestors().any(|p| p == td_repo)
 }
 
 fn link_tendril(
-    td_dir: &Path,
+    td_repo: &Path,
     tendril: &Tendril,
     dry_run: bool,
     mut force: bool,
 ) -> ActionLog {
-    let target = get_local_path(tendril, td_dir);
+    let target = get_local_path(tendril, td_repo);
     let create_at = tendril.full_path();
 
     let mut log = ActionLog::new(
@@ -514,7 +514,7 @@ fn link_tendril(
         log.result = Err(TendrilActionError::ModeMismatch);
         return log;
     }
-    if is_recursive_tendril(td_dir, log.resolved_path()) {
+    if is_recursive_tendril(td_repo, log.resolved_path()) {
         log.result = Err(TendrilActionError::Recursion);
         return log;
     }
@@ -527,7 +527,7 @@ fn link_tendril(
     }
 
     let local_type;
-    if td_dir.exists() && log.local_type().is_none() {
+    if td_repo.exists() && log.local_type().is_none() {
         // Local does not exist - copy it first
         if let Err(e) = copy_fso(
             log.resolved_path(),
@@ -561,12 +561,12 @@ fn link_tendril(
 }
 
 fn pull_tendril(
-    td_dir: &Path,
+    td_repo: &Path,
     tendril: &Tendril,
     dry_run: bool,
     force: bool,
 ) -> ActionLog {
-    let dest = get_local_path(tendril, td_dir);
+    let dest = get_local_path(tendril, td_repo);
     let source = tendril.full_path();
 
     let mut log = ActionLog::new(
@@ -580,11 +580,11 @@ fn pull_tendril(
         log.result = Err(TendrilActionError::ModeMismatch);
         return log;
     }
-    else if is_recursive_tendril(td_dir, log.resolved_path()) {
+    else if is_recursive_tendril(td_repo, log.resolved_path()) {
         log.result = Err(TendrilActionError::Recursion);
         return log;
     }
-    else if !td_dir.exists() {
+    else if !td_repo.exists() {
         log.result = Err(TendrilActionError::IoError {
             kind: std::io::ErrorKind::NotFound,
             loc: Location::Dest,
@@ -607,12 +607,12 @@ fn pull_tendril(
 }
 
 fn push_tendril(
-    td_dir: &Path,
+    td_repo: &Path,
     tendril: &Tendril,
     dry_run: bool,
     force: bool,
 ) -> ActionLog {
-    let source = get_local_path(tendril, td_dir);
+    let source = get_local_path(tendril, td_repo);
     let dest = tendril.full_path();
 
     let mut log = ActionLog::new(
@@ -625,7 +625,7 @@ fn push_tendril(
         log.result = Err(TendrilActionError::ModeMismatch);
         return log;
     }
-    if is_recursive_tendril(td_dir, log.resolved_path()) {
+    if is_recursive_tendril(td_repo, log.resolved_path()) {
         log.result = Err(TendrilActionError::Recursion);
         return log;
     }
@@ -954,7 +954,7 @@ fn symlink_win(
 fn batch_tendril_action_updating<F: FnMut(TendrilReport<ActionLog>)>(
     mut update_fn: F,
     mode: ActionMode,
-    td_dir: &Path,
+    td_repo: &Path,
     td_bundles: Vec<TendrilBundle>,
     dry_run: bool,
     force: bool,
@@ -977,16 +977,16 @@ fn batch_tendril_action_updating<F: FnMut(TendrilReport<ActionLog>)>(
         for (i, tendril) in tendrils.into_iter().enumerate() {
             let log = match (tendril, &mode, can_symlink) {
                 (Ok(v), ActionMode::Pull, _) => {
-                    Ok(pull_tendril(td_dir, &v, dry_run, force))
+                    Ok(pull_tendril(td_repo, &v, dry_run, force))
                 }
                 (Ok(v), ActionMode::Push, _) => {
-                    Ok(push_tendril(td_dir, &v, dry_run, force))
+                    Ok(push_tendril(td_repo, &v, dry_run, force))
                 }
                 (Ok(v), ActionMode::Out, _) if v.mode != TendrilMode::Link => {
-                    Ok(push_tendril(td_dir, &v, dry_run, force))
+                    Ok(push_tendril(td_repo, &v, dry_run, force))
                 }
                 (Ok(v), ActionMode::Out | ActionMode::Link, true) => {
-                    Ok(link_tendril(td_dir, &v, dry_run, force))
+                    Ok(link_tendril(td_repo, &v, dry_run, force))
                 }
                 (Ok(v), ActionMode::Link | ActionMode::Out, false) => {
                     // Do not attempt to symlink if it has already been
@@ -996,7 +996,7 @@ fn batch_tendril_action_updating<F: FnMut(TendrilReport<ActionLog>)>(
                     // unnecessarily.
                     let remote = v.full_path();
                     Ok(ActionLog::new(
-                        get_local_path(&v, td_dir).get_type(),
+                        get_local_path(&v, td_repo).get_type(),
                         remote.get_type(),
                         remote,
                         Err(TendrilActionError::IoError {
