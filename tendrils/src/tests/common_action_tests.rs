@@ -249,7 +249,8 @@ fn remote_is_another_td_dir_proceeds_normally(
     let setup = Setup::new();
     setup.make_local_nested_file();
     setup.make_remote_nested_file();
-    write(&setup.remote_dir.join("tendrils.json"), "").unwrap();
+    create_dir_all(setup.remote_dir.join(".tendrils")).unwrap();
+    write(&setup.remote_dir.join(".tendrils/tendrils.json"), "").unwrap();
     assert!(api.is_tendrils_dir(&setup.remote_dir));
 
     let mut tendril = setup.dir_tendril();

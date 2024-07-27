@@ -214,7 +214,7 @@ fn tendrils_json_invalid_returns_config_error(
     let api = TendrilsActor {};
     let setup = Setup::new();
     let filter = FilterSpec::new();
-    setup.make_td_dir();
+    setup.make_dot_td_dir();
     write(setup.td_json_file, "I'm not JSON").unwrap();
 
     let actual = api.tendril_action(

@@ -23,7 +23,7 @@ pub struct Config {
 pub fn get_config(
     td_dir: &Path,
 ) -> Result<Config, GetConfigError> {
-    let tendrils_file_path = Path::new(&td_dir).join("tendrils.json");
+    let tendrils_file_path = Path::new(&td_dir).join(".tendrils/tendrils.json");
     let tendrils_file_contents = std::fs::read_to_string(tendrils_file_path)?;
     let tendrils = parse_config(&tendrils_file_contents)?;
     Ok(tendrils)

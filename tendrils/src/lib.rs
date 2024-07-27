@@ -44,10 +44,10 @@ pub mod test_utils;
 /// require an API instance), this is mainly to facilitate easier mocking
 /// for testing. The actual API implementation should have little to no state.
 pub trait TendrilsApi {
-    /// Initializes a *Tendrils* folder with a pre-populated `tendrils.json` file.
-    /// This will fail if the folder is already a *Tendrils* folder or if there are
-    /// general file-system errors. This will also fail if the folder is not empty
-    /// and `force` is false.
+    /// Initializes a *Tendrils* folder with a `.tendrils` folder and a
+    /// pre-populated `tendrils.json` file. This will fail if the folder is
+    /// already a *Tendrils* folder or if there are general file-system errors.
+    /// This will also fail if the folder is not empty and `force` is false.
     ///
     /// # Arguments
     /// - `dir` - The folder to initialize
@@ -56,8 +56,8 @@ pub trait TendrilsApi {
 
     /// Returns `true` if the given folder is a *Tendrils* folder, otherwise
     /// `false`.
-    /// - A *Tendrils* folder is defined by having a `tendrils.json` file in its top
-    ///   level.
+    /// - A *Tendrils* folder is defined by having a `.tendrils` subfolder with
+    /// a `tendrils.json` file in it.
     /// - Note: This does *not* check that the `tendrils.json` contents are valid.
     fn is_tendrils_dir(&self, dir: &Path) -> bool;
 
@@ -146,12 +146,16 @@ impl TendrilsApi for TendrilsActor {
             return Err(InitError::NotEmpty);
         }
 
-        let td_json_file = dir.join("tendrils.json");
+        let td_dot_json_dir = dir.join(".tendrils");
+        let td_json_file = td_dot_json_dir.join("tendrils.json");
+        if !td_dot_json_dir.exists() {
+            std::fs::create_dir(td_dot_json_dir)?;
+        }
         Ok(std::fs::write(td_json_file, INIT_TD_TENDRILS_JSON)?)
     }
 
     fn is_tendrils_dir(&self, dir: &Path) -> bool {
-        dir.join("tendrils.json").is_file()
+        dir.join(".tendrils/tendrils.json").is_file()
     }
 
     fn tendril_action_updating<F: FnMut(TendrilReport<ActionLog>)>(

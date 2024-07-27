@@ -289,6 +289,7 @@ pub struct Setup {
     pub temp_dir: TempDir, // Must return a reference to keep it in scope
     pub parent_dir: PathBuf,
     pub td_dir: PathBuf,
+    pub dot_td_dir: PathBuf,
     pub td_json_file: PathBuf,
     pub group_dir: PathBuf,
     pub remote_file: PathBuf,
@@ -327,7 +328,8 @@ impl Setup {
             TempDir::new_in(get_disposable_dir(), "ParentDir").unwrap();
         let parent_dir = temp_dir.path().to_owned();
         let td_dir = temp_dir.path().join("TendrilsDir");
-        let td_json_file = td_dir.join("tendrils.json");
+        let dot_td_dir = td_dir.join(".tendrils");
+        let td_json_file = dot_td_dir.join("tendrils.json");
         let group_dir = td_dir.join("SomeApp");
         let remote_file = parent_dir.join("misc.txt");
         let remote_dir = parent_dir.join("misc");
@@ -355,6 +357,7 @@ impl Setup {
             temp_dir,
             parent_dir,
             td_dir,
+            dot_td_dir,
             td_json_file,
             group_dir,
             remote_file,
@@ -435,8 +438,12 @@ impl Setup {
         create_dir_all(&self.td_dir).unwrap();
     }
 
+    pub fn make_dot_td_dir(&self) {
+        create_dir_all(&self.dot_td_dir).unwrap();
+    }
+
     pub fn make_td_json_file(&self, tendrils: &[TendrilBundle]) {
-        self.make_td_dir();
+        self.make_dot_td_dir();
         let config = Config { tendrils: tendrils.to_vec() };
         let json = serde_json::to_string(&config).unwrap();
         write(&self.td_json_file, json).unwrap();
@@ -520,6 +527,10 @@ impl Setup {
     pub fn make_target_nested_file(&self) {
         self.make_target_dir();
         write(&self.target_nested_file, "Target nested file contents").unwrap();
+    }
+
+    pub fn td_json_file_contents(&self) -> String {
+        read_to_string(&self.td_json_file).unwrap()
     }
 
     pub fn local_file_contents(&self) -> String {

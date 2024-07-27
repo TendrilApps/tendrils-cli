@@ -54,7 +54,7 @@ td init
 
 # Tendrils Folder
 - Serves as a common location for all of the tendrils defined in the [`tendrils.json`](#tendrilsjson) file
-- Any folder with a [`tendrils.json`](#tendrilsjson) file at its top level is considered a Tendrils folder
+- Any folder with a `.tendrils` subfolder containing a [`tendrils.json`](#tendrilsjson) file is considered a Tendrils folder
 - Items are grouped into subfolders by their [`group`](#schema) name
 
 ## Version Control & Synchronization
@@ -73,7 +73,7 @@ td init
 
 # `tendrils.json`
 - Specifies all of the files and directories to be considered as tendrils
-- Stored in the top level of the [Tendrils folder](#tendrils-folder)
+- Stored in the `.tendrils` folder inside a [Tendrils folder](#tendrils-folder)
 
 ## Schema
 - The json schema is intended to be flexible and to allow defining multiple tendrils in a compact form
@@ -112,7 +112,7 @@ td init
 - Items in the [Tendrils folder](#tendrils-folder) will be placed into subfolders with this `group` name 
 - Group cannot be an empty string, cannot contain line breaks, and cannot be a path (i.e cannot contain `/` or `\`)
 - Some specific values are invalid to prevent interfering with other common files/folders that may also be in the [Tendrils folder](#tendrils-folder). These invalid values are not case sensitive:
-    - `tendrils.json`
+    - `.tendrils`
     - `.git`
 - See [Filtering by Group](#filtering-by-group)
 

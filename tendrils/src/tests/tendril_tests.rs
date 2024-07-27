@@ -12,6 +12,9 @@ use std::path::{PathBuf, MAIN_SEPARATOR as SEP};
 #[case("TrailingDot.")] // Trailing dots are dropped on Windows filesystems,
                         // but a path with a trailing dot will still point to
                         // its equivalent without the dot
+#[case("tendrils.json")]
+#[case("Tendrils.json")]
+#[case("TENDRILS.JSON")]
 fn valid_groups_and_names(#[case] value: &str) {}
 
 #[template]
@@ -36,9 +39,9 @@ fn invalid_groups_and_names(#[case] value: &str) {}
 #[case(".git")]
 #[case(".Git")]
 #[case(".GIT")]
-#[case("tendrils.json")]
-#[case("Tendrils.json")]
-#[case("TENDRILS.JSON")]
+#[case(".tendrils")]
+#[case(".Tendrils")]
+#[case(".TENDRILS")]
 fn forbidden_groups(#[case] value: &str) {}
 
 #[apply(invalid_groups_and_names)]
