@@ -4,16 +4,16 @@ use std::path::PathBuf;
 /// Indicates the tendril action to be performed.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ActionMode {
-    /// Copy tendrils from the *Tendrils* repo to their various locations
+    /// Copy tendrils from the Tendrils repo to their various locations
     /// on the computer.
     Push,
 
     /// Copy tendrils from their various locations on the computer to the
-    /// *Tendrils* repo.
+    /// Tendrils repo.
     Pull,
 
     /// Create symlinks at the various locations on the computer to the
-    /// tendrils in the *Tendrils* repo.
+    /// tendrils in the Tendrils repo.
     Link,
 
     /// Perform all outward bound actions (link & push)
@@ -21,14 +21,14 @@ pub enum ActionMode {
 }
 
 /// Indicates an error while initializing a new
-/// *Tendrils* repo.
+/// Tendrils repo.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum InitError {
     /// A general file system error
     IoError { kind: std::io::ErrorKind },
 
     /// The folder to initialize is already a
-    /// *Tendrils* repo
+    /// Tendrils repo
     AlreadyInitialized,
 
     /// The folder to initialize is not empty.
@@ -216,9 +216,9 @@ pub enum TendrilActionError {
     ModeMismatch,
 
     /// The tendril action would result in recursive copying/linking, such as:
-    /// - Including the *Tendrils* repo as a tendril
-    /// - A folder tendril that is an ancestor to the *Tendrils* repo
-    /// - A tendril that is inside the *Tendrils* repo
+    /// - Including the Tendrils repo as a tendril
+    /// - A folder tendril that is an ancestor to the Tendrils repo
+    /// - A tendril that is inside the Tendrils repo
     Recursion,
 
     /// The type of the remote and local file system objects do not match, or

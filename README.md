@@ -3,7 +3,7 @@
 </div>
 
 # General
-- *Tendrils* is a tool to manage specific files/folders strewn about the computer from a single location
+- Tendrils is a tool to manage specific files/folders strewn about the computer from a single location
     - Each file/folder is defined by a tendril in the [`tendrils.json`](#tendrilsjson) file
     - They are all stored in a common [Tendrils repo](#tendrils-repo)
     - `td` is the CLI tool to manage these tendrils
@@ -12,7 +12,7 @@
     - Versioning/syncing small scripts that otherwise would not have their own repos
     - Quickly editing miscellaneous files in a common place rather than tracking them down individually
     - Multiple settings profiles within one user
-- Where *Tendrils* isn't as useful:
+- Where Tendrils isn't as useful:
     - Ephemeral environments, such as Docker containers. It's likely simpler to use a one-off script to put the files where they belong
 
 # License & Acknowledgements
@@ -29,7 +29,7 @@ td about
 - Windows
 
 ## Installation
-- Currently, *Tendrils* is only distributed through source code and must be built using the *Cargo* toolchain
+- Currently, Tendrils is only distributed through source code and must be built using the Cargo toolchain
 - To build the `td` CLI:
 ``` bash
 # From the 'tendrils' workspace folder
@@ -58,8 +58,8 @@ td init
 - Items are grouped into subfolders by their [`group`](#schema) name
 
 ## Version Control & Synchronization
-- *Tendrils* itself does not have versioning or synchronization functionality, but the *Tendrils* folder is often placed inside a synchronized folder such as *OneDrive*, or under a version control system such as *Git*
-    - In the case of *Git*, the `.git` folder would be at the top level of the *Tendrils* folder. The folder would be both a *Git* repo and a *Tendrils* repo
+- Tendrils itself does not have versioning or synchronization functionality, but the Tendrils folder is often placed inside a synchronized folder such as OneDrive, or under a version control system such as Git
+    - In the case of Git, the `.git` folder would be at the top level of the Tendrils folder. The folder would be both a Git repo and a Tendrils repo
 
 # Tendril Styles
 ## Push/Pull Style
@@ -197,7 +197,7 @@ td pull
 ```
 
 ## Pushing
-- Copies tendrils from the *Tendrils* folder to their various locations on the machine
+- Copies tendrils from the Tendrils folder to their various locations on the machine
 - Only operates on [push/pull style](#pushpull-style) tendrils
 - *Each* [parent](#parents) is used
 ```bash
@@ -244,8 +244,8 @@ td push --force (-f)
 
 ## Specifying the Tendrils repo
 - If no path argument is provided:
-    1. *Tendrils* will first check if the current working directory is a [Tendrils repo](#tendrils-repo). If it is, this folder (and the tendrils defined in its [`tendrils.json`](#tendrilsjson)) will be used for the command
-    2. If the CWD is not a *Tendrils* folder, then the `TENDRILS_REPO` environment variable will be checked
+    1. Tendrils will first check if the current working directory is a [Tendrils repo](#tendrils-repo). If it is, this folder (and the tendrils defined in its [`tendrils.json`](#tendrilsjson)) will be used for the command
+    2. If the CWD is not a Tendrils folder, then the `TENDRILS_REPO` environment variable will be checked
 - A path can be explicitly set using the `--path` argument
     - Available on all of the actions listed above
     - If a path is provided, the current working directory and the value of the `TENDRILS_REPO` environment variable are not considered
@@ -308,7 +308,7 @@ td push -P home mac
 ``` json
 "parents": "<APPDATA>\\Local\\SomeApp"
 ```
-- The above example will resolve to `C:\\Users\\YourUsername\\AppData\\Local\\SomeApp` on a typical *Windows* installation
+- The above example will resolve to `C:\\Users\\YourUsername\\AppData\\Local\\SomeApp` on a typical Windows installation
 - A path can contain multiple environment variables
 
 ## Resolving Tilde (`~`)

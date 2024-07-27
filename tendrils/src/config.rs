@@ -14,12 +14,12 @@ pub struct Config {
     pub tendrils: Vec<TendrilBundle>
 }
 
-/// Parses the `tendrils.json` file in the given *Tendrils* repo and returns
+/// Parses the `tendrils.json` file in the given Tendrils repo and returns
 /// the configuration within.
 /// The tendril bundles are returned in the order they are defined in the file.
 ///
 /// # Arguments
-/// - `td_repo` - Path to the *Tendrils* folder.
+/// - `td_repo` - Path to the Tendrils folder.
 pub fn get_config(
     td_repo: &Path,
 ) -> Result<Config, GetConfigError> {

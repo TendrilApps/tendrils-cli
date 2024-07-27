@@ -6,7 +6,7 @@ use serde::{de, Deserialize, Deserializer, Serialize};
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct TendrilBundle {
     /// The group by which this tendril will be sorted in
-    /// the *Tendrils* repo.
+    /// the Tendrils repo.
     pub group: String,
 
     /// A list of file/folder names, each one belonging to each of the

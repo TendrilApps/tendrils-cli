@@ -44,9 +44,9 @@ pub mod test_utils;
 /// require an API instance), this is mainly to facilitate easier mocking
 /// for testing. The actual API implementation should have little to no state.
 pub trait TendrilsApi {
-    /// Initializes a *Tendrils* repo with a `.tendrils` folder and a
+    /// Initializes a Tendrils repo with a `.tendrils` folder and a
     /// pre-populated `tendrils.json` file. This will fail if the folder is
-    /// already a *Tendrils* repo or if there are general file-system errors.
+    /// already a Tendrils repo or if there are general file-system errors.
     /// This will also fail if the folder is not empty and `force` is false.
     ///
     /// # Arguments
@@ -54,9 +54,9 @@ pub trait TendrilsApi {
     /// - `force` - Ignores the [`InitError::NotEmpty`] error
     fn init_tendrils_repo(&self, dir: &Path, force: bool) -> Result<(), InitError>;
 
-    /// Returns `true` if the given folder is a *Tendrils* repo, otherwise
+    /// Returns `true` if the given folder is a Tendrils repo, otherwise
     /// `false`.
-    /// - A *Tendrils* repo is defined by having a `.tendrils` subfolder with
+    /// - A Tendrils repo is defined by having a `.tendrils` subfolder with
     /// a `tendrils.json` file in it.
     /// - Note: This does *not* check that the `tendrils.json` contents are valid.
     fn is_tendrils_repo(&self, dir: &Path) -> bool;
@@ -452,7 +452,7 @@ fn get_local_path(tendril: &Tendril, td_repo: &Path) -> PathBuf {
     td_repo.join(tendril.group()).join(tendril.name())
 }
 
-/// Looks for a *Tendrils* repo (as defined by [`TendrilsApi::is_tendrils_repo`])
+/// Looks for a Tendrils repo (as defined by [`TendrilsApi::is_tendrils_repo`])
 /// - If given a `starting_path`, it begins looking in that folder.
 ///     - If it is a Tendrils repo, `starting_path` is returned
 ///     - Otherwise [`GetTendrilsRepoError::GivenInvalid`] is returned.
@@ -779,7 +779,7 @@ fn resolve_tendril_bundle(
     resolve_results
 }
 
-/// Returns `true` if the current *Tendrils* process is capable
+/// Returns `true` if the current Tendrils process is capable
 /// of creating symlinks.
 ///
 /// This is mainly applicable on Windows, where creating symlinks
