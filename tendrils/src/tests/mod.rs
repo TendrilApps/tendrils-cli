@@ -1,7 +1,7 @@
 pub mod sample_tendrils;
 
 mod common_action_tests;
-mod get_tendrils_dir_tests;
+mod get_tendrils_repo_tests;
 mod init_tendrils_dir_tests;
 mod is_tendrils_dir_tests;
 mod link_tendril_tests;
