@@ -45,8 +45,9 @@ pub mod test_utils;
 /// for testing. The actual API implementation should have little to no state.
 pub trait TendrilsApi {
     /// Returns the value stored in `~/.tendrils/repo_path` or any IO errors
-    /// that occur. Returns `None` if the value is blank, or if the file does
-    /// not exist. Note: This does *not* check whether the folder
+    /// that occur. Trailing whitespace is removed. Returns `None` if the value
+    /// is blank, or if the file does not exist. Note: This does *not* check
+    /// whether the folder
     /// [is a tendrils repo](`TendrilsApi::is_tendrils_repo`).
     fn get_default_repo_path(&self) -> Result<Option<PathBuf>, std::io::Error>;
 

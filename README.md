@@ -333,7 +333,7 @@ td push -P home mac
 
 ## `repo_path` File
 - `~/.tendrils/repo_path`
-- Should contain a single line that is the path to the default repo
+- Should contain a single line that is the path to the default repo. Trailing whitespace will be removed.
 - Used to [specify](#specifying-the-tendrils-repo) the default tendrils repo if it is not otherwise provided
 ```
 path/to/default/repo

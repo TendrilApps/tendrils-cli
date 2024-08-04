@@ -39,7 +39,7 @@ pub fn get_default_repo_path() -> Result<Option<PathBuf>, std::io::Error> {
     let config_file = PathBuf::from(home_dir).join(".tendrils/repo_path");
     match std::fs::read_to_string(config_file) {
         Ok(v) if v.is_empty() => Ok(None),
-        Ok(v) => Ok(Some(PathBuf::from(v))),
+        Ok(v) => Ok(Some(PathBuf::from(v.trim_end()))),
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
             Ok(None)
         }
