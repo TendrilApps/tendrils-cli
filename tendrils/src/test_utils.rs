@@ -14,6 +14,7 @@ use crate::{
     TendrilsApi,
 };
 use crate::config::{Config, parse_config};
+use std::env::var;
 use std::fs::{create_dir_all, read_to_string, write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -63,6 +64,14 @@ pub fn is_empty(dir: &Path) -> bool {
         return dir.read_dir().unwrap().count() == 0;
     }
     true
+}
+
+pub fn dot_td_dir() -> PathBuf {
+    PathBuf::from(var("HOME").unwrap()).join(".tendrils")
+}
+
+pub fn repo_path_file() -> PathBuf {
+    dot_td_dir().join("repo_path")
 }
 
 /// Exposes the otherwise private function
@@ -176,6 +185,8 @@ pub struct MockTendrilsApi<'a> {
     pub init_exp_force_arg: bool,
     pub is_tendrils_repo_const_rt: bool,
     pub is_tendrils_repo_fn: Option<Box<dyn Fn(&Path) -> bool>>,
+    pub get_default_repo_const_rt: Result<Option<PathBuf>, std::io::Error>,
+    pub get_default_repo_fn: Option<Box<dyn Fn() -> Result<Option<PathBuf>, std::io::Error>>>,
     pub tau_const_updater_rts: Vec<TendrilReport<ActionLog>>,
     pub tau_const_rt: Result<(), SetupError>,
     pub ta_const_rt: Result<Vec<TendrilReport<ActionLog>>, SetupError>,
@@ -207,6 +218,8 @@ impl<'a> MockTendrilsApi<'a> {
             init_fn: None,
             is_tendrils_repo_const_rt: true,
             is_tendrils_repo_fn: None,
+            get_default_repo_const_rt: Ok(None),
+            get_default_repo_fn: None,
             tau_const_updater_rts: vec![],
             tau_const_rt: Ok(()),
             ta_const_rt: Ok(vec![]),
@@ -243,6 +256,18 @@ impl TendrilsApi for MockTendrilsApi<'_> {
         }
         else {
             self.is_tendrils_repo_const_rt
+        }
+    }
+
+    fn get_default_repo_path(&self) -> Result<Option<PathBuf>, std::io::Error> {
+        if let Some(f) = self.get_default_repo_fn.as_ref() {
+            f()
+        }
+        else {
+            match &self.get_default_repo_const_rt {
+                Err(e) => Err(std::io::Error::from(e.kind())),
+                Ok(v) => Ok(v.to_owned()),
+            }
         }
     }
 

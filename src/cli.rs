@@ -13,13 +13,6 @@ use tendrils::{
     TendrilReport,
 };
 
-
-
-
-// UPDATE
-
-
-
 /// A CLI tool for managing tendrils
 #[derive(Parser, Debug)]
 #[command(version)]
@@ -48,8 +41,7 @@ pub enum TendrilsSubcommands {
         path: Option<String>,
     },
 
-    /// Gets the Tendrils repo path environment variable
-    /// if it is set
+    /// Gets the Tendrils default repo path if it is defined
     Path,
 
     /// Copies tendrils from their various locations to the Tendrils repo

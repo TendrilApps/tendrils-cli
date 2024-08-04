@@ -36,8 +36,6 @@ use tendrils::{
     TendrilsActor,
 };
 
-const TENDRILS_VAR_NAME: &str = "TENDRILS_REPO";
-
 struct MockWriter {
     all_output: String,
 }
@@ -394,16 +392,29 @@ fn init_dir_does_not_exist_prints_io_error_message(#[case] force: bool) {
 }
 
 #[test]
-#[serial("mut-env-var-td-repo")]
-fn path_with_env_var_unset_prints_message() {
-    let api = TendrilsActor {};
+fn path_with_default_unset_prints_nothing() {
+    let mut api = MockTendrilsApi::new();
     let mut writer = MockWriter::new();
+    api.get_default_repo_const_rt = Ok(None);
     let args = TendrilCliArgs { tendrils_command: TendrilsSubcommands::Path };
-    std::env::remove_var(TENDRILS_VAR_NAME);
-    let expected = format!(
-        "The '{}' environment variable is not set\n",
-        TENDRILS_VAR_NAME
-    );
+
+    let actual_exit_code = run(args, &api, &mut writer);
+
+    assert_eq!(actual_exit_code, Ok(()));
+    assert_eq!(writer.all_output, "");
+}
+
+#[test]
+fn path_with_default_set_prints_path() {
+    let mut api = MockTendrilsApi::new();
+    let mut writer = MockWriter::new();
+    api.get_default_repo_const_rt = Ok(Some(PathBuf::from("SomePath")));
+    let args = TendrilCliArgs {
+        tendrils_command: TendrilsSubcommands::Path
+    };
+
+    // Formatted as hyperlink
+    let expected = "\u{1b}]8;;SomePath\u{1b}\\SomePath\u{1b}]8;;\u{1b}\\\n";
 
     let actual_exit_code = run(args, &api, &mut writer);
 
@@ -412,19 +423,21 @@ fn path_with_env_var_unset_prints_message() {
 }
 
 #[test]
-#[serial("mut-env-var-td-repo")]
-fn path_with_env_var_set_prints_path() {
-    let api = TendrilsActor {};
+fn path_io_error_accessing_repo_path_file_prints_message() {
+    let mut api = MockTendrilsApi::new();
     let mut writer = MockWriter::new();
+    api.get_default_repo_const_rt = Err(
+        std::io::Error::from(std::io::ErrorKind::PermissionDenied)
+    );
     let args = TendrilCliArgs { tendrils_command: TendrilsSubcommands::Path };
-    std::env::set_var(TENDRILS_VAR_NAME, "SomePath");
 
-    // Formatted as hyperlink
-    let expected = "\u{1b}]8;;SomePath\u{1b}\\SomePath\u{1b}]8;;\u{1b}\\\n";
+    let expected =
+        format!("{ERR_PREFIX}: IO error - permission denied while accessing \
+        ~/.tendrils/repo_path\n");
 
     let actual_exit_code = run(args, &api, &mut writer);
 
-    assert_eq!(actual_exit_code, Ok(()));
+    assert_eq!(actual_exit_code, Err(exitcode::DATAERR));
     assert_eq!(writer.all_output, expected);
 }
 

@@ -245,10 +245,10 @@ td push --force (-f)
 ## Specifying the Tendrils repo
 - If no path argument is provided:
     1. Tendrils will first check if the current working directory is a [Tendrils repo](#tendrils-repo). If it is, this folder (and the tendrils defined in its [`tendrils.json`](#tendrilsjson)) will be used for the command
-    2. If the CWD is not a Tendrils folder, then the `TENDRILS_REPO` environment variable will be checked
+    2. If the CWD is not a Tendrils folder, then the [default repo](#repo_path-file) will be checked
 - A path can be explicitly set using the `--path` argument
     - Available on all of the actions listed above
-    - If a path is provided, the current working directory and the value of the `TENDRILS_REPO` environment variable are not considered
+    - If a path is provided, the current working directory and the [default repo](#repo_path-file) are not considered
 ``` bash
 td push --path some/tendrils/folder
 ```
@@ -327,6 +327,17 @@ td push -P home mac
 
 ## Relative Paths
 - Are not officially supported and their behaviour is undefined
+
+# Configuration
+- Global configuration files are stored in the `~/.tendrils` folder
+
+## `repo_path` File
+- `~/.tendrils/repo_path`
+- Should contain a single line that is the path to the default repo
+- Used to [specify](#specifying-the-tendrils-repo) the default tendrils repo if it is not otherwise provided
+```
+path/to/default/repo
+```
 
 # Developer Notes
 - Prior to development, run the [`setup-tendrils.sh`](./dev/setup-tendrils.sh) script

@@ -54,7 +54,7 @@ fn run(
         TendrilsSubcommands::Init { path, force } => {
             init(path, force, api, writer)
         }
-        TendrilsSubcommands::Path => path(writer),
+        TendrilsSubcommands::Path => path(api, writer),
         TendrilsSubcommands::Pull { action_args, filter_args } => {
             tendril_action_subcommand(
                 ActionMode::Pull,
@@ -157,28 +157,24 @@ fn init(
 
 /// Returns, but does not set, the suggested exit code in case of error.
 /// It is up to the calling function to handle exiting with this code.
-fn path(writer: &mut impl Writer) -> Result<(), i32> {
-    const ENV_NAME: &str = "TENDRILS_REPO";
-    match std::env::var(ENV_NAME) {
-        Ok(v) => {
+fn path(api: &impl TendrilsApi, writer: &mut impl Writer) -> Result<(), i32> {
+    match api.get_default_repo_path() {
+        Ok(Some(v)) => {
+            let v = v.to_string_lossy();
             let styled_text = ansi_hyperlink(&v, &v);
             writer.writeln(&styled_text);
+            Ok(())
         }
-        Err(std::env::VarError::NotPresent) => {
+        Ok(None) => Ok(()),
+        Err(e) => {
             writer.writeln(&format!(
-                "The '{ENV_NAME}' environment variable is not set"
+                "{ERR_PREFIX}: IO error - {} while accessing \
+                ~/.tendrils/repo_path",
+                e.kind(),
             ));
-        }
-        Err(std::env::VarError::NotUnicode(_v)) => {
-            writer.writeln(&format!(
-                "{ERR_PREFIX}: The '{ENV_NAME}' environment variable is not \
-                 valid UTF-8"
-            ));
-            return Err(exitcode::DATAERR);
+            Err(exitcode::DATAERR)
         }
     }
-
-    Ok(())
 }
 
 /// Returns, but does not set, the suggested exit code in case of error.

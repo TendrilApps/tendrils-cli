@@ -67,11 +67,14 @@ pub enum GetTendrilsRepoError {
     /// The given path is not a valid Tendrils repo.
     GivenInvalid { path: PathBuf },
 
-    /// The global Tendrils repo is not a valid Tendrils repo.
-    GlobalInvalid { path: PathBuf },
+    /// The default Tendrils repo is not a valid Tendrils repo.
+    DefaultInvalid { path: PathBuf },
 
-    /// The global Tendrils repo is not set.
-    GlobalNotSet,
+    /// The default Tendrils repo is not set.
+    DefaultNotSet,
+
+    /// A general file system error while reading the `repo_path` file.
+    IoError { kind: std::io::ErrorKind },
 }
 
 impl ToString for GetTendrilsRepoError {
@@ -80,13 +83,22 @@ impl ToString for GetTendrilsRepoError {
             GetTendrilsRepoError::GivenInvalid { path } => {
                 format!("{} is not a Tendrils repo", path.to_string_lossy())
             }
-            GetTendrilsRepoError::GlobalInvalid { path } => {
-                format!("The global path \"{}\" is not a Tendrils repo", path.to_string_lossy())
+            GetTendrilsRepoError::DefaultInvalid { path } => {
+                format!("The default path \"{}\" is not a Tendrils repo", path.to_string_lossy())
             }
-            GetTendrilsRepoError::GlobalNotSet => {
-                String::from("The global Tendrils repo path is not set")
+            GetTendrilsRepoError::DefaultNotSet => {
+                String::from("The default Tendrils repo path is not set")
+            }
+            GetTendrilsRepoError::IoError { kind: e_kind } => {
+                format!("IO error while reading repo_path file - {e_kind}")
             }
         }
+    }
+}
+
+impl From<std::io::Error> for GetTendrilsRepoError {
+    fn from(err: std::io::Error) -> Self {
+        GetTendrilsRepoError::IoError { kind: err.kind() }
     }
 }
 
@@ -124,7 +136,6 @@ pub enum SetupError {
     /// No valid Tendrils repo was found.
     NoValidTendrilsRepo(GetTendrilsRepoError),
 }
-     
 
 impl ToString for SetupError {
     fn to_string(&self) -> String {

@@ -2,7 +2,7 @@
 //! See also the [`td` CLI](..//td/index.html)
 
 mod config;
-use config::get_config;
+use config::{get_config, get_default_repo_path};
 mod enums;
 pub use enums::{
     ActionMode,
@@ -44,6 +44,12 @@ pub mod test_utils;
 /// require an API instance), this is mainly to facilitate easier mocking
 /// for testing. The actual API implementation should have little to no state.
 pub trait TendrilsApi {
+    /// Returns the value stored in `~/.tendrils/repo_path` or any IO errors
+    /// that occur. Returns `None` if the value is blank, or if the file does
+    /// not exist. Note: This does *not* check whether the folder
+    /// [is a tendrils repo](`TendrilsApi::is_tendrils_repo`).
+    fn get_default_repo_path(&self) -> Result<Option<PathBuf>, std::io::Error>;
+
     /// Initializes a Tendrils repo with a `.tendrils` folder and a
     /// pre-populated `tendrils.json` file. This will fail if the folder is
     /// already a Tendrils repo or if there are general file-system errors.
@@ -85,10 +91,10 @@ pub trait TendrilsApi {
     /// receive updates as progress is made.
     /// - `mode` - The action mode to be performed.
     /// - `td_repo` - The Tendrils repo to perform the actions on. If given
-    /// `None`, the `TENDRILS_REPO` environment variable will be
-    /// checked for a valid Tendrils repo. If neither the given `td_repo` or
-    /// the `TENDRILS_REPO` environment variable folder are valid Tendrils
-    /// folders, a [`SetupError::NoValidTendrilsRepo`] is returned. 
+    /// `None`, the [default repo](`TendrilsApi::get_default_repo_path`) will be checked for a
+    /// valid Tendrils repo. If neither the given `td_repo` or the default
+    /// folder are valid Tendrils folders, a
+    /// [`SetupError::NoValidTendrilsRepo`] is returned. 
     /// - `filter` - Only tendrils matching this filter will be included.
     /// - `dry_run`
     ///     - `true` will perform the internal checks for the action but does not
@@ -135,6 +141,10 @@ pub trait TendrilsApi {
 pub struct TendrilsActor {}
 
 impl TendrilsApi for TendrilsActor {
+    fn get_default_repo_path(&self) -> Result<Option<PathBuf>, std::io::Error> {
+        get_default_repo_path()
+    }
+
     fn init_tendrils_repo(&self, dir: &Path, force: bool) -> Result<(), InitError> {
         if !dir.exists() {
             return Err(InitError::IoError { kind: std::io::ErrorKind::NotFound });
@@ -456,13 +466,13 @@ fn get_local_path(tendril: &Tendril, td_repo: &Path) -> PathBuf {
 /// - If given a `starting_path`, it begins looking in that folder.
 ///     - If it is a Tendrils repo, `starting_path` is returned
 ///     - Otherwise [`GetTendrilsRepoError::GivenInvalid`] is returned.
-/// - If a `starting_path` is not provided, the environment variable
-/// `TENDRILS_REPO` is used.
+/// - If a `starting_path` is not provided, the
+/// [default repo](`TendrilsApi::get_default_repo_path`) is used.
 ///     - If it points to a valid repo, that path is returned
-///     - If this variable does not exist,
-/// [`GetTendrilsRepoError::GlobalNotSet`] is returned
 ///     - If it points to an invalid folder,
-/// [`GetTendrilsRepoError::GlobalInvalid`] is returned
+/// [`GetTendrilsRepoError::DefaultInvalid`] is returned
+///     - If it is not set,
+/// [`GetTendrilsRepoError::DefaultNotSet`] is returned
 // TODO: Recursively look through all parent folders before
 // checking environment variable
 fn get_tendrils_repo(
@@ -474,17 +484,17 @@ fn get_tendrils_repo(
         Some(v) => Err(GetTendrilsRepoError::GivenInvalid {
             path: v.to_path_buf()
         }),
-        None => match std::env::var("TENDRILS_REPO") {
-            Ok(v) => {
-                let test_path = PathBuf::from(v);
-                if api.is_tendrils_repo(&test_path) {
-                    Ok(test_path)
+        None => match get_default_repo_path() {
+            Ok(Some(v)) => {
+                if api.is_tendrils_repo(&v) {
+                    Ok(v)
                 }
                 else {
-                    Err(GetTendrilsRepoError::GlobalInvalid { path: test_path })
+                    Err(GetTendrilsRepoError::DefaultInvalid { path: v })
                 }
             }
-            _ => Err(GetTendrilsRepoError::GlobalNotSet),
+            Ok(None) => Err(GetTendrilsRepoError::DefaultNotSet),
+            Err(e) => Err(e.into()),
         }
     }
 }
@@ -701,17 +711,24 @@ fn resolve_path_variables(mut path: String) -> PathBuf {
 /// could be anywhere in the string) - this check should be done prior to
 /// calling this.
 fn resolve_tilde(path: &str) -> String {
+    match get_home_dir() {
+        Some(v) => path.replacen('~', &v, 1),
+        None => String::from(path),
+    }
+}
+
+fn get_home_dir() -> Option<String> {
     use std::env::var_os;
     if let Some(v) = var_os("HOME") {
-        return path.replacen('~', &v.to_string_lossy(), 1);
+        return Some(v.to_string_lossy().into_owned());
     };
     match (var_os("HOMEDRIVE"), var_os("HOMEPATH")) {
         (Some(hd), Some(hp)) => {
             let mut combo = String::from(hd.to_string_lossy());
             combo.push_str(hp.to_string_lossy().as_ref());
-            path.replacen('~', &combo, 1)
+            return Some(combo);
         }
-        _ => String::from(path),
+        _ => None,
     }
 }
 
