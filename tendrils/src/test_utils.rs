@@ -14,6 +14,7 @@ use crate::{
     TendrilsApi,
 };
 use crate::config::{Config, parse_config};
+use crate::enums::GetConfigError;
 use std::env::var;
 use std::fs::{create_dir_all, read_to_string, write};
 use std::path::{Path, PathBuf};
@@ -66,12 +67,22 @@ pub fn is_empty(dir: &Path) -> bool {
     true
 }
 
-pub fn dot_td_dir() -> PathBuf {
+/// Path to the global `~/.tendrils` folder using the current value of
+/// the `HOME` environment variable
+pub fn global_cfg_dir() -> PathBuf {
     PathBuf::from(var("HOME").unwrap()).join(".tendrils")
 }
 
-pub fn repo_path_file() -> PathBuf {
-    dot_td_dir().join("repo_path")
+/// Path to the global `~/.tendrils/global-config.json` file using the
+/// `.tendrils` folder defined in [`global_cfg_dir`]
+pub fn global_cfg_file() -> PathBuf {
+    global_cfg_dir().join("global-config.json")
+}
+
+/// Creates the json for a `global-config.json` file containing only a
+/// `default-repo-path` field
+pub fn default_repo_path_as_json(default_repo_path: &str) -> String {
+    format!("{{\"default-repo-path\": \"{}\"}}", default_repo_path)
 }
 
 /// Exposes the otherwise private function
@@ -185,8 +196,8 @@ pub struct MockTendrilsApi<'a> {
     pub init_exp_force_arg: bool,
     pub is_tendrils_repo_const_rt: bool,
     pub is_tendrils_repo_fn: Option<Box<dyn Fn(&Path) -> bool>>,
-    pub get_default_repo_const_rt: Result<Option<PathBuf>, std::io::Error>,
-    pub get_default_repo_fn: Option<Box<dyn Fn() -> Result<Option<PathBuf>, std::io::Error>>>,
+    pub get_default_repo_const_rt: Result<Option<PathBuf>, GetConfigError>,
+    pub get_default_repo_fn: Option<Box<dyn Fn() -> Result<Option<PathBuf>, GetConfigError>>>,
     pub tau_const_updater_rts: Vec<TendrilReport<ActionLog>>,
     pub tau_const_rt: Result<(), SetupError>,
     pub ta_const_rt: Result<Vec<TendrilReport<ActionLog>>, SetupError>,
@@ -259,15 +270,12 @@ impl TendrilsApi for MockTendrilsApi<'_> {
         }
     }
 
-    fn get_default_repo_path(&self) -> Result<Option<PathBuf>, std::io::Error> {
+    fn get_default_repo_path(&self) -> Result<Option<PathBuf>, GetConfigError> {
         if let Some(f) = self.get_default_repo_fn.as_ref() {
             f()
         }
         else {
-            match &self.get_default_repo_const_rt {
-                Err(e) => Err(std::io::Error::from(e.kind())),
-                Ok(v) => Ok(v.to_owned()),
-            }
+            self.get_default_repo_const_rt.clone()
         }
     }
 

@@ -3,8 +3,9 @@
 //! core action functionality.
 
 use crate::test_utils::{
-    dot_td_dir,
-    repo_path_file,
+    default_repo_path_as_json,
+    global_cfg_dir,
+    global_cfg_file,
     Setup,
     set_parents,
     symlink_expose,
@@ -12,6 +13,7 @@ use crate::test_utils::{
 use crate::{
     ActionLog,
     ActionMode,
+    ConfigType,
     FilterSpec,
     GetConfigError,
     GetTendrilsRepoError,
@@ -122,8 +124,11 @@ fn given_td_repo_is_none_default_td_repo_invalid_returns_no_valid_td_repo_err(
     let setup = Setup::new();
     let filter = FilterSpec::new();
     set_var("HOME", setup.temp_dir.path());
-    create_dir_all(dot_td_dir()).unwrap();
-    write(&repo_path_file(), "I DON'T EXIST").unwrap();
+    create_dir_all(global_cfg_dir()).unwrap();
+    write(
+        &global_cfg_file(),
+        default_repo_path_as_json("I DON'T EXIST"),
+    ).unwrap();
     assert!(!api.is_tendrils_repo(&setup.td_repo));
 
     let actual = api.tendril_action(
@@ -154,7 +159,7 @@ fn given_td_repo_is_none_default_td_repo_not_set_returns_no_valid_td_repo_err(
     let setup = Setup::new();
     let filter = FilterSpec::new();
     set_var("HOME", setup.temp_dir.path());
-    assert!(!repo_path_file().exists());
+    assert!(!global_cfg_file().exists());
     assert!(!api.is_tendrils_repo(&setup.td_repo));
 
     let actual = api.tendril_action(
@@ -187,11 +192,12 @@ fn given_td_repo_is_none_default_td_repo_is_valid_uses_default_td_repo(
     let filter = FilterSpec::new();
 
     // Create global configs
+    let json_path = setup.td_repo.to_string_lossy().replace("\\", "\\\\");
     set_var("HOME", setup.temp_dir.path());
-    create_dir_all(dot_td_dir()).unwrap();
+    create_dir_all(global_cfg_dir()).unwrap();
     write(
-        repo_path_file(),
-        setup.td_repo.to_string_lossy().to_string(),
+        global_cfg_file(),
+        default_repo_path_as_json(&json_path),
     ).unwrap();
 
     let actual = api.tendril_action(
@@ -244,9 +250,10 @@ fn tendrils_json_invalid_returns_config_error(
 
     assert_eq!(
         actual,
-        Err(SetupError::ConfigError(GetConfigError::ParseError(
-            "expected value at line 1 column 1".to_string()
-        )))
+        Err(SetupError::ConfigError(GetConfigError::ParseError {
+            cfg_type: ConfigType::Repo,
+            msg: "expected value at line 1 column 1".to_string(),
+        })),
     );
 }
 

@@ -2,10 +2,10 @@
 //! See also the [`td` CLI](..//td/index.html)
 
 mod config;
-use config::{get_config, get_default_repo_path};
 mod enums;
 pub use enums::{
     ActionMode,
+    ConfigType,
     FsoType,
     GetConfigError,
     GetTendrilsRepoError,
@@ -44,12 +44,12 @@ pub mod test_utils;
 /// require an API instance), this is mainly to facilitate easier mocking
 /// for testing. The actual API implementation should have little to no state.
 pub trait TendrilsApi {
-    /// Returns the value stored in `~/.tendrils/repo_path` or any IO errors
-    /// that occur. Trailing whitespace is removed. Returns `None` if the value
-    /// is blank, or if the file does not exist. Note: This does *not* check
-    /// whether the folder
+    /// Returns the `default-repo-path` value stored in
+    /// `~/.tendrils/global-config.json` or any [errors](GetConfigError) that
+    /// occur. Returns `None` if the value is blank or absent, or if the file
+    /// does not exist. Note: This does *not* check whether the folder
     /// [is a tendrils repo](`TendrilsApi::is_tendrils_repo`).
-    fn get_default_repo_path(&self) -> Result<Option<PathBuf>, std::io::Error>;
+    fn get_default_repo_path(&self) -> Result<Option<PathBuf>, GetConfigError>;
 
     /// Initializes a Tendrils repo with a `.tendrils` folder and a
     /// pre-populated `tendrils.json` file. This will fail if the folder is
@@ -142,8 +142,11 @@ pub trait TendrilsApi {
 pub struct TendrilsActor {}
 
 impl TendrilsApi for TendrilsActor {
-    fn get_default_repo_path(&self) -> Result<Option<PathBuf>, std::io::Error> {
-        get_default_repo_path()
+    fn get_default_repo_path(&self) -> Result<Option<PathBuf>, GetConfigError> {
+        match config::get_global_config()? {
+            Some(v) => Ok(v.default_repo_path),
+            None => Ok(None),
+        }
     }
 
     fn init_tendrils_repo(&self, dir: &Path, force: bool) -> Result<(), InitError> {
@@ -179,7 +182,7 @@ impl TendrilsApi for TendrilsActor {
         force: bool,
     ) -> Result<(), SetupError> {
         let td_repo= get_tendrils_repo(td_repo, self)?;
-        let config = get_config(&td_repo)?;
+        let config = config::get_config(&td_repo)?;
         let all_tendrils = config.tendrils;
 
         let filtered_tendrils = filter_tendrils(all_tendrils, filter);
@@ -485,17 +488,13 @@ fn get_tendrils_repo(
         Some(v) => Err(GetTendrilsRepoError::GivenInvalid {
             path: v.to_path_buf()
         }),
-        None => match get_default_repo_path() {
-            Ok(Some(v)) => {
-                if api.is_tendrils_repo(&v) {
-                    Ok(v)
-                }
-                else {
-                    Err(GetTendrilsRepoError::DefaultInvalid { path: v })
-                }
+        None => match config::get_global_config()? {
+            Some(cfg) => match cfg.default_repo_path {
+                Some(v) if api.is_tendrils_repo(&v) => Ok(v),
+                Some(v) => Err(GetTendrilsRepoError::DefaultInvalid { path: v }),
+                None => Err(GetTendrilsRepoError::DefaultNotSet),
             }
-            Ok(None) => Err(GetTendrilsRepoError::DefaultNotSet),
-            Err(e) => Err(e.into()),
+            None => Err(GetTendrilsRepoError::DefaultNotSet),
         }
     }
 }

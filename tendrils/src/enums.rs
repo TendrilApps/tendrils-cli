@@ -60,8 +60,8 @@ impl ToString for InitError {
     }
 }
 
-/// Indicates an error while reading/parsing a
-/// configuration file.
+/// Indicates an error while determining the Tendrils
+/// repo to use.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum GetTendrilsRepoError {
     /// The given path is not a valid Tendrils repo.
@@ -73,8 +73,8 @@ pub enum GetTendrilsRepoError {
     /// The default Tendrils repo is not set.
     DefaultNotSet,
 
-    /// A general file system error while reading the `repo_path` file.
-    IoError { kind: std::io::ErrorKind },
+    /// A general error while reading the global configuration file.
+    ConfigError(GetConfigError),
 }
 
 impl ToString for GetTendrilsRepoError {
@@ -89,16 +89,14 @@ impl ToString for GetTendrilsRepoError {
             GetTendrilsRepoError::DefaultNotSet => {
                 String::from("The default Tendrils repo path is not set")
             }
-            GetTendrilsRepoError::IoError { kind: e_kind } => {
-                format!("IO error while reading repo_path file - {e_kind}")
-            }
+            GetTendrilsRepoError::ConfigError(err) => err.to_string(),
         }
     }
 }
 
-impl From<std::io::Error> for GetTendrilsRepoError {
-    fn from(err: std::io::Error) -> Self {
-        GetTendrilsRepoError::IoError { kind: err.kind() }
+impl From<GetConfigError> for GetTendrilsRepoError {
+    fn from(err: GetConfigError) -> Self {
+        GetTendrilsRepoError::ConfigError(err.with_cfg_type(ConfigType::Global))
     }
 }
 
@@ -106,23 +104,73 @@ impl From<std::io::Error> for GetTendrilsRepoError {
 /// configuration file.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum GetConfigError {
-    /// A general file system error while reading the
-    /// file.
-    IoError { kind: std::io::ErrorKind },
+    /// A general file system error while reading the file.
+    IoError { cfg_type: ConfigType, kind: std::io::ErrorKind },
 
     /// An error while parsing the json from the file.
-    ParseError(String),
+    ParseError { cfg_type: ConfigType, msg: String },
+}
+
+impl GetConfigError {
+    /// Copies the error with the updated `cfg_type`
+    pub fn with_cfg_type(self, cfg_type: ConfigType) -> GetConfigError {
+        match self {
+            GetConfigError::IoError { kind, .. } => {
+                GetConfigError::IoError { cfg_type, kind }
+            }
+            GetConfigError::ParseError { msg, .. } => {
+                GetConfigError::ParseError { cfg_type, msg }
+            }
+        }
+    }
+}
+
+impl ToString for GetConfigError {
+    fn to_string(&self) -> String {
+        match self {
+            GetConfigError::IoError { cfg_type, kind } => format!(
+                "IO error while reading the {} file:\n{kind}",
+                cfg_type.file_name(),
+            ),
+            GetConfigError::ParseError { cfg_type, msg } => format!(
+                "Could not parse the {} file:\n{msg}",
+                cfg_type.file_name(),
+            ),
+        }
+    }
 }
 
 impl From<std::io::Error> for GetConfigError {
     fn from(err: std::io::Error) -> Self {
-        GetConfigError::IoError { kind: err.kind() }
+        GetConfigError::IoError { cfg_type: ConfigType::Repo, kind: err.kind() }
     }
 }
 
 impl From<serde_json::Error> for GetConfigError {
     fn from(err: serde_json::Error) -> Self {
-        GetConfigError::ParseError(err.to_string())
+        GetConfigError::ParseError {
+            cfg_type: ConfigType::Repo,
+            msg: err.to_string()
+        }
+    }
+}
+
+/// Indicates the type of configuration file.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum ConfigType {
+    /// The repo-level `tendrils.json` file
+    Repo,
+
+    /// The `global-config.json` file
+    Global,
+}
+
+impl ConfigType {
+    fn file_name(&self) -> &str {
+        match self {
+            ConfigType::Repo => "tendrils.json",
+            ConfigType::Global => "global-config.json"
+        }
     }
 }
 
@@ -148,12 +196,7 @@ impl ToString for SetupError {
                 without requiring administrator priviledges)\n    \
                 - Changing these tendrils to non-link modes instead"
             ),
-            SetupError::ConfigError(GetConfigError::IoError { .. }) => {
-                format!("Could not read the tendrils.json file")
-            }
-            SetupError::ConfigError(GetConfigError::ParseError(msg)) => {
-                format!("Could not parse the tendrils.json file:\n{msg}")
-            },
+            SetupError::ConfigError(err) => err.to_string(),
             SetupError::NoValidTendrilsRepo(err) => err.to_string(),
         }
     }

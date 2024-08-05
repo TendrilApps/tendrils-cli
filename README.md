@@ -48,14 +48,14 @@ cd MyTendrilsFolder
 td init
 ```
 
-3. Define some tendrils in the file following the [schema](#schema)
+3. Define some tendrils in the file following the [schema](#tendrilsjson-schema)
 4. Run a [`pull`](#pulling) to make an initial copy of any [push/pull style](#pushpull-style) tendrils to the [Tendrils repo](#tendrils-repo)
 5. Run a [`link`](#linking) to setup any [link style](#link-style) tendrils
 
 # Tendrils Repo
 - Serves as a common location for all of the tendrils defined in the [`tendrils.json`](#tendrilsjson) file
 - Any folder with a `.tendrils` subfolder containing a [`tendrils.json`](#tendrilsjson) file is considered a Tendrils repo
-- Items are grouped into subfolders by their [`group`](#schema) name
+- Items are grouped into subfolders by their [`group`](#tendrilsjson-schema) name
 
 ## Version Control & Synchronization
 - Tendrils itself does not have versioning or synchronization functionality, but the Tendrils folder is often placed inside a synchronized folder such as OneDrive, or under a version control system such as Git
@@ -75,7 +75,7 @@ td init
 - Specifies all of the files and directories to be considered as tendrils
 - Stored in the `.tendrils` folder inside a [Tendrils repo](#tendrils-repo)
 
-## Schema
+## `tendrils.json` Schema
 - The json schema is intended to be flexible and to allow defining multiple tendrils in a compact form
 ```json
 {
@@ -245,10 +245,10 @@ td push --force (-f)
 ## Specifying the Tendrils repo
 - If no path argument is provided:
     1. Tendrils will first check if the current working directory is a [Tendrils repo](#tendrils-repo). If it is, this folder (and the tendrils defined in its [`tendrils.json`](#tendrilsjson)) will be used for the command
-    2. If the CWD is not a Tendrils folder, then the [default repo](#repo_path-file) will be checked
+    2. If the CWD is not a Tendrils folder, then the [default repo](#default-repo-path) will be checked
 - A path can be explicitly set using the `--path` argument
     - Available on all of the actions listed above
-    - If a path is provided, the current working directory and the [default repo](#repo_path-file) are not considered
+    - If a path is provided, the current working directory and the [default repo](#default-repo-path) are not considered
 ``` bash
 td push --path some/tendrils/folder
 ```
@@ -331,13 +331,20 @@ td push -P home mac
 # Configuration
 - Global configuration files are stored in the `~/.tendrils` folder
 
-## `repo_path` File
-- `~/.tendrils/repo_path`
-- Should contain a single line that is the path to the default repo. Trailing whitespace will be removed.
+## `global-config.json` File
+- `~/.tendrils/global-config.json`
+- Contains default configuration values that are applied to actions in any [Tendrils repos](#tendrils-repo) unless otherwise specified
+- This file is not usually version controlled as the configurations are mostly specific to the local computer
+
+### `global-config.json` Schema
+```json
+{
+    "default-repo-path": "path/to/default/repo"
+}
+```
+
+#### `default-repo-path`
 - Used to [specify](#specifying-the-tendrils-repo) the default tendrils repo if it is not otherwise provided
-```
-path/to/default/repo
-```
 
 # Developer Notes
 - Prior to development, run the [`setup-tendrils.sh`](./dev/setup-tendrils.sh) script

@@ -167,11 +167,7 @@ fn path(api: &impl TendrilsApi, writer: &mut impl Writer) -> Result<(), i32> {
         }
         Ok(None) => Ok(()),
         Err(e) => {
-            writer.writeln(&format!(
-                "{ERR_PREFIX}: IO error - {} while accessing \
-                ~/.tendrils/repo_path",
-                e.kind(),
-            ));
+            writer.writeln(&format!("{ERR_PREFIX}: {}", e.to_string()));
             Err(exitcode::DATAERR)
         }
     }
@@ -242,7 +238,7 @@ fn setup_err_to_exit_code(err: SetupError) -> i32 {
         SetupError::ConfigError(GetConfigError::IoError { .. }) => {
             exitcode::NOINPUT
         }
-        SetupError::ConfigError(GetConfigError::ParseError(_)) => {
+        SetupError::ConfigError(GetConfigError::ParseError { .. }) => {
             exitcode::DATAERR
         }
         SetupError::NoValidTendrilsRepo { .. } => exitcode::NOINPUT,

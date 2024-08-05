@@ -1,7 +1,6 @@
 use crate::config::{Config, parse_config};
 use crate::test_utils::Setup;
 use crate::{
-    get_config,
     InitError,
     TendrilBundle,
     TendrilsActor,
@@ -47,7 +46,7 @@ fn creates_dot_tendrils_dir_and_contents_in_empty_dir(#[case] force: bool) {
     assert_eq!(actual, Ok(()));
     assert_eq!(setup.td_json_file_contents(), crate::INIT_TD_TENDRILS_JSON);
     assert!(api.is_tendrils_repo(&setup.td_repo));
-    assert_eq!(get_config(&setup.td_repo).unwrap(), expected);
+    assert_eq!(crate::config::get_config(&setup.td_repo).unwrap(), expected);
 }
 
 #[rstest]

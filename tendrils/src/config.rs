@@ -1,4 +1,4 @@
-use crate::get_home_dir;
+use crate::{get_home_dir, ConfigType};
 use crate::tendril_bundle::TendrilBundle;
 use crate::enums::GetConfigError;
 use serde::{Deserialize, Serialize};
@@ -7,12 +7,20 @@ use std::path::{Path, PathBuf};
 #[cfg(test)]
 mod tests;
 
-/// Contains the configuration context for Tendrils.
+/// Contains the configuration context for a Tendrils repo.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Config {
     /// The tendrils that are defined in a Tendrils repo.
     #[serde(default)]
     pub tendrils: Vec<TendrilBundle>
+}
+
+/// Contains the global configuration context for Tendrils.
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+pub struct GlobalConfig {
+    /// The path to the default Tendrils repo.
+    #[serde(rename = "default-repo-path")]
+    pub default_repo_path: Option<PathBuf>,
 }
 
 /// Parses the `tendrils.json` file in the given Tendrils repo and returns
@@ -24,26 +32,33 @@ pub struct Config {
 pub fn get_config(
     td_repo: &Path,
 ) -> Result<Config, GetConfigError> {
-    let tendrils_file_path = Path::new(&td_repo).join(".tendrils/tendrils.json");
-    let tendrils_file_contents = std::fs::read_to_string(tendrils_file_path)?;
-    let tendrils = parse_config(&tendrils_file_contents)?;
-    Ok(tendrils)
+    let config_file_path = td_repo.join(".tendrils/tendrils.json");
+    let config_file_contents = std::fs::read_to_string(config_file_path)?;
+    let config = parse_config(&config_file_contents)?;
+    Ok(config)
 }
 
-/// See tests at [API level](`crate::TendrilsApi::get_default_repo_path`)
-pub fn get_default_repo_path() -> Result<Option<PathBuf>, std::io::Error> {
+/// Parses the `~/.tendrils/global-config.json` file and returns the
+/// configuration within. If the file doesn't exist, `None` is returned.
+pub fn get_global_config() -> Result<Option<GlobalConfig>, GetConfigError> {
     let home_dir = match get_home_dir() {
         Some(v) => v,
         None => return Ok(None),
     };
-    let config_file = PathBuf::from(home_dir).join(".tendrils/repo_path");
-    match std::fs::read_to_string(config_file) {
-        Ok(v) if v.is_empty() => Ok(None),
-        Ok(v) => Ok(Some(PathBuf::from(v.trim_end()))),
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
-            Ok(None)
-        }
-        Err(e) => Err(e.into()),
+    let config_file_path = PathBuf::from(home_dir).join(".tendrils/global-config.json");
+    let config_file_contents = match std::fs::read_to_string(config_file_path) {
+        Ok(v) => v,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+        Err(e) => return Err(
+            Into::<GetConfigError>::into(e).with_cfg_type(ConfigType::Global)
+        )
+    };
+
+    match parse_global_config(&config_file_contents) {
+        Ok(v) => Ok(Some(v)),
+        Err(e) => Err(
+            Into::<GetConfigError>::into(e).with_cfg_type(ConfigType::Global)
+        ),
     }
 }
 
@@ -53,4 +68,12 @@ pub(crate) fn parse_config(
     json: &str
 ) -> Result<Config, serde_json::Error> {
     serde_json::from_str::<Config>(json)
+}
+
+/// # Arguments
+/// - `json` - JSON object following the global-config.json schema
+fn parse_global_config(
+    json: &str
+) -> Result<GlobalConfig, serde_json::Error> {
+    serde_json::from_str::<GlobalConfig>(json)
 }

@@ -22,6 +22,7 @@ use tendrils::test_utils::{get_disposable_dir, MockTendrilsApi};
 use tendrils::{
     ActionLog,
     ActionMode,
+    ConfigType,
     FilterSpec,
     FsoType,
     GetConfigError,
@@ -423,17 +424,18 @@ fn path_with_default_set_prints_path() {
 }
 
 #[test]
-fn path_io_error_accessing_repo_path_file_prints_message() {
+fn path_io_error_accessing_global_config_file_prints_message() {
     let mut api = MockTendrilsApi::new();
     let mut writer = MockWriter::new();
-    api.get_default_repo_const_rt = Err(
-        std::io::Error::from(std::io::ErrorKind::PermissionDenied)
-    );
+    api.get_default_repo_const_rt = Err(GetConfigError::IoError {
+        cfg_type: ConfigType::Global,
+        kind: std::io::ErrorKind::PermissionDenied,
+    });
     let args = TendrilCliArgs { tendrils_command: TendrilsSubcommands::Path };
 
     let expected =
-        format!("{ERR_PREFIX}: IO error - permission denied while accessing \
-        ~/.tendrils/repo_path\n");
+        format!("{ERR_PREFIX}: IO error while reading the global-config.json file:\n\
+        permission denied\n");
 
     let actual_exit_code = run(args, &api, &mut writer);
 
@@ -570,9 +572,10 @@ fn tendril_action_given_path_and_cd_are_both_tendrils_repos_uses_given_path(
     api.ta_exp_filter.mode = Some(mode.clone());
     api.ta_exp_dry_run = dry_run;
     api.ta_exp_force = force;
-    api.ta_const_rt = Err(SetupError::ConfigError(GetConfigError::ParseError(
-        "Some parse error msg".to_string(),
-    )));
+    api.ta_const_rt = Err(SetupError::ConfigError(GetConfigError::ParseError {
+        cfg_type: ConfigType::Repo,
+        msg: "Some parse error msg".to_string(),
+    }));
 
     let path = Some(given_dir.to_str().unwrap().to_string());
     let tendrils_command = build_action_subcommand(

@@ -1,6 +1,7 @@
+use crate::{ConfigType, GetConfigError, TendrilBundle};
+use crate::config::get_config;
 use crate::test_utils::get_disposable_dir;
 use crate::tests::sample_tendrils::SampleTendrils;
-use crate::{get_config, GetConfigError, TendrilBundle};
 use std::fs::{create_dir_all, write};
 use tempdir::TempDir;
 
@@ -12,7 +13,10 @@ fn no_tendrils_json_file_returns_io_not_found_error() {
 
     assert_eq!(
         actual,
-        Err(GetConfigError::IoError { kind: std::io::ErrorKind::NotFound })
+        Err(GetConfigError::IoError {
+            cfg_type: ConfigType::Repo,
+            kind: std::io::ErrorKind::NotFound,
+        })
     );
 }
 
@@ -30,9 +34,10 @@ fn invalid_json_returns_parse_error() {
 
     assert_eq!(
         actual,
-        Err(GetConfigError::ParseError(
-            "expected value at line 1 column 1".to_string()
-        ))
+        Err(GetConfigError::ParseError {
+            cfg_type: ConfigType::Repo,
+            msg: "expected value at line 1 column 1".to_string(),
+        }),
     );
 }
 

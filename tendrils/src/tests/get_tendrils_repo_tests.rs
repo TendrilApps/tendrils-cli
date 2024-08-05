@@ -1,4 +1,9 @@
-use crate::test_utils::{dot_td_dir, get_disposable_dir, repo_path_file};
+use crate::test_utils::{
+    default_repo_path_as_json,
+    global_cfg_dir,
+    get_disposable_dir,
+    global_cfg_file,
+};
 use crate::{get_tendrils_repo, GetTendrilsRepoError, TendrilsActor, TendrilsApi};
 use serial_test::serial;
 use std::env::set_var;
@@ -13,7 +18,7 @@ fn starting_dir_invalid_default_not_set_returns_given_invalid_err() {
     let temp = TempDir::new_in(get_disposable_dir(), "Temp").unwrap();
     let starting_td_repo = temp.path().join("StartingTendrilsRepo");
     set_var("HOME", temp.path());
-    assert!(!repo_path_file().exists());
+    assert!(!global_cfg_file().exists());
     assert!(!api.is_tendrils_repo(&starting_td_repo));
 
     let actual = get_tendrils_repo(Some(&starting_td_repo), &api);
@@ -31,8 +36,11 @@ fn starting_dir_invalid_default_invalid_returns_given_invalid_err() {
     let temp = TempDir::new_in(get_disposable_dir(), "Temp").unwrap();
     let starting_td_repo = temp.path().join("StartingTendrilsRepo");
     set_var("HOME", temp.path());
-    create_dir_all(dot_td_dir()).unwrap();
-    write(repo_path_file(), "I DON'T EXIST").unwrap();
+    create_dir_all(global_cfg_dir()).unwrap();
+    write(
+        global_cfg_file(),
+        default_repo_path_as_json("I DON'T EXIST"),
+    ).unwrap();
     assert!(!api.is_tendrils_repo(&starting_td_repo));
 
     let actual = get_tendrils_repo(Some(&starting_td_repo), &api);
@@ -49,7 +57,7 @@ fn starting_dir_invalid_default_valid_returns_given_invalid_err() {
     let api = TendrilsActor {};
     let temp = TempDir::new_in(get_disposable_dir(), "Temp").unwrap();
     let starting_td_repo = temp.path().join("I don't exist");
-    let default_td_dir = temp.path().join("EnvVarTendrilsRepo");
+    let default_td_dir = temp.path().join("DefaultTendrilsRepo");
     let default_dot_td_dir = default_td_dir.join(".tendrils");
     let default_td_json_file = default_dot_td_dir.join("tendrils.json");
     create_dir_all(&default_dot_td_dir).unwrap();
@@ -59,10 +67,10 @@ fn starting_dir_invalid_default_valid_returns_given_invalid_err() {
 
     // Create global configs
     set_var("HOME", temp.path());
-    create_dir_all(dot_td_dir()).unwrap();
+    create_dir_all(global_cfg_dir()).unwrap();
     write(
-        repo_path_file(),
-        default_td_dir.to_string_lossy().to_string(),
+        global_cfg_file(),
+        default_repo_path_as_json(&default_td_dir.to_string_lossy()),
     ).unwrap();
 
     let actual = get_tendrils_repo(Some(&starting_td_repo), &api);
@@ -83,7 +91,7 @@ fn starting_dir_valid_default_not_set_returns_starting_dir() {
     create_dir_all(&starting_dot_td_dir).unwrap();
     write(starting_dot_td_dir.join("tendrils.json"), "").unwrap();
     set_var("HOME", temp.path());
-    assert!(!repo_path_file().exists());
+    assert!(!global_cfg_file().exists());
     assert!(api.is_tendrils_repo(&starting_td_repo));
 
     let actual = get_tendrils_repo(Some(&starting_td_repo), &api).unwrap();
@@ -98,7 +106,7 @@ fn starting_dir_valid_default_valid_returns_starting_dir() {
     let temp = TempDir::new_in(get_disposable_dir(), "Temp").unwrap();
     let starting_td_repo = temp.path().join("StartingTendrilsRepo");
     let starting_dot_td_dir = starting_td_repo.join(".tendrils");
-    let default_td_dir = temp.path().join("EnvVarTendrilsRepo");
+    let default_td_dir = temp.path().join("DefaultTendrilsRepo");
     let default_dot_td_dir = default_td_dir.join(".tendrils");
     create_dir_all(&starting_dot_td_dir).unwrap();
     create_dir_all(&default_dot_td_dir).unwrap();
@@ -109,10 +117,10 @@ fn starting_dir_valid_default_valid_returns_starting_dir() {
 
     // Create global configs
     set_var("HOME", temp.path());
-    create_dir_all(dot_td_dir()).unwrap();
+    create_dir_all(global_cfg_dir()).unwrap();
     write(
-        repo_path_file(),
-        default_td_dir.to_string_lossy().to_string(),
+        global_cfg_file(),
+        default_repo_path_as_json(&default_td_dir.to_string_lossy())
     ).unwrap();
 
     let actual = get_tendrils_repo(Some(&starting_td_repo), &api).unwrap();
@@ -127,7 +135,7 @@ fn starting_dir_valid_default_invalid_returns_starting_dir() {
     let temp = TempDir::new_in(get_disposable_dir(), "Temp").unwrap();
     let starting_td_repo = temp.path().join("StartingTendrilsRepo");
     let starting_dot_td_dir = starting_td_repo.join(".tendrils");
-    let default_td_dir = temp.path().join("EnvVarTendrilsRepo");
+    let default_td_dir = temp.path().join("DefaultTendrilsRepo");
     create_dir_all(&starting_dot_td_dir).unwrap();
     write(starting_dot_td_dir.join("tendrils.json"), "").unwrap();
     assert!(api.is_tendrils_repo(&starting_td_repo));
@@ -135,10 +143,10 @@ fn starting_dir_valid_default_invalid_returns_starting_dir() {
 
     // Create global configs
     set_var("HOME", temp.path());
-    create_dir_all(dot_td_dir()).unwrap();
+    create_dir_all(global_cfg_dir()).unwrap();
     write(
-        repo_path_file(),
-        default_td_dir.to_string_lossy().to_string(),
+        global_cfg_file(),
+        default_repo_path_as_json(&default_td_dir.to_string_lossy())
     ).unwrap();
 
     let actual = get_tendrils_repo(Some(&starting_td_repo), &api).unwrap();
@@ -153,7 +161,7 @@ fn starting_dir_none_default_not_set_returns_default_not_set_err() {
     let temp = TempDir::new_in(get_disposable_dir(), "Temp").unwrap();
     let starting_td_repo = temp.path().join("StartingTendrilsRepo");
     set_var("HOME", temp.path());
-    assert!(!repo_path_file().exists());
+    assert!(!global_cfg_file().exists());
     assert!(!api.is_tendrils_repo(&starting_td_repo));
 
     let actual = get_tendrils_repo(None, &api);
@@ -173,17 +181,17 @@ fn starting_dir_none_default_invalid_returns_default_invalid_err() {
 
     // Create global configs
     set_var("HOME", temp.path());
-    create_dir_all(dot_td_dir()).unwrap();
+    create_dir_all(global_cfg_dir()).unwrap();
     write(
-        repo_path_file(),
-        default_td_dir.to_string_lossy().to_string(),
+        global_cfg_file(),
+        default_repo_path_as_json(&default_td_dir.to_string_lossy())
     ).unwrap();
 
     let actual = get_tendrils_repo(None, &api);
 
     assert_eq!(
         actual,
-        Err(GetTendrilsRepoError::DefaultInvalid {path: PathBuf::from(default_td_dir) })
+        Err(GetTendrilsRepoError::DefaultInvalid {path: default_td_dir })
     );
 }
 
@@ -193,7 +201,7 @@ fn starting_dir_none_default_valid_returns_default() {
     let api = TendrilsActor {};
     let temp = TempDir::new_in(get_disposable_dir(), "Temp").unwrap();
     let starting_td_repo = temp.path().join("I don't exist");
-    let default_td_dir = temp.path().join("EnvVarTendrilsRepo");
+    let default_td_dir = temp.path().join("DefaultTendrilsRepo");
     let default_dot_td_dir = default_td_dir.join(".tendrils");
     create_dir_all(&default_dot_td_dir).unwrap();
     write(default_dot_td_dir.join("tendrils.json"), "").unwrap();
@@ -201,11 +209,12 @@ fn starting_dir_none_default_valid_returns_default() {
     assert!(api.is_tendrils_repo(&default_td_dir));
 
     // Create global configs
+    let json_path = default_td_dir.to_string_lossy().replace("\\", "\\\\");
     set_var("HOME", temp.path());
-    create_dir_all(dot_td_dir()).unwrap();
+    create_dir_all(global_cfg_dir()).unwrap();
     write(
-        repo_path_file(),
-        default_td_dir.to_string_lossy().to_string(),
+        global_cfg_file(),
+        default_repo_path_as_json(&json_path),
     ).unwrap();
 
     let actual = get_tendrils_repo(None, &api).unwrap();
