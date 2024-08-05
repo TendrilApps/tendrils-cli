@@ -52,13 +52,17 @@ fn empty_config_file_returns_parse_error() {
     let temp = TempDir::new_in(get_disposable_dir(), "Temp").unwrap();
     set_var("HOME", temp.path());
     create_dir_all(global_cfg_dir()).unwrap();
-    write(&global_cfg_file(), "{}").unwrap();
+    write(&global_cfg_file(), "").unwrap();
 
     let actual = get_global_config();
 
-    assert_eq!(actual, Ok(Some(GlobalConfig {
-        default_repo_path: None,
-    })));
+    assert_eq!(
+        actual,
+        Err(GetConfigError::ParseError {
+            cfg_type: ConfigType::Global,
+            msg: "EOF while parsing a value at line 1 column 0".to_string(),
+        }),
+    );
 }
 
 #[test]
