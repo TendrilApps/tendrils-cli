@@ -14,6 +14,8 @@ use crate::{
     TendrilsApi,
 };
 use crate::config::{Config, parse_config};
+use crate::enums::GetConfigError;
+use std::env::var;
 use std::fs::{create_dir_all, read_to_string, write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -63,6 +65,24 @@ pub fn is_empty(dir: &Path) -> bool {
         return dir.read_dir().unwrap().count() == 0;
     }
     true
+}
+
+/// Path to the global `~/.tendrils` folder using the current value of
+/// the `HOME` environment variable
+pub fn global_cfg_dir() -> PathBuf {
+    PathBuf::from(var("HOME").unwrap()).join(".tendrils")
+}
+
+/// Path to the global `~/.tendrils/global-config.json` file using the
+/// `.tendrils` folder defined in [`global_cfg_dir`]
+pub fn global_cfg_file() -> PathBuf {
+    global_cfg_dir().join("global-config.json")
+}
+
+/// Creates the json for a `global-config.json` file containing only a
+/// `default-repo-path` field
+pub fn default_repo_path_as_json(default_repo_path: &str) -> String {
+    format!("{{\"default-repo-path\": \"{}\"}}", default_repo_path)
 }
 
 /// Exposes the otherwise private function
@@ -176,6 +196,8 @@ pub struct MockTendrilsApi<'a> {
     pub init_exp_force_arg: bool,
     pub is_tendrils_repo_const_rt: bool,
     pub is_tendrils_repo_fn: Option<Box<dyn Fn(&Path) -> bool>>,
+    pub get_default_repo_const_rt: Result<Option<PathBuf>, GetConfigError>,
+    pub get_default_repo_fn: Option<Box<dyn Fn() -> Result<Option<PathBuf>, GetConfigError>>>,
     pub tau_const_updater_rts: Vec<TendrilReport<ActionLog>>,
     pub tau_const_rt: Result<(), SetupError>,
     pub ta_const_rt: Result<Vec<TendrilReport<ActionLog>>, SetupError>,
@@ -207,6 +229,8 @@ impl<'a> MockTendrilsApi<'a> {
             init_fn: None,
             is_tendrils_repo_const_rt: true,
             is_tendrils_repo_fn: None,
+            get_default_repo_const_rt: Ok(None),
+            get_default_repo_fn: None,
             tau_const_updater_rts: vec![],
             tau_const_rt: Ok(()),
             ta_const_rt: Ok(vec![]),
@@ -243,6 +267,15 @@ impl TendrilsApi for MockTendrilsApi<'_> {
         }
         else {
             self.is_tendrils_repo_const_rt
+        }
+    }
+
+    fn get_default_repo_path(&self) -> Result<Option<PathBuf>, GetConfigError> {
+        if let Some(f) = self.get_default_repo_fn.as_ref() {
+            f()
+        }
+        else {
+            self.get_default_repo_const_rt.clone()
         }
     }
 

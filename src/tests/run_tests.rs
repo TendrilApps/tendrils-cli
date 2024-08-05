@@ -22,6 +22,7 @@ use tendrils::test_utils::{get_disposable_dir, MockTendrilsApi};
 use tendrils::{
     ActionLog,
     ActionMode,
+    ConfigType,
     FilterSpec,
     FsoType,
     GetConfigError,
@@ -35,8 +36,6 @@ use tendrils::{
     TendrilReport,
     TendrilsActor,
 };
-
-const TENDRILS_VAR_NAME: &str = "TENDRILS_REPO";
 
 struct MockWriter {
     all_output: String,
@@ -394,16 +393,29 @@ fn init_dir_does_not_exist_prints_io_error_message(#[case] force: bool) {
 }
 
 #[test]
-#[serial("mut-env-var-td-repo")]
-fn path_with_env_var_unset_prints_message() {
-    let api = TendrilsActor {};
+fn path_with_default_unset_prints_nothing() {
+    let mut api = MockTendrilsApi::new();
     let mut writer = MockWriter::new();
+    api.get_default_repo_const_rt = Ok(None);
     let args = TendrilCliArgs { tendrils_command: TendrilsSubcommands::Path };
-    std::env::remove_var(TENDRILS_VAR_NAME);
-    let expected = format!(
-        "The '{}' environment variable is not set\n",
-        TENDRILS_VAR_NAME
-    );
+
+    let actual_exit_code = run(args, &api, &mut writer);
+
+    assert_eq!(actual_exit_code, Ok(()));
+    assert_eq!(writer.all_output, "");
+}
+
+#[test]
+fn path_with_default_set_prints_path() {
+    let mut api = MockTendrilsApi::new();
+    let mut writer = MockWriter::new();
+    api.get_default_repo_const_rt = Ok(Some(PathBuf::from("SomePath")));
+    let args = TendrilCliArgs {
+        tendrils_command: TendrilsSubcommands::Path
+    };
+
+    // Formatted as hyperlink
+    let expected = "\u{1b}]8;;SomePath\u{1b}\\SomePath\u{1b}]8;;\u{1b}\\\n";
 
     let actual_exit_code = run(args, &api, &mut writer);
 
@@ -412,19 +424,22 @@ fn path_with_env_var_unset_prints_message() {
 }
 
 #[test]
-#[serial("mut-env-var-td-repo")]
-fn path_with_env_var_set_prints_path() {
-    let api = TendrilsActor {};
+fn path_io_error_accessing_global_config_file_prints_message() {
+    let mut api = MockTendrilsApi::new();
     let mut writer = MockWriter::new();
+    api.get_default_repo_const_rt = Err(GetConfigError::IoError {
+        cfg_type: ConfigType::Global,
+        kind: std::io::ErrorKind::PermissionDenied,
+    });
     let args = TendrilCliArgs { tendrils_command: TendrilsSubcommands::Path };
-    std::env::set_var(TENDRILS_VAR_NAME, "SomePath");
 
-    // Formatted as hyperlink
-    let expected = "\u{1b}]8;;SomePath\u{1b}\\SomePath\u{1b}]8;;\u{1b}\\\n";
+    let expected =
+        format!("{ERR_PREFIX}: IO error while reading the global-config.json file:\n\
+        permission denied\n");
 
     let actual_exit_code = run(args, &api, &mut writer);
 
-    assert_eq!(actual_exit_code, Ok(()));
+    assert_eq!(actual_exit_code, Err(exitcode::DATAERR));
     assert_eq!(writer.all_output, expected);
 }
 
@@ -557,9 +572,10 @@ fn tendril_action_given_path_and_cd_are_both_tendrils_repos_uses_given_path(
     api.ta_exp_filter.mode = Some(mode.clone());
     api.ta_exp_dry_run = dry_run;
     api.ta_exp_force = force;
-    api.ta_const_rt = Err(SetupError::ConfigError(GetConfigError::ParseError(
-        "Some parse error msg".to_string(),
-    )));
+    api.ta_const_rt = Err(SetupError::ConfigError(GetConfigError::ParseError {
+        cfg_type: ConfigType::Repo,
+        msg: "Some parse error msg".to_string(),
+    }));
 
     let path = Some(given_dir.to_str().unwrap().to_string());
     let tendrils_command = build_action_subcommand(

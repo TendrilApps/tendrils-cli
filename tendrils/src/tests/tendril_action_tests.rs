@@ -2,10 +2,18 @@
 //! See [`super::batch_tendril_action_tests`] for testing of the
 //! core action functionality.
 
-use crate::test_utils::{Setup, set_parents, symlink_expose};
+use crate::test_utils::{
+    default_repo_path_as_json,
+    global_cfg_dir,
+    global_cfg_file,
+    Setup,
+    set_parents,
+    symlink_expose,
+};
 use crate::{
     ActionLog,
     ActionMode,
+    ConfigType,
     FilterSpec,
     GetConfigError,
     GetTendrilsRepoError,
@@ -18,7 +26,8 @@ use crate::{
 };
 use rstest::rstest;
 use serial_test::serial;
-use std::fs::write;
+use std::env::set_var;
+use std::fs::{create_dir_all, write};
 use std::path::PathBuf;
 use std::rc::Rc;
 
@@ -105,7 +114,7 @@ fn given_td_repo_is_invalid_returns_no_valid_td_repo_err(
 
 #[rstest]
 #[serial("mut-env-var-td-repo")]
-fn given_td_repo_is_none_global_td_repo_invalid_returns_no_valid_td_repo_err(
+fn given_td_repo_is_none_default_td_repo_invalid_returns_no_valid_td_repo_err(
     #[values(ActionMode::Push, ActionMode::Pull, ActionMode::Link)]
     mode: ActionMode,
     #[values(true, false)] dry_run: bool,
@@ -114,8 +123,13 @@ fn given_td_repo_is_none_global_td_repo_invalid_returns_no_valid_td_repo_err(
     let api = TendrilsActor {};
     let setup = Setup::new();
     let filter = FilterSpec::new();
+    set_var("HOME", setup.temp_dir.path());
+    create_dir_all(global_cfg_dir()).unwrap();
+    write(
+        &global_cfg_file(),
+        default_repo_path_as_json("I DON'T EXIST"),
+    ).unwrap();
     assert!(!api.is_tendrils_repo(&setup.td_repo));
-    std::env::set_var("TENDRILS_REPO", setup.td_repo.clone());
 
     let actual = api.tendril_action(
         mode,
@@ -127,15 +141,15 @@ fn given_td_repo_is_none_global_td_repo_invalid_returns_no_valid_td_repo_err(
 
     assert_eq!(
         actual,
-        Err(SetupError::NoValidTendrilsRepo(GetTendrilsRepoError::GlobalInvalid {
-            path: setup.td_repo
+        Err(SetupError::NoValidTendrilsRepo(GetTendrilsRepoError::DefaultInvalid {
+            path: PathBuf::from("I DON'T EXIST")
         }))
     );
 }
 
 #[rstest]
 #[serial("mut-env-var-td-repo")]
-fn given_td_repo_is_none_global_td_repo_not_set_returns_no_valid_td_repo_err(
+fn given_td_repo_is_none_default_td_repo_not_set_returns_no_valid_td_repo_err(
     #[values(ActionMode::Push, ActionMode::Pull, ActionMode::Link)]
     mode: ActionMode,
     #[values(true, false)] dry_run: bool,
@@ -144,8 +158,9 @@ fn given_td_repo_is_none_global_td_repo_not_set_returns_no_valid_td_repo_err(
     let api = TendrilsActor {};
     let setup = Setup::new();
     let filter = FilterSpec::new();
+    set_var("HOME", setup.temp_dir.path());
+    assert!(!global_cfg_file().exists());
     assert!(!api.is_tendrils_repo(&setup.td_repo));
-    std::env::remove_var("TENDRILS_REPO");
 
     let actual = api.tendril_action(
         mode,
@@ -157,13 +172,13 @@ fn given_td_repo_is_none_global_td_repo_not_set_returns_no_valid_td_repo_err(
 
     assert_eq!(
         actual,
-        Err(SetupError::NoValidTendrilsRepo(GetTendrilsRepoError::GlobalNotSet))
+        Err(SetupError::NoValidTendrilsRepo(GetTendrilsRepoError::DefaultNotSet))
     );
 }
 
 #[rstest]
 #[serial("mut-env-var-td-repo")]
-fn given_td_repo_is_none_global_td_repo_is_valid_uses_global_td_repo(
+fn given_td_repo_is_none_default_td_repo_is_valid_uses_default_td_repo(
     #[values(ActionMode::Push, ActionMode::Pull, ActionMode::Link)]
     mode: ActionMode,
     #[values(true, false)] dry_run: bool,
@@ -174,8 +189,16 @@ fn given_td_repo_is_none_global_td_repo_is_valid_uses_global_td_repo(
     let mut tendril = setup.file_tendril_bundle();
     tendril.link = mode == ActionMode::Link;
     setup.make_td_json_file(&[tendril.clone()]);
-    std::env::set_var("TENDRILS_REPO", setup.td_repo.clone());
     let filter = FilterSpec::new();
+
+    // Create global configs
+    let json_path = setup.td_repo.to_string_lossy().replace("\\", "\\\\");
+    set_var("HOME", setup.temp_dir.path());
+    create_dir_all(global_cfg_dir()).unwrap();
+    write(
+        global_cfg_file(),
+        default_repo_path_as_json(&json_path),
+    ).unwrap();
 
     let actual = api.tendril_action(
         mode,
@@ -227,9 +250,10 @@ fn tendrils_json_invalid_returns_config_error(
 
     assert_eq!(
         actual,
-        Err(SetupError::ConfigError(GetConfigError::ParseError(
-            "expected value at line 1 column 1".to_string()
-        )))
+        Err(SetupError::ConfigError(GetConfigError::ParseError {
+            cfg_type: ConfigType::Repo,
+            msg: "expected value at line 1 column 1".to_string(),
+        })),
     );
 }
 
