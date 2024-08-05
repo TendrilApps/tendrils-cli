@@ -12,9 +12,13 @@ use std::fs::{create_dir_all, write};
 use std::path::PathBuf;
 use tempdir::TempDir;
 
+const EMPTY_CONFIG: GlobalConfig = GlobalConfig {
+    default_repo_path: None,
+};
+
 #[test]
 #[serial("mut-env-var-testing")]
-fn no_config_file_returns_none() {
+fn no_config_file_returns_empty_config() {
     let temp = TempDir::new_in(get_disposable_dir(), "Temp").unwrap();
     set_var("HOME", temp.path());
     assert!(!global_cfg_file().exists());
@@ -23,7 +27,7 @@ fn no_config_file_returns_none() {
 
     assert_eq!(
         actual,
-        Ok(None),
+        Ok(EMPTY_CONFIG),
     );
 }
 
@@ -67,7 +71,7 @@ fn empty_config_file_returns_parse_error() {
 
 #[test]
 #[serial("mut-env-var-testing")]
-fn empty_json_object_returns_none_for_all_config_values() {
+fn empty_json_object_returns_empty_config() {
     let temp = TempDir::new_in(get_disposable_dir(), "Temp").unwrap();
     set_var("HOME", temp.path());
     create_dir_all(global_cfg_dir()).unwrap();
@@ -77,9 +81,7 @@ fn empty_json_object_returns_none_for_all_config_values() {
 
     assert_eq!(
         actual,
-        Ok(Some(GlobalConfig {
-            default_repo_path: None
-        })),
+        Ok(EMPTY_CONFIG),
     );
 }
 
@@ -116,7 +118,10 @@ fn valid_json_returns_config_values() {
 
     let actual = get_global_config();
 
-    assert_eq!(actual, Ok(Some(GlobalConfig {
-        default_repo_path: Some(PathBuf::from("Some/Path"))
-    })));
+    assert_eq!(
+        actual,
+        Ok(GlobalConfig {
+            default_repo_path: Some(PathBuf::from("Some/Path")),
+        }),
+    );
 }

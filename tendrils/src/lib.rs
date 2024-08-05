@@ -143,10 +143,7 @@ pub struct TendrilsActor {}
 
 impl TendrilsApi for TendrilsActor {
     fn get_default_repo_path(&self) -> Result<Option<PathBuf>, GetConfigError> {
-        match config::get_global_config()? {
-            Some(v) => Ok(v.default_repo_path),
-            None => Ok(None),
-        }
+        Ok(config::get_global_config()?.default_repo_path)
     }
 
     fn init_tendrils_repo(&self, dir: &Path, force: bool) -> Result<(), InitError> {
@@ -488,12 +485,9 @@ fn get_tendrils_repo(
         Some(v) => Err(GetTendrilsRepoError::GivenInvalid {
             path: v.to_path_buf()
         }),
-        None => match config::get_global_config()? {
-            Some(cfg) => match cfg.default_repo_path {
-                Some(v) if api.is_tendrils_repo(&v) => Ok(v),
-                Some(v) => Err(GetTendrilsRepoError::DefaultInvalid { path: v }),
-                None => Err(GetTendrilsRepoError::DefaultNotSet),
-            }
+        None => match config::get_global_config()?.default_repo_path {
+            Some(v) if api.is_tendrils_repo(&v) => Ok(v),
+            Some(v) => Err(GetTendrilsRepoError::DefaultInvalid { path: v }),
             None => Err(GetTendrilsRepoError::DefaultNotSet),
         }
     }

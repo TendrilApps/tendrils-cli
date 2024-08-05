@@ -23,6 +23,14 @@ pub struct GlobalConfig {
     pub default_repo_path: Option<PathBuf>,
 }
 
+impl GlobalConfig {
+    fn new() -> GlobalConfig {
+        GlobalConfig {
+            default_repo_path: None,
+        }
+    }
+}
+
 /// Parses the `tendrils.json` file in the given Tendrils repo and returns
 /// the configuration within.
 /// The tendril bundles are returned in the order they are defined in the file.
@@ -39,23 +47,26 @@ pub fn get_config(
 }
 
 /// Parses the `~/.tendrils/global-config.json` file and returns the
-/// configuration within. If the file doesn't exist, `None` is returned.
-pub fn get_global_config() -> Result<Option<GlobalConfig>, GetConfigError> {
+/// configuration within. If the file doesn't exist, an empty configuration is
+/// returned (i.e all fields set to `None`).
+pub fn get_global_config() -> Result<GlobalConfig, GetConfigError> {
     let home_dir = match get_home_dir() {
         Some(v) => v,
-        None => return Ok(None),
+        None => return Ok(GlobalConfig::new()),
     };
     let config_file_path = PathBuf::from(home_dir).join(".tendrils/global-config.json");
     let config_file_contents = match std::fs::read_to_string(config_file_path) {
         Ok(v) => v,
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+            return Ok(GlobalConfig::new())
+        }
         Err(e) => return Err(
             Into::<GetConfigError>::into(e).with_cfg_type(ConfigType::Global)
         )
     };
 
     match parse_global_config(&config_file_contents) {
-        Ok(v) => Ok(Some(v)),
+        Ok(v) => Ok(v),
         Err(e) => Err(
             Into::<GetConfigError>::into(e).with_cfg_type(ConfigType::Global)
         ),
