@@ -249,6 +249,7 @@ td push --force (-f)
 - A path can be explicitly set using the `--path` argument
     - Available on all of the actions listed above
     - If a path is provided, the current working directory and the [default repo](#default-repo-path) are not considered
+- A path containing a leading `~` will be [resolved](#resolving-tilde-)
 ``` bash
 td push --path some/tendrils/folder
 ```
@@ -312,7 +313,7 @@ td push -P home mac
 - A path can contain multiple environment variables
 
 ## Resolving Tilde (`~`)
-- A [parent](#parents) path with a leading tilde will replace the `~` with the value of the `HOME` environment variable
+- A [parent](#parents) path or a [repo path](#specifying-the-tendrils-repo) with a leading tilde will replace the `~` with the value of the `HOME` environment variable
     - If `HOME` is not set, it will fall back to the combination of `HOMEDRIVE` and `HOMEPATH`
     - If either of those are not set, the raw path is used
 ``` json

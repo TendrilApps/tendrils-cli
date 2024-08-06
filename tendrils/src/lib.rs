@@ -473,7 +473,8 @@ fn get_local_path(tendril: &Tendril, td_repo: &Path) -> PathBuf {
 ///     - If it points to an invalid folder,
 /// [`GetTendrilsRepoError::DefaultInvalid`] is returned
 ///     - If it is not set,
-/// [`GetTendrilsRepoError::DefaultNotSet`] is returned
+/// [`GetTendrilsRepoError::DefaultNotSet`] is returned.
+/// - A leading tilde (`~`) will be replaced per [`resolve_tilde`].
 // TODO: Recursively look through all parent folders before
 // checking environment variable
 fn get_tendrils_repo(
@@ -481,13 +482,43 @@ fn get_tendrils_repo(
     api: &impl TendrilsApi,
 ) -> Result<PathBuf, GetTendrilsRepoError> {
     match starting_path {
-        Some(v) if api.is_tendrils_repo(v) => Ok(v.to_path_buf()),
-        Some(v) => Err(GetTendrilsRepoError::GivenInvalid {
-            path: v.to_path_buf()
-        }),
+        Some(v) => {
+            let path_str = v.to_string_lossy();
+            let resolved_path;
+            if path_str.starts_with('~') {
+                resolved_path = PathBuf::from(resolve_tilde(&path_str));
+            }
+            else {
+                resolved_path = v.to_path_buf();
+            }
+
+            if api.is_tendrils_repo(&resolved_path) {
+                Ok(resolved_path)
+            }
+            else {
+                Err(GetTendrilsRepoError::GivenInvalid { path: resolved_path })
+            }
+        }
         None => match config::get_global_config()?.default_repo_path {
-            Some(v) if api.is_tendrils_repo(&v) => Ok(v),
-            Some(v) => Err(GetTendrilsRepoError::DefaultInvalid { path: v }),
+            Some(v) => {
+                let path_str = v.to_string_lossy();
+                let resolved_path;
+                if path_str.starts_with('~') {
+                    resolved_path = PathBuf::from(resolve_tilde(&path_str));
+                }
+                else {
+                    resolved_path = v.to_path_buf();
+                }
+
+                if api.is_tendrils_repo(&resolved_path) {
+                    Ok(resolved_path)
+                }
+                else {
+                    Err(GetTendrilsRepoError::DefaultInvalid {
+                        path: resolved_path
+                    })
+                }
+            }
             None => Err(GetTendrilsRepoError::DefaultNotSet),
         }
     }

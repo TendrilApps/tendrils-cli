@@ -15,11 +15,13 @@ use crate::{
     ActionMode,
     ConfigType,
     FilterSpec,
+    FsoType,
     GetConfigError,
     GetTendrilsRepoError,
     Location,
     SetupError,
     TendrilActionError,
+    TendrilActionSuccess,
     TendrilReport,
     TendrilsActor,
     TendrilsApi,
@@ -113,7 +115,7 @@ fn given_td_repo_is_invalid_returns_no_valid_td_repo_err(
 }
 
 #[rstest]
-#[serial("mut-env-var-td-repo")]
+#[serial("mut-env-var-testing")]
 fn given_td_repo_is_none_default_td_repo_invalid_returns_no_valid_td_repo_err(
     #[values(ActionMode::Push, ActionMode::Pull, ActionMode::Link)]
     mode: ActionMode,
@@ -148,7 +150,7 @@ fn given_td_repo_is_none_default_td_repo_invalid_returns_no_valid_td_repo_err(
 }
 
 #[rstest]
-#[serial("mut-env-var-td-repo")]
+#[serial("mut-env-var-testing")]
 fn given_td_repo_is_none_default_td_repo_not_set_returns_no_valid_td_repo_err(
     #[values(ActionMode::Push, ActionMode::Pull, ActionMode::Link)]
     mode: ActionMode,
@@ -177,7 +179,7 @@ fn given_td_repo_is_none_default_td_repo_not_set_returns_no_valid_td_repo_err(
 }
 
 #[rstest]
-#[serial("mut-env-var-td-repo")]
+#[serial("mut-env-var-testing")]
 fn given_td_repo_is_none_default_td_repo_is_valid_uses_default_td_repo(
     #[values(ActionMode::Push, ActionMode::Pull, ActionMode::Link)]
     mode: ActionMode,
@@ -222,6 +224,158 @@ fn given_td_repo_is_none_default_td_repo_is_valid_uses_default_td_repo(
                     kind: std::io::ErrorKind::NotFound,
                     loc: Location::Source
                 })
+            ))
+        }]
+    );
+}
+
+#[rstest]
+#[serial("mut-env-var-testing")]
+fn leading_tilde_in_given_repo_path_is_resolved(
+    #[values(ActionMode::Push, ActionMode::Pull, ActionMode::Link)]
+    mode: ActionMode,
+    #[values(true, false)] dry_run: bool,
+    #[values(true, false)] force: bool,
+) {
+    let api = TendrilsActor {};
+    let setup = Setup::new();
+    let mut tendril = setup.file_tendril_bundle();
+    tendril.link = mode == ActionMode::Link;
+    setup.make_td_json_file(&[tendril.clone()]);
+    let exp_local_type;
+    let exp_remote_type;
+    if &mode == &ActionMode::Pull {
+        setup.make_remote_file();
+        exp_local_type = None;
+        exp_remote_type = Some(FsoType::File);
+    }
+    else {
+        setup.make_local_file();
+        exp_local_type = Some(FsoType::File);
+        exp_remote_type = None;
+    }
+    let filter = FilterSpec::new();
+    set_var("HOME", setup.temp_dir.path());
+    let given_path = PathBuf::from("~/TendrilsRepo");
+
+    let actual = api.tendril_action(
+        mode.clone(),
+        Some(&given_path),
+        filter,
+        dry_run,
+        force
+    )
+    .unwrap();
+
+    let exp_success;
+    if dry_run {
+        exp_success = TendrilActionSuccess::NewSkipped;
+    }
+    else {
+        exp_success = TendrilActionSuccess::New;
+
+        if mode == ActionMode::Pull {
+            assert_eq!(
+                setup.local_file_contents(),
+                "Remote file contents",
+            );
+        }
+        else {
+            assert_eq!(
+                setup.remote_file_contents(),
+                "Local file contents"
+            );
+        }
+    }
+    assert_eq!(
+        actual,
+        vec![TendrilReport {
+            orig_tendril: Rc::new(tendril.clone()),
+            name: tendril.names[0].clone(),
+            log: Ok(ActionLog::new(
+                exp_local_type,
+                exp_remote_type,
+                setup.remote_file.clone(),
+                Ok(exp_success),
+            ))
+        }]
+    );
+}
+
+#[rstest]
+#[serial("mut-env-var-testing")]
+fn leading_tilde_in_default_repo_path_is_resolved(
+    #[values(ActionMode::Push, ActionMode::Pull, ActionMode::Link)]
+    mode: ActionMode,
+    #[values(true, false)] dry_run: bool,
+    #[values(true, false)] force: bool,
+) {
+    let api = TendrilsActor {};
+    let setup = Setup::new();
+    let mut tendril = setup.file_tendril_bundle();
+    tendril.link = mode == ActionMode::Link;
+    setup.make_td_json_file(&[tendril.clone()]);
+    let exp_local_type;
+    let exp_remote_type;
+    if &mode == &ActionMode::Pull {
+        setup.make_remote_file();
+        exp_local_type = None;
+        exp_remote_type = Some(FsoType::File);
+    }
+    else {
+        setup.make_local_file();
+        exp_local_type = Some(FsoType::File);
+        exp_remote_type = None;
+    }
+    let filter = FilterSpec::new();
+
+    // Create global configs
+    set_var("HOME", setup.temp_dir.path());
+    create_dir_all(global_cfg_dir()).unwrap();
+    write(
+        global_cfg_file(),
+        default_repo_path_as_json("~/TendrilsRepo"),
+    ).unwrap();
+
+    let actual = api.tendril_action(
+        mode.clone(),
+        None,
+        filter,
+        dry_run,
+        force
+    )
+    .unwrap();
+
+    let exp_success;
+    if dry_run {
+        exp_success = TendrilActionSuccess::NewSkipped;
+    }
+    else {
+        exp_success = TendrilActionSuccess::New;
+
+        if mode == ActionMode::Pull {
+            assert_eq!(
+                setup.local_file_contents(),
+                "Remote file contents",
+            );
+        }
+        else {
+            assert_eq!(
+                setup.remote_file_contents(),
+                "Local file contents"
+            );
+        }
+    }
+    assert_eq!(
+        actual,
+        vec![TendrilReport {
+            orig_tendril: Rc::new(tendril.clone()),
+            name: tendril.names[0].clone(),
+            log: Ok(ActionLog::new(
+                exp_local_type,
+                exp_remote_type,
+                setup.remote_file.clone(),
+                Ok(exp_success),
             ))
         }]
     );

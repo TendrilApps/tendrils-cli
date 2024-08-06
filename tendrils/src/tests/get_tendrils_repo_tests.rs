@@ -3,6 +3,7 @@ use crate::test_utils::{
     global_cfg_dir,
     get_disposable_dir,
     global_cfg_file,
+    Setup,
 };
 use crate::{get_tendrils_repo, GetTendrilsRepoError, TendrilsActor, TendrilsApi};
 use serial_test::serial;
@@ -220,4 +221,118 @@ fn starting_dir_none_default_valid_returns_default() {
     let actual = get_tendrils_repo(None, &api).unwrap();
 
     assert_eq!(actual, default_td_dir);
+}
+
+#[test]
+#[serial("mut-env-var-testing")]
+fn leading_tilde_in_given_path_is_resolved() {
+    let api = TendrilsActor {};
+    let setup = Setup::new();
+    setup.make_td_json_file(&[]);
+    let starting_td_repo = PathBuf::from("~/TendrilsRepo");
+    set_var("HOME", setup.temp_dir.path());
+
+    let actual = get_tendrils_repo(Some(&starting_td_repo), &api).unwrap();
+
+    assert_eq!(actual, setup.td_repo);
+}
+
+#[test]
+#[serial("mut-env-var-testing")]
+fn leading_tilde_in_default_path_is_resolved() {
+    let api = TendrilsActor {};
+    let setup = Setup::new();
+    setup.make_td_json_file(&[]);
+
+    // Create global configs
+    set_var("HOME", setup.temp_dir.path());
+    create_dir_all(global_cfg_dir()).unwrap();
+    write(
+        global_cfg_file(),
+        default_repo_path_as_json("~/TendrilsRepo"),
+    ).unwrap();
+
+    let actual = get_tendrils_repo(None, &api).unwrap();
+
+    assert_eq!(actual, setup.td_repo);
+}
+
+#[test]
+#[serial("mut-env-var-testing")]
+fn leading_tilde_in_given_path_is_resolved_in_error_path() {
+    let api = TendrilsActor {};
+    let setup = Setup::new();
+    let starting_td_repo = PathBuf::from("~/TendrilsRepo");
+    set_var("HOME", setup.temp_dir.path());
+
+    let actual = get_tendrils_repo(Some(&starting_td_repo), &api);
+
+    assert_eq!(
+        actual,
+        Err(GetTendrilsRepoError::GivenInvalid { path: setup.td_repo })
+    );
+}
+
+#[test]
+#[serial("mut-env-var-testing")]
+fn leading_tilde_in_default_path_is_resolved_in_error_path() {
+    let api = TendrilsActor {};
+    let setup = Setup::new();
+
+    // Create global configs
+    set_var("HOME", setup.temp_dir.path());
+    create_dir_all(global_cfg_dir()).unwrap();
+    write(
+        global_cfg_file(),
+        default_repo_path_as_json("~/TendrilsRepo"),
+    ).unwrap();
+
+    let actual = get_tendrils_repo(None, &api);
+
+    assert_eq!(
+        actual,
+        Err(GetTendrilsRepoError::DefaultInvalid { path: setup.td_repo })
+    );
+}
+
+#[test]
+#[serial("mut-env-var-testing")]
+fn non_leading_tilde_in_given_path_is_not_resolved() {
+    let api = TendrilsActor {};
+    let setup = Setup::new();
+    let starting_td_repo = PathBuf::from("Tendrils~Repo");
+    set_var("HOME", setup.temp_dir.path());
+
+    let actual = get_tendrils_repo(Some(&starting_td_repo), &api);
+
+    assert_eq!(
+        actual,
+        Err(GetTendrilsRepoError::GivenInvalid {
+            path: PathBuf::from("Tendrils~Repo")
+        })
+    );
+}
+
+#[test]
+#[serial("mut-env-var-testing")]
+fn non_leading_tilde_in_default_path_is_not_resolved() {
+    let api = TendrilsActor {};
+    let setup = Setup::new();
+
+    // Create global configs
+    set_var("HOME", setup.temp_dir.path());
+    create_dir_all(global_cfg_dir()).unwrap();
+    write(
+        global_cfg_file(),
+        default_repo_path_as_json("Tendrils~Repo"),
+    ).unwrap();
+
+    let actual = get_tendrils_repo(None, &api);
+
+    assert_eq!(
+        actual,
+        Err(GetTendrilsRepoError::DefaultInvalid {
+            path: PathBuf::from("Tendrils~Repo")
+        })
+    );
 }
