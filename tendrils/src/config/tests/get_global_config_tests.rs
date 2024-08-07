@@ -1,16 +1,12 @@
 use crate::{ConfigType, GetConfigError};
 use crate::config::{get_global_config, GlobalConfig};
 use crate::test_utils::{
-    global_cfg_dir,
-    get_disposable_dir,
     global_cfg_file,
     set_ra,
+    Setup,
 };
 use serial_test::serial;
-use std::env::set_var;
-use std::fs::{create_dir_all, write};
 use std::path::PathBuf;
-use tempdir::TempDir;
 
 const EMPTY_CONFIG: GlobalConfig = GlobalConfig {
     default_repo_path: None,
@@ -19,8 +15,8 @@ const EMPTY_CONFIG: GlobalConfig = GlobalConfig {
 #[test]
 #[serial("mut-env-var-testing")]
 fn no_config_file_returns_empty_config() {
-    let temp = TempDir::new_in(get_disposable_dir(), "Temp").unwrap();
-    set_var("HOME", temp.path());
+    let setup = Setup::new();
+    setup.set_home();
     assert!(!global_cfg_file().exists());
 
     let actual = get_global_config();
@@ -34,10 +30,8 @@ fn no_config_file_returns_empty_config() {
 #[test]
 #[serial("mut-env-var-testing")]
 fn invalid_json_returns_parse_error() {
-    let temp = TempDir::new_in(get_disposable_dir(), "Temp").unwrap();
-    set_var("HOME", temp.path());
-    create_dir_all(global_cfg_dir()).unwrap();
-    write(&global_cfg_file(), "I'm not JSON").unwrap();
+    let setup = Setup::new();
+    setup.make_global_cfg_file("I'm not JSON".to_string());
 
     let actual = get_global_config();
 
@@ -53,10 +47,8 @@ fn invalid_json_returns_parse_error() {
 #[test]
 #[serial("mut-env-var-testing")]
 fn empty_config_file_returns_parse_error() {
-    let temp = TempDir::new_in(get_disposable_dir(), "Temp").unwrap();
-    set_var("HOME", temp.path());
-    create_dir_all(global_cfg_dir()).unwrap();
-    write(&global_cfg_file(), "").unwrap();
+    let setup = Setup::new();
+    setup.make_global_cfg_file("".to_string());
 
     let actual = get_global_config();
 
@@ -72,10 +64,8 @@ fn empty_config_file_returns_parse_error() {
 #[test]
 #[serial("mut-env-var-testing")]
 fn empty_json_object_returns_empty_config() {
-    let temp = TempDir::new_in(get_disposable_dir(), "Temp").unwrap();
-    set_var("HOME", temp.path());
-    create_dir_all(global_cfg_dir()).unwrap();
-    write(&global_cfg_file(), "{}").unwrap();
+    let setup = Setup::new();
+    setup.make_global_cfg_file("{}".to_string());
 
     let actual = get_global_config();
 
@@ -88,11 +78,9 @@ fn empty_json_object_returns_empty_config() {
 #[test]
 #[serial("mut-env-var-testing")]
 fn no_read_access_to_config_file_returns_io_permission_error() {
-    let temp = TempDir::new_in(get_disposable_dir(), "Temp").unwrap();
-    set_var("HOME", temp.path());
+    let setup = Setup::new();
+    setup.make_global_cfg_file("".to_string());
     let config_file = global_cfg_file();
-    create_dir_all(global_cfg_dir()).unwrap();
-    write(&config_file, "").unwrap();
     set_ra(&config_file, false);
 
     let actual = get_global_config();
@@ -110,11 +98,10 @@ fn no_read_access_to_config_file_returns_io_permission_error() {
 #[test]
 #[serial("mut-env-var-testing")]
 fn valid_json_returns_config_values() {
-    let temp = TempDir::new_in(get_disposable_dir(), "Temp").unwrap();
-    set_var("HOME", temp.path());
-    let json = r#"{"default-repo-path": "Some/Path"}"#;
-    create_dir_all(global_cfg_dir()).unwrap();
-    write(&global_cfg_file(), json).unwrap();
+    let setup = Setup::new();
+    setup.make_global_cfg_file(
+        r#"{"default-repo-path": "Some/Path"}"#.to_string()
+    );
 
     let actual = get_global_config();
 

@@ -4,7 +4,6 @@
 
 use crate::test_utils::{
     default_repo_path_as_json,
-    global_cfg_dir,
     global_cfg_file,
     Setup,
     set_parents,
@@ -28,8 +27,7 @@ use crate::{
 };
 use rstest::rstest;
 use serial_test::serial;
-use std::env::set_var;
-use std::fs::{create_dir_all, write};
+use std::fs::write;
 use std::path::PathBuf;
 use std::rc::Rc;
 
@@ -125,12 +123,9 @@ fn given_td_repo_is_none_default_td_repo_invalid_returns_no_valid_td_repo_err(
     let api = TendrilsActor {};
     let setup = Setup::new();
     let filter = FilterSpec::new();
-    set_var("HOME", setup.temp_dir.path());
-    create_dir_all(global_cfg_dir()).unwrap();
-    write(
-        &global_cfg_file(),
+    setup.make_global_cfg_file(
         default_repo_path_as_json("I DON'T EXIST"),
-    ).unwrap();
+    );
     assert!(!api.is_tendrils_repo(&setup.td_repo));
 
     let actual = api.tendril_action(
@@ -160,7 +155,7 @@ fn given_td_repo_is_none_default_td_repo_not_set_returns_no_valid_td_repo_err(
     let api = TendrilsActor {};
     let setup = Setup::new();
     let filter = FilterSpec::new();
-    set_var("HOME", setup.temp_dir.path());
+    setup.set_home();
     assert!(!global_cfg_file().exists());
     assert!(!api.is_tendrils_repo(&setup.td_repo));
 
@@ -191,16 +186,11 @@ fn given_td_repo_is_none_default_td_repo_is_valid_uses_default_td_repo(
     let mut tendril = setup.file_tendril_bundle();
     tendril.link = mode == ActionMode::Link;
     setup.make_td_json_file(&[tendril.clone()]);
-    let filter = FilterSpec::new();
-
-    // Create global configs
     let json_path = setup.td_repo.to_string_lossy().replace("\\", "\\\\");
-    set_var("HOME", setup.temp_dir.path());
-    create_dir_all(global_cfg_dir()).unwrap();
-    write(
-        global_cfg_file(),
+    setup.make_global_cfg_file(
         default_repo_path_as_json(&json_path),
-    ).unwrap();
+    );
+    let filter = FilterSpec::new();
 
     let actual = api.tendril_action(
         mode,
@@ -255,7 +245,7 @@ fn leading_tilde_in_given_repo_path_is_resolved(
         exp_remote_type = None;
     }
     let filter = FilterSpec::new();
-    set_var("HOME", setup.temp_dir.path());
+    setup.set_home();
     let given_path = PathBuf::from("~/TendrilsRepo");
 
     let actual = api.tendril_action(
@@ -328,14 +318,9 @@ fn leading_tilde_in_default_repo_path_is_resolved(
         exp_remote_type = None;
     }
     let filter = FilterSpec::new();
-
-    // Create global configs
-    set_var("HOME", setup.temp_dir.path());
-    create_dir_all(global_cfg_dir()).unwrap();
-    write(
-        global_cfg_file(),
+    setup.make_global_cfg_file(
         default_repo_path_as_json("~/TendrilsRepo"),
-    ).unwrap();
+    );
 
     let actual = api.tendril_action(
         mode.clone(),

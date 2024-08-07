@@ -1,23 +1,19 @@
 use crate::test_utils::{
     default_repo_path_as_json,
-    global_cfg_dir,
-    get_disposable_dir,
     global_cfg_file,
+    Setup,
 };
 use crate::{ConfigType, GetConfigError, TendrilsActor, TendrilsApi};
 use rstest::rstest;
 use serial_test::serial;
-use std::env::set_var;
-use std::fs::{create_dir_all, write};
 use std::path::PathBuf;
-use tempdir::TempDir;
 
 #[test]
 #[serial("mut-env-var-testing")]
 fn config_file_does_not_exist_returns_none() {
     let api = TendrilsActor {};
-    let temp = TempDir::new_in(get_disposable_dir(), "Temp").unwrap();
-    set_var("HOME", temp.path());
+    let setup = Setup::new();
+    setup.set_home();
     assert!(!global_cfg_file().exists());
 
     let actual = api.get_default_repo_path();
@@ -29,10 +25,8 @@ fn config_file_does_not_exist_returns_none() {
 #[serial("mut-env-var-testing")]
 fn invalid_json_returns_parse_error() {
     let api = TendrilsActor {};
-    let temp = TempDir::new_in(get_disposable_dir(), "Temp").unwrap();
-    set_var("HOME", temp.path());
-    create_dir_all(global_cfg_dir()).unwrap();
-    write(global_cfg_file(), "").unwrap();
+    let setup = Setup::new();
+    setup.make_global_cfg_file("".to_string());
 
     let actual = api.get_default_repo_path();
 
@@ -63,13 +57,10 @@ fn config_file_exists_returns_unaltered_path_even_if_invalid(
     #[case] exp_field_contents: &str
 ) {
     let api = TendrilsActor {};
-    let temp = TempDir::new_in(get_disposable_dir(), "Temp").unwrap();
-    set_var("HOME", temp.path());
-    create_dir_all(global_cfg_dir()).unwrap();
-    write(
-        global_cfg_file(),
+    let setup = Setup::new();
+    setup.make_global_cfg_file(
         default_repo_path_as_json(field_contents)
-    ).unwrap();
+    );
 
     let actual = api.get_default_repo_path();
 

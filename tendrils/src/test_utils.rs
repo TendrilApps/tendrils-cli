@@ -318,6 +318,7 @@ impl TendrilsApi for MockTendrilsApi<'_> {
     }
 }
 
+/// Abstractions for Tendrils test setups built around temporary directories.
 pub struct Setup {
     pub temp_dir: TempDir, // Must return a reference to keep it in scope
     pub parent_dir: PathBuf,
@@ -560,6 +561,29 @@ impl Setup {
     pub fn make_target_nested_file(&self) {
         self.make_target_dir();
         write(&self.target_nested_file, "Target nested file contents").unwrap();
+    }
+
+    /// Note: This changes the `HOME` environment variable for the process
+    /// so should not be run in parallel with other tests where this may
+    /// interfere.
+    pub fn make_global_cfg_dir(&self) {
+        self.set_home();
+        create_dir_all(global_cfg_dir()).unwrap();
+    }
+
+    /// Note: This changes the `HOME` environment variable for the process
+    /// so should not be run in parallel with other tests where this may
+    /// interfere.
+    pub fn make_global_cfg_file(&self, json: String) {
+        self.make_global_cfg_dir();
+        write(global_cfg_file(), json).unwrap();
+    }
+
+    /// Note: This changes the `HOME` environment variable for the process
+    /// so should not be run in parallel with other tests where this may
+    /// interfere.
+    pub fn set_home(&self) {
+        std::env::set_var("HOME", self.temp_dir.path());
     }
 
     pub fn td_json_file_contents(&self) -> String {
