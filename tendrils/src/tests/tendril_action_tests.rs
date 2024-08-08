@@ -155,7 +155,7 @@ fn given_td_repo_is_none_default_td_repo_not_set_returns_no_valid_td_repo_err(
     let api = TendrilsActor {};
     let setup = Setup::new();
     let filter = FilterSpec::new();
-    setup.set_home();
+    setup.set_home_dir();
     assert!(!global_cfg_file().exists());
     assert!(!api.is_tendrils_repo(&setup.td_repo));
 
@@ -245,7 +245,7 @@ fn leading_tilde_in_given_repo_path_is_resolved(
         exp_remote_type = None;
     }
     let filter = FilterSpec::new();
-    setup.set_home();
+    setup.set_home_dir();
     let given_path = PathBuf::from("~/TendrilsRepo");
 
     let actual = api.tendril_action(

@@ -1,6 +1,7 @@
 use crate::{TendrilsActor, TendrilsApi};
 use crate::config::parse_config;
-use crate::test_utils::get_disposable_dir;
+use crate::test_utils::{get_disposable_dir, global_cfg_dir, home_dir, Setup};
+use serial_test::serial;
 use std::fs::{create_dir_all, write};
 use tempdir::TempDir;
 
@@ -89,4 +90,46 @@ fn valid_tendrils_json_file_returns_true() {
     assert!(parse_config(json).is_ok());
 
     assert!(api.is_tendrils_repo(&td_dir.path()));
+}
+
+#[test]
+#[serial("mut-env-var-testing")]
+fn home_dir_with_global_cfg_file_and_td_json_returns_true() {
+    let api = TendrilsActor {};
+    let setup = Setup::new();
+    setup.make_global_cfg_file("".to_string());
+    let td_dir = home_dir();
+    let dot_tendrils_dir = td_dir.join(".tendrils");
+    let td_json_file = dot_tendrils_dir.join("tendrils.json");
+    create_dir_all(&dot_tendrils_dir).unwrap();
+    write(td_json_file, "").unwrap();
+
+    assert!(api.is_tendrils_repo(&td_dir));
+}
+
+#[test]
+#[serial("mut-env-var-testing")]
+fn home_dir_with_global_cfg_file_but_no_td_json_returns_false() {
+    let api = TendrilsActor {};
+    let setup = Setup::new();
+    setup.make_global_cfg_file("".to_string());
+    let td_dir = home_dir();
+    assert!(!setup.td_json_file.exists());
+
+    assert!(!api.is_tendrils_repo(&td_dir));
+}
+
+#[test]
+#[serial("mut-env-var-testing")]
+fn global_config_dir_can_be_tendrils_folder() {
+    let api = TendrilsActor {};
+    let setup = Setup::new();
+    setup.make_global_cfg_file("".to_string());
+    let td_dir = global_cfg_dir();
+    let dot_tendrils_dir = td_dir.join(".tendrils");
+    let td_json_file = dot_tendrils_dir.join("tendrils.json");
+    create_dir_all(&dot_tendrils_dir).unwrap();
+    write(td_json_file, "").unwrap();
+
+    assert!(api.is_tendrils_repo(&td_dir));
 }

@@ -1,8 +1,8 @@
 use crate::{ConfigType, GetConfigError, TendrilBundle};
-use crate::config::get_config;
-use crate::test_utils::get_disposable_dir;
+use crate::config::{Config, get_config};
+use crate::test_utils::{get_disposable_dir, Setup};
 use crate::tests::sample_tendrils::SampleTendrils;
-use std::fs::{create_dir_all, write};
+use std::fs::write;
 use tempdir::TempDir;
 
 #[test]
@@ -22,15 +22,11 @@ fn no_tendrils_json_file_returns_io_not_found_error() {
 
 #[test]
 fn invalid_json_returns_parse_error() {
-    let temp_td_repo =
-        TempDir::new_in(get_disposable_dir(), "TendrilsRepo").unwrap();
+    let setup = Setup::new();
+    setup.make_dot_td_dir();
+    write(&setup.td_json_file, "I'm not JSON").unwrap();
 
-    let dot_td_dir = temp_td_repo.path().join(".tendrils");
-    let td_json_file = dot_td_dir.join("tendrils.json");
-    create_dir_all(dot_td_dir).unwrap();
-    write(&td_json_file, "I'm not JSON").unwrap();
-
-    let actual = get_config(&temp_td_repo.path());
+    let actual = get_config(&setup.td_repo);
 
     assert_eq!(
         actual,
@@ -42,18 +38,43 @@ fn invalid_json_returns_parse_error() {
 }
 
 #[test]
+fn empty_config_file_returns_parse_error() {
+    let setup = Setup::new();
+    setup.make_dot_td_dir();
+    write(&setup.td_json_file, "").unwrap();
+
+    let actual = get_config(&setup.td_repo);
+
+    assert_eq!(
+        actual,
+        Err(GetConfigError::ParseError {
+            cfg_type: ConfigType::Repo,
+            msg: "EOF while parsing a value at line 1 column 0".to_string(),
+        }),
+    );
+}
+
+#[test]
+fn empty_json_object_returns_empty_tendrils_list() {
+    let setup = Setup::new();
+    setup.make_dot_td_dir();
+    write(&setup.td_json_file, "{}").unwrap();
+
+    let actual = get_config(&setup.td_repo);
+
+    assert_eq!(actual, Ok(Config { tendrils: vec![] }));
+}
+
+#[test]
 fn valid_json_returns_tendrils_in_same_order_as_file() {
-    let temp_td_repo =
-        TempDir::new_in(get_disposable_dir(), "TendrilsRepo").unwrap();
+    let setup = Setup::new();
     let json = SampleTendrils::build_tendrils_json(&[
         SampleTendrils::tendril_1_json(),
         SampleTendrils::tendril_4_json(),
         SampleTendrils::tendril_2_json(),
     ]);
-    let dot_td_dir = temp_td_repo.path().join(".tendrils");
-    let td_json_file = dot_td_dir.join("tendrils.json");
-    create_dir_all(dot_td_dir).unwrap();
-    write(&td_json_file, &json).unwrap();
+    setup.make_dot_td_dir();
+    write(&setup.td_json_file, &json).unwrap();
 
     let expected = vec![
         SampleTendrils::tendril_1(),
@@ -62,7 +83,18 @@ fn valid_json_returns_tendrils_in_same_order_as_file() {
     ];
 
     let actual: Vec<TendrilBundle> =
-        get_config(&temp_td_repo.path()).unwrap().tendrils;
+        get_config(&setup.td_repo).unwrap().tendrils;
 
     assert_eq!(actual, expected);
+}
+
+#[test]
+fn config_file_is_unchanged() {
+    let setup = Setup::new();
+    setup.make_dot_td_dir();
+    write(&setup.td_json_file, r#"{"tendrils": []}"#.to_string()).unwrap();
+
+    let _ = get_config(&setup.td_repo).unwrap();
+
+    assert_eq!(setup.td_json_file_contents(), r#"{"tendrils": []}"#);
 }

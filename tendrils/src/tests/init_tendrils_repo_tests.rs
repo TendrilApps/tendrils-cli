@@ -1,5 +1,5 @@
 use crate::config::{Config, parse_config};
-use crate::test_utils::Setup;
+use crate::test_utils::{global_cfg_dir, global_cfg_file, home_dir, Setup};
 use crate::{
     InitError,
     TendrilBundle,
@@ -195,6 +195,62 @@ fn dir_contains_non_empty_dot_tendrils_dir_returns_not_empty_error_unless_forced
     let actual = api.init_tendrils_repo(&setup.td_repo, force);
 
     assert_eq!(read_to_string(misc_nested).unwrap(), "Nested file contents");
+    if force {
+        assert_eq!(actual, Ok(()));
+        assert_eq!(setup.td_json_file_contents(), crate::INIT_TD_TENDRILS_JSON);
+        assert!(api.is_tendrils_repo(&setup.td_repo))
+    }
+    else {
+        assert_eq!(actual, Err(InitError::NotEmpty));
+        assert!(!api.is_tendrils_repo(&setup.td_repo))
+    }
+}
+
+#[rstest]
+#[case(true)]
+#[case(false)]
+#[serial("mut-env-var-testing")]
+fn init_in_home_dir_with_global_cfg_file_returns_non_empty_error_unless_forced(
+    #[case] force: bool,
+) {
+    let api = TendrilsActor {};
+    let mut setup = Setup::new();
+    setup.make_global_cfg_file("Cfg file contents".to_string());
+    setup.td_repo = home_dir();
+    setup.dot_td_dir = setup.td_repo.join(".tendrils");
+    setup.td_json_file = setup.dot_td_dir.join("tendrils.json");
+
+    let actual = api.init_tendrils_repo(&setup.td_repo, force);
+
+    assert_eq!(read_to_string(global_cfg_file()).unwrap(), "Cfg file contents");
+    if force {
+        assert_eq!(actual, Ok(()));
+        assert_eq!(setup.td_json_file_contents(), crate::INIT_TD_TENDRILS_JSON);
+        assert!(api.is_tendrils_repo(&setup.td_repo))
+    }
+    else {
+        assert_eq!(actual, Err(InitError::NotEmpty));
+        assert!(!api.is_tendrils_repo(&setup.td_repo))
+    }
+}
+
+#[rstest]
+#[case(true)]
+#[case(false)]
+#[serial("mut-env-var-testing")]
+fn init_in_global_cfg_dir_with_global_cfg_file_returns_non_empty_error_unless_forced(
+    #[case] force: bool,
+) {
+    let api = TendrilsActor {};
+    let mut setup = Setup::new();
+    setup.make_global_cfg_file("Cfg file contents".to_string());
+    setup.td_repo = global_cfg_dir();
+    setup.dot_td_dir = setup.td_repo.join(".tendrils");
+    setup.td_json_file = setup.dot_td_dir.join("tendrils.json");
+
+    let actual = api.init_tendrils_repo(&setup.td_repo, force);
+
+    assert_eq!(read_to_string(global_cfg_file()).unwrap(), "Cfg file contents");
     if force {
         assert_eq!(actual, Ok(()));
         assert_eq!(setup.td_json_file_contents(), crate::INIT_TD_TENDRILS_JSON);

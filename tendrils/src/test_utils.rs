@@ -67,10 +67,14 @@ pub fn is_empty(dir: &Path) -> bool {
     true
 }
 
+pub fn home_dir() -> PathBuf {
+    PathBuf::from(var("HOME").unwrap())
+}
+
 /// Path to the global `~/.tendrils` folder using the current value of
 /// the `HOME` environment variable
 pub fn global_cfg_dir() -> PathBuf {
-    PathBuf::from(var("HOME").unwrap()).join(".tendrils")
+    home_dir().join(".tendrils")
 }
 
 /// Path to the global `~/.tendrils/global-config.json` file using the
@@ -567,7 +571,7 @@ impl Setup {
     /// so should not be run in parallel with other tests where this may
     /// interfere.
     pub fn make_global_cfg_dir(&self) {
-        self.set_home();
+        self.set_home_dir();
         create_dir_all(global_cfg_dir()).unwrap();
     }
 
@@ -582,7 +586,7 @@ impl Setup {
     /// Note: This changes the `HOME` environment variable for the process
     /// so should not be run in parallel with other tests where this may
     /// interfere.
-    pub fn set_home(&self) {
+    pub fn set_home_dir(&self) {
         std::env::set_var("HOME", self.temp_dir.path());
     }
 

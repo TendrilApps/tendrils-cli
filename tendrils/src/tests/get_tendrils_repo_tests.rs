@@ -14,7 +14,7 @@ fn starting_dir_invalid_default_not_set_returns_given_invalid_err() {
     let api = TendrilsActor {};
     let setup = Setup::new();
     let starting_td_repo = setup.td_repo.clone();
-    setup.set_home();
+    setup.set_home_dir();
     assert!(!global_cfg_file().exists());
     assert!(!api.is_tendrils_repo(&starting_td_repo));
 
@@ -72,7 +72,7 @@ fn starting_dir_valid_default_not_set_returns_starting_dir() {
     let setup = Setup::new();
     let starting_td_repo = setup.td_repo.clone();
     setup.make_td_json_file(&[]);
-    setup.set_home();
+    setup.set_home_dir();
     assert!(!global_cfg_file().exists());
     assert!(api.is_tendrils_repo(&starting_td_repo));
 
@@ -128,7 +128,7 @@ fn starting_dir_none_default_not_set_returns_default_not_set_err() {
     let api = TendrilsActor {};
     let setup = Setup::new();
     let starting_td_repo = None;
-    setup.set_home();
+    setup.set_home_dir();
     assert!(!global_cfg_file().exists());
 
     let actual = get_tendrils_repo(starting_td_repo, &api);
@@ -175,11 +175,30 @@ fn starting_dir_none_default_valid_returns_default() {
 
 #[test]
 #[serial("mut-env-var-testing")]
+fn starting_dir_is_default_dir_and_is_valid_returns_dir() {
+    let api = TendrilsActor {};
+    let setup = Setup::new();
+    let starting_td_repo = setup.td_repo.clone();
+    let default_td_repo = setup.td_repo.clone();
+    let json_path = default_td_repo.to_string_lossy().replace("\\", "\\\\");
+    setup.make_td_json_file(&[]);
+    setup.make_global_cfg_file(default_repo_path_as_json(&json_path));
+    assert!(api.is_tendrils_repo(&starting_td_repo));
+    assert!(api.is_tendrils_repo(&default_td_repo));
+    assert_eq!(&starting_td_repo, &default_td_repo);
+
+    let actual = get_tendrils_repo(Some(&starting_td_repo), &api).unwrap();
+
+    assert_eq!(actual, default_td_repo);
+}
+
+#[test]
+#[serial("mut-env-var-testing")]
 fn leading_tilde_in_given_path_is_resolved() {
     let api = TendrilsActor {};
     let setup = Setup::new();
     setup.make_td_json_file(&[]);
-    setup.set_home();
+    setup.set_home_dir();
     let starting_td_repo = PathBuf::from("~/TendrilsRepo");
 
     let actual = get_tendrils_repo(Some(&starting_td_repo), &api).unwrap();
@@ -207,7 +226,7 @@ fn leading_tilde_in_default_path_is_resolved() {
 fn leading_tilde_in_given_path_is_resolved_in_error_path() {
     let api = TendrilsActor {};
     let setup = Setup::new();
-    setup.set_home();
+    setup.set_home_dir();
     let starting_td_repo = PathBuf::from("~/TendrilsRepo");
 
     let actual = get_tendrils_repo(Some(&starting_td_repo), &api);
@@ -240,7 +259,7 @@ fn leading_tilde_in_default_path_is_resolved_in_error_path() {
 fn non_leading_tilde_in_given_path_is_not_resolved() {
     let api = TendrilsActor {};
     let setup = Setup::new();
-    setup.set_home();
+    setup.set_home_dir();
     let starting_td_repo = PathBuf::from("Tendrils~Repo");
 
     let actual = get_tendrils_repo(Some(&starting_td_repo), &api);

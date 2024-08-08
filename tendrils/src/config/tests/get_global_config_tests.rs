@@ -16,7 +16,7 @@ const EMPTY_CONFIG: GlobalConfig = GlobalConfig {
 #[serial("mut-env-var-testing")]
 fn no_config_file_returns_empty_config() {
     let setup = Setup::new();
-    setup.set_home();
+    setup.set_home_dir();
     assert!(!global_cfg_file().exists());
 
     let actual = get_global_config();
@@ -112,3 +112,18 @@ fn valid_json_returns_config_values() {
         }),
     );
 }
+
+#[test]
+#[serial("mut-env-var-testing")]
+fn config_file_is_unchanged() {
+    let setup = Setup::new();
+    setup.make_global_cfg_file(
+        r#"{"default-repo-path": "Orig text"}"#.to_string()
+    );
+
+    let _ = get_global_config().unwrap();
+
+    let global_cfg_file_contents = std::fs::read_to_string(global_cfg_file()).unwrap();
+    assert_eq!(global_cfg_file_contents, r#"{"default-repo-path": "Orig text"}"#);
+}
+

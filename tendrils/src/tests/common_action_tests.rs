@@ -5,7 +5,14 @@
 //! - [`crate::tests::pull_tendril_tests`]
 //! - [`crate::tests::push_tendril_tests`]
 
-use crate::test_utils::{get_disposable_dir, symlink_expose, Setup};
+use crate::test_utils::{
+    get_disposable_dir,
+    global_cfg_dir,
+    global_cfg_file,
+    home_dir,
+    symlink_expose,
+    Setup,
+};
 use crate::{
     is_rofs_err,
     link_tendril,
@@ -279,6 +286,209 @@ fn remote_is_another_td_repo_proceeds_normally(
             Some(FsoType::Dir),
             Some(FsoType::Dir),
             setup.remote_dir,
+            exp_result,
+        )
+    );
+}
+
+#[rstest]
+#[case(link_tendril)]
+#[case(pull_tendril)]
+#[case(push_tendril)]
+#[serial("mut-env-var-testing")]
+fn remote_is_global_config_dir_proceeds_normally(
+    #[case] action: fn(&Path, &Tendril, bool, bool) -> ActionLog,
+    #[values(true, false)] dry_run: bool,
+    #[values(true, false)] force: bool,
+) {
+    let mut setup = Setup::new();
+    setup.local_dir = setup.group_dir.join(".tendrils");
+    setup.make_global_cfg_file("Global Config Contents".to_string());
+    setup.make_local_dir();
+    setup.remote_dir = global_cfg_dir();
+
+    let mut tendril = Tendril::new(
+        "SomeApp",
+        ".tendrils",
+        home_dir(),
+        TendrilMode::DirOverwrite,
+    ).unwrap();
+    if action == link_tendril {
+        tendril.mode = TendrilMode::Link;
+    }
+
+    let actual = action(&setup.td_repo, &tendril, dry_run, force);
+
+    let exp_result;
+    if action == link_tendril && !force {
+        exp_result = Err(TendrilActionError::TypeMismatch {
+            loc: Location::Dest,
+            mistype: FsoType::Dir,
+        })
+    }
+    else if dry_run {
+        exp_result = Ok(TendrilActionSuccess::OverwriteSkipped);
+    }
+    else {
+        exp_result = Ok(TendrilActionSuccess::Overwrite);
+    }
+    assert_eq!(
+        actual,
+        ActionLog::new(
+            Some(FsoType::Dir),
+            Some(FsoType::Dir),
+            setup.remote_dir,
+            exp_result,
+        )
+    );
+}
+
+#[rstest]
+#[case(link_tendril)]
+#[case(pull_tendril)]
+#[case(push_tendril)]
+#[serial("mut-env-var-testing")]
+fn remote_is_in_global_config_dir_proceeds_normally(
+    #[case] action: fn(&Path, &Tendril, bool, bool) -> ActionLog,
+    #[values(true, false)] dry_run: bool,
+    #[values(true, false)] force: bool,
+) {
+    // Using global config file here as example
+    let mut setup = Setup::new();
+    setup.local_file = setup.group_dir.join("global-config.json");
+    setup.make_global_cfg_file("Global Config Contents".to_string());
+    setup.make_local_file();
+    setup.remote_file = global_cfg_file();
+
+    let mut tendril = Tendril::new(
+        "SomeApp",
+        "global-config.json",
+        global_cfg_dir(),
+        TendrilMode::DirOverwrite,
+    ).unwrap();
+    if action == link_tendril {
+        tendril.mode = TendrilMode::Link;
+    }
+
+    let actual = action(&setup.td_repo, &tendril, dry_run, force);
+
+    let exp_result;
+    if action == link_tendril && !force {
+        exp_result = Err(TendrilActionError::TypeMismatch {
+            loc: Location::Dest,
+            mistype: FsoType::File,
+        })
+    }
+    else if dry_run {
+        exp_result = Ok(TendrilActionSuccess::OverwriteSkipped);
+    }
+    else {
+        exp_result = Ok(TendrilActionSuccess::Overwrite);
+    }
+    assert_eq!(
+        actual,
+        ActionLog::new(
+            Some(FsoType::File),
+            Some(FsoType::File),
+            setup.remote_file,
+            exp_result,
+        )
+    );
+}
+
+#[rstest]
+#[case(link_tendril)]
+#[case(pull_tendril)]
+#[case(push_tendril)]
+#[serial("mut-env-var-testing")]
+fn repo_is_global_cfg_dir_and_config_file_exists_proceeds_normally(
+    #[case] action: fn(&Path, &Tendril, bool, bool) -> ActionLog,
+    #[values(true, false)] dry_run: bool,
+    #[values(true, false)] force: bool,
+) {
+    let mut setup = Setup::new();
+    setup.make_global_cfg_file("Global Config Contents".to_string());
+    setup.td_repo = global_cfg_dir();
+    setup.group_dir = setup.td_repo.join("SomeApp");
+    setup.local_file = setup.group_dir.join("misc.txt");
+    setup.make_local_file();
+    setup.make_remote_file();
+
+    let mut tendril = setup.file_tendril();
+    if action == link_tendril {
+        tendril.mode = TendrilMode::Link;
+    }
+
+    let actual = action(&setup.td_repo, &tendril, dry_run, force);
+
+    let exp_result;
+    if action == link_tendril && !force {
+        exp_result = Err(TendrilActionError::TypeMismatch {
+            loc: Location::Dest,
+            mistype: FsoType::File,
+        })
+    }
+    else if dry_run {
+        exp_result = Ok(TendrilActionSuccess::OverwriteSkipped);
+    }
+    else {
+        exp_result = Ok(TendrilActionSuccess::Overwrite);
+    }
+    assert_eq!(
+        actual,
+        ActionLog::new(
+            Some(FsoType::File),
+            Some(FsoType::File),
+            setup.remote_file,
+            exp_result,
+        )
+    );
+}
+
+#[rstest]
+#[case(link_tendril)]
+#[case(pull_tendril)]
+#[case(push_tendril)]
+#[serial("mut-env-var-testing")]
+fn repo_is_in_global_cfg_dir_and_config_file_exists_proceeds_normally(
+    #[case] action: fn(&Path, &Tendril, bool, bool) -> ActionLog,
+    #[values(true, false)] dry_run: bool,
+    #[values(true, false)] force: bool,
+) {
+    let mut setup = Setup::new();
+    setup.make_global_cfg_file("Global Config Contents".to_string());
+    setup.td_repo = global_cfg_dir().join("TendrilsRepo");
+    setup.group_dir = setup.td_repo.join("SomeApp");
+    setup.local_file = setup.group_dir.join("misc.txt");
+    setup.make_local_file();
+    setup.make_remote_file();
+
+    let mut tendril = setup.file_tendril();
+    if action == link_tendril {
+        tendril.mode = TendrilMode::Link;
+    }
+
+    let actual = action(&setup.td_repo, &tendril, dry_run, force);
+
+    let exp_result;
+    if action == link_tendril && !force {
+        exp_result = Err(TendrilActionError::TypeMismatch {
+            loc: Location::Dest,
+            mistype: FsoType::File,
+        })
+    }
+    else if dry_run {
+        exp_result = Ok(TendrilActionSuccess::OverwriteSkipped);
+    }
+    else {
+        exp_result = Ok(TendrilActionSuccess::Overwrite);
+    }
+    assert_eq!(
+        actual,
+        ActionLog::new(
+            Some(FsoType::File),
+            Some(FsoType::File),
+            setup.remote_file,
             exp_result,
         )
     );
@@ -1456,3 +1666,5 @@ fn non_windows_platform_parent_is_root_returns_permission_error_unless_dry_run(
 
 // TODO: Test when path is invalid and a copy is attempted with both a folder
 // and a file (Windows only?)
+// TODO: Test when td_repo is in the ~/.tendrils folder and global config dir exists
+// TODO: Test when td_repo is the ~/.tendrils folder and global config dir exists

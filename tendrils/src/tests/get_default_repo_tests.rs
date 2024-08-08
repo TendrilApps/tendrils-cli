@@ -13,7 +13,7 @@ use std::path::PathBuf;
 fn config_file_does_not_exist_returns_none() {
     let api = TendrilsActor {};
     let setup = Setup::new();
-    setup.set_home();
+    setup.set_home_dir();
     assert!(!global_cfg_file().exists());
 
     let actual = api.get_default_repo_path();
@@ -40,8 +40,12 @@ fn invalid_json_returns_parse_error() {
 }
 
 #[rstest]
+#[case("", "")]
 #[case("Some/Path", "Some/Path")]
 #[case("Some\\\\Path", "Some\\Path")]
+#[case("~/Some/Path", "~/Some/Path")]
+#[case("~/Some~Path", "~/Some~Path")]
+#[case("<USER><USERNAME>", "<USER><USERNAME>")]
 #[case("I Do Not Exist", "I Do Not Exist")]
 #[case("Multi\\nLine\\nString", "Multi\nLine\nString")]
 #[case(" SomePath ", " SomePath ")]
