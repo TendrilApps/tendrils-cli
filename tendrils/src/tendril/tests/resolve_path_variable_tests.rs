@@ -1,4 +1,4 @@
-use crate::{parse_env_variables, resolve_path_variables};
+use crate::tendril::{parse_env_variables, resolve_path_variables};
 use rstest::rstest;
 use serial_test::serial;
 use std::path::PathBuf;

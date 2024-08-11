@@ -46,7 +46,7 @@ fn forbidden_groups(#[case] value: &str) {}
 
 #[apply(invalid_groups_and_names)]
 fn group_is_invalid_returns_invalid_group_error(#[case] group: &str) {
-    let actual = Tendril::new(
+    let actual = Tendril::new_expose(
         group,
         "misc.txt",
         PathBuf::from("SomePath"),
@@ -69,7 +69,7 @@ fn group_is_forbidden_returns_invalid_group_error(#[case] group: &str) {
 
 #[apply(invalid_groups_and_names)]
 fn name_is_invalid_returns_invalid_name_error(#[case] name: &str) {
-    let actual = Tendril::new(
+    let actual = Tendril::new_expose(
         "SomeApp",
         name,
         PathBuf::from("SomePath"),
@@ -85,7 +85,7 @@ fn name_is_invalid_returns_invalid_name_error(#[case] name: &str) {
 #[case("New\nLine")]
 #[case("Carriage\rReturn")]
 fn parent_is_invalid_returns_invalid_parent_error(#[case] parent: &str) {
-    let actual = Tendril::new(
+    let actual = Tendril::new_expose(
         "SomeApp",
         "misc.txt",
         PathBuf::from(parent),
@@ -98,7 +98,7 @@ fn parent_is_invalid_returns_invalid_parent_error(#[case] parent: &str) {
 
 #[apply(valid_groups_and_names)]
 fn group_is_valid_returns_ok(#[case] group: &str) {
-    Tendril::new(
+    Tendril::new_expose(
         group,
         "misc.txt",
         PathBuf::from("SomePath"),
@@ -109,7 +109,7 @@ fn group_is_valid_returns_ok(#[case] group: &str) {
 
 #[apply(valid_groups_and_names)]
 fn name_is_valid_returns_ok(#[case] name: &str) {
-    Tendril::new(
+    Tendril::new_expose(
         "SomeApp",
         name,
         PathBuf::from("SomePath"),
@@ -130,7 +130,7 @@ fn name_is_forbidden_group_returns_ok(#[case] name: &str) {
 
 #[apply(forbidden_groups)]
 fn name_subdir_is_forbidden_group_returns_ok(#[case] subdir_name: &str) {
-    Tendril::new(
+    Tendril::new_expose(
         "SomeApp",
         &format!("{subdir_name}/misc.txt"),
         PathBuf::from("SomePath"),
@@ -146,7 +146,7 @@ fn name_subdir_is_forbidden_group_returns_ok(#[case] subdir_name: &str) {
 #[case("\\some\\path\\")]
 #[case(" \\ some \\ path \\ ")]
 fn parent_is_valid_returns_ok(#[case] parent: &str) {
-    Tendril::new(
+    Tendril::new_expose(
         "SomeApp",
         "misc.txt",
         PathBuf::from(parent),
@@ -195,7 +195,7 @@ fn full_path_appends_name_to_parent_using_platform_dir_sep_for_all_slashes(
 
     #[case] expected_prefix: &str,
 ) {
-    let tendril = Tendril::new(
+    let tendril = Tendril::new_expose(
         "SomeApp",
         name_given_and_exp.0,
         parent,

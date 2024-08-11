@@ -46,7 +46,7 @@ fn remote_is_given_td_repo_returns_recursion_error(
 ) {
     let setup = Setup::new();
 
-    let mut tendril = Tendril::new(
+    let mut tendril = Tendril::new_expose(
         "SomeApp",
         "TendrilsRepo",
         setup.td_repo.parent().unwrap().to_path_buf(),
@@ -87,7 +87,7 @@ fn remote_is_ancestor_to_given_td_repo_returns_recursion_error(
         .join("Nested3")
         .join("TendrilsRepo");
 
-    let mut tendril = Tendril::new(
+    let mut tendril = Tendril::new_expose(
         "SomeApp",
         "Nested1",
         setup.parent_dir,
@@ -127,7 +127,7 @@ fn remote_is_direct_child_of_given_td_repo_returns_recursion_error(
     let remote_file = parent_dir.join("misc.txt");
     write(&remote_file, "Remote file contents").unwrap();
 
-    let mut tendril = Tendril::new(
+    let mut tendril = Tendril::new_expose(
         "SomeApp",
         "misc.txt",
         parent_dir,
@@ -168,7 +168,7 @@ fn remote_is_nested_child_of_given_td_repo_returns_recursion_error(
     create_dir_all(&remote_file.parent().unwrap()).unwrap();
     write(&remote_file, "Remote file contents").unwrap();
 
-    let mut tendril = Tendril::new(
+    let mut tendril = Tendril::new_expose(
         "SomeApp",
         "misc.txt",
         parent_dir,
@@ -307,7 +307,7 @@ fn remote_is_global_config_dir_proceeds_normally(
     setup.make_local_dir();
     setup.remote_dir = global_cfg_dir();
 
-    let mut tendril = Tendril::new(
+    let mut tendril = Tendril::new_expose(
         "SomeApp",
         ".tendrils",
         home_dir(),
@@ -360,7 +360,7 @@ fn remote_is_in_global_config_dir_proceeds_normally(
     setup.make_local_file();
     setup.remote_file = global_cfg_file();
 
-    let mut tendril = Tendril::new(
+    let mut tendril = Tendril::new_expose(
         "SomeApp",
         "global-config.json",
         global_cfg_dir(),
@@ -533,7 +533,7 @@ fn var_in_any_field_exists_uses_raw_path_even_if_var_exists(
     setup.make_target_file();
     std::env::set_var("mut-testing", "NON-EXISTENT PATH");
 
-    let mut tendril = Tendril::new(
+    let mut tendril = Tendril::new_expose(
         group,
         name,
         setup.parent_dir.clone(),
@@ -1444,14 +1444,14 @@ fn windows_platform_parent_is_root_returns_permission_error_unless_dry_run_or_di
         setup.make_remote_nested_file();
     }
 
-    let file_tendril = Tendril::new(
+    let file_tendril = Tendril::new_expose(
         "SomeApp",
         "tendrils_test_file.txt",
         setup.parent_dir.clone(),
         mode.clone(),
     )
     .unwrap();
-    let dir_tendril = Tendril::new(
+    let dir_tendril = Tendril::new_expose(
         "SomeApp",
         "tendrils_test_dir",
         setup.parent_dir.clone(),
@@ -1564,14 +1564,14 @@ fn non_windows_platform_parent_is_root_returns_permission_error_unless_dry_run(
         mode = TendrilMode::Link;
     }
 
-    let file_tendril = Tendril::new(
+    let file_tendril = Tendril::new_expose(
         "SomeApp",
         "tendrils_test_file.txt",
         setup.parent_dir.clone(),
         mode.clone(),
     )
     .unwrap();
-    let dir_tendril = Tendril::new(
+    let dir_tendril = Tendril::new_expose(
         "SomeApp",
         "tendrils_test_dir",
         setup.parent_dir.clone(),

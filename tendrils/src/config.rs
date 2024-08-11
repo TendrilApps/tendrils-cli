@@ -1,5 +1,5 @@
 use crate::{get_home_dir, ConfigType};
-use crate::tendril_bundle::TendrilBundle;
+use crate::tendril::TendrilBundle;
 use crate::enums::GetConfigError;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};

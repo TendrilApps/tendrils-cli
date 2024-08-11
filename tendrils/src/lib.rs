@@ -20,15 +20,15 @@ pub use enums::{
 mod filtering;
 use filtering::filter_tendrils;
 pub use filtering::FilterSpec;
-use std::ffi::OsString;
+mod path_ext;
+use path_ext::{Fso, resolve_tilde};
 use std::fs::{create_dir_all, remove_dir_all, remove_file};
 use std::path::{Path, PathBuf};
 mod tendril;
-use tendril::Tendril;
+use tendril::{resolve_tendril_bundle, Tendril};
+pub use tendril::TendrilBundle;
 mod tendril_report;
 pub use tendril_report::{ActionLog, TendrilLog, TendrilReport};
-mod tendril_bundle;
-pub use tendril_bundle::TendrilBundle;
 
 #[cfg(test)]
 mod tests;
@@ -378,37 +378,6 @@ fn check_copy_types(
     }
 }
 
-trait Fso {
-    /// Returns the type of the file system object that
-    /// the path points to, or returns `None` if the FSO
-    /// does not exist.
-    fn get_type(&self) -> Option<FsoType>;
-}
-
-impl Fso for Path {
-    fn get_type(&self) -> Option<FsoType> {
-        if self.is_file() {
-            if self.is_symlink() {
-                Some(FsoType::SymFile)
-            }
-            else {
-                Some(FsoType::File)
-            }
-        }
-        else if self.is_dir() {
-            if self.is_symlink() {
-                Some(FsoType::SymDir)
-            }
-            else {
-                Some(FsoType::Dir)
-            }
-        }
-        else {
-            None
-        }
-    }
-}
-
 /// Prepares the destination before copying a file system object
 /// to it
 fn prepare_dest(
@@ -686,62 +655,6 @@ fn push_tendril(
     log
 }
 
-/// Replaces all environment variables in the format `<varname>` in the
-/// given path with their values. If the variable is not found, the
-/// `<varname>` is left as-is in the path.
-///
-/// The common tilde (`~`) symbol can also be used as a prefix to the path
-/// and corresponds to the `HOME` environment variable on Unix/Windows.
-/// If `HOME` doesn't exist, it will fallback to a combination of `HOMEDRIVE`
-/// and `HOMEPATH` provided they both exist (otherwise the `~` is left as is).
-/// This fallback is mainly a Windows specific issue, but is supported on all
-/// platforms either way.
-///
-/// Any non UTF-8 characters in a variable's value or in the tilde value
-/// are replaced with the U+FFFD replacement character.
-///
-/// # Limitations
-/// If the path contains the `<pattern>` and the pattern corresponds to
-/// an environment variable, there is no way to escape the brackets
-/// to force it to use the raw path. This should only be an issue
-/// on Unix (as Windows doesn't allow `<` or `>` in paths anyways),
-/// and only when the variable exists (otherwise it uses the raw
-/// path). In the future, an escape character such as `|` could be
-/// implemented, but this added complexity was avoided for now.
-fn resolve_path_variables(mut path: String) -> PathBuf {
-    let path_temp = path.clone();
-    let vars = parse_env_variables(&path_temp);
-
-    for var in vars {
-        let var_no_brkts = &var[1..var.len() - 1];
-        let os_value =
-            std::env::var_os(var_no_brkts).unwrap_or(OsString::from(var));
-        let value = os_value.to_string_lossy();
-        path = path.replace(var, &value);
-    }
-
-    if path.starts_with('~') {
-        path = resolve_tilde(&path);
-    }
-
-    PathBuf::from(path)
-}
-
-/// Replaces the first instance of `~` with the `HOME` variable
-/// and returns the replaced string. If `HOME` doesn't exist,
-/// `HOMEDRIVE` and `HOMEPATH` will be combined provided they both exist,
-/// otherwise it returns the given string.
-///
-/// Note: This does *not* check that the tilde is the leading character (it
-/// could be anywhere in the string) - this check should be done prior to
-/// calling this.
-fn resolve_tilde(path: &str) -> String {
-    match get_home_dir() {
-        Some(v) => path.replacen('~', &v, 1),
-        None => String::from(path),
-    }
-}
-
 fn get_home_dir() -> Option<String> {
     use std::env::var_os;
     if let Some(v) = var_os("HOME") {
@@ -755,70 +668,6 @@ fn get_home_dir() -> Option<String> {
         }
         _ => None,
     }
-}
-
-/// Extracts all variable names in the given string that
-/// are of the form `<varname>`. The surrounding brackets
-/// are also returned.
-fn parse_env_variables(input: &str) -> Vec<&str> {
-    let mut vars = vec![];
-    let mut depth = 0;
-    let mut start_index = 0;
-
-    for (index, ch) in input.chars().enumerate() {
-        if ch == '<' {
-            start_index = index;
-            depth += 1;
-        }
-        else if ch == '>' && depth > 0 {
-            if depth > 0 {
-                vars.push(&input[start_index..=index]);
-            }
-            depth -= 1;
-        }
-    }
-
-    vars
-}
-
-fn resolve_tendril_bundle(
-    td_bundle: &TendrilBundle,
-    first_only: bool,
-) -> Vec<Result<Tendril, InvalidTendrilError>> {
-    let mode = match (&td_bundle.dir_merge, &td_bundle.link) {
-        (true, false) => TendrilMode::DirMerge,
-        (false, false) => TendrilMode::DirOverwrite,
-        (_, true) => TendrilMode::Link,
-    };
-
-    let raw_paths = match (first_only, td_bundle.parents.is_empty()) {
-        (true, false) => vec![td_bundle.parents[0].clone()],
-        (false, false) => td_bundle.parents.clone(),
-        (_, true) => vec![],
-    };
-
-    let mut resolve_results =
-        Vec::with_capacity(td_bundle.names.len() * td_bundle.parents.len());
-
-    // Resolve parents early to prevent doing this on
-    // each iteration
-    let resolved_parents: Vec<PathBuf> = raw_paths
-        .iter()
-        .map(|p| resolve_path_variables(String::from(p)))
-        .collect();
-
-    for name in td_bundle.names.iter() {
-        for resolved_parent in resolved_parents.iter() {
-            resolve_results.push(Tendril::new(
-                &td_bundle.group,
-                name,
-                resolved_parent.clone(),
-                mode.clone(),
-            ));
-        }
-    }
-
-    resolve_results
 }
 
 /// Returns `true` if the current Tendrils process is capable

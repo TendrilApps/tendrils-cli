@@ -429,7 +429,7 @@ impl Setup {
     }
 
     pub fn file_tendril(&self) -> Tendril {
-        Tendril::new(
+        Tendril::new_expose(
             "SomeApp",
             "misc.txt",
             self.parent_dir.clone(),
@@ -439,7 +439,7 @@ impl Setup {
     }
 
     pub fn dir_tendril(&self) -> Tendril {
-        Tendril::new(
+        Tendril::new_expose(
             "SomeApp",
             "misc",
             self.parent_dir.clone(),
@@ -449,7 +449,7 @@ impl Setup {
     }
 
     pub fn subdir_file_tendril(&self) -> Tendril {
-        Tendril::new(
+        Tendril::new_expose(
             "SomeApp",
             "SubDir/misc.txt",
             self.parent_dir.clone(),
@@ -459,7 +459,7 @@ impl Setup {
     }
 
     pub fn subdir_dir_tendril(&self) -> Tendril {
-        Tendril::new(
+        Tendril::new_expose(
             "SomeApp",
             "SubDir/misc",
             self.parent_dir.clone(),
