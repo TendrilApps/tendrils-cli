@@ -12,7 +12,7 @@ mod tests;
 /// Note: This does *not* guarantee that the path
 /// exists or is valid.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Tendril<'a> {
+pub(crate) struct Tendril<'a> {
     group: &'a str,
     name: &'a str,
     parent: PathBuf,
@@ -170,7 +170,7 @@ impl TendrilBundle {
 
 
 // TODO: Move to `to_tendrils` method on tendril bundle
-pub fn resolve_tendril_bundle(
+pub(crate) fn resolve_tendril_bundle(
     td_bundle: &TendrilBundle,
     first_only: bool,
 ) -> Vec<Result<Tendril, InvalidTendrilError>> {

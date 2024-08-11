@@ -9,7 +9,7 @@ mod tests;
 
 /// Contains the configuration context for a Tendrils repo.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
-pub struct Config {
+pub(crate) struct Config {
     /// The tendrils that are defined in a Tendrils repo.
     #[serde(default)]
     pub tendrils: Vec<TendrilBundle>
@@ -17,7 +17,7 @@ pub struct Config {
 
 /// Contains the global configuration context for Tendrils.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
-pub struct GlobalConfig {
+pub(crate) struct GlobalConfig {
     /// The path to the default Tendrils repo.
     #[serde(rename = "default-repo-path")]
     pub default_repo_path: Option<PathBuf>,
@@ -37,7 +37,7 @@ impl GlobalConfig {
 ///
 /// # Arguments
 /// - `td_repo` - Path to the Tendrils folder.
-pub fn get_config(
+pub(crate) fn get_config(
     td_repo: &Path,
 ) -> Result<Config, GetConfigError> {
     let config_file_path = td_repo.join(".tendrils/tendrils.json");
@@ -49,7 +49,7 @@ pub fn get_config(
 /// Parses the `~/.tendrils/global-config.json` file and returns the
 /// configuration within. If the file doesn't exist, an empty configuration is
 /// returned (i.e all fields set to `None`).
-pub fn get_global_config() -> Result<GlobalConfig, GetConfigError> {
+pub(crate) fn get_global_config() -> Result<GlobalConfig, GetConfigError> {
     let home_dir = match get_home_dir() {
         Some(v) => v,
         None => return Ok(GlobalConfig::new()),

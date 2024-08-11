@@ -8,7 +8,7 @@ use inline_colorization::{
 use tabled::builder::Builder;
 use tabled::settings::Style;
 
-pub struct TdTable {
+pub(crate) struct TdTable {
     builder: Builder,
 }
 

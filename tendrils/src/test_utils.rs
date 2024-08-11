@@ -90,6 +90,7 @@ pub fn default_repo_path_as_json(default_repo_path: &str) -> String {
 }
 
 /// Exposes the otherwise private function
+    #[allow(private_interfaces)]
 pub fn parse_config_expose(
     json: &str,
 ) -> Result<Config, serde_json::Error> {
@@ -428,6 +429,7 @@ impl Setup {
         bundle
     }
 
+    #[allow(private_interfaces)]
     pub fn file_tendril(&self) -> Tendril {
         Tendril::new_expose(
             "SomeApp",
@@ -438,6 +440,7 @@ impl Setup {
         .unwrap()
     }
 
+    #[allow(private_interfaces)]
     pub fn dir_tendril(&self) -> Tendril {
         Tendril::new_expose(
             "SomeApp",
@@ -448,6 +451,7 @@ impl Setup {
         .unwrap()
     }
 
+    #[allow(private_interfaces)]
     pub fn subdir_file_tendril(&self) -> Tendril {
         Tendril::new_expose(
             "SomeApp",
@@ -458,6 +462,7 @@ impl Setup {
         .unwrap()
     }
 
+    #[allow(private_interfaces)]
     pub fn subdir_dir_tendril(&self) -> Tendril {
         Tendril::new_expose(
             "SomeApp",

@@ -44,6 +44,10 @@ members = [
 resolver = "2" # Required to use 2 vs 1 to prevent _test_utils
                # being included even outside of testing
 
+[workspace.lints.rust]
+private-bounds = "deny"
+private-interfaces = "deny"
+
 [workspace.lints.rustdoc]
 broken-intra-doc-links = "forbid"
 private-intra-doc-links = "forbid"

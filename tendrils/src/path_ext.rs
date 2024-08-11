@@ -2,7 +2,7 @@ use crate::enums::FsoType;
 use crate::get_home_dir;
 use std::path::Path;
 
-pub trait Fso {
+pub(crate) trait Fso {
     /// Returns the type of the file system object that
     /// the path points to, or returns `None` if the FSO
     /// does not exist.
@@ -41,7 +41,7 @@ impl Fso for Path {
 /// Note: This does *not* check that the tilde is the leading character (it
 /// could be anywhere in the string) - this check should be done prior to
 /// calling this.
-pub fn resolve_tilde(path: &str) -> String {
+pub(crate) fn resolve_tilde(path: &str) -> String {
     match get_home_dir() {
         Some(v) => path.replacen('~', &v, 1),
         None => String::from(path),

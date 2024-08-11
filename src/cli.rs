@@ -16,13 +16,13 @@ use tendrils::{
 /// A CLI tool for managing tendrils
 #[derive(Parser, Debug)]
 #[command(version)]
-pub struct TendrilCliArgs {
+pub(crate) struct TendrilCliArgs {
     #[command(subcommand)]
     pub tendrils_command: TendrilsSubcommands,
 }
 
 #[derive(Subcommand, Clone, Debug, Eq, PartialEq)]
-pub enum TendrilsSubcommands {
+pub(crate) enum TendrilsSubcommands {
     /// License, acknowledgements, and other information about td
     About {
         #[command(subcommand)]
@@ -83,7 +83,7 @@ pub enum TendrilsSubcommands {
 }
 
 #[derive(Subcommand, Clone, Debug, Eq, PartialEq)]
-pub enum AboutSubcommands {
+pub(crate) enum AboutSubcommands {
     /// Print license info for td
     License,
 
@@ -92,7 +92,7 @@ pub enum AboutSubcommands {
 }
 
 #[derive(Args, Clone, Debug, Eq, PartialEq)]
-pub struct ActionArgs {
+pub(crate) struct ActionArgs {
     /// Explicitly sets the path to the Tendrils repo
     #[arg(long)]
     pub path: Option<String>,
@@ -108,7 +108,7 @@ pub struct ActionArgs {
 }
 
 #[derive(Args, Clone, Debug, Eq, PartialEq)]
-pub struct FilterArgs {
+pub(crate) struct FilterArgs {
     /// List of groups to filter for. Globs accepted.
     #[arg(short, long, num_args = ..)]
     pub groups: Vec<String>,
@@ -128,7 +128,7 @@ pub struct FilterArgs {
 
 // Note: For ansi styling to render properly with 'tabled' tables,
 // its 'ansi' feature must be enabled
-pub fn ansi_style(
+pub(crate) fn ansi_style(
     text: &str,
     ansi_prefix: String,
     ansi_suffix: &str,
@@ -140,7 +140,7 @@ pub fn ansi_style(
 /// render as a hyperlink in a terminal that supports it
 // Note: For ansi hyperlinks to render properly with 'tabled' tables,
 // its 'ansi' feature must be enabled
-pub fn ansi_hyperlink(url: &str, display: &str) -> String {
+pub(crate) fn ansi_hyperlink(url: &str, display: &str) -> String {
     format!("\x1b]8;;{url}\x1b\\{display}\x1b]8;;\x1b\\")
 }
 
@@ -175,7 +175,7 @@ fn ansi_styled_result(
     }
 }
 
-pub fn print_reports(
+pub(crate) fn print_reports(
     reports: &[TendrilReport<ActionLog>],
     writer: &mut impl Writer,
 ) {

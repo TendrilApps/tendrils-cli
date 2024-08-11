@@ -14,7 +14,7 @@ fn cli_version() -> String {
     String::from(env!["CARGO_PKG_VERSION"])
 }
 
-pub fn cli_license() -> String {
+pub(crate) fn cli_license() -> String {
     let license_type = cli_license_type();
     let version = cli_version();
     let repo_url = cli_repo();
@@ -27,7 +27,7 @@ pub fn cli_license() -> String {
     ]
 }
 
-pub fn cli_acknowledgements() -> String {
+pub(crate) fn cli_acknowledgements() -> String {
     let version = cli_version();
     let repo_url = cli_repo();
     let mut url = format!["{repo_url}/blob/{version}/LICENSE-3RD-PARTY.md"];

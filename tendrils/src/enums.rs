@@ -406,7 +406,7 @@ pub enum InvalidTendrilError {
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq)]
 #[serde(untagged)]
-pub enum OneOrMany<T> {
+pub(crate) enum OneOrMany<T> {
     // https://github.com/Mingun/ksc-rs/blob/8532f701e660b07b6d2c74963fdc0490be4fae4b/src/parser.rs#L29pub
     /// Single value
     One(T),
