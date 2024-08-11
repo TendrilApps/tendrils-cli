@@ -1,5 +1,5 @@
 use crate::test_utils::set_parents;
-use crate::{resolve_tendril_bundle, Tendril, TendrilBundle, TendrilMode};
+use crate::{Tendril, TendrilBundle, TendrilMode};
 use rstest::rstest;
 use serial_test::serial;
 use std::path::PathBuf;
@@ -12,7 +12,7 @@ fn empty_parent_list_returns_empty(#[case] first_only: bool) {
 
     set_parents(&mut given, &[]);
 
-    let actual = resolve_tendril_bundle(&given, first_only);
+    let actual = given.resolve_tendrils(first_only);
 
     assert_eq!(actual, vec![]);
 }
@@ -31,7 +31,7 @@ fn invalid_tendril_returns_invalid_tendril(
         PathBuf::from("SomeParentPath3"),
     ]);
 
-    let actual = resolve_tendril_bundle(&given, false);
+    let actual = given.resolve_tendrils(false);
 
     assert!(actual[0].is_err());
     assert!(actual[1].is_err());
@@ -49,7 +49,7 @@ fn invalid_tendril_and_empty_parent_list_returns_empty(
     let mut given = TendrilBundle::new(group, vec![name]);
     set_parents(&mut given, &[]);
 
-    let actual = resolve_tendril_bundle(&given, false);
+    let actual = given.resolve_tendrils(false);
 
     assert!(actual.is_empty());
 }
@@ -83,7 +83,7 @@ fn first_only_true_resolves_first_parent_paths_for_all_names() {
         .unwrap()),
     ];
 
-    let actual = resolve_tendril_bundle(&given, true);
+    let actual = given.resolve_tendrils(true);
 
     assert_eq!(actual, expected);
 }
@@ -145,7 +145,7 @@ fn first_only_false_resolves_all_parent_paths_for_all_names() {
         .unwrap()),
     ];
 
-    let actual = resolve_tendril_bundle(&given, false);
+    let actual = given.resolve_tendrils(false);
 
     assert_eq!(actual, expected);
 }
@@ -181,7 +181,7 @@ fn duplicate_names_resolves_all() {
         .unwrap()),
     ];
 
-    let actual = resolve_tendril_bundle(&given, false);
+    let actual = given.resolve_tendrils(false);
 
     assert_eq!(actual, expected);
 }
@@ -220,7 +220,7 @@ fn duplicate_parent_paths_resolves_all() {
         .unwrap()),
     ];
 
-    let actual = resolve_tendril_bundle(&given, false);
+    let actual = given.resolve_tendrils(false);
 
     assert_eq!(actual, expected);
 }
@@ -262,7 +262,7 @@ fn vars_and_leading_tilde_in_parent_path_are_resolved_in_all() {
         .unwrap()),
     ];
 
-    let actual = resolve_tendril_bundle(&given, false);
+    let actual = given.resolve_tendrils(false);
 
     assert_eq!(actual, expected);
 }
@@ -289,7 +289,7 @@ fn slashes_in_var_or_leading_tilde_values_are_replaced_with_platform_dir_sep() {
     )
     .unwrap())];
 
-    let actual = resolve_tendril_bundle(&given, false);
+    let actual = given.resolve_tendrils(false);
 
     assert_eq!(actual, expected);
     assert_eq!(
@@ -311,7 +311,7 @@ fn var_in_parent_path_doesnt_exist_returns_raw_path() {
     )
     .unwrap())];
 
-    let actual = resolve_tendril_bundle(&given, false);
+    let actual = given.resolve_tendrils(false);
 
     assert_eq!(actual, expected);
 }
@@ -337,7 +337,7 @@ fn var_in_group_or_name_exists_uses_raw_path(
     )
     .unwrap())];
 
-    let actual = resolve_tendril_bundle(&given, false);
+    let actual = given.resolve_tendrils(false);
 
     assert_eq!(actual, expected);
 }
@@ -360,7 +360,7 @@ fn leading_tilde_in_parent_path_tilde_value_doesnt_exist_returns_raw_path() {
     )
     .unwrap())];
 
-    let actual = resolve_tendril_bundle(&given, false);
+    let actual = given.resolve_tendrils(false);
 
     assert_eq!(actual, expected);
 }
@@ -386,7 +386,7 @@ fn leading_tilde_in_group_or_name_and_tilde_value_exists_uses_raw_path(
     )
     .unwrap())];
 
-    let actual = resolve_tendril_bundle(&given, false);
+    let actual = given.resolve_tendrils(false);
 
     assert_eq!(actual, expected);
 }
@@ -414,7 +414,7 @@ fn resolves_tendril_mode_properly(
     )
     .unwrap())];
 
-    let actual = resolve_tendril_bundle(&given, true);
+    let actual = given.resolve_tendrils(true);
 
     assert_eq!(actual, expected);
 }

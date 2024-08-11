@@ -17,6 +17,8 @@ pub use enums::{
     SetupError,
     TendrilMode,
 };
+mod env_ext;
+use env_ext::can_symlink;
 mod filtering;
 use filtering::filter_tendrils;
 pub use filtering::FilterSpec;
@@ -25,7 +27,7 @@ use path_ext::{Fso, resolve_tilde};
 use std::fs::{create_dir_all, remove_dir_all, remove_file};
 use std::path::{Path, PathBuf};
 mod tendril;
-use tendril::{resolve_tendril_bundle, Tendril};
+use tendril::Tendril;
 pub use tendril::TendrilBundle;
 mod tendril_report;
 pub use tendril_report::{ActionLog, TendrilLog, TendrilReport};
@@ -428,10 +430,6 @@ fn is_rofs_err(e_kind: &std::io::ErrorKind) -> bool {
     format!("{:?}", e_kind).contains("ReadOnlyFilesystem")
 }
 
-fn get_local_path(tendril: &Tendril, td_repo: &Path) -> PathBuf {
-    td_repo.join(tendril.group()).join(tendril.name())
-}
-
 /// Looks for a Tendrils repo (as defined by [`TendrilsApi::is_tendrils_repo`])
 /// - If given a `starting_path`, it begins looking in that folder.
 ///     - If it is a Tendrils repo, `starting_path` is returned
@@ -505,7 +503,7 @@ fn link_tendril(
     dry_run: bool,
     mut force: bool,
 ) -> ActionLog {
-    let target = get_local_path(tendril, td_repo);
+    let target = tendril.local_path(td_repo);
     let create_at = tendril.full_path();
 
     let mut log = ActionLog::new(
@@ -570,7 +568,7 @@ fn pull_tendril(
     dry_run: bool,
     force: bool,
 ) -> ActionLog {
-    let dest = get_local_path(tendril, td_repo);
+    let dest = tendril.local_path(td_repo);
     let source = tendril.full_path();
 
     let mut log = ActionLog::new(
@@ -616,7 +614,7 @@ fn push_tendril(
     dry_run: bool,
     force: bool,
 ) -> ActionLog {
-    let source = get_local_path(tendril, td_repo);
+    let source = tendril.local_path(td_repo);
     let dest = tendril.full_path();
 
     let mut log = ActionLog::new(
@@ -653,62 +651,6 @@ fn push_tendril(
     );
 
     log
-}
-
-fn get_home_dir() -> Option<String> {
-    use std::env::var_os;
-    if let Some(v) = var_os("HOME") {
-        return Some(v.to_string_lossy().into_owned());
-    };
-    match (var_os("HOMEDRIVE"), var_os("HOMEPATH")) {
-        (Some(hd), Some(hp)) => {
-            let mut combo = String::from(hd.to_string_lossy());
-            combo.push_str(hp.to_string_lossy().as_ref());
-            return Some(combo);
-        }
-        _ => None,
-    }
-}
-
-/// Returns `true` if the current Tendrils process is capable
-/// of creating symlinks.
-///
-/// This is mainly applicable on Windows, where creating symlinks
-/// requires administrator priviledges, or enabling *Developer Mode*.
-/// On Unix platforms this always returns `true`.
-fn can_symlink() -> bool {
-    #[cfg(windows)]
-    match std::env::consts::FAMILY {
-        "windows" => is_root::is_root() || is_dev_mode(),
-        _ => true,
-    }
-
-    #[cfg(unix)]
-    true
-}
-
-/// Returns `true` if *Developer Mode* is enabled on Windows.
-/// Returns `false` if the setting cannot be determined for any reason.
-#[cfg(windows)]
-fn is_dev_mode() -> bool {
-    use winreg::enums::HKEY_LOCAL_MACHINE;
-    use winreg::RegKey;
-
-    let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
-    let app_model = match hklm.open_subkey(
-        "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AppModelUnlock",
-    ) {
-        Ok(v) => v,
-        _ => return false,
-    };
-
-    let reg_value: u32 =
-        match app_model.get_value("AllowDevelopmentWithoutDevLicense") {
-            Ok(v) => v,
-            _ => return false,
-        };
-
-    reg_value == 1
 }
 
 /// Returns [`Err(TendrilActionError::TypeMismatch)`](TendrilActionError::TypeMismatch)
@@ -856,7 +798,7 @@ fn batch_tendril_action_updating<F: FnMut(TendrilReport<ActionLog>)>(
 
     for bundle in td_bundles.into_iter() {
         let bundle_rc = std::rc::Rc::new(bundle);
-        let tendrils = resolve_tendril_bundle(&bundle_rc, first_only);
+        let tendrils = bundle_rc.resolve_tendrils(first_only);
 
         // The number of parents that were considered when
         // resolving the tendril bundle
@@ -887,7 +829,7 @@ fn batch_tendril_action_updating<F: FnMut(TendrilReport<ActionLog>)>(
                     // unnecessarily.
                     let remote = v.full_path();
                     Ok(ActionLog::new(
-                        get_local_path(&v, td_repo).get_type(),
+                        v.local_path(td_repo).get_type(),
                         remote.get_type(),
                         remote,
                         Err(TendrilActionError::IoError {

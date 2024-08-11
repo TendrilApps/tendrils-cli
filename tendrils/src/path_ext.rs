@@ -1,5 +1,5 @@
 use crate::enums::FsoType;
-use crate::get_home_dir;
+use crate::env_ext::get_home_dir;
 use std::path::Path;
 
 pub(crate) trait Fso {

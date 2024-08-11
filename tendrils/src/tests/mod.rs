@@ -8,7 +8,7 @@ mod is_tendrils_repo_tests;
 mod link_tendril_tests;
 mod pull_tendril_tests;
 mod push_tendril_tests;
-mod resolve_tendril_bundle_tests;
+mod resolve_tendrils_tests;
 mod batch_tendril_action_tests;
 mod batch_tendril_action_updating_tests;
 mod tendril_action_tests;

@@ -61,10 +61,7 @@ impl<'a> Tendril<'a> {
         Tendril::new(group, name, parent, mode)
     }
 
-    pub fn group(&self) -> &str {
-        self.group
-    }
-
+    #[cfg(test)]
     pub fn name(&self) -> &str {
         self.name
     }
@@ -93,6 +90,10 @@ impl<'a> Tendril<'a> {
 
         #[cfg(not(windows))]
         return PathBuf::from(full_path_str.replace('\\', MAIN_SEPARATOR_STR));
+    }
+
+    pub fn local_path(&self, td_repo: &Path) -> PathBuf {
+        td_repo.join(self.group).join(self.name)
     }
 
     fn is_path(x: &str) -> bool {
@@ -153,62 +154,47 @@ impl TendrilBundle {
             profiles: vec![],
         }
     }
-}
 
+    pub(crate) fn resolve_tendrils(
+        &self,
+        first_only: bool,
+    ) -> Vec<Result<Tendril, InvalidTendrilError>> {
+        let mode = match (self.dir_merge, self.link) {
+            (true, false) => TendrilMode::DirMerge,
+            (false, false) => TendrilMode::DirOverwrite,
+            (_, true) => TendrilMode::Link,
+        };
 
+        let raw_paths = match (first_only, self.parents.is_empty()) {
+            (true, false) => vec![self.parents[0].clone()],
+            (false, false) => self.parents.clone(),
+            (_, true) => vec![],
+        };
 
+        let mut resolve_results =
+            Vec::with_capacity(self.names.len() * self.parents.len());
 
+        // Resolve parents early to prevent doing this on
+        // each iteration
+        let resolved_parents: Vec<PathBuf> = raw_paths
+            .iter()
+            .map(|p| resolve_path_variables(String::from(p)))
+            .map(|p| PathBuf::from(p))
+            .collect();
 
-
-
-
-
-
-
-
-
-
-
-// TODO: Move to `to_tendrils` method on tendril bundle
-pub(crate) fn resolve_tendril_bundle(
-    td_bundle: &TendrilBundle,
-    first_only: bool,
-) -> Vec<Result<Tendril, InvalidTendrilError>> {
-    let mode = match (&td_bundle.dir_merge, &td_bundle.link) {
-        (true, false) => TendrilMode::DirMerge,
-        (false, false) => TendrilMode::DirOverwrite,
-        (_, true) => TendrilMode::Link,
-    };
-
-    let raw_paths = match (first_only, td_bundle.parents.is_empty()) {
-        (true, false) => vec![td_bundle.parents[0].clone()],
-        (false, false) => td_bundle.parents.clone(),
-        (_, true) => vec![],
-    };
-
-    let mut resolve_results =
-        Vec::with_capacity(td_bundle.names.len() * td_bundle.parents.len());
-
-    // Resolve parents early to prevent doing this on
-    // each iteration
-    let resolved_parents: Vec<PathBuf> = raw_paths
-        .iter()
-        .map(|p| resolve_path_variables(String::from(p)))
-        .map(|p| PathBuf::from(p))
-        .collect();
-
-    for name in td_bundle.names.iter() {
-        for resolved_parent in resolved_parents.iter() {
-            resolve_results.push(Tendril::new(
-                &td_bundle.group,
-                name,
-                resolved_parent.clone(),
-                mode.clone(),
-            ));
+        for name in self.names.iter() {
+            for resolved_parent in resolved_parents.iter() {
+                resolve_results.push(Tendril::new(
+                    &self.group,
+                    name,
+                    resolved_parent.clone(),
+                    mode.clone(),
+                ));
+            }
         }
-    }
 
-    resolve_results
+        resolve_results
+    }
 }
 
 /// Replaces all environment variables in the format `<varname>` in the

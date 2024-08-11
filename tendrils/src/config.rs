@@ -1,4 +1,5 @@
-use crate::{get_home_dir, ConfigType};
+use crate::ConfigType;
+use crate::env_ext::get_home_dir;
 use crate::tendril::TendrilBundle;
 use crate::enums::GetConfigError;
 use serde::{Deserialize, Serialize};
