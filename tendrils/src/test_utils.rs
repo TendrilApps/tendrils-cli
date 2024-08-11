@@ -104,6 +104,36 @@ pub fn set_parents(tendril: &mut TendrilBundle, paths: &[PathBuf]) {
     tendril.parents = path_strings;
 }
 
+/// Sets the given environment variable to a value of "fo�o" where the third
+/// character is invalid UTF-8.
+pub fn set_var_to_non_utf_8(var_name: &str) {
+    #[cfg(unix)]
+    {
+        use std::ffi::OsStr;
+        use std::os::unix::ffi::OsStrExt;
+
+        // Here, the values 0x66 and 0x6f correspond to 'f' and 'o'
+        // respectively. The value 0x80 is a lone continuation byte, invalid
+        // in a UTF-8 sequence.
+        let source = [0x66, 0x6f, 0x80, 0x6f];
+        let non_utf8_string = OsStr::from_bytes(&source[..]);
+        std::env::set_var(var_name, non_utf8_string);
+    }
+    #[cfg(windows)]
+    {
+        use std::ffi::OsString;
+        use std::os::windows::prelude::OsStringExt;
+
+        // Here the values 0x0066 and 0x006f correspond to 'f' and 'o'
+        // respectively. The value 0xD800 is a lone surrogate half, invalid
+        // in a UTF-8 sequence.
+        let source = [0x0066, 0x006f, 0xD800, 0x006f];
+        let os_string = OsString::from_wide(&source[..]);
+        let non_utf8_string = os_string.as_os_str();
+        std::env::set_var(var_name, non_utf8_string);
+    }
+}
+
 /// Exposes the otherwise private function
 pub fn symlink_expose(
     create_at: &Path,

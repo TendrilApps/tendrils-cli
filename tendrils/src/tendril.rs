@@ -51,7 +51,7 @@ impl<'a> Tendril<'a> {
         Ok(Tendril { group, name, parent, mode })
     }
 
-    #[cfg(feature = "_test_utils")]
+    #[cfg(any(test, feature = "_test_utils"))]
     pub fn new_expose(
         group: &'a str,
         name: &'a str,
