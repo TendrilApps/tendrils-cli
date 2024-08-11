@@ -15,7 +15,7 @@ use std::path::{PathBuf, MAIN_SEPARATOR as SEP};
 #[case("tendrils.json")]
 #[case("Tendrils.json")]
 #[case("TENDRILS.JSON")]
-fn valid_groups_and_names(#[case] value: &str) {}
+pub fn valid_groups_and_names(#[case] value: &str) {}
 
 #[template]
 #[rstest]
@@ -25,14 +25,14 @@ fn valid_groups_and_names(#[case] value: &str) {}
 #[case("\\somePath")]
 #[case("somePath/")]
 #[case("somePath\\")]
-fn valid_names_but_invalid_groups(#[case] value: &str) {}
+pub fn valid_names_but_invalid_groups(#[case] value: &str) {}
 
 #[template]
 #[rstest]
 #[case("")]
 #[case("New\nLine")]
 #[case("Carriage\rReturn")]
-fn invalid_groups_and_names(#[case] value: &str) {}
+pub fn invalid_groups_and_names(#[case] value: &str) {}
 
 #[template]
 #[rstest]
@@ -42,7 +42,7 @@ fn invalid_groups_and_names(#[case] value: &str) {}
 #[case(".tendrils")]
 #[case(".Tendrils")]
 #[case(".TENDRILS")]
-fn forbidden_groups(#[case] value: &str) {}
+pub fn forbidden_groups(#[case] value: &str) {}
 
 #[apply(invalid_groups_and_names)]
 fn group_is_invalid_returns_invalid_group_error(#[case] group: &str) {

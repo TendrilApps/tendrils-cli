@@ -189,7 +189,7 @@ impl TendrilsApi for TendrilsActor {
             return Err(SetupError::CannotSymlink);
         }
 
-        batch_tendril_action_updating(update_fn, mode, &td_repo, filtered_tendrils, dry_run, force);
+        batch_tendril_action(update_fn, mode, &td_repo, filtered_tendrils, dry_run, force);
         Ok(())
     }
 
@@ -784,7 +784,7 @@ fn symlink_win(
     Ok(())
 }
 
-fn batch_tendril_action_updating<F: FnMut(TendrilReport<ActionLog>)>(
+fn batch_tendril_action<F: FnMut(TendrilReport<ActionLog>)>(
     mut update_fn: F,
     mode: ActionMode,
     td_repo: &Path,

@@ -5,7 +5,7 @@ use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;
 
 /// A Tendril that is prepared for use with Tendril actions
 /// and always exists in a valid state.

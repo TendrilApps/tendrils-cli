@@ -23,7 +23,7 @@ use std::path::PathBuf;
 
 /// See also [`crate::tests::common_action_tests::remote_is_unchanged`] for
 /// `dry_run` case
-#[apply(crate::tests::tendril_tests::valid_groups_and_names)]
+#[apply(crate::tendril::tests::tendril_tests::valid_groups_and_names)]
 fn remote_parent_and_local_exist_symlink_to_local_is_created(
     #[case] name: &str,
     #[values(true, false)] force: bool,

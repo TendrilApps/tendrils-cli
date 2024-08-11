@@ -29,7 +29,7 @@ use std::fs::{
 
 /// See also [`crate::tests::common_action_tests::local_is_unchanged`] for
 /// `dry_run` case
-#[apply(crate::tests::tendril_tests::valid_groups_and_names)]
+#[apply(crate::tendril::tests::tendril_tests::valid_groups_and_names)]
 fn remote_exists_copies_to_local(
     #[case] name: &str,
     #[values(true, false)] force: bool,
