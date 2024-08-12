@@ -1,4 +1,5 @@
-use crate::{parse_env_variables, resolve_path_variables};
+use crate::tendril::{parse_env_variables, resolve_path_variables};
+use crate::test_utils::set_var_to_non_utf_8;
 use rstest::rstest;
 use serial_test::serial;
 use std::path::PathBuf;
@@ -175,32 +176,7 @@ fn value_is_another_var_name_keeps_value_exceptions(
 fn var_value_is_non_unicode_returns_lossy_value() {
     let given = "<mut-testing>".to_string();
     let expected = PathBuf::from("fo�o");
-
-    #[cfg(unix)]
-    {
-        use std::ffi::OsStr;
-        use std::os::unix::ffi::OsStrExt;
-
-        // Here, the values 0x66 and 0x6f correspond to 'f' and 'o'
-        // respectively. The value 0x80 is a lone continuation byte, invalid
-        // in a UTF-8 sequence.
-        let source = [0x66, 0x6f, 0x80, 0x6f];
-        let non_utf8_string = OsStr::from_bytes(&source[..]);
-        std::env::set_var("mut-testing", non_utf8_string);
-    }
-    #[cfg(windows)]
-    {
-        use std::ffi::OsString;
-        use std::os::windows::prelude::OsStringExt;
-
-        // Here the values 0x0066 and 0x006f correspond to 'f' and 'o'
-        // respectively. The value 0xD800 is a lone surrogate half, invalid
-        // in a UTF-16 sequence.
-        let source = [0x0066, 0x006f, 0xD800, 0x006f];
-        let os_string = OsString::from_wide(&source[..]);
-        let non_utf8_string = os_string.as_os_str();
-        std::env::set_var("mut-testing", non_utf8_string);
-    }
+    set_var_to_non_utf_8("mut-testing");
 
     let actual = resolve_path_variables(given);
 
@@ -340,45 +316,14 @@ fn tilde_value_is_non_unicode_returns_lossy_value(
     let given = "~".to_string();
     let expected = PathBuf::from(expected_str);
 
-    #[cfg(unix)]
-    {
-        use std::ffi::OsStr;
-        use std::os::unix::ffi::OsStrExt;
-
-        // Here, the values 0x66 and 0x6f correspond to 'f' and 'o'
-        // respectively. The value 0x80 is a lone continuation byte, invalid
-        // in a UTF-8 sequence.
-        let source = [0x66, 0x6f, 0x80, 0x6f];
-        let non_utf8_string = OsStr::from_bytes(&source[..]);
-        if home_exists {
-            std::env::set_var("HOME", non_utf8_string);
-        }
-        else {
-            std::env::remove_var("HOME");
-        }
-        std::env::set_var("HOMEDRIVE", non_utf8_string);
-        std::env::set_var("HOMEPATH", non_utf8_string);
+    if home_exists {
+        set_var_to_non_utf_8("HOME");
     }
-    #[cfg(windows)]
-    {
-        use std::ffi::OsString;
-        use std::os::windows::prelude::OsStringExt;
-
-        // Here the values 0x0066 and 0x006f correspond to 'f' and 'o'
-        // respectively. The value 0xD800 is a lone surrogate half, invalid
-        // in a UTF-16 sequence.
-        let source = [0x0066, 0x006f, 0xD800, 0x006f];
-        let os_string = OsString::from_wide(&source[..]);
-        let non_utf8_string = os_string.as_os_str();
-        if home_exists {
-            std::env::set_var("HOME", non_utf8_string);
-        }
-        else {
-            std::env::remove_var("HOME");
-        }
-        std::env::set_var("HOMEDRIVE", non_utf8_string);
-        std::env::set_var("HOMEPATH", non_utf8_string);
+    else {
+        std::env::remove_var("HOME");
     }
+    set_var_to_non_utf_8("HOMEDRIVE");
+    set_var_to_non_utf_8("HOMEPATH");
 
     let actual = resolve_path_variables(given);
 

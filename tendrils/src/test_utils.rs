@@ -1,5 +1,4 @@
 use crate::{
-    batch_tendril_action_updating,
     symlink,
     ActionMode,
     ActionLog,
@@ -20,23 +19,6 @@ use std::fs::{create_dir_all, read_to_string, write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use tempdir::TempDir;
-
-/// Same behaviour as `batch_tendril_action_updating` except reports are only
-/// returned once all actions have completed.
-/// Easier API for testing.
-pub fn batch_tendril_action(
-    mode: ActionMode,
-    td_repo: &Path,
-    td_bundles: Vec<TendrilBundle>,
-    dry_run: bool,
-    force: bool,
-) -> Vec<TendrilReport<ActionLog>> {
-    let mut reports = vec![];
-    let updater = |r| reports.push(r);
-
-    batch_tendril_action_updating(updater, mode, td_repo, td_bundles, dry_run, force);
-    reports
-}
 
 pub fn get_disposable_dir() -> PathBuf {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -90,6 +72,7 @@ pub fn default_repo_path_as_json(default_repo_path: &str) -> String {
 }
 
 /// Exposes the otherwise private function
+    #[allow(private_interfaces)]
 pub fn parse_config_expose(
     json: &str,
 ) -> Result<Config, serde_json::Error> {
@@ -101,6 +84,36 @@ pub fn set_parents(tendril: &mut TendrilBundle, paths: &[PathBuf]) {
         paths.iter().map(|x| String::from(x.to_str().unwrap())).collect();
 
     tendril.parents = path_strings;
+}
+
+/// Sets the given environment variable to a value of "fo�o" where the third
+/// character is invalid UTF-8.
+pub fn set_var_to_non_utf_8(var_name: &str) {
+    #[cfg(unix)]
+    {
+        use std::ffi::OsStr;
+        use std::os::unix::ffi::OsStrExt;
+
+        // Here, the values 0x66 and 0x6f correspond to 'f' and 'o'
+        // respectively. The value 0x80 is a lone continuation byte, invalid
+        // in a UTF-8 sequence.
+        let source = [0x66, 0x6f, 0x80, 0x6f];
+        let non_utf8_string = OsStr::from_bytes(&source[..]);
+        std::env::set_var(var_name, non_utf8_string);
+    }
+    #[cfg(windows)]
+    {
+        use std::ffi::OsString;
+        use std::os::windows::prelude::OsStringExt;
+
+        // Here the values 0x0066 and 0x006f correspond to 'f' and 'o'
+        // respectively. The value 0xD800 is a lone surrogate half, invalid
+        // in a UTF-8 sequence.
+        let source = [0x0066, 0x006f, 0xD800, 0x006f];
+        let os_string = OsString::from_wide(&source[..]);
+        let non_utf8_string = os_string.as_os_str();
+        std::env::set_var(var_name, non_utf8_string);
+    }
 }
 
 /// Exposes the otherwise private function
@@ -428,8 +441,9 @@ impl Setup {
         bundle
     }
 
+    #[allow(private_interfaces)]
     pub fn file_tendril(&self) -> Tendril {
-        Tendril::new(
+        Tendril::new_expose(
             "SomeApp",
             "misc.txt",
             self.parent_dir.clone(),
@@ -438,8 +452,9 @@ impl Setup {
         .unwrap()
     }
 
+    #[allow(private_interfaces)]
     pub fn dir_tendril(&self) -> Tendril {
-        Tendril::new(
+        Tendril::new_expose(
             "SomeApp",
             "misc",
             self.parent_dir.clone(),
@@ -448,8 +463,9 @@ impl Setup {
         .unwrap()
     }
 
+    #[allow(private_interfaces)]
     pub fn subdir_file_tendril(&self) -> Tendril {
-        Tendril::new(
+        Tendril::new_expose(
             "SomeApp",
             "SubDir/misc.txt",
             self.parent_dir.clone(),
@@ -458,8 +474,9 @@ impl Setup {
         .unwrap()
     }
 
+    #[allow(private_interfaces)]
     pub fn subdir_dir_tendril(&self) -> Tendril {
-        Tendril::new(
+        Tendril::new_expose(
             "SomeApp",
             "SubDir/misc",
             self.parent_dir.clone(),

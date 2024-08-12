@@ -28,7 +28,7 @@ use std::fs::{
 
 /// See also [`crate::tests::common_action_tests::remote_is_unchanged`] for
 /// `dry_run` case
-#[apply(crate::tests::tendril_tests::valid_groups_and_names)]
+#[apply(crate::tendril::tests::tendril_tests::valid_groups_and_names)]
 fn remote_parent_and_local_exist_copies_to_remote(
     #[case] name: &str,
     #[values(true, false)] force: bool,
@@ -51,7 +51,7 @@ fn remote_parent_and_local_exist_copies_to_remote(
         exp_local_type = Some(FsoType::File);
     }
 
-    let tendril = Tendril::new(
+    let tendril = Tendril::new_expose(
         "SomeApp",
         name,
         setup.parent_dir.clone(),
@@ -559,7 +559,7 @@ fn no_read_access_from_local_file_returns_io_error_permission_denied_unless_dry_
     setup.make_td_repo_dir();
     setup.make_local_nra_file();
 
-    let tendril = Tendril::new(
+    let tendril = Tendril::new_expose(
         "SomeApp",
         "nra.txt",
         setup.parent_dir.clone(),
@@ -602,7 +602,7 @@ fn no_read_access_from_local_dir_returns_io_error_permission_denied_unless_dry_r
     setup.make_td_repo_dir();
     setup.make_local_nra_dir();
 
-    let tendril = Tendril::new(
+    let tendril = Tendril::new_expose(
         "SomeApp",
         "nra",
         setup.parent_dir.clone(),

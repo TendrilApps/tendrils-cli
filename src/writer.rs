@@ -1,8 +1,8 @@
-pub trait Writer {
+pub(crate) trait Writer {
     fn writeln(&mut self, text: &str);
 }
 
-pub struct StdOutWriter {}
+pub(crate) struct StdOutWriter {}
 
 impl Writer for StdOutWriter {
     fn writeln(&mut self, text: &str) {

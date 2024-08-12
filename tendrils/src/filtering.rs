@@ -51,7 +51,7 @@ impl<'a> FilterSpec<'a> {
 /// Filters a list of given tendrils according to the given [`FilterSpec`].
 /// The filters are cumulative (i.e. the tendril must match all filters to
 /// be included in the final result).
-pub fn filter_tendrils(
+pub(crate) fn filter_tendrils(
     tendrils: Vec<TendrilBundle>,
     filter: FilterSpec,
 ) -> Vec<TendrilBundle> {
