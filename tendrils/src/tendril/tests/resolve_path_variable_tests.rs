@@ -1,5 +1,5 @@
 use crate::tendril::{parse_env_variables, resolve_path_variables};
-use crate::test_utils::set_var_to_non_utf_8;
+use crate::test_utils::non_utf_8_text;
 use rstest::rstest;
 use serial_test::serial;
 use std::path::PathBuf;
@@ -176,7 +176,7 @@ fn value_is_another_var_name_keeps_value_exceptions(
 fn var_value_is_non_unicode_returns_lossy_value() {
     let given = "<mut-testing>".to_string();
     let expected = PathBuf::from("fo�o");
-    set_var_to_non_utf_8("mut-testing");
+    std::env::set_var("mut-testing", non_utf_8_text());
 
     let actual = resolve_path_variables(given);
 
@@ -317,13 +317,13 @@ fn tilde_value_is_non_unicode_returns_lossy_value(
     let expected = PathBuf::from(expected_str);
 
     if home_exists {
-        set_var_to_non_utf_8("HOME");
+        std::env::set_var("HOME", non_utf_8_text());
     }
     else {
         std::env::remove_var("HOME");
     }
-    set_var_to_non_utf_8("HOMEDRIVE");
-    set_var_to_non_utf_8("HOMEPATH");
+    std::env::set_var("HOMEDRIVE", non_utf_8_text());
+    std::env::set_var("HOMEPATH", non_utf_8_text());
 
     let actual = resolve_path_variables(given);
 

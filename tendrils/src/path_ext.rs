@@ -1,15 +1,22 @@
 use crate::enums::FsoType;
 use crate::env_ext::get_home_dir;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
-pub(crate) trait Fso {
+#[cfg(test)]
+mod tests;
+
+pub(crate) trait PathExt {
     /// Returns the type of the file system object that
     /// the path points to, or returns `None` if the FSO
     /// does not exist.
     fn get_type(&self) -> Option<FsoType>;
+
+    /// Replaces all directory separators with those of the current platform
+    /// (i.e. `\\` on Windows and `/` on all others).
+    fn replace_dir_seps(&self) -> PathBuf;
 }
 
-impl Fso for Path {
+impl PathExt for Path {
     fn get_type(&self) -> Option<FsoType> {
         if self.is_file() {
             if self.is_symlink() {
@@ -30,6 +37,33 @@ impl Fso for Path {
         else {
             None
         }
+    }
+
+    fn replace_dir_seps(&self) -> PathBuf {
+        use std::path::MAIN_SEPARATOR;
+        #[cfg(windows)]
+        let sep_to_remove = '/' as u8;
+
+        #[cfg(not(windows))]
+        let sep_to_remove = '\\' as u8;
+
+        let mut bytes = Vec::from(self.as_os_str().as_encoded_bytes());
+
+        for b in bytes.iter_mut() {
+            if *b == sep_to_remove {
+                *b = MAIN_SEPARATOR as u8;
+            }
+        }
+
+        // All bytes were originally from an OsString, or are the known path
+        // separators so this call is safe.
+        bytes_to_os_string(bytes).into()
+    }
+}
+
+fn bytes_to_os_string(bytes: Vec<u8>) -> std::ffi::OsString {
+    unsafe {
+        std::ffi::OsString::from_encoded_bytes_unchecked(bytes)
     }
 }
 

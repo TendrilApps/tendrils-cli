@@ -23,7 +23,7 @@ mod filtering;
 use filtering::filter_tendrils;
 pub use filtering::FilterSpec;
 mod path_ext;
-use path_ext::{Fso, resolve_tilde};
+use path_ext::{PathExt, resolve_tilde};
 use std::fs::{create_dir_all, remove_dir_all, remove_file};
 use std::path::{Path, PathBuf};
 mod tendril;

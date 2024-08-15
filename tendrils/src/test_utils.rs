@@ -3,8 +3,8 @@ use crate::{
     ActionMode,
     ActionLog,
     FilterSpec,
-    Fso,
     InitError,
+    PathExt,
     SetupError,
     Tendril,
     TendrilBundle,
@@ -86,9 +86,8 @@ pub fn set_parents(tendril: &mut TendrilBundle, paths: &[PathBuf]) {
     tendril.parents = path_strings;
 }
 
-/// Sets the given environment variable to a value of "fo�o" where the third
-/// character is invalid UTF-8.
-pub fn set_var_to_non_utf_8(var_name: &str) {
+/// Returns "fo�o" where the third character is invalid UTF-8.
+pub fn non_utf_8_text() -> std::ffi::OsString {
     #[cfg(unix)]
     {
         use std::ffi::OsStr;
@@ -98,8 +97,7 @@ pub fn set_var_to_non_utf_8(var_name: &str) {
         // respectively. The value 0x80 is a lone continuation byte, invalid
         // in a UTF-8 sequence.
         let source = [0x66, 0x6f, 0x80, 0x6f];
-        let non_utf8_string = OsStr::from_bytes(&source[..]);
-        std::env::set_var(var_name, non_utf8_string);
+        OsStr::from_bytes(&source[..]).to_os_string()
     }
     #[cfg(windows)]
     {
@@ -110,9 +108,7 @@ pub fn set_var_to_non_utf_8(var_name: &str) {
         // respectively. The value 0xD800 is a lone surrogate half, invalid
         // in a UTF-8 sequence.
         let source = [0x0066, 0x006f, 0xD800, 0x006f];
-        let os_string = OsString::from_wide(&source[..]);
-        let non_utf8_string = os_string.as_os_str();
-        std::env::set_var(var_name, non_utf8_string);
+        OsString::from_wide(&source[..])
     }
 }
 
@@ -677,3 +673,4 @@ impl Setup {
         create_dir_all(&self.local_nra_nested_file).unwrap();
     }
 }
+

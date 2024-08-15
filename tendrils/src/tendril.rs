@@ -1,5 +1,5 @@
 use crate::enums::{InvalidTendrilError, OneOrMany, TendrilMode};
-use crate::path_ext::resolve_tilde;
+use crate::path_ext::{PathExt, resolve_tilde};
 use serde::{de, Deserialize, Deserializer, Serialize};
 use std::ffi::OsString;
 use std::path::{Path, PathBuf};
@@ -71,7 +71,7 @@ impl<'a> Tendril<'a> {
     }
 
     pub fn full_path(&self) -> PathBuf {
-        use std::path::{MAIN_SEPARATOR, MAIN_SEPARATOR_STR};
+        use std::path::MAIN_SEPARATOR;
 
         let mut full_path_str = String::from(self.parent.to_string_lossy());
         if !full_path_str.ends_with('/') && !full_path_str.ends_with('\\') {
@@ -85,11 +85,7 @@ impl<'a> Tendril<'a> {
             full_path_str.push_str(self.name);
         }
 
-        #[cfg(windows)]
-        return PathBuf::from(full_path_str.replace('/', MAIN_SEPARATOR_STR));
-
-        #[cfg(not(windows))]
-        return PathBuf::from(full_path_str.replace('\\', MAIN_SEPARATOR_STR));
+        PathBuf::from(full_path_str).replace_dir_seps()
     }
 
     pub fn local_path(&self, td_repo: &Path) -> PathBuf {
