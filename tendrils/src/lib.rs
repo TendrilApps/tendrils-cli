@@ -23,7 +23,7 @@ mod filtering;
 use filtering::filter_tendrils;
 pub use filtering::FilterSpec;
 mod path_ext;
-use path_ext::{PathExt, resolve_tilde};
+use path_ext::PathExt;
 use std::fs::{create_dir_all, remove_dir_all, remove_file};
 use std::path::{Path, PathBuf};
 mod tendril;
@@ -441,7 +441,7 @@ fn is_rofs_err(e_kind: &std::io::ErrorKind) -> bool {
 /// [`GetTendrilsRepoError::DefaultInvalid`] is returned
 ///     - If it is not set,
 /// [`GetTendrilsRepoError::DefaultNotSet`] is returned.
-/// - A leading tilde (`~`) will be replaced per [`resolve_tilde`].
+/// - A leading tilde (`~`) will be replaced per [`crate::path_ext::PathExt::resolve_tilde`].
 // TODO: Recursively look through all parent folders before
 // checking environment variable
 fn get_tendrils_repo(
@@ -450,14 +450,7 @@ fn get_tendrils_repo(
 ) -> Result<PathBuf, GetTendrilsRepoError> {
     match starting_path {
         Some(v) => {
-            let path_str = v.to_string_lossy();
-            let resolved_path;
-            if path_str.starts_with('~') {
-                resolved_path = PathBuf::from(resolve_tilde(&path_str));
-            }
-            else {
-                resolved_path = v.to_path_buf();
-            }
+            let resolved_path = v.resolve_tilde();
 
             if api.is_tendrils_repo(&resolved_path) {
                 Ok(resolved_path)
@@ -468,14 +461,7 @@ fn get_tendrils_repo(
         }
         None => match config::get_global_config()?.default_repo_path {
             Some(v) => {
-                let path_str = v.to_string_lossy();
-                let resolved_path;
-                if path_str.starts_with('~') {
-                    resolved_path = PathBuf::from(resolve_tilde(&path_str));
-                }
-                else {
-                    resolved_path = v.to_path_buf();
-                }
+                let resolved_path = v.resolve_tilde();
 
                 if api.is_tendrils_repo(&resolved_path) {
                     Ok(resolved_path)

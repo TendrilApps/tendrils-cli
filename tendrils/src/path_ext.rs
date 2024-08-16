@@ -1,5 +1,6 @@
 use crate::enums::FsoType;
 use crate::env_ext::get_home_dir;
+use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 
 #[cfg(test)]
@@ -14,6 +15,12 @@ pub(crate) trait PathExt {
     /// Replaces all directory separators with those of the current platform
     /// (i.e. `\\` on Windows and `/` on all others).
     fn replace_dir_seps(&self) -> PathBuf;
+
+    /// Replaces the first instance of `~` with the `HOME` variable
+    /// and returns the replaced string. If `HOME` doesn't exist,
+    /// `HOMEDRIVE` and `HOMEPATH` will be combined provided they both exist,
+    /// otherwise it returns `self`.
+    fn resolve_tilde(&self) -> PathBuf;
 }
 
 impl PathExt for Path {
@@ -59,25 +66,40 @@ impl PathExt for Path {
         // separators so this call is safe.
         bytes_to_os_string(bytes).into()
     }
+
+    fn resolve_tilde(&self) -> PathBuf {
+        let path_bytes = self.as_os_str().as_encoded_bytes();
+
+        if path_bytes == &['~' as u8]
+            || path_bytes.starts_with(&['~' as u8, '/' as u8])
+            || path_bytes.starts_with(&['~' as u8, '\\' as u8]) {
+            // Continue
+        }
+        else {
+            return PathBuf::from(self);
+        }
+
+        match get_home_dir() {
+            Some(mut v) => {
+                let trimmed_str;
+                unsafe {
+                    // All bytes were originally from an OsString so this call
+                    // is safe.
+                    trimmed_str = OsString::from_encoded_bytes_unchecked(
+                        path_bytes[1..].to_vec()
+                    );
+                }
+
+                v.push(trimmed_str);
+                PathBuf::from(v)
+            }
+            None => PathBuf::from(self),
+        }
+    }
 }
 
 fn bytes_to_os_string(bytes: Vec<u8>) -> std::ffi::OsString {
     unsafe {
         std::ffi::OsString::from_encoded_bytes_unchecked(bytes)
-    }
-}
-
-/// Replaces the first instance of `~` with the `HOME` variable
-/// and returns the replaced string. If `HOME` doesn't exist,
-/// `HOMEDRIVE` and `HOMEPATH` will be combined provided they both exist,
-/// otherwise it returns the given string.
-///
-/// Note: This does *not* check that the tilde is the leading character (it
-/// could be anywhere in the string) - this check should be done prior to
-/// calling this.
-pub(crate) fn resolve_tilde(path: &str) -> String {
-    match get_home_dir() {
-        Some(v) => path.replacen('~', &v, 1),
-        None => String::from(path),
     }
 }

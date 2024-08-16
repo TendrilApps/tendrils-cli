@@ -1,5 +1,5 @@
 use crate::enums::{InvalidTendrilError, OneOrMany, TendrilMode};
-use crate::path_ext::{PathExt, resolve_tilde};
+use crate::path_ext::PathExt;
 use serde::{de, Deserialize, Deserializer, Serialize};
 use std::ffi::OsString;
 use std::path::{Path, PathBuf};
@@ -174,7 +174,7 @@ impl TendrilBundle {
         // each iteration
         let resolved_parents: Vec<PathBuf> = raw_paths
             .iter()
-            .map(|p| resolve_path_variables(String::from(p)))
+            .map(|p| resolve_path_variables(String::from(p)).resolve_tilde())
             .map(|p| PathBuf::from(p))
             .collect();
 
@@ -227,10 +227,6 @@ fn resolve_path_variables(mut path: String) -> PathBuf {
         path = path.replace(var, &value);
     }
 
-    if path.starts_with('~') {
-        path = resolve_tilde(&path);
-    }
-
     PathBuf::from(path)
 }
 
@@ -256,6 +252,11 @@ fn parse_env_variables(input: &str) -> Vec<&str> {
     }
 
     vars
+}
+
+#[cfg(test)]
+pub fn parse_env_variables_expose(input: &str) -> Vec<&str> {
+    parse_env_variables(input)
 }
 
 fn one_or_many_to_vec<'de, D: Deserializer<'de>>(
