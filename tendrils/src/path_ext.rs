@@ -19,8 +19,24 @@ pub(crate) trait PathExt {
     /// Replaces the first instance of `~` with the `HOME` variable
     /// and returns the replaced string. If `HOME` doesn't exist,
     /// `HOMEDRIVE` and `HOMEPATH` will be combined provided they both exist,
-    /// otherwise it returns `self`.
+    /// otherwise it returns `self`. This fallback is mainly a Windows specific
+    /// issue, but is supported on all platforms either way.
     fn resolve_tilde(&self) -> PathBuf;
+
+    /// Replaces all environment variables in the format `<varname>` in the
+    /// given path with their values. If the variable is not found, the
+    /// `<varname>` is left as-is in the path.
+    ///
+    /// # Limitations
+    /// If the path contains the `<pattern>` and the pattern corresponds to
+    /// an environment variable, there is no way to escape the brackets
+    /// to force it to use the raw path. This should only be an issue
+    /// on Unix (as Windows doesn't allow `<` or `>` in paths anyways),
+    /// and only when the variable exists (otherwise it uses the raw
+    /// path). A work-around is to set the variable value to `<pattern>`.
+    /// In the future, an escape character such as `|` could be
+    /// implemented, but this added complexity was avoided for now.
+    fn resolve_path_variables(&self) -> PathBuf;
 }
 
 impl PathExt for Path {
@@ -62,9 +78,11 @@ impl PathExt for Path {
             }
         }
 
-        // All bytes were originally from an OsString, or are the known path
-        // separators so this call is safe.
-        bytes_to_os_string(bytes).into()
+        unsafe {
+            // All bytes were originally from an OsString, or are the known path
+            // separators so this call is safe.
+            OsString::from_encoded_bytes_unchecked(bytes)
+        }.into()
     }
 
     fn resolve_tilde(&self) -> PathBuf {
@@ -96,10 +114,65 @@ impl PathExt for Path {
             None => PathBuf::from(self),
         }
     }
+
+    fn resolve_path_variables(&self) -> PathBuf {
+        let given_bytes = self.as_os_str().as_encoded_bytes();
+        let mut search_start_idx = 0;
+        let mut resolved_bytes: Vec<u8> = vec![];
+
+        while let Some(next) = next_env_var(given_bytes, search_start_idx) {
+            let var_no_brkts = &given_bytes[next.0 + 1..next.1];
+            let var_name_no_brkts = unsafe {
+                // All bytes were originally from an OsString so this call
+                // is safe.
+                OsString::from_encoded_bytes_unchecked(var_no_brkts.to_vec())
+            };
+            if let Some(v) = std::env::var_os(var_name_no_brkts) {
+                resolved_bytes.extend(&given_bytes[search_start_idx..next.0]);
+                resolved_bytes.extend(v.as_encoded_bytes());
+            }
+            else {
+                resolved_bytes.extend(&given_bytes[search_start_idx..next.1 + 1]);
+            }
+            search_start_idx = next.1 + 1;
+        }
+
+        if search_start_idx == 0 {
+            return PathBuf::from(self);
+        }
+        else {
+            resolved_bytes.extend(&given_bytes[search_start_idx..]);
+
+            let resolved_str = unsafe {
+                OsString::from_encoded_bytes_unchecked(resolved_bytes)
+            };
+            PathBuf::from(resolved_str)
+        }
+    }
 }
 
-fn bytes_to_os_string(bytes: Vec<u8>) -> std::ffi::OsString {
-    unsafe {
-        std::ffi::OsString::from_encoded_bytes_unchecked(bytes)
+/// Returns the `(start index, end index)` of the next environment variable
+/// name, including the surrounding brackets, starting the search from the
+/// `search_start_idx`. Returns `None` if no variables remain at or after the
+/// start index.
+fn next_env_var(bytes: &[u8], search_start_idx: usize) -> Option<(usize, usize)> {
+    let mut var_start = 0;
+    let mut has_start = false;
+
+    for (i, b) in bytes[search_start_idx..].iter().enumerate() {
+        if *b == '<' as u8 {
+            var_start = i;
+            has_start = true;
+        }
+        else if *b == '>' as u8 && has_start {
+            return Some((search_start_idx + var_start, search_start_idx + i))
+        }
     }
+
+    None
+}
+
+#[cfg(test)]
+pub fn contains_env_var(input: &Path) -> bool {
+    next_env_var(input.as_os_str().as_encoded_bytes(), 0).is_some()
 }

@@ -1,6 +1,5 @@
-use crate::path_ext::PathExt;
+use crate::path_ext::{contains_env_var, PathExt};
 use crate::test_utils::non_utf_8_text;
-use crate::tendril::parse_env_variables_expose;
 use rstest::rstest;
 use serial_test::serial;
 use std::path::PathBuf;
@@ -119,13 +118,12 @@ fn crowded_or_non_leading_tilde_returns_given(#[case] given: PathBuf) {
 #[test]
 #[serial("mut-env-var-testing")]
 fn var_in_path_is_not_resolved() {
-    let given_str = "~/Path/With/<var>";
-    let parsed_vars = parse_env_variables_expose(given_str);
-    assert!(!parsed_vars.is_empty());
+    let given = PathBuf::from("~/Path/With/<var>");
+    assert!(contains_env_var(&given));
     std::env::set_var("HOME", "MyHome");
     std::env::set_var("var", "value");
 
-    let actual = PathBuf::from(given_str).resolve_tilde();
+    let actual = given.resolve_tilde();
 
     assert_eq!(actual, PathBuf::from("MyHome/Path/With/<var>"));
 }
@@ -133,15 +131,15 @@ fn var_in_path_is_not_resolved() {
 #[test]
 #[serial("mut-env-var-testing")]
 fn tilde_value_is_another_var_returns_raw_tilde_value() {
-    let home_path = "<var>";
-    let parsed_vars = parse_env_variables_expose(home_path);
-    assert!(!parsed_vars.is_empty());
-    std::env::set_var("HOME", home_path);
+    let home_value = "<var>";
+    let home_path = PathBuf::from(&home_value);
+    assert!(contains_env_var(&home_path));
+    std::env::set_var("HOME", home_value);
     std::env::set_var("var", "value");
 
     let actual = PathBuf::from("~").resolve_tilde();
 
-    assert_eq!(actual, PathBuf::from(home_path));
+    assert_eq!(actual, home_path);
 }
 
 #[test]

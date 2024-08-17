@@ -1,7 +1,6 @@
 use crate::enums::{InvalidTendrilError, OneOrMany, TendrilMode};
 use crate::path_ext::PathExt;
 use serde::{de, Deserialize, Deserializer, Serialize};
-use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 
 #[cfg(test)]
@@ -174,8 +173,8 @@ impl TendrilBundle {
         // each iteration
         let resolved_parents: Vec<PathBuf> = raw_paths
             .iter()
-            .map(|p| resolve_path_variables(String::from(p)).resolve_tilde())
             .map(|p| PathBuf::from(p))
+            .map(|p| p.resolve_path_variables().resolve_tilde())
             .collect();
 
         for name in self.names.iter() {
@@ -191,72 +190,6 @@ impl TendrilBundle {
 
         resolve_results
     }
-}
-
-/// Replaces all environment variables in the format `<varname>` in the
-/// given path with their values. If the variable is not found, the
-/// `<varname>` is left as-is in the path.
-///
-/// The common tilde (`~`) symbol can also be used as a prefix to the path
-/// and corresponds to the `HOME` environment variable on Unix/Windows.
-/// If `HOME` doesn't exist, it will fallback to a combination of `HOMEDRIVE`
-/// and `HOMEPATH` provided they both exist (otherwise the `~` is left as is).
-/// This fallback is mainly a Windows specific issue, but is supported on all
-/// platforms either way.
-///
-/// Any non UTF-8 characters in a variable's value or in the tilde value
-/// are replaced with the U+FFFD replacement character.
-///
-/// # Limitations
-/// If the path contains the `<pattern>` and the pattern corresponds to
-/// an environment variable, there is no way to escape the brackets
-/// to force it to use the raw path. This should only be an issue
-/// on Unix (as Windows doesn't allow `<` or `>` in paths anyways),
-/// and only when the variable exists (otherwise it uses the raw
-/// path). In the future, an escape character such as `|` could be
-/// implemented, but this added complexity was avoided for now.
-fn resolve_path_variables(mut path: String) -> PathBuf {
-    let path_temp = path.clone();
-    let vars = parse_env_variables(&path_temp);
-
-    for var in vars {
-        let var_no_brkts = &var[1..var.len() - 1];
-        let os_value =
-            std::env::var_os(var_no_brkts).unwrap_or(OsString::from(var));
-        let value = os_value.to_string_lossy();
-        path = path.replace(var, &value);
-    }
-
-    PathBuf::from(path)
-}
-
-/// Extracts all variable names in the given string that
-/// are of the form `<varname>`. The surrounding brackets
-/// are also returned.
-fn parse_env_variables(input: &str) -> Vec<&str> {
-    let mut vars = vec![];
-    let mut depth = 0;
-    let mut start_index = 0;
-
-    for (index, ch) in input.chars().enumerate() {
-        if ch == '<' {
-            start_index = index;
-            depth += 1;
-        }
-        else if ch == '>' && depth > 0 {
-            if depth > 0 {
-                vars.push(&input[start_index..=index]);
-            }
-            depth -= 1;
-        }
-    }
-
-    vars
-}
-
-#[cfg(test)]
-pub fn parse_env_variables_expose(input: &str) -> Vec<&str> {
-    parse_env_variables(input)
 }
 
 fn one_or_many_to_vec<'de, D: Deserializer<'de>>(
