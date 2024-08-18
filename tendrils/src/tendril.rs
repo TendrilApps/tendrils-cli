@@ -174,7 +174,7 @@ impl TendrilBundle {
         let resolved_parents: Vec<PathBuf> = raw_paths
             .iter()
             .map(|p| PathBuf::from(p))
-            .map(|p| p.resolve_path_variables().resolve_tilde())
+            .map(|p| p.resolve_env_variables().resolve_tilde())
             .collect();
 
         for name in self.names.iter() {

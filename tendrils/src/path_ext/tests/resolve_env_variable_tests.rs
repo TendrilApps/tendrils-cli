@@ -22,7 +22,7 @@ fn no_vars_returns_given_path(#[case] given: PathBuf) {
     let expected = PathBuf::from(given.clone());
     std::env::set_var("mut-testing", "value");
 
-    let actual = given.resolve_path_variables();
+    let actual = given.resolve_env_variables();
 
     assert_eq!(actual, expected);
 }
@@ -32,7 +32,7 @@ fn var_doesnt_exist_returns_raw_path() {
     let given = PathBuf::from("<I_do_not_exist>");
     let expected = given.clone();
 
-    let actual = given.resolve_path_variables();
+    let actual = given.resolve_env_variables();
 
     assert_eq!(actual, expected);
 }
@@ -47,7 +47,7 @@ fn wrong_capitalization_of_var_name_returns_raw_path(#[case] given: PathBuf) {
     let expected = given.clone();
     std::env::set_var("mut-testing", "value");
 
-    let actual = given.resolve_path_variables();
+    let actual = given.resolve_env_variables();
 
     assert_eq!(actual, expected);
 }
@@ -78,7 +78,7 @@ fn var_in_path_is_replaced_with_value(
     std::env::set_var("mut-testing", "value");
     std::env::set_var("mut-testing2", "value2");
 
-    let actual = given.resolve_path_variables();
+    let actual = given.resolve_env_variables();
 
     assert_eq!(actual, expected);
 }
@@ -101,7 +101,7 @@ fn weird_var_names_still_replace_with_value(#[case] var_name: String) {
     let var_no_brkts = &var_name[1..var_name.len() - 1];
     std::env::set_var(var_no_brkts, "value");
 
-    let actual = given.resolve_path_variables();
+    let actual = given.resolve_env_variables();
 
     assert_eq!(actual, expected);
 }
@@ -119,7 +119,7 @@ fn value_is_given_var_name_keeps_value(
 ) {
     std::env::set_var("var", value);
 
-    let actual = given.resolve_path_variables();
+    let actual = given.resolve_env_variables();
 
     assert_eq!(actual, expected);
 }
@@ -141,7 +141,7 @@ fn value_is_another_var_name_keeps_value(
     std::env::set_var("var1", var1_value);
     std::env::set_var("var2", var2_value);
 
-    let actual = given.resolve_path_variables();
+    let actual = given.resolve_env_variables();
 
     assert_eq!(actual, expected);
 }
@@ -157,7 +157,7 @@ fn non_utf_8_var_name_is_preserved_if_var_does_not_exist() {
     let expected = PathBuf::from(&given_str);
     std::env::remove_var(&given_str);
 
-    let actual = given.resolve_path_variables();
+    let actual = given.resolve_env_variables();
 
     assert_eq!(actual, expected);
 }
@@ -173,7 +173,7 @@ fn non_utf_8_var_name_is_replaced_if_var_exists() {
     let expected = PathBuf::from("Path/With/Non/value/UTF-8");
     std::env::set_var(&non_utf_8_text(), "value");
 
-    let actual = given.resolve_path_variables();
+    let actual = given.resolve_env_variables();
 
     assert_eq!(actual, expected);
 }
@@ -185,7 +185,7 @@ fn non_utf8_in_var_value_is_preserved() {
     let expected = PathBuf::from(non_utf_8_text());
     std::env::set_var("mut-testing", non_utf_8_text());
 
-    let actual = given.resolve_path_variables();
+    let actual = given.resolve_env_variables();
 
     assert_eq!(actual, expected);
 }
@@ -200,7 +200,7 @@ fn tilde_in_given_path_is_not_resolved() {
     // Confirm that the tilde could otherwise be resolved
     assert_ne!(PathBuf::from(&given).resolve_tilde(), PathBuf::from(&given));
 
-    let actual = given.resolve_path_variables();
+    let actual = given.resolve_env_variables();
 
     assert_eq!(actual, expected);
 }
@@ -219,7 +219,7 @@ fn tilde_in_var_value_is_not_resolved() {
         PathBuf::from(&env_value),
     );
 
-    let actual = given.resolve_path_variables();
+    let actual = given.resolve_env_variables();
 
     assert_eq!(actual, expected);
 }
@@ -231,7 +231,7 @@ fn dir_seps_are_preserved() {
     let expected_str = "/path/with\\mixed\\value/dir\\seps";
     std::env::set_var("mut-testing", "value");
 
-    let actual = given.resolve_path_variables();
+    let actual = given.resolve_env_variables();
 
     assert_eq!(actual.to_string_lossy(), expected_str);
 }

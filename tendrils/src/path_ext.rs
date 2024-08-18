@@ -36,7 +36,7 @@ pub(crate) trait PathExt {
     /// path). A work-around is to set the variable value to `<pattern>`.
     /// In the future, an escape character such as `|` could be
     /// implemented, but this added complexity was avoided for now.
-    fn resolve_path_variables(&self) -> PathBuf;
+    fn resolve_env_variables(&self) -> PathBuf;
 }
 
 impl PathExt for Path {
@@ -115,7 +115,7 @@ impl PathExt for Path {
         }
     }
 
-    fn resolve_path_variables(&self) -> PathBuf {
+    fn resolve_env_variables(&self) -> PathBuf {
         let given_bytes = self.as_os_str().as_encoded_bytes();
         let mut search_start_idx = 0;
         let mut resolved_bytes: Vec<u8> = vec![];
@@ -175,4 +175,33 @@ fn next_env_var(bytes: &[u8], search_start_idx: usize) -> Option<(usize, usize)>
 #[cfg(test)]
 pub fn contains_env_var(input: &Path) -> bool {
     next_env_var(input.as_os_str().as_encoded_bytes(), 0).is_some()
+}
+
+/// A [`PathBuf`] path wrapper that guarantees the path separators have been
+/// [replaced](`PathExt::replace_dir_seps`) to the current platform, any tilde
+/// values have been [resolved](PathExt::resolve_tilde), and any environment
+/// variables have been [resolved](PathExt::resolve_env_variables).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct UniPath(PathBuf);
+
+impl UniPath {
+    /// The wrapped [`PathBuf`] that has been sanitized.
+    #[cfg(test)]
+    pub fn inner(&self) -> &Path {
+        &self.0
+    }
+}
+
+impl From<&Path> for UniPath {
+    fn from(value: &Path) -> Self {
+        UniPath(
+            value.resolve_tilde().resolve_env_variables().replace_dir_seps()
+        )
+    }
+}
+
+impl From<PathBuf> for UniPath {
+    fn from(value: PathBuf) -> Self {
+        Self::from(value.as_ref())
+    }
 }
