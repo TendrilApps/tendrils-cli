@@ -1,5 +1,5 @@
 use crate::enums::{InvalidTendrilError, OneOrMany, TendrilMode};
-use crate::path_ext::PathExt;
+use crate::path_ext::{PathExt, UniPath};
 use serde::{de, Deserialize, Deserializer, Serialize};
 use std::path::{Path, PathBuf};
 
@@ -87,8 +87,8 @@ impl<'a> Tendril<'a> {
         PathBuf::from(full_path_str).replace_dir_seps()
     }
 
-    pub fn local_path(&self, td_repo: &Path) -> PathBuf {
-        td_repo.join(self.group).join(self.name)
+    pub fn local_path(&self, td_repo: &UniPath) -> PathBuf {
+        td_repo.inner().join(self.group).join(self.name)
     }
 
     fn is_path(x: &str) -> bool {

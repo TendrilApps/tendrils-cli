@@ -177,7 +177,7 @@ pub fn contains_env_var(input: &Path) -> bool {
     next_env_var(input.as_os_str().as_encoded_bytes(), 0).is_some()
 }
 
-/// A [`PathBuf`] path wrapper that guarantees the path separators have been
+/// A [`PathBuf`] wrapper that guarantees the path separators have been
 /// [replaced](`PathExt::replace_dir_seps`) to the current platform, any tilde
 /// values have been [resolved](PathExt::resolve_tilde), and any environment
 /// variables have been [resolved](PathExt::resolve_env_variables).
@@ -186,7 +186,6 @@ pub(crate) struct UniPath(PathBuf);
 
 impl UniPath {
     /// The wrapped [`PathBuf`] that has been sanitized.
-    #[cfg(test)]
     pub fn inner(&self) -> &Path {
         &self.0
     }
@@ -200,8 +199,14 @@ impl From<&Path> for UniPath {
     }
 }
 
+impl From<&PathBuf> for UniPath {
+    fn from(value: &PathBuf) -> Self {
+        Self::from(value.as_path())
+    }
+}
+
 impl From<PathBuf> for UniPath {
     fn from(value: PathBuf) -> Self {
-        Self::from(value.as_ref())
+        Self::from(value.as_path())
     }
 }

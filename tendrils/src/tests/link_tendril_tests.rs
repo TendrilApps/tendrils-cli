@@ -53,7 +53,7 @@ fn remote_parent_and_local_exist_symlink_to_local_is_created(
     )
     .unwrap();
 
-    let actual = link_tendril(&setup.td_repo, &tendril, false, force);
+    let actual = link_tendril(&setup.uni_td_repo(), &tendril, false, force);
 
     use std::env::consts::FAMILY;
     let expected_target: PathBuf;
@@ -130,8 +130,9 @@ fn remote_exists_and_is_not_symlink_returns_type_mismatch_error_unless_forced(
     dir_tendril.mode = TendrilMode::Link;
 
     let file_actual =
-        link_tendril(&setup.td_repo, &file_tendril, dry_run, force);
-    let dir_actual = link_tendril(&setup.td_repo, &dir_tendril, dry_run, force);
+        link_tendril(&setup.uni_td_repo(), &file_tendril, dry_run, force);
+    let dir_actual =
+        link_tendril(&setup.uni_td_repo(), &dir_tendril, dry_run, force);
 
     let exp_file_result;
     let exp_dir_result;
@@ -216,8 +217,9 @@ fn local_is_symlink_returns_type_mismatch_error_unless_forced(
     dir_tendril.mode = TendrilMode::Link;
 
     let file_actual =
-        link_tendril(&setup.td_repo, &file_tendril, dry_run, force);
-    let dir_actual = link_tendril(&setup.td_repo, &dir_tendril, dry_run, force);
+        link_tendril(&setup.uni_td_repo(), &file_tendril, dry_run, force);
+    let dir_actual =
+        link_tendril(&setup.uni_td_repo(), &dir_tendril, dry_run, force);
 
     let exp_file_result;
     let exp_dir_result;
@@ -302,8 +304,10 @@ fn existing_symlinks_at_remote_are_overwritten(#[case] force: bool) {
     let mut dir_tendril = setup.dir_tendril();
     dir_tendril.mode = TendrilMode::Link;
 
-    let file_actual = link_tendril(&setup.td_repo, &file_tendril, false, force);
-    let dir_actual = link_tendril(&setup.td_repo, &dir_tendril, false, force);
+    let file_actual =
+        link_tendril(&setup.uni_td_repo(), &file_tendril, false, force);
+    let dir_actual =
+        link_tendril(&setup.uni_td_repo(), &dir_tendril, false, force);
 
     assert_eq!(
         file_actual,
@@ -359,7 +363,7 @@ fn no_read_access_from_local_file_returns_success(
     )
     .unwrap();
 
-    let actual = link_tendril(&setup.td_repo, &tendril, dry_run, force);
+    let actual = link_tendril(&setup.uni_td_repo(), &tendril, dry_run, force);
 
     let exp_result;
     if dry_run {
@@ -402,7 +406,7 @@ fn no_read_access_from_local_dir_returns_success(
     )
     .unwrap();
 
-    let actual = link_tendril(&setup.td_repo, &tendril, dry_run, force);
+    let actual = link_tendril(&setup.uni_td_repo(), &tendril, dry_run, force);
 
     set_ra(&setup.local_nra_dir, true);
     let exp_result;
@@ -453,7 +457,7 @@ fn no_write_access_at_remote_symfile_returns_io_error_permission_denied_unless_d
     let mut tendril = setup.file_tendril();
     tendril.mode = TendrilMode::Link;
 
-    let actual = link_tendril(&setup.td_repo, &tendril, dry_run, force);
+    let actual = link_tendril(&setup.uni_td_repo(), &tendril, dry_run, force);
 
     let exp_result;
     if dry_run {
@@ -489,7 +493,7 @@ fn non_link_mode_tendril_returns_mode_mismatch_error(
     let mut tendril = setup.file_tendril();
     tendril.mode = mode;
 
-    let actual = link_tendril(&setup.td_repo, &tendril, dry_run, force);
+    let actual = link_tendril(&setup.uni_td_repo(), &tendril, dry_run, force);
 
     assert_eq!(
         actual,
@@ -524,8 +528,9 @@ fn local_doesnt_exist_but_td_repo_does_copies_remote_to_local_then_links_unless_
     dir_tendril.mode = TendrilMode::Link;
 
     let file_actual =
-        link_tendril(&setup.td_repo, &file_tendril, dry_run, force);
-    let dir_actual = link_tendril(&setup.td_repo, &dir_tendril, dry_run, force);
+        link_tendril(&setup.uni_td_repo(), &file_tendril, dry_run, force);
+    let dir_actual =
+        link_tendril(&setup.uni_td_repo(), &dir_tendril, dry_run, force);
 
     let exp_result;
     if dry_run {

@@ -1,6 +1,7 @@
 use crate::config::{Config, parse_config};
 use crate::test_utils::{global_cfg_dir, global_cfg_file, home_dir, Setup};
 use crate::{
+    is_tendrils_repo,
     InitError,
     TendrilBundle,
     TendrilsActor,
@@ -45,8 +46,11 @@ fn creates_dot_tendrils_dir_and_contents_in_empty_dir(#[case] force: bool) {
 
     assert_eq!(actual, Ok(()));
     assert_eq!(setup.td_json_file_contents(), crate::INIT_TD_TENDRILS_JSON);
-    assert!(api.is_tendrils_repo(&setup.td_repo));
-    assert_eq!(crate::config::get_config(&setup.td_repo).unwrap(), expected);
+    assert!(is_tendrils_repo(&setup.uni_td_repo()));
+    assert_eq!(
+        crate::config::get_config(&setup.uni_td_repo()).unwrap(),
+        expected,
+    );
 }
 
 #[rstest]
@@ -66,7 +70,7 @@ fn does_not_change_cd(#[case] force: bool) {
     std::env::set_current_dir(&setup.temp_dir.path().parent().unwrap()).unwrap();
 
     assert_eq!(actual, Ok(()));
-    assert!(api.is_tendrils_repo(&cd));
+    assert!(is_tendrils_repo(&cd.into()));
 }
 
 #[rstest]
@@ -83,7 +87,7 @@ fn dir_doesnt_exist_returns_io_error_not_found(#[case] force: bool) {
         actual,
         Err(InitError::IoError { kind: std::io::ErrorKind::NotFound })
     );
-    assert!(!api.is_tendrils_repo(&dir))
+    assert!(!is_tendrils_repo(&dir.into()))
 }
 
 #[rstest]
@@ -122,11 +126,11 @@ fn dir_contains_another_misc_file_returns_not_empty_error_unless_forced(
     if force {
         assert_eq!(actual, Ok(()));
         assert_eq!(setup.td_json_file_contents(), crate::INIT_TD_TENDRILS_JSON);
-        assert!(api.is_tendrils_repo(&setup.td_repo))
+        assert!(is_tendrils_repo(&setup.uni_td_repo()))
     }
     else {
         assert_eq!(actual, Err(InitError::NotEmpty));
-        assert!(!api.is_tendrils_repo(&setup.td_repo))
+        assert!(!is_tendrils_repo(&setup.uni_td_repo()))
     }
 }
 
@@ -149,11 +153,11 @@ fn dir_contains_another_misc_dir_returns_not_empty_error_unless_forced(
     if force {
         assert_eq!(actual, Ok(()));
         assert_eq!(setup.td_json_file_contents(), crate::INIT_TD_TENDRILS_JSON);
-        assert!(api.is_tendrils_repo(&setup.td_repo))
+        assert!(is_tendrils_repo(&setup.uni_td_repo()))
     }
     else {
         assert_eq!(actual, Err(InitError::NotEmpty));
-        assert!(!api.is_tendrils_repo(&setup.td_repo))
+        assert!(!is_tendrils_repo(&setup.uni_td_repo()))
     }
 }
 
@@ -172,11 +176,11 @@ fn dir_contains_empty_dot_tendrils_dir_returns_not_empty_error_unless_forced(
     if force {
         assert_eq!(actual, Ok(()));
         assert_eq!(setup.td_json_file_contents(), crate::INIT_TD_TENDRILS_JSON);
-        assert!(api.is_tendrils_repo(&setup.td_repo))
+        assert!(is_tendrils_repo(&setup.uni_td_repo()))
     }
     else {
         assert_eq!(actual, Err(InitError::NotEmpty));
-        assert!(!api.is_tendrils_repo(&setup.td_repo))
+        assert!(!is_tendrils_repo(&setup.uni_td_repo()))
     }
 }
 
@@ -198,11 +202,11 @@ fn dir_contains_non_empty_dot_tendrils_dir_returns_not_empty_error_unless_forced
     if force {
         assert_eq!(actual, Ok(()));
         assert_eq!(setup.td_json_file_contents(), crate::INIT_TD_TENDRILS_JSON);
-        assert!(api.is_tendrils_repo(&setup.td_repo))
+        assert!(is_tendrils_repo(&setup.uni_td_repo()))
     }
     else {
         assert_eq!(actual, Err(InitError::NotEmpty));
-        assert!(!api.is_tendrils_repo(&setup.td_repo))
+        assert!(!is_tendrils_repo(&setup.uni_td_repo()))
     }
 }
 
@@ -226,11 +230,11 @@ fn init_in_home_dir_with_global_cfg_file_returns_non_empty_error_unless_forced(
     if force {
         assert_eq!(actual, Ok(()));
         assert_eq!(setup.td_json_file_contents(), crate::INIT_TD_TENDRILS_JSON);
-        assert!(api.is_tendrils_repo(&setup.td_repo))
+        assert!(is_tendrils_repo(&setup.uni_td_repo()))
     }
     else {
         assert_eq!(actual, Err(InitError::NotEmpty));
-        assert!(!api.is_tendrils_repo(&setup.td_repo))
+        assert!(!is_tendrils_repo(&setup.uni_td_repo()))
     }
 }
 
@@ -254,11 +258,11 @@ fn init_in_global_cfg_dir_with_global_cfg_file_returns_non_empty_error_unless_fo
     if force {
         assert_eq!(actual, Ok(()));
         assert_eq!(setup.td_json_file_contents(), crate::INIT_TD_TENDRILS_JSON);
-        assert!(api.is_tendrils_repo(&setup.td_repo))
+        assert!(is_tendrils_repo(&setup.uni_td_repo()))
     }
     else {
         assert_eq!(actual, Err(InitError::NotEmpty));
-        assert!(!api.is_tendrils_repo(&setup.td_repo))
+        assert!(!is_tendrils_repo(&setup.uni_td_repo()))
     }
 }
 
@@ -273,11 +277,29 @@ fn dir_is_already_td_repo_returns_already_init_error_even_if_invalid_json(
     setup.make_dot_td_dir();
     let json_content = "Invalid json content";
     write(&setup.td_json_file, json_content).unwrap();
-    assert!(api.is_tendrils_repo(&setup.td_repo));
+    assert!(is_tendrils_repo(&setup.uni_td_repo()));
     assert!(parse_config(json_content).is_err());
 
     let actual = api.init_tendrils_repo(&setup.td_repo, force);
 
     assert_eq!(setup.td_json_file_contents(), json_content);
     assert_eq!(actual, Err(InitError::AlreadyInitialized));
+}
+
+#[rstest]
+#[case(true)]
+#[case(false)]
+#[serial("mut-env-var-testing")]
+fn leading_tilde_or_env_vars_are_resolved(#[case] force: bool) {
+    let api = TendrilsActor {};
+    let setup = Setup::new();
+    let given_dir = PathBuf::from("~/<var>");
+    let exp_repo_path = setup.temp_dir.path().join("misc");
+    setup.set_home_dir();
+    std::env::set_var("var", "misc");
+    create_dir_all(&exp_repo_path).unwrap();
+
+    let _ = api.init_tendrils_repo(&given_dir, force).unwrap();
+
+    assert!(is_tendrils_repo(&exp_repo_path.into()))
 }

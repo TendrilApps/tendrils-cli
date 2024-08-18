@@ -221,7 +221,7 @@ fn given_td_repo_is_none_default_td_repo_is_valid_uses_default_td_repo(
 
 #[rstest]
 #[serial("mut-env-var-testing")]
-fn leading_tilde_in_given_repo_path_is_resolved(
+fn leading_tilde_or_env_vars_in_given_repo_path_is_resolved(
     #[values(ActionMode::Push, ActionMode::Pull, ActionMode::Link)]
     mode: ActionMode,
     #[values(true, false)] dry_run: bool,
@@ -246,7 +246,8 @@ fn leading_tilde_in_given_repo_path_is_resolved(
     }
     let filter = FilterSpec::new();
     setup.set_home_dir();
-    let given_path = PathBuf::from("~/TendrilsRepo");
+    std::env::set_var("var", "TendrilsRepo");
+    let given_path = PathBuf::from("~/<var>");
 
     let actual = api.tendril_action(
         mode.clone(),
@@ -294,7 +295,7 @@ fn leading_tilde_in_given_repo_path_is_resolved(
 
 #[rstest]
 #[serial("mut-env-var-testing")]
-fn leading_tilde_in_default_repo_path_is_resolved(
+fn leading_tilde_or_env_vars_in_default_repo_path_is_resolved(
     #[values(ActionMode::Push, ActionMode::Pull, ActionMode::Link)]
     mode: ActionMode,
     #[values(true, false)] dry_run: bool,
@@ -319,8 +320,9 @@ fn leading_tilde_in_default_repo_path_is_resolved(
     }
     let filter = FilterSpec::new();
     setup.make_global_cfg_file(
-        default_repo_path_as_json("~/TendrilsRepo"),
+        default_repo_path_as_json("~/<var>"),
     );
+    std::env::set_var("var", "TendrilsRepo");
 
     let actual = api.tendril_action(
         mode.clone(),

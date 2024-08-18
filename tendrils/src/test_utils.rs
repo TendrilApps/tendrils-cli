@@ -12,6 +12,8 @@ use crate::{
     TendrilReport,
     TendrilsApi,
 };
+#[cfg(test)]
+use crate::path_ext::UniPath;
 use crate::config::{Config, parse_config};
 use crate::enums::GetConfigError;
 use std::env::var;
@@ -596,6 +598,7 @@ impl Setup {
         write(global_cfg_file(), json).unwrap();
     }
 
+    /// Sets the home directory to the [`Setup::temp_dir`].
     /// Note: This changes the `HOME` environment variable for the process
     /// so should not be run in parallel with other tests where this may
     /// interfere.
@@ -671,6 +674,11 @@ impl Setup {
         create_dir_all(&self.local_nra_dir).unwrap();
         write(&self.local_nra_nested_file, "Local nested file contents").unwrap();
         create_dir_all(&self.local_nra_nested_file).unwrap();
+    }
+
+    #[cfg(test)]
+    pub(crate) fn uni_td_repo(&self) -> UniPath {
+        UniPath::from(&self.td_repo)
     }
 }
 

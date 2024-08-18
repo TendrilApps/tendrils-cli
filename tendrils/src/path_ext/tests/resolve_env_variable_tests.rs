@@ -155,7 +155,7 @@ fn non_utf_8_var_name_is_preserved_if_var_does_not_exist() {
     let given = PathBuf::from(&given_str);
 
     let expected = PathBuf::from(&given_str);
-    std::env::remove_var(&given_str);
+    std::env::remove_var(non_utf_8_text());
 
     let actual = given.resolve_env_variables();
 

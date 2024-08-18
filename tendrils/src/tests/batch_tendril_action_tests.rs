@@ -1,6 +1,7 @@
 //! Tests that the updater function behaves properly, for additional
 //! tests see the similar [`super::batch_tendril_action_tests`] module
 
+use crate::path_ext::UniPath;
 use crate::test_utils::{
     get_disposable_dir,
     is_empty,
@@ -36,14 +37,14 @@ fn given_empty_list_returns_empty(
 ) {
     let temp_parent_dir =
         TempDir::new_in(get_disposable_dir(), "ParentDir").unwrap();
-    let given_td_repo = temp_parent_dir.path().join("TendrilsRepo");
+    let given_td_repo = temp_parent_dir.path().join("TendrilsRepo").into();
     let mut actual = vec![];
     let updater = |r| actual.push(r);
 
     batch_tendril_action(updater, mode, &given_td_repo, vec![], dry_run, force);
 
     assert!(actual.is_empty());
-    assert!(is_empty(&given_td_repo))
+    assert!(is_empty(given_td_repo.inner()))
 }
 
 #[rstest]
@@ -118,7 +119,7 @@ fn returns_result_after_each_operation(
     batch_tendril_action(
         updater,
         ActionMode::Pull,
-        &setup.td_repo,
+        &UniPath::from(&setup.td_repo),
         vec![bundle.clone()],
         dry_run,
         force,
@@ -239,7 +240,7 @@ fn pull_returns_tendril_and_result_for_each_given(
     batch_tendril_action(
         updater,
         ActionMode::Pull,
-        &given_td_repo,
+        &UniPath::from(given_td_repo),
         given,
         dry_run,
         force
@@ -412,7 +413,7 @@ fn push_returns_tendril_and_result_for_each_given(
     batch_tendril_action(
         updater,
         ActionMode::Push,
-        &given_td_repo,
+        &UniPath::from(given_td_repo),
         given,
         dry_run,
         force,
@@ -602,7 +603,7 @@ fn link_returns_tendril_and_result_for_each_given(
     batch_tendril_action(
         updater,
         ActionMode::Link,
-        &given_td_repo,
+        &UniPath::from(given_td_repo),
         given,
         dry_run,
         force,
@@ -792,7 +793,7 @@ fn out_returns_tendril_and_result_for_each_given_link_or_push_style(
     batch_tendril_action(
         updater,
         ActionMode::Out,
-        &given_td_repo,
+        &UniPath::from(given_td_repo),
         given,
         dry_run,
         force,
@@ -886,7 +887,7 @@ fn parent_path_vars_are_resolved(
     batch_tendril_action(
         updater,
         mode,
-        &setup.td_repo,
+        &UniPath::from(&setup.td_repo),
         tendrils,
         dry_run,
         force,
