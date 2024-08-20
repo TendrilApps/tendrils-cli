@@ -1,20 +1,22 @@
 use crate::enums::{InvalidTendrilError, OneOrMany, TendrilMode};
 use crate::path_ext::{PathExt, UniPath};
 use serde::{de, Deserialize, Deserializer, Serialize};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 #[cfg(test)]
 pub(crate) mod tests;
 
-/// A Tendril that is prepared for use with Tendril actions
+/// A tendril that is prepared for use with tendril actions
 /// and always exists in a valid state.
 /// Note: This does *not* guarantee that the path
 /// exists or is valid.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct Tendril<'a> {
+    /// Given group.
     group: &'a str,
     name: &'a str,
-    parent: PathBuf,
+    parent: UniPath,
+    remote: PathBuf,
     pub mode: TendrilMode,
 }
 
@@ -22,7 +24,7 @@ impl<'a> Tendril<'a> {
     fn new(
         group: &'a str,
         name: &'a str,
-        parent: PathBuf,
+        parent: UniPath,
         mode: TendrilMode,
     ) -> Result<Tendril<'a>, InvalidTendrilError> {
         if group.is_empty()
@@ -39,7 +41,7 @@ impl<'a> Tendril<'a> {
             return Err(InvalidTendrilError::InvalidName);
         }
 
-        let parent_str = parent.to_string_lossy();
+        let parent_str = parent.inner().to_string_lossy();
         if parent_str.is_empty()
             || parent_str.contains('\n')
             || parent_str.contains('\r')
@@ -47,48 +49,50 @@ impl<'a> Tendril<'a> {
             return Err(InvalidTendrilError::InvalidParent);
         }
 
-        Ok(Tendril { group, name, parent, mode })
+        let remote =
+            parent.inner().join_raw(&PathBuf::from(name)).replace_dir_seps();
+
+        Ok(Tendril { group, name, parent, remote, mode })
     }
 
     #[cfg(any(test, feature = "_test_utils"))]
     pub fn new_expose(
         group: &'a str,
         name: &'a str,
-        parent: PathBuf,
+        parent: UniPath,
         mode: TendrilMode,
     ) -> Result<Tendril<'a>, InvalidTendrilError> {
         Tendril::new(group, name, parent, mode)
     }
 
+    /// Name as given.
     #[cfg(test)]
     pub fn name(&self) -> &str {
         self.name
     }
 
-    pub fn parent(&self) -> &Path {
+    /// Sanitized parent path.
+    pub fn parent(&self) -> &UniPath {
         &self.parent
     }
 
-    pub fn full_path(&self) -> PathBuf {
-        use std::path::MAIN_SEPARATOR;
-
-        let mut full_path_str = String::from(self.parent.to_string_lossy());
-        if !full_path_str.ends_with('/') && !full_path_str.ends_with('\\') {
-            full_path_str.push(MAIN_SEPARATOR);
-        }
-
-        if self.name.starts_with('/') || self.name.starts_with('\\') {
-            full_path_str.push_str(&self.name[1..]);
-        }
-        else {
-            full_path_str.push_str(self.name);
-        }
-
-        PathBuf::from(full_path_str).replace_dir_seps()
+    /// The resolved path to this file system object inside the Tendrils repo.
+    /// The combination of the given Tendrils repo, [`Self::group`], and
+    /// [`Self::name`]
+    pub fn local(&self, td_repo: &UniPath) -> PathBuf {
+        td_repo
+            .inner()
+            .join_raw(&PathBuf::from(self.group))
+            .join_raw(&PathBuf::from(self.name))
+            .replace_dir_seps()
+            .into()
     }
 
-    pub fn local_path(&self, td_repo: &UniPath) -> PathBuf {
-        td_repo.inner().join(self.group).join(self.name)
+    /// The resolved path to this file system object specific to this machine,
+    /// outside of the Tendrils repo. The combination of [`Self::parent`] and
+    /// [`Self::name`].
+    pub fn remote(&self) -> &PathBuf {
+        &self.remote
     }
 
     fn is_path(x: &str) -> bool {
@@ -171,10 +175,10 @@ impl TendrilBundle {
 
         // Resolve parents early to prevent doing this on
         // each iteration
-        let resolved_parents: Vec<PathBuf> = raw_paths
+        let resolved_parents: Vec<UniPath> = raw_paths
             .iter()
             .map(|p| PathBuf::from(p))
-            .map(|p| p.resolve_env_variables().resolve_tilde())
+            .map(|p| UniPath::from(p.resolve_env_variables().resolve_tilde()))
             .collect();
 
         for name in self.names.iter() {

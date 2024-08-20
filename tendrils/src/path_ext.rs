@@ -7,6 +7,12 @@ use std::path::{Path, PathBuf};
 mod tests;
 
 pub(crate) trait PathExt {
+    /// Appends the given `path` to `self`, regardless of whether the given
+    /// path is absolute or relative. Any directory separators at the
+    /// end of `self` or start of `path` are preserved. If neither `self` ends
+    /// with, or `path` starts with a directory separator, one is added.
+    fn join_raw(&self, path: &Path) -> PathBuf;
+
     /// Returns the type of the file system object that
     /// the path points to, or returns `None` if the FSO
     /// does not exist.
@@ -40,6 +46,25 @@ pub(crate) trait PathExt {
 }
 
 impl PathExt for Path {
+    fn join_raw(&self, path: &Path) -> PathBuf {
+        let parent_bytes = self.as_os_str().as_encoded_bytes();
+        let child_bytes = path.as_os_str().as_encoded_bytes();
+        let mut raw_str = std::ffi::OsString::from(&self);
+
+        if parent_bytes.ends_with(&['/' as u8])
+            || parent_bytes.ends_with(&['\\' as u8])
+            || child_bytes.starts_with(&['/' as u8])
+            || child_bytes.starts_with(&['\\' as u8]) {
+            raw_str.push(path);
+        }
+        else {
+            raw_str.push(std::path::MAIN_SEPARATOR_STR);
+            raw_str.push(path);
+        }
+
+        PathBuf::from(raw_str)
+    }
+
     fn get_type(&self) -> Option<FsoType> {
         if self.is_file() {
             if self.is_symlink() {
@@ -177,10 +202,11 @@ pub fn contains_env_var(input: &Path) -> bool {
     next_env_var(input.as_os_str().as_encoded_bytes(), 0).is_some()
 }
 
-/// A [`PathBuf`] wrapper that guarantees the path separators have been
-/// [replaced](`PathExt::replace_dir_seps`) to the current platform, any tilde
-/// values have been [resolved](PathExt::resolve_tilde), and any environment
-/// variables have been [resolved](PathExt::resolve_env_variables).
+/// A [`PathBuf`] wrapper that guarantees that any tilde values have been
+/// [resolved](PathExt::resolve_tilde), any environment variables have been
+/// [resolved](PathExt::resolve_env_variables), and the path separators have been
+/// [replaced](`PathExt::replace_dir_seps`) to the current platform, in that
+/// order.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct UniPath(PathBuf);
 

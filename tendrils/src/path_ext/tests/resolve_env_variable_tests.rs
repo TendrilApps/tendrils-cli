@@ -235,3 +235,20 @@ fn dir_seps_are_preserved() {
 
     assert_eq!(actual.to_string_lossy(), expected_str);
 }
+
+#[rstest]
+#[case("/")]
+#[case("\\")]
+#[case("/AbsPath")]
+#[case("\\AbsPath")]
+#[case("C:\\AbsPath")]
+#[serial("mut-env-var-testing")]
+fn var_value_is_absolute_path_adds_raw_value(#[case] var_value: &str) {
+    let given = PathBuf::from("Some/Path/<mut-testing>");
+    let expected_str = format!("Some/Path/{var_value}");
+    std::env::set_var("mut-testing", var_value);
+
+    let actual = given.resolve_env_variables();
+
+    assert_eq!(actual.to_string_lossy(), expected_str);
+}

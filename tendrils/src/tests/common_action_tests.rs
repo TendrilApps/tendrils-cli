@@ -50,7 +50,7 @@ fn remote_is_given_td_repo_returns_recursion_error(
     let mut tendril = Tendril::new_expose(
         "SomeApp",
         "TendrilsRepo",
-        setup.td_repo.parent().unwrap().to_path_buf(),
+        setup.td_repo.parent().unwrap().into(),
         TendrilMode::DirOverwrite,
     )
     .unwrap();
@@ -65,7 +65,7 @@ fn remote_is_given_td_repo_returns_recursion_error(
         ActionLog::new(
             None,
             None,
-            tendril.parent().join(tendril.name()),
+            tendril.parent().inner().join(tendril.name()),
             Err(TendrilActionError::Recursion),
         )
     );
@@ -91,7 +91,7 @@ fn remote_is_ancestor_to_given_td_repo_returns_recursion_error(
     let mut tendril = Tendril::new_expose(
         "SomeApp",
         "Nested1",
-        setup.parent_dir.clone(),
+        setup.parent_dir.clone().into(),
         TendrilMode::DirOverwrite,
     )
     .unwrap();
@@ -106,7 +106,7 @@ fn remote_is_ancestor_to_given_td_repo_returns_recursion_error(
         ActionLog::new(
             None,
             None,
-            tendril.parent().join(tendril.name()),
+            tendril.parent().inner().join(tendril.name()),
             Err(TendrilActionError::Recursion),
         )
     );
@@ -132,7 +132,7 @@ fn remote_is_direct_child_of_given_td_repo_returns_recursion_error(
     let mut tendril = Tendril::new_expose(
         "SomeApp",
         "misc.txt",
-        parent_dir,
+        parent_dir.into(),
         TendrilMode::DirOverwrite,
     )
     .unwrap();
@@ -147,7 +147,7 @@ fn remote_is_direct_child_of_given_td_repo_returns_recursion_error(
         ActionLog::new(
             None,
             Some(FsoType::File),
-            tendril.parent().join(tendril.name()),
+            tendril.parent().inner().join(tendril.name()),
             Err(TendrilActionError::Recursion),
         )
     );
@@ -174,7 +174,7 @@ fn remote_is_nested_child_of_given_td_repo_returns_recursion_error(
     let mut tendril = Tendril::new_expose(
         "SomeApp",
         "misc.txt",
-        parent_dir,
+        parent_dir.into(),
         TendrilMode::DirOverwrite,
     )
     .unwrap();
@@ -189,7 +189,7 @@ fn remote_is_nested_child_of_given_td_repo_returns_recursion_error(
         ActionLog::new(
             None,
             Some(FsoType::File),
-            tendril.parent().join(tendril.name()),
+            tendril.parent().inner().join(tendril.name()),
             Err(TendrilActionError::Recursion),
         )
     );
@@ -313,7 +313,7 @@ fn remote_is_global_config_dir_proceeds_normally(
     let mut tendril = Tendril::new_expose(
         "SomeApp",
         ".tendrils",
-        home_dir(),
+        home_dir().into(),
         TendrilMode::DirOverwrite,
     ).unwrap();
     if action == link_tendril {
@@ -366,7 +366,7 @@ fn remote_is_in_global_config_dir_proceeds_normally(
     let mut tendril = Tendril::new_expose(
         "SomeApp",
         "global-config.json",
-        global_cfg_dir(),
+        global_cfg_dir().into(),
         TendrilMode::DirOverwrite,
     ).unwrap();
     if action == link_tendril {
@@ -498,16 +498,13 @@ fn repo_is_in_global_cfg_dir_and_config_file_exists_proceeds_normally(
 }
 
 #[rstest]
-#[case("<mut-testing>", "SomeApp", "misc.txt")]
-#[case("Parent", "<mut-testing>", "misc.txt")]
-#[case("Parent", "SomeApp", "<mut-testing>")]
-#[case("<I_DO_NOT_EXIST>", "SomeApp", "misc.txt")]
-#[case("Parent", "<I_DO_NOT_EXIST>", "misc.txt")]
-#[case("Parent", "SomeApp", "<I_DO_NOT_EXIST>")]
+#[case("<mut-testing>", "misc.txt")]
+#[case("SomeApp", "<mut-testing>")]
+#[case("<I_DO_NOT_EXIST>", "misc.txt")]
+#[case("SomeApp", "<I_DO_NOT_EXIST>")]
 #[cfg_attr(windows, ignore)] // These are invalid paths on Windows
 #[serial("mut-env-var-testing")]
 fn var_in_any_field_exists_uses_raw_path_even_if_var_exists(
-    #[case] parent: &str,
     #[case] group: &str,
     #[case] name: &str,
     #[values(link_tendril, pull_tendril, push_tendril)] action: fn(
@@ -523,7 +520,6 @@ fn var_in_any_field_exists_uses_raw_path_even_if_var_exists(
 ) {
     // Any variables should have been resolved at this point
     let mut setup = Setup::new();
-    setup.parent_dir = setup.temp_dir.path().join(parent);
     setup.group_dir = setup.td_repo.join(group);
     setup.remote_file = setup.parent_dir.join(name);
     setup.local_file = setup.group_dir.join(name);
@@ -535,7 +531,7 @@ fn var_in_any_field_exists_uses_raw_path_even_if_var_exists(
     let mut tendril = Tendril::new_expose(
         group,
         name,
-        setup.parent_dir.clone(),
+        setup.parent_dir.clone().into(),
         TendrilMode::DirOverwrite,
     )
     .unwrap();
@@ -565,7 +561,7 @@ fn var_in_any_field_exists_uses_raw_path_even_if_var_exists(
         ActionLog::new(
             Some(FsoType::File),
             exp_remote_type,
-            tendril.parent().join(tendril.name()),
+            tendril.parent().inner().join(tendril.name()),
             exp_result,
         )
     );
@@ -773,10 +769,10 @@ fn remote_parent_doesnt_exist_returns_io_error_not_found(
         subdir_file_tendril.mode = TendrilMode::Link;
         subdir_dir_tendril.mode = TendrilMode::Link;
     }
-    assert!(!file_tendril.parent().exists());
-    assert!(!dir_tendril.parent().exists());
-    assert!(!subdir_file_tendril.parent().exists());
-    assert!(!subdir_dir_tendril.parent().exists());
+    assert!(!file_tendril.parent().inner().exists());
+    assert!(!dir_tendril.parent().inner().exists());
+    assert!(!subdir_file_tendril.parent().inner().exists());
+    assert!(!subdir_dir_tendril.parent().inner().exists());
 
     let file_actual = action(&setup.uni_td_repo(), &file_tendril, dry_run, force);
     let dir_actual = action(&setup.uni_td_repo(), &dir_tendril, dry_run, force);
@@ -864,8 +860,8 @@ fn remote_direct_parent_doesnt_exist_but_parent_does_should_create_subdirs_then_
         subdir_file_tendril.mode = TendrilMode::Link;
         subdir_dir_tendril.mode = TendrilMode::Link;
     }
-    assert!(!subdir_file_tendril.full_path().parent().unwrap().exists());
-    assert!(!subdir_dir_tendril.full_path().parent().unwrap().exists());
+    assert!(!subdir_file_tendril.remote().parent().unwrap().exists());
+    assert!(!subdir_dir_tendril.remote().parent().unwrap().exists());
 
     let subdir_file_actual =
         action(&subdir_file_setup.uni_td_repo(), &subdir_file_tendril, dry_run, force);
@@ -1446,14 +1442,14 @@ fn windows_platform_parent_is_root_returns_permission_error_unless_dry_run_or_di
     let file_tendril = Tendril::new_expose(
         "SomeApp",
         "tendrils_test_file.txt",
-        setup.parent_dir.clone(),
+        setup.parent_dir.clone().into(),
         mode.clone(),
     )
     .unwrap();
     let dir_tendril = Tendril::new_expose(
         "SomeApp",
         "tendrils_test_dir",
-        setup.parent_dir.clone(),
+        setup.parent_dir.clone().into(),
         mode,
     )
     .unwrap();
@@ -1516,7 +1512,7 @@ fn windows_platform_parent_is_root_returns_permission_error_unless_dry_run_or_di
         ActionLog::new(
             Some(FsoType::File),
             exp_remote_type_file,
-            file_tendril.parent().join(file_tendril.name()),
+            file_tendril.parent().inner().join(file_tendril.name()),
             exp_file_result,
         )
     );
@@ -1525,7 +1521,7 @@ fn windows_platform_parent_is_root_returns_permission_error_unless_dry_run_or_di
         ActionLog::new(
             Some(FsoType::Dir),
             exp_remote_type_dir,
-            dir_tendril.parent().join(dir_tendril.name()),
+            dir_tendril.parent().inner().join(dir_tendril.name()),
             exp_dir_result,
         )
     );
@@ -1566,14 +1562,14 @@ fn non_windows_platform_parent_is_root_returns_permission_error_unless_dry_run(
     let file_tendril = Tendril::new_expose(
         "SomeApp",
         "tendrils_test_file.txt",
-        setup.parent_dir.clone(),
+        setup.parent_dir.clone().into(),
         mode.clone(),
     )
     .unwrap();
     let dir_tendril = Tendril::new_expose(
         "SomeApp",
         "tendrils_test_dir",
-        setup.parent_dir.clone(),
+        setup.parent_dir.clone().into(),
         mode,
     )
     .unwrap();
@@ -1592,7 +1588,7 @@ fn non_windows_platform_parent_is_root_returns_permission_error_unless_dry_run(
             ActionLog::new(
                 Some(FsoType::File),
                 None,
-                file_tendril.parent().join(file_tendril.name()),
+                file_tendril.parent().inner().join(file_tendril.name()),
                 exp_result.clone(),
             )
         );
@@ -1601,7 +1597,7 @@ fn non_windows_platform_parent_is_root_returns_permission_error_unless_dry_run(
             ActionLog::new(
                 Some(FsoType::Dir),
                 None,
-                dir_tendril.parent().join(dir_tendril.name()),
+                dir_tendril.parent().inner().join(dir_tendril.name()),
                 exp_result,
             )
         );
@@ -1618,7 +1614,7 @@ fn non_windows_platform_parent_is_root_returns_permission_error_unless_dry_run(
             ActionLog::new(
                 Some(FsoType::File),
                 None,
-                file_tendril.parent().join(file_tendril.name()),
+                file_tendril.parent().inner().join(file_tendril.name()),
                 exp_result.clone(),
             )
         );
@@ -1627,7 +1623,7 @@ fn non_windows_platform_parent_is_root_returns_permission_error_unless_dry_run(
             ActionLog::new(
                 Some(FsoType::Dir),
                 None,
-                dir_tendril.parent().join(dir_tendril.name()),
+                dir_tendril.parent().inner().join(dir_tendril.name()),
                 exp_result,
             )
         );

@@ -54,7 +54,7 @@ fn remote_parent_and_local_exist_copies_to_remote(
     let tendril = Tendril::new_expose(
         "SomeApp",
         name,
-        setup.parent_dir.clone(),
+        setup.parent_dir.clone().into(),
         TendrilMode::DirOverwrite,
     )
     .unwrap();
@@ -564,7 +564,7 @@ fn no_read_access_from_local_file_returns_io_error_permission_denied_unless_dry_
     let tendril = Tendril::new_expose(
         "SomeApp",
         "nra.txt",
-        setup.parent_dir.clone(),
+        setup.parent_dir.clone().into(),
         TendrilMode::DirOverwrite,
     )
     .unwrap();
@@ -607,7 +607,7 @@ fn no_read_access_from_local_dir_returns_io_error_permission_denied_unless_dry_r
     let tendril = Tendril::new_expose(
         "SomeApp",
         "nra",
-        setup.parent_dir.clone(),
+        setup.parent_dir.clone().into(),
         TendrilMode::DirOverwrite,
     )
     .unwrap();

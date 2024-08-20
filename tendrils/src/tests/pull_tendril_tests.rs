@@ -59,7 +59,7 @@ fn remote_exists_copies_to_local(
     let tendril = Tendril::new_expose(
         "SomeApp",
         name,
-        setup.parent_dir.clone(),
+        setup.parent_dir.clone().into(),
         TendrilMode::DirOverwrite,
     )
     .unwrap();
@@ -571,7 +571,7 @@ fn no_read_access_from_remote_file_returns_io_error_permission_denied_unless_dry
     let tendril = Tendril::new_expose(
         "SomeApp",
         "nra.txt",
-        setup.parent_dir.clone(),
+        setup.parent_dir.clone().into(),
         TendrilMode::DirOverwrite,
     )
     .unwrap();
@@ -614,7 +614,7 @@ fn no_read_access_from_remote_dir_returns_io_error_permission_denied_unless_dry_
     let tendril = Tendril::new_expose(
         "SomeApp",
         "nra",
-        setup.parent_dir.clone(),
+        setup.parent_dir.clone().into(),
         TendrilMode::DirOverwrite,
     )
     .unwrap();
@@ -763,8 +763,8 @@ fn remote_doesnt_exist_but_parent_does_returns_io_error_not_found(
     setup.make_parent_dir();
 
     let tendril = setup.file_tendril();
-    assert!(tendril.full_path().parent().unwrap().exists());
-    assert!(!tendril.full_path().exists());
+    assert!(tendril.remote().parent().unwrap().exists());
+    assert!(!tendril.remote().exists());
 
     let actual = pull_tendril(&setup.uni_td_repo(), &tendril, dry_run, force);
 

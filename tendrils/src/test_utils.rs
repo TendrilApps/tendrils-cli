@@ -444,7 +444,7 @@ impl Setup {
         Tendril::new_expose(
             "SomeApp",
             "misc.txt",
-            self.parent_dir.clone(),
+            self.parent_dir.clone().into(),
             TendrilMode::DirOverwrite,
         )
         .unwrap()
@@ -455,7 +455,7 @@ impl Setup {
         Tendril::new_expose(
             "SomeApp",
             "misc",
-            self.parent_dir.clone(),
+            self.parent_dir.clone().into(),
             TendrilMode::DirOverwrite,
         )
         .unwrap()
@@ -466,7 +466,7 @@ impl Setup {
         Tendril::new_expose(
             "SomeApp",
             "SubDir/misc.txt",
-            self.parent_dir.clone(),
+            self.parent_dir.clone().into(),
             TendrilMode::DirOverwrite,
         )
         .unwrap()
@@ -477,7 +477,7 @@ impl Setup {
         Tendril::new_expose(
             "SomeApp",
             "SubDir/misc",
-            self.parent_dir.clone(),
+            self.parent_dir.clone().into(),
             TendrilMode::DirOverwrite,
         )
         .unwrap()

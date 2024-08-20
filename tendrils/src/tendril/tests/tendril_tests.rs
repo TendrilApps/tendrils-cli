@@ -1,7 +1,9 @@
 use crate::{InvalidTendrilError, Tendril, TendrilMode};
+use crate::test_utils::non_utf_8_text;
 use rstest::rstest;
 use rstest_reuse::{self, apply, template};
-use std::path::{PathBuf, MAIN_SEPARATOR as SEP};
+use serial_test::serial;
+use std::path::{PathBuf, MAIN_SEPARATOR as SEP, MAIN_SEPARATOR_STR as SEP_STR};
 
 #[template]
 #[rstest]
@@ -49,7 +51,7 @@ fn group_is_invalid_returns_invalid_group_error(#[case] group: &str) {
     let actual = Tendril::new_expose(
         group,
         "misc.txt",
-        PathBuf::from("SomePath"),
+        PathBuf::from("SomePath").into(),
         TendrilMode::DirOverwrite,
     )
     .unwrap_err();
@@ -72,7 +74,7 @@ fn name_is_invalid_returns_invalid_name_error(#[case] name: &str) {
     let actual = Tendril::new_expose(
         "SomeApp",
         name,
-        PathBuf::from("SomePath"),
+        PathBuf::from("SomePath").into(),
         TendrilMode::DirOverwrite,
     )
     .unwrap_err();
@@ -88,7 +90,7 @@ fn parent_is_invalid_returns_invalid_parent_error(#[case] parent: &str) {
     let actual = Tendril::new_expose(
         "SomeApp",
         "misc.txt",
-        PathBuf::from(parent),
+        PathBuf::from(parent).into(),
         TendrilMode::DirOverwrite,
     )
     .unwrap_err();
@@ -101,7 +103,7 @@ fn group_is_valid_returns_ok(#[case] group: &str) {
     Tendril::new_expose(
         group,
         "misc.txt",
-        PathBuf::from("SomePath"),
+        PathBuf::from("SomePath").into(),
         TendrilMode::DirOverwrite,
     )
     .unwrap();
@@ -112,7 +114,7 @@ fn name_is_valid_returns_ok(#[case] name: &str) {
     Tendril::new_expose(
         "SomeApp",
         name,
-        PathBuf::from("SomePath"),
+        PathBuf::from("SomePath").into(),
         TendrilMode::DirOverwrite,
     )
     .unwrap();
@@ -133,78 +135,140 @@ fn name_subdir_is_forbidden_group_returns_ok(#[case] subdir_name: &str) {
     Tendril::new_expose(
         "SomeApp",
         &format!("{subdir_name}/misc.txt"),
-        PathBuf::from("SomePath"),
+        PathBuf::from("SomePath").into(),
         TendrilMode::DirOverwrite,
     )
     .unwrap();
 }
 
 #[apply(valid_groups_and_names)]
+#[case("/")]
+#[case("\\")]
 #[case("somePath")]
 #[case("/some/path/")]
-#[case(" / some / path / ")]
 #[case("\\some\\path\\")]
+#[case(" / some / path / ")]
 #[case(" \\ some \\ path \\ ")]
 fn parent_is_valid_returns_ok(#[case] parent: &str) {
     Tendril::new_expose(
         "SomeApp",
         "misc.txt",
-        PathBuf::from(parent),
+        PathBuf::from(parent).into(),
         TendrilMode::DirOverwrite,
     )
     .unwrap();
 }
 
 #[rstest]
-#[case("Plain", &format!("Plain{SEP}"))]
-#[case("TrailingSep/", &format!("TrailingSep{SEP}"))]
-#[case("TrailingSep\\", &format!("TrailingSep{SEP}"))]
-#[case("DblTrailingSep//", &format!("DblTrailingSep{SEP}{SEP}"))]
-#[case("DblTrailingSep\\\\", &format!("DblTrailingSep{SEP}{SEP}"))]
-#[case("/LeadingSep",  &format!("{SEP}LeadingSep{SEP}"))]
-#[case("\\LeadingSep", &format!("{SEP}LeadingSep{SEP}"))]
-#[case("/Both/",   &format!("{SEP}Both{SEP}"))]
-#[case("\\Both\\", &format!("{SEP}Both{SEP}"))]
-#[case("\\Mixed/Style", &format!("{SEP}Mixed{SEP}Style{SEP}"))]
-#[case("/Mixed\\Style", &format!("{SEP}Mixed{SEP}Style{SEP}"))]
-#[case(
-    "Crazy`~!@#$%^&*()-_=+|\\[]{}'\";:/?.,<>Symbols/",
-    &format!("Crazy`~!@#$%^&*()-_=+|{SEP}[]{{}}'\";:{SEP}?.,<>Symbols{SEP}")
-)]
-fn full_path_appends_name_to_parent_using_platform_dir_sep_for_all_slashes(
+#[case("Plain", "Plain", &format!("Plain{SEP}Plain"))]
+#[case("Trailing/", "Plain", &format!("Trailing{SEP}Plain"))]
+#[case("Trailing\\", "Plain", &format!("Trailing{SEP}Plain"))]
+#[case("Plain", "/Leading", &format!("Plain{SEP}Leading"))]
+#[case("Plain", "\\Leading", &format!("Plain{SEP}Leading"))]
+#[case("Trailing/", "/Leading", &format!("Trailing{SEP}{SEP}Leading"))]
+#[case("Trailing\\", "\\Leading", &format!("Trailing{SEP}{SEP}Leading"))]
+#[case("Plain", "C:\\Abs", &format!("Plain{SEP}C:{SEP}Abs"))]
+#[case("Trailing/", "C:\\Abs", &format!("Trailing{SEP}C:{SEP}Abs"))]
+#[case("Trailing\\", "C:\\Abs", &format!("Trailing{SEP}C:{SEP}Abs"))]
+fn remote_appends_name_to_parent_using_platform_dir_sep_for_all_slashes(
     #[case] parent: PathBuf,
-
-    // (given, expected after appending to parent)
-    #[values(
-        ("misc.txt", "misc.txt".to_string()),
-        ("misc/nested.txt",  format!("misc{SEP}nested.txt")),
-        ("misc\\nested.txt", format!("misc{SEP}nested.txt")),
-        ("trailingSep/",  format!("trailingSep{SEP}")),
-        ("trailingSep\\", format!("trailingSep{SEP}")),
-        ("/leadingSep.txt",  "leadingSep.txt".to_string()),
-        ("\\leadingSep.txt", "leadingSep.txt".to_string()),
-        ("//dblLeadingSep.txt",  format!("{SEP}dblLeadingSep.txt")),
-        ("\\\\dblLeadingSep.txt", format!("{SEP}dblLeadingSep.txt")),
-        ("/Both/",   format!("Both{SEP}")),
-        ("\\Both\\", format!("Both{SEP}")),
-        ("/Mixed\\misc.txt", format!("Mixed{SEP}misc.txt")),
-        ("\\Mixed/misc.txt", format!("Mixed{SEP}misc.txt")),
-        ("C:\\Absolute\\Path", format!("C:{SEP}Absolute{SEP}Path")),
-    )]
-    name_given_and_exp: (&str, String),
-
-    #[case] expected_prefix: &str,
+    #[case] name: &str,
+    #[case] expected_str: &str,
 ) {
+    // See `join_raw` tests for more edge cases
     let tendril = Tendril::new_expose(
         "SomeApp",
-        name_given_and_exp.0,
-        parent,
+        name,
+        parent.into(),
         TendrilMode::DirOverwrite,
     )
     .unwrap();
-    let expected = format!("{expected_prefix}{}", name_given_and_exp.1);
 
-    let actual = tendril.full_path();
+    let actual = tendril.remote();
 
-    assert_eq!(expected, actual.to_str().unwrap());
+    assert_eq!(actual.to_string_lossy(), expected_str);
+}
+
+#[rstest]
+#[case("Plain", "Plain", &format!("Plain{SEP}G{SEP}Plain"))]
+#[case("Trailing/", "Plain", &format!("Trailing{SEP}G{SEP}Plain"))]
+#[case("Trailing\\", "Plain", &format!("Trailing{SEP}G{SEP}Plain"))]
+#[case("Plain", "/Leading", &format!("Plain{SEP}G{SEP}Leading"))]
+#[case("Plain", "\\Leading", &format!("Plain{SEP}G{SEP}Leading"))]
+#[case("Trailing/", "/Leading", &format!("Trailing{SEP}G{SEP}Leading"))]
+#[case("Trailing\\", "\\Leading", &format!("Trailing{SEP}G{SEP}Leading"))]
+#[case("Plain", "C:\\Abs", &format!("Plain{SEP}G{SEP}C:{SEP}Abs"))]
+#[case("Trailing/", "C:\\Abs", &format!("Trailing{SEP}G{SEP}C:{SEP}Abs"))]
+#[case("Trailing\\", "C:\\Abs", &format!("Trailing{SEP}G{SEP}C:{SEP}Abs"))]
+fn local_appends_group_then_name_to_td_repo_using_platform_dir_sep_for_all_slashes(
+    #[case] td_repo: PathBuf,
+    #[case] name: &str,
+    #[case] expected_str: &str,
+) {
+    // See `join_raw` tests for more edge cases
+    let tendril = Tendril::new_expose(
+        "G",
+        name,
+        PathBuf::from("Parent").into(),
+        TendrilMode::DirOverwrite,
+    )
+    .unwrap();
+
+    let actual = tendril.local(&td_repo.into());
+
+    assert_eq!(actual.to_string_lossy(), expected_str);
+}
+
+#[test]
+#[serial("mut-env-var-testing")]
+fn remote_does_not_resolve_vars_in_name() {
+    std::env::set_var("var", "value");
+
+    let tendril = Tendril::new_expose(
+        "SomeApp",
+        "<var>",
+        PathBuf::from("<var>").into(),
+        TendrilMode::DirOverwrite,
+    )
+    .unwrap();
+
+    let actual = tendril.remote();
+
+    assert_eq!(actual, &PathBuf::from("value").join("<var>"))
+}
+
+#[test]
+fn remote_preserves_non_utf8_in_parent() {
+    let tendril = Tendril::new_expose(
+        "SomeApp",
+        "misc.txt",
+        PathBuf::from(non_utf_8_text()).into(),
+        TendrilMode::DirOverwrite,
+    )
+    .unwrap();
+    let mut expected_str = non_utf_8_text();
+    expected_str.push(SEP_STR);
+    expected_str.push("misc.txt");
+
+    let actual = tendril.remote();
+
+    assert_eq!(actual.as_os_str(), expected_str);
+}
+
+#[test]
+#[serial("mut-env-var-testing")]
+fn local_does_not_resolve_vars_in_name_or_group() {
+    std::env::set_var("var", "value");
+
+    let tendril = Tendril::new_expose(
+        "<var>",
+        "<var>",
+        PathBuf::from("Parent").into(),
+        TendrilMode::DirOverwrite,
+    )
+    .unwrap();
+
+    let actual = tendril.local(&PathBuf::from("<var>").into());
+
+    assert_eq!(actual, PathBuf::from("value").join("<var>").join("<var>"))
 }

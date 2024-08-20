@@ -48,7 +48,7 @@ fn remote_parent_and_local_exist_symlink_to_local_is_created(
     let tendril = Tendril::new_expose(
         "SomeApp",
         name,
-        setup.parent_dir.clone(),
+        setup.parent_dir.clone().into(),
         TendrilMode::Link,
     )
     .unwrap();
@@ -358,7 +358,7 @@ fn no_read_access_from_local_file_returns_success(
     let tendril = Tendril::new_expose(
         "SomeApp",
         "nra.txt",
-        setup.parent_dir.clone(),
+        setup.parent_dir.clone().into(),
         TendrilMode::Link,
     )
     .unwrap();
@@ -401,7 +401,7 @@ fn no_read_access_from_local_dir_returns_success(
     let tendril = Tendril::new_expose(
         "SomeApp",
         "nra",
-        setup.parent_dir.clone(),
+        setup.parent_dir.clone().into(),
         TendrilMode::Link,
     )
     .unwrap();

@@ -522,13 +522,13 @@ fn link_tendril(
     dry_run: bool,
     mut force: bool,
 ) -> ActionLog {
-    let target = tendril.local_path(td_repo);
-    let create_at = tendril.full_path();
+    let target = tendril.local(td_repo);
+    let create_at = tendril.remote();
 
     let mut log = ActionLog::new(
         target.get_type(),
         create_at.get_type(),
-        create_at,
+        create_at.to_path_buf(),
         Ok(TendrilActionSuccess::New), // Init only value
     );
     if tendril.mode != TendrilMode::Link {
@@ -539,7 +539,7 @@ fn link_tendril(
         log.result = Err(TendrilActionError::Recursion);
         return log;
     }
-    if !tendril.parent().exists() {
+    if !tendril.parent().inner().exists() {
         log.result = Err(TendrilActionError::IoError {
             kind: std::io::ErrorKind::NotFound,
             loc: Location::Dest,
@@ -587,13 +587,13 @@ fn pull_tendril(
     dry_run: bool,
     force: bool,
 ) -> ActionLog {
-    let dest = tendril.local_path(td_repo);
-    let source = tendril.full_path();
+    let dest = tendril.local(td_repo);
+    let source = tendril.remote();
 
     let mut log = ActionLog::new(
         dest.get_type(),
         source.get_type(),
-        source,
+        source.to_path_buf(),
         Ok(TendrilActionSuccess::New), // Init only value
     );
 
@@ -633,13 +633,13 @@ fn push_tendril(
     dry_run: bool,
     force: bool,
 ) -> ActionLog {
-    let source = tendril.local_path(td_repo);
-    let dest = tendril.full_path();
+    let source = tendril.local(td_repo);
+    let dest = tendril.remote();
 
     let mut log = ActionLog::new(
         source.get_type(),
         dest.get_type(),
-        dest,
+        dest.to_path_buf(),
         Ok(TendrilActionSuccess::New), // Init only value
     );
     if tendril.mode == TendrilMode::Link {
@@ -650,7 +650,7 @@ fn push_tendril(
         log.result = Err(TendrilActionError::Recursion);
         return log;
     }
-    if !tendril.parent().exists() {
+    if !tendril.parent().inner().exists() {
         log.result = Err(TendrilActionError::IoError {
             kind: std::io::ErrorKind::NotFound,
             loc: Location::Dest,
@@ -846,11 +846,11 @@ fn batch_tendril_action<F: FnMut(TendrilReport<ActionLog>)>(
                     // does not have the required permissions.
                     // This prevents deleting any of the remote files
                     // unnecessarily.
-                    let remote = v.full_path();
+                    let remote = v.remote();
                     Ok(ActionLog::new(
-                        v.local_path(td_repo).get_type(),
+                        v.local(td_repo).get_type(),
                         remote.get_type(),
-                        remote,
+                        remote.to_path_buf(),
                         Err(TendrilActionError::IoError {
                             kind: std::io::ErrorKind::PermissionDenied,
                             loc: Location::Dest,
