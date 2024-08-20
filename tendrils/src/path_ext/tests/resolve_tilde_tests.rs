@@ -142,26 +142,6 @@ fn tilde_value_is_another_var_returns_raw_tilde_value() {
     assert_eq!(actual, home_path);
 }
 
-#[test]
-#[serial("mut-env-var-testing")]
-fn tilde_value_is_another_tilde_returns_raw_tilde_value() {
-    std::env::set_var("HOME", "~/Home");
-
-    let actual = PathBuf::from("~").resolve_tilde();
-
-    assert_eq!(actual, PathBuf::from("~/Home"));
-}
-
-#[test]
-#[serial("mut-env-var-testing")]
-fn tilde_value_is_relative_path_returns_raw_tilde_value() {
-    std::env::set_var("HOME", "../Home/./..");
-
-    let actual = PathBuf::from("~").resolve_tilde();
-
-    assert_eq!(actual, PathBuf::from("../Home/./.."));
-}
-
 #[rstest]
 #[case(true)]
 #[case(false)]
@@ -231,11 +211,49 @@ fn non_utf8_in_tilde_value_is_preserved(#[case] home_exists: bool) {
 #[case("/")]
 #[case("\\")]
 #[case("\n")]
+#[case("~")]
+#[case("~/Home")]
+#[case("~\\Home")]
+#[case( "../Home/./..")]
 #[serial("mut-env-var-testing")]
-fn tilde_value_is_misc_returns_raw_tilde_value(#[case] home_path: &str) {
-    std::env::set_var("HOME", home_path);
+fn tilde_value_is_misc_returns_raw_tilde_value(#[case] home: &str) {
+    std::env::set_var("HOME", home);
 
     let actual = PathBuf::from("~").resolve_tilde();
 
-    assert_eq!(actual, PathBuf::from(home_path));
+    assert_eq!(actual, PathBuf::from(home));
+}
+
+#[rstest]
+#[case("", "")]
+#[case(" ", " ")]
+#[case("~", "~")]
+#[case("\n", "\n")]
+#[case("/", "")]
+#[case("\\", "")]
+#[case("", "/")]
+#[case("", "\\")]
+#[case("/", " ")]
+#[case("\\", " ")]
+#[case(" ", "/")]
+#[case(" ", "\\")]
+#[case("Plain", "/Abs")]
+#[case("Plain", "\\Abs")]
+#[case("Plain", "C:\\Abs")]
+#[case("Trailing/", "/Abs")]
+#[case("Trailing\\", "\\Abs")]
+#[serial("mut-env-var-testing")]
+fn home_path_and_homedrive_values_are_misc_returns_raw_value_appended(
+    #[case] home_drive: String,
+    #[case] home_path: &str,
+) {
+    std::env::remove_var("HOME");
+    std::env::set_var("HOMEDRIVE", &home_drive);
+    std::env::set_var("HOMEPATH", &home_path);
+    let mut expected_str = home_drive;
+    expected_str.push_str(home_path);
+
+    let actual = PathBuf::from("~").resolve_tilde();
+
+    assert_eq!(actual, PathBuf::from(expected_str));
 }

@@ -41,6 +41,7 @@ fn invalid_json_returns_parse_error() {
 
 #[rstest]
 #[case("", "")]
+#[case(" ", " ")]
 #[case("Some/Path", "Some/Path")]
 #[case("Some\\\\Path", "Some\\Path")]
 #[case("~/Some/Path", "~/Some/Path")]
