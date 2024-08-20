@@ -41,10 +41,10 @@ impl<'a> Tendril<'a> {
             return Err(InvalidTendrilError::InvalidName);
         }
 
-        let parent_str = parent.inner().to_string_lossy();
-        if parent_str.is_empty()
-            || parent_str.contains('\n')
-            || parent_str.contains('\r')
+        let parent_bytes = parent.inner().as_os_str().as_encoded_bytes();
+        if parent_bytes.is_empty()
+            || parent_bytes.contains(&('\n' as u8))
+            || parent_bytes.contains(&('\r' as u8))
         {
             return Err(InvalidTendrilError::InvalidParent);
         }
