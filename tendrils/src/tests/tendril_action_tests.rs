@@ -28,7 +28,7 @@ use crate::{
 use rstest::rstest;
 use serial_test::serial;
 use std::fs::write;
-use std::path::PathBuf;
+use std::path::{MAIN_SEPARATOR_STR as SEP, PathBuf};
 use std::rc::Rc;
 
 #[rstest]
@@ -139,7 +139,7 @@ fn given_td_repo_is_none_default_td_repo_invalid_returns_no_valid_td_repo_err(
     assert_eq!(
         actual,
         Err(SetupError::NoValidTendrilsRepo(GetTendrilsRepoError::DefaultInvalid {
-            path: PathBuf::from("I DON'T EXIST")
+            path: PathBuf::from(SEP).join("I DON'T EXIST")
         }))
     );
 }
@@ -687,7 +687,7 @@ fn tendril_action_tendrils_are_filtered_by_parents(
         log: Ok(ActionLog::new(
             None,
             None,
-            PathBuf::from("p").join("2").join("misc2.txt"),
+            PathBuf::from(SEP).join("p").join("2").join("misc2.txt"),
             io_err.clone(),
         )),
     };
@@ -697,7 +697,7 @@ fn tendril_action_tendrils_are_filtered_by_parents(
         log: Ok(ActionLog::new(
             None,
             None,
-            PathBuf::from("p").join("3").join("misc3.txt"),
+            PathBuf::from(SEP).join("p").join("3").join("misc3.txt"),
             io_err.clone(),
         )),
     };

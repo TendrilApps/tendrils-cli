@@ -859,9 +859,9 @@ fn parent_path_vars_are_resolved(
     std::env::set_var("HOME", "My/Home");
     std::env::set_var("var", "value");
 
-    use std::path::MAIN_SEPARATOR;
+    use std::path::MAIN_SEPARATOR as SEP;
     let expected_resolved_path = format!(
-        "My{MAIN_SEPARATOR}Home{MAIN_SEPARATOR}I_do_not_exist{MAIN_SEPARATOR}value{MAIN_SEPARATOR}misc.txt"
+        "{SEP}My{SEP}Home{SEP}I_do_not_exist{SEP}value{SEP}misc.txt"
     );
     let expected_loc = match mode {
         ActionMode::Pull => Location::Source,

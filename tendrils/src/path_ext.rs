@@ -1,7 +1,7 @@
 use crate::enums::FsoType;
 use crate::env_ext::get_home_dir;
 use std::ffi::OsString;
-use std::path::{Path, PathBuf};
+use std::path::{Path, PathBuf, MAIN_SEPARATOR_STR};
 
 #[cfg(test)]
 mod tests;
@@ -43,6 +43,14 @@ pub(crate) trait PathExt {
     /// In the future, an escape character such as `|` could be
     /// implemented, but this added complexity was avoided for now.
     fn resolve_env_variables(&self) -> PathBuf;
+
+    /// Converts a relative path to absolute by simply prepending a directory
+    /// separator. This does *not* take into account the current directory.
+    /// Returns `self` if the path is alread absolute. What counts as an
+    /// absolute path varies by platform - for example `C:\Path` and `\Path`
+    /// are absolute on Windows but is not on Unix. On Unix, these would be
+    /// converted to `/C:\Path` and `/\Path`
+    fn to_absolute(&self) -> PathBuf;
 }
 
 impl PathExt for Path {
@@ -174,6 +182,17 @@ impl PathExt for Path {
             PathBuf::from(resolved_str)
         }
     }
+
+    fn to_absolute(&self) -> PathBuf {
+        if self.is_absolute() {
+            PathBuf::from(self)
+        }
+        else {
+            let mut abs = PathBuf::from(MAIN_SEPARATOR_STR);
+            abs.push(self);
+            abs
+        }
+    }
 }
 
 /// Returns the `(start index, end index)` of the next environment variable
@@ -204,9 +223,10 @@ pub fn contains_env_var(input: &Path) -> bool {
 
 /// A [`PathBuf`] wrapper that guarantees that any tilde values have been
 /// [resolved](PathExt::resolve_tilde), any environment variables have been
-/// [resolved](PathExt::resolve_env_variables), and the path separators have been
-/// [replaced](`PathExt::replace_dir_seps`) to the current platform, in that
-/// order.
+/// [resolved](PathExt::resolve_env_variables), path separators have been
+/// [replaced](PathExt::replace_dir_seps) to the current platform,
+/// and that the path has been converted [to absolute](PathExt::to_absolute),
+/// in that order.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct UniPath(PathBuf);
 
@@ -220,7 +240,11 @@ impl UniPath {
 impl From<&Path> for UniPath {
     fn from(value: &Path) -> Self {
         UniPath(
-            value.resolve_tilde().resolve_env_variables().replace_dir_seps()
+            value
+                .resolve_tilde()
+                .resolve_env_variables()
+                .replace_dir_seps()
+                .to_absolute()
         )
     }
 }

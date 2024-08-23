@@ -149,7 +149,7 @@ fn starting_dir_none_default_invalid_returns_default_invalid_err() {
     let starting_td_repo = None;
     let default_td_repo = UniPath::from(PathBuf::from("I DON'T EXIST"));
     setup.make_global_cfg_file(
-        default_repo_path_as_json(&default_td_repo.inner().to_string_lossy())
+        default_repo_path_as_json("I DON'T EXIST")
     );
     assert!(!is_tendrils_repo(&default_td_repo));
 

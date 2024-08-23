@@ -83,7 +83,6 @@ fn name_is_invalid_returns_invalid_name_error(#[case] name: &str) {
 }
 
 #[rstest]
-#[case("")]
 #[case("New\nLine")]
 #[case("Carriage\rReturn")]
 fn parent_is_invalid_returns_invalid_parent_error(#[case] parent: &str) {
@@ -160,16 +159,17 @@ fn parent_is_valid_returns_ok(#[case] parent: &str) {
 }
 
 #[rstest]
-#[case("Plain", "Plain", &format!("Plain{SEP}Plain"))]
-#[case("Trailing/", "Plain", &format!("Trailing{SEP}Plain"))]
-#[case("Trailing\\", "Plain", &format!("Trailing{SEP}Plain"))]
-#[case("Plain", "/Leading", &format!("Plain{SEP}Leading"))]
-#[case("Plain", "\\Leading", &format!("Plain{SEP}Leading"))]
-#[case("Trailing/", "/Leading", &format!("Trailing{SEP}{SEP}Leading"))]
-#[case("Trailing\\", "\\Leading", &format!("Trailing{SEP}{SEP}Leading"))]
-#[case("Plain", "C:\\Abs", &format!("Plain{SEP}C:{SEP}Abs"))]
-#[case("Trailing/", "C:\\Abs", &format!("Trailing{SEP}C:{SEP}Abs"))]
-#[case("Trailing\\", "C:\\Abs", &format!("Trailing{SEP}C:{SEP}Abs"))]
+#[case("", "Plain", &format!("{SEP}Plain"))]
+#[case("Plain", "Plain", &format!("{SEP}Plain{SEP}Plain"))]
+#[case("Trailing/", "Plain", &format!("{SEP}Trailing{SEP}Plain"))]
+#[case("Trailing\\", "Plain", &format!("{SEP}Trailing{SEP}Plain"))]
+#[case("Plain", "/Leading", &format!("{SEP}Plain{SEP}Leading"))]
+#[case("Plain", "\\Leading", &format!("{SEP}Plain{SEP}Leading"))]
+#[case("Trailing/", "/Leading", &format!("{SEP}Trailing{SEP}{SEP}Leading"))]
+#[case("Trailing\\", "\\Leading", &format!("{SEP}Trailing{SEP}{SEP}Leading"))]
+#[case("Plain", "C:\\Abs", &format!("{SEP}Plain{SEP}C:{SEP}Abs"))]
+#[case("Trailing/", "C:\\Abs", &format!("{SEP}Trailing{SEP}C:{SEP}Abs"))]
+#[case("Trailing\\", "C:\\Abs", &format!("{SEP}Trailing{SEP}C:{SEP}Abs"))]
 fn remote_appends_name_to_parent_using_platform_dir_sep_for_all_slashes(
     #[case] parent: PathBuf,
     #[case] name: &str,
@@ -190,16 +190,17 @@ fn remote_appends_name_to_parent_using_platform_dir_sep_for_all_slashes(
 }
 
 #[rstest]
-#[case("Plain", "Plain", &format!("Plain{SEP}G{SEP}Plain"))]
-#[case("Trailing/", "Plain", &format!("Trailing{SEP}G{SEP}Plain"))]
-#[case("Trailing\\", "Plain", &format!("Trailing{SEP}G{SEP}Plain"))]
-#[case("Plain", "/Leading", &format!("Plain{SEP}G{SEP}Leading"))]
-#[case("Plain", "\\Leading", &format!("Plain{SEP}G{SEP}Leading"))]
-#[case("Trailing/", "/Leading", &format!("Trailing{SEP}G{SEP}Leading"))]
-#[case("Trailing\\", "\\Leading", &format!("Trailing{SEP}G{SEP}Leading"))]
-#[case("Plain", "C:\\Abs", &format!("Plain{SEP}G{SEP}C:{SEP}Abs"))]
-#[case("Trailing/", "C:\\Abs", &format!("Trailing{SEP}G{SEP}C:{SEP}Abs"))]
-#[case("Trailing\\", "C:\\Abs", &format!("Trailing{SEP}G{SEP}C:{SEP}Abs"))]
+#[case("", "Plain", &format!("{SEP}G{SEP}Plain"))]
+#[case("Plain", "Plain", &format!("{SEP}Plain{SEP}G{SEP}Plain"))]
+#[case("Trailing/", "Plain", &format!("{SEP}Trailing{SEP}G{SEP}Plain"))]
+#[case("Trailing\\", "Plain", &format!("{SEP}Trailing{SEP}G{SEP}Plain"))]
+#[case("Plain", "/Leading", &format!("{SEP}Plain{SEP}G{SEP}Leading"))]
+#[case("Plain", "\\Leading", &format!("{SEP}Plain{SEP}G{SEP}Leading"))]
+#[case("Trailing/", "/Leading", &format!("{SEP}Trailing{SEP}G{SEP}Leading"))]
+#[case("Trailing\\", "\\Leading", &format!("{SEP}Trailing{SEP}G{SEP}Leading"))]
+#[case("Plain", "C:\\Abs", &format!("{SEP}Plain{SEP}G{SEP}C:{SEP}Abs"))]
+#[case("Trailing/", "C:\\Abs", &format!("{SEP}Trailing{SEP}G{SEP}C:{SEP}Abs"))]
+#[case("Trailing\\", "C:\\Abs", &format!("{SEP}Trailing{SEP}G{SEP}C:{SEP}Abs"))]
 fn local_appends_group_then_name_to_td_repo_using_platform_dir_sep_for_all_slashes(
     #[case] td_repo: PathBuf,
     #[case] name: &str,
@@ -234,7 +235,7 @@ fn remote_does_not_resolve_vars_in_name() {
 
     let actual = tendril.remote();
 
-    assert_eq!(actual, &PathBuf::from("value").join("<var>"))
+    assert_eq!(actual, &PathBuf::from(SEP_STR).join("value").join("<var>"))
 }
 
 #[test]
@@ -246,7 +247,8 @@ fn remote_preserves_non_utf8_in_parent() {
         TendrilMode::DirOverwrite,
     )
     .unwrap();
-    let mut expected_str = non_utf_8_text();
+    let mut expected_str = std::ffi::OsString::from(SEP_STR);
+    expected_str.push(non_utf_8_text());
     expected_str.push(SEP_STR);
     expected_str.push("misc.txt");
 
@@ -270,5 +272,8 @@ fn local_does_not_resolve_vars_in_name_or_group() {
 
     let actual = tendril.local(&PathBuf::from("<var>").into());
 
-    assert_eq!(actual, PathBuf::from("value").join("<var>").join("<var>"))
+    assert_eq!(
+        actual,
+        PathBuf::from(SEP_STR).join("value").join("<var>").join("<var>")
+    );
 }
