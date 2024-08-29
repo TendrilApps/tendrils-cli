@@ -1,5 +1,6 @@
 use crate::enums::FsoType;
 use crate::env_ext::get_home_dir;
+use path_clean::clean;
 use std::ffi::OsString;
 use std::path::{Path, PathBuf, MAIN_SEPARATOR_STR};
 
@@ -17,6 +18,13 @@ pub(crate) trait PathExt {
     /// the path points to, or returns `None` if the FSO
     /// does not exist.
     fn get_type(&self) -> Option<FsoType>;
+
+    /// Removes any duplicate directory separators, and resolves any
+    /// `.` or `..` path components. Path components are resolved
+    /// *lexically* (i.e it does not follow symlinks). On Windows, this will
+    /// also replace all Unix directory separators (`/`) with the Windows
+    /// separator (`\\`) as a side effect.
+    fn reduce(&self) -> PathBuf;
 
     /// Replaces all directory separators with those of the current platform
     /// (i.e. `\\` on Windows and `/` on all others).
@@ -48,12 +56,21 @@ pub(crate) trait PathExt {
     /// separator. This does *not* take into account the current directory.
     /// Returns `self` if the path is alread absolute. What counts as an
     /// absolute path varies by platform - for example `C:\Path` and `\Path`
-    /// are absolute on Windows but is not on Unix. On Unix, these would be
+    /// are absolute on Windows but not on Unix. On Unix, these would be
     /// converted to `/C:\Path` and `/\Path`
     fn to_absolute(&self) -> PathBuf;
 }
 
 impl PathExt for Path {
+    fn reduce(&self) -> PathBuf {
+        if self.as_os_str().is_empty() {
+            PathBuf::from(self)
+        }
+        else {
+            clean(self)
+        }
+    }
+
     fn join_raw(&self, path: &Path) -> PathBuf {
         let parent_bytes = self.as_os_str().as_encoded_bytes();
         let child_bytes = path.as_os_str().as_encoded_bytes();
@@ -239,13 +256,24 @@ impl UniPath {
 
 impl From<&Path> for UniPath {
     fn from(value: &Path) -> Self {
-        UniPath(
+        #[cfg(windows)]
+        return UniPath(
+            value
+                .resolve_tilde()
+                .resolve_env_variables()
+                .to_absolute()
+                .reduce()
+        );
+
+        #[cfg(not(windows))]
+        return UniPath(
             value
                 .resolve_tilde()
                 .resolve_env_variables()
                 .replace_dir_seps()
                 .to_absolute()
-        )
+                .reduce()
+        );
     }
 }
 

@@ -85,6 +85,7 @@ impl<'a> Tendril<'a> {
             .join_raw(&PathBuf::from(self.group))
             .join_raw(&PathBuf::from(self.name))
             .replace_dir_seps()
+            .reduce()
             .into()
     }
 

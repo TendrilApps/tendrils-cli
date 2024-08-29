@@ -1,5 +1,5 @@
 use crate::{get_tendrils_repo, is_tendrils_repo, GetTendrilsRepoError};
-use crate::path_ext::UniPath;
+use crate::path_ext::{PathExt, UniPath};
 use crate::test_utils::{
     default_repo_path_as_json,
     global_cfg_file,
@@ -208,7 +208,7 @@ fn leading_tilde_and_env_vars_in_given_path_are_resolved_and_dir_seps_are_replac
     std::env::set_var("var", "TendrilsRepo");
     let starting_td_repo = UniPath::from(PathBuf::from("~/<var>\\"));
     let expected_str = format!(
-        "{}{SEP}TendrilsRepo{SEP}",
+        "{}{SEP}TendrilsRepo",
         setup.temp_dir.path().to_string_lossy(),
     );
 
@@ -227,7 +227,7 @@ fn leading_tilde_and_env_vars_in_default_path_are_resolved_and_dir_seps_are_repl
     );
     std::env::set_var("var", "TendrilsRepo");
     let expected_str = format!(
-        "{}{SEP}TendrilsRepo{SEP}",
+        "{}{SEP}TendrilsRepo",
         setup.temp_dir.path().to_string_lossy(),
     );
 
@@ -244,7 +244,7 @@ fn leading_tilde_and_env_vars_in_given_path_are_resolved_in_error_path_and_dir_s
     std::env::set_var("var", "TendrilsRepo");
     let starting_td_repo = UniPath::from(PathBuf::from("~/<var>\\"));
     let expected_str = format!(
-        "{}{SEP}TendrilsRepo{SEP}",
+        "{}{SEP}TendrilsRepo",
         setup.temp_dir.path().to_string_lossy(),
     );
 
@@ -267,7 +267,7 @@ fn leading_tilde_and_env_vars_in_default_path_are_resolved_in_error_path_and_dir
     );
     std::env::set_var("var", "TendrilsRepo");
     let expected_str = format!(
-        "{}{SEP}TendrilsRepo{SEP}",
+        "{}{SEP}TendrilsRepo",
         setup.temp_dir.path().to_string_lossy(),
     );
 
@@ -278,5 +278,85 @@ fn leading_tilde_and_env_vars_in_default_path_are_resolved_in_error_path_and_dir
     }
     else {
         panic!();
+    }
+}
+
+#[test]
+fn given_path_is_absoluted_and_reduced() {
+    let setup = Setup::new();
+    setup.make_td_json_file(&[]);
+
+    let starting_td_repo =
+        setup.td_repo.join_raw(&PathBuf::from("\\/.////SkipMe\\\\.."));
+    // See issues with path_clean crate and drive letters on Windows
+    #[cfg(not(windows))]
+    let starting_td_repo = PathBuf::from(".././").join_raw(&starting_td_repo);
+
+    let expected_str = format!(
+        "{}{SEP}TendrilsRepo",
+        setup.temp_dir.path().to_string_lossy(),
+    );
+
+    let actual = get_tendrils_repo(Some(&starting_td_repo.into())).unwrap();
+
+    assert_eq!(actual.inner().to_string_lossy(), expected_str);
+}
+
+#[test]
+#[serial("mut-env-var-testing")]
+fn relative_default_path_is_absoluted_and_reduced() {
+    let setup = Setup::new();
+    let default_td_repo = 
+        setup.td_repo.join_raw(&PathBuf::from("\\/.////SkipMe\\\\.."));
+    // See issues with path_clean crate and drive letters on Windows
+    #[cfg(not(windows))]
+    let default_td_repo = PathBuf::from(".././").join_raw(&default_td_repo);
+
+    setup.make_td_json_file(&[]);
+    setup.make_global_cfg_file( default_repo_path_as_json(
+        &default_td_repo.to_string_lossy().replace("\\", "\\\\")
+    ));
+    let expected_str = format!(
+        "{}{SEP}TendrilsRepo",
+        setup.temp_dir.path().to_string_lossy(),
+    );
+
+    let actual = get_tendrils_repo(None).unwrap();
+
+    assert_eq!(actual.inner().to_string_lossy(), expected_str);
+}
+
+#[test]
+fn relative_given_path_is_absoluted_and_reduced_in_error_path() {
+    let starting_td_repo =
+        UniPath::from(PathBuf::from(".././Some\\\\Rel//..\\Path"));
+    let expected_str = format!("{SEP}Some{SEP}Path");
+
+    let actual = get_tendrils_repo(Some(&starting_td_repo));
+
+    if let Err(GetTendrilsRepoError::GivenInvalid { path: p }) = actual {
+        assert_eq!(p.to_string_lossy(), expected_str);
+    }
+    else {
+        panic!("{:?}", actual);
+    }
+}
+
+#[test]
+#[serial("mut-env-var-testing")]
+fn relative_default_path_is_absoluted_and_reduced_in_error_path() {
+    let setup = Setup::new();
+    setup.make_global_cfg_file(default_repo_path_as_json(
+        &".././Some\\\\Rel//..\\Path".replace("\\", "\\\\")
+    ));
+    let expected_str = format!("{SEP}Some{SEP}Path");
+
+    let actual = get_tendrils_repo(None);
+
+    if let Err(GetTendrilsRepoError::DefaultInvalid { path: p }) = actual {
+        assert_eq!(p.to_string_lossy(), expected_str);
+    }
+    else {
+        panic!("{:?}", actual);
     }
 }

@@ -303,3 +303,35 @@ fn leading_tilde_or_env_vars_are_resolved(#[case] force: bool) {
 
     assert!(is_tendrils_repo(&exp_repo_path.into()))
 }
+
+#[rstest]
+#[case(true)]
+#[case(false)]
+#[serial("cd")]
+fn relative_path_is_converted_to_absolute(#[case] force: bool) {
+    let api = TendrilsActor {};
+    let setup = Setup::new();
+    let cd = setup.temp_dir.path().join("cd");
+    let already_init = setup.temp_dir.path().join("AlreadyInit");
+    // Setup
+    create_dir_all(&cd).unwrap();
+    create_dir_all(&already_init).unwrap();
+    std::env::set_current_dir(&cd).unwrap();
+    api.init_tendrils_repo(&already_init, false).unwrap();
+
+    // Using relative path
+    let given_dir = PathBuf::from("../AlreadyInit");
+    assert!(given_dir.join(".tendrils/tendrils.json").exists());
+
+    let actual = api.init_tendrils_repo(&given_dir, force);
+
+    // Cleanup
+    std::env::set_current_dir(
+        &setup.temp_dir.path().parent().unwrap()
+    ).unwrap();
+
+    assert_eq!(
+        actual,
+        Err(InitError::IoError { kind: std::io::ErrorKind::NotFound }),
+    );
+}
