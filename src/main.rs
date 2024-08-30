@@ -12,7 +12,7 @@ use cli::{
     TendrilCliArgs,
     TendrilsSubcommands,
 };
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use tendrils::{
     ActionMode,
     FilterSpec,
@@ -115,7 +115,7 @@ fn init(
     writer: &mut impl Writer,
 ) -> Result<(), i32> {
     let td_repo = match path {
-        Some(v) => PathBuf::from(v),
+        Some(v) => PathBuf::from(v).to_absolute_from_cd(),
         None => match std::env::current_dir() {
             Ok(v) => v,
             Err(_err) => {
@@ -183,7 +183,7 @@ fn tendril_action_subcommand(
     writer: &mut impl Writer,
 ) -> Result<(), i32> {
     let td_repo = match action_args.path {
-        Some(v) => Some(PathBuf::from(v)),
+        Some(v) => Some(PathBuf::from(v).to_absolute_from_cd()),
         None => match std::env::current_dir() {
             Ok(cd) if api.is_tendrils_repo(&cd) => Some(cd),
             Ok(_) => None,
@@ -242,5 +242,22 @@ fn setup_err_to_exit_code(err: SetupError) -> i32 {
             exitcode::DATAERR
         }
         SetupError::NoValidTendrilsRepo { .. } => exitcode::NOINPUT,
+    }
+}
+
+trait ToAbsoluteFromCd {
+    fn to_absolute_from_cd(&self) -> PathBuf;
+}
+
+impl ToAbsoluteFromCd for Path {
+    fn to_absolute_from_cd(&self) -> PathBuf {
+        if self.has_root() {
+            PathBuf::from(self)
+        }
+        else {
+            std::env::current_dir()
+                .unwrap_or(std::path::MAIN_SEPARATOR_STR.into())
+                .join(self)
+        }
     }
 }
