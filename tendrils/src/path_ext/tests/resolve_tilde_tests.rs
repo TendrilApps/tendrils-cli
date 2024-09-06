@@ -91,6 +91,7 @@ fn leading_tilde_returns_given_if_home_and_either_homedrive_or_homepath_dont_exi
 #[rstest]
 #[case("")]
 #[case(" ")]
+#[case(" ~")]
 #[case("~~")]
 #[case("/~/~")]
 #[case("\\~\\~")]
@@ -102,6 +103,12 @@ fn leading_tilde_returns_given_if_home_and_either_homedrive_or_homepath_dont_exi
 #[case("Trailing~")]
 #[case("Trailing/~")]
 #[case("Trailing\\~")]
+// Some Windows path prefixes
+#[case("C:\\~")]
+#[case("C:~")]
+#[case("\\\\server\\share\\~")]
+#[case("\\\\?\\~")]
+#[case("\\\\.\\~")]
 #[serial("mut-env-var-testing")]
 fn crowded_or_non_leading_tilde_returns_given(#[case] given: PathBuf) {
     let expected = PathBuf::from(given.clone());

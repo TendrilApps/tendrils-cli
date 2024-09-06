@@ -56,6 +56,8 @@ fn wrong_capitalization_of_var_name_returns_raw_path(#[case] given: PathBuf) {
 #[case("<mut-testing>", "value")]
 #[case("some/<mut-testing>/path", "some/value/path")]
 #[case("some\\<mut-testing>\\path", "some\\value\\path")]
+#[case("/<mut-testing>", "/value")]
+#[case("\\<mut-testing>", "\\value")]
 #[case("sandwiched<mut-testing>Var", "sandwichedvalueVar")]
 #[case("<mut-testing>LeadingVar", "valueLeadingVar")]
 #[case("Path with <mut-testing> spaces", "Path with value spaces")]
@@ -70,6 +72,14 @@ fn wrong_capitalization_of_var_name_returns_raw_path(#[case] given: PathBuf) {
     "<mut-testing>/multi/unique/<mut-testing2>",
     "value/multi/unique/value2"
 )]
+#[case("<not-a-var>/<mut-testing>", "<not-a-var>/value")]
+// Some Windows path prefixes
+#[case("\\\\<mut-testing>\\<mut-testing>", "\\\\value\\value")] // UNC
+#[case("\\\\127.0.0.1\\<mut-testing>", "\\\\127.0.0.1\\value")] // UNC
+#[case("\\\\.\\<mut-testing>", "\\\\.\\value")] // Device
+#[case("\\\\?\\<mut-testing>", "\\\\?\\value")] // Verbatim
+#[case("\\\\.\\UNC\\<mut-testing>\\<mut-testing>", "\\\\.\\UNC\\value\\value")]
+#[case("\\\\?\\UNC\\<mut-testing>\\<mut-testing>", "\\\\?\\UNC\\value\\value")]
 #[serial("mut-env-var-testing")]
 fn var_in_path_is_replaced_with_value(
     #[case] given: PathBuf,
@@ -252,3 +262,5 @@ fn var_value_is_absolute_path_adds_raw_value(#[case] var_value: &str) {
 
     assert_eq!(actual.to_string_lossy(), expected_str);
 }
+
+// TODO: TEst with UNC and verbatim strings

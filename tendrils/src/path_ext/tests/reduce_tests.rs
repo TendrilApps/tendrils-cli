@@ -52,6 +52,12 @@ use tempdir::TempDir;
 #[case("Simple/Path", &format!("Simple{SEP}Path"))]
 #[cfg_attr(windows, case("Simple\\Path", &format!("Simple{SEP}Path")))]
 #[cfg_attr(not(windows), case("Simple\\Path", "Simple\\Path"))]
+#[case("C:", "C:")]
+#[cfg_attr(windows, case("C:/", "C:\\"))]
+#[cfg_attr(not(windows), case("C:/", "C:"))]
+#[case("C:\\", "C:\\")]
+#[cfg_attr(windows, case("//Server/Path", "//Server/Path\\"))]
+#[cfg_attr(not(windows), case("//Server/Path", "/Server/Path"))]
 // Ideally these would join raw, but this is a limitation due to the use of
 // path_clean crate and its handling of drive letter path components
 #[cfg_attr(windows, case("Nested/C:/Abs", "C:Abs"))]

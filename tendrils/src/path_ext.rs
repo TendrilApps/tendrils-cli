@@ -2,7 +2,7 @@ use crate::enums::FsoType;
 use crate::env_ext::get_home_dir;
 use path_clean::clean;
 use std::ffi::OsString;
-use std::path::{Path, PathBuf, MAIN_SEPARATOR_STR};
+use std::path::{Component, Path, PathBuf, Prefix, MAIN_SEPARATOR_STR};
 
 #[cfg(test)]
 mod tests;
@@ -23,7 +23,8 @@ pub(crate) trait PathExt {
     /// `.` or `..` path components. Path components are resolved
     /// *lexically* (i.e it does not follow symlinks). On Windows, this will
     /// also replace all Unix directory separators (`/`) with the Windows
-    /// separator (`\\`) as a side effect.
+    /// separator (`\\`) as a side effect, unless they are part of a prefix
+    /// such as a //Server/Share/ UNC prefix.
     fn reduce(&self) -> PathBuf;
 
     /// Replaces all directory separators with those of the current platform
@@ -54,10 +55,15 @@ pub(crate) trait PathExt {
 
     /// Converts a relative path to absolute by simply prepending a directory
     /// separator. This does *not* take into account the current directory.
-    /// Returns `self` if the path is alread absolute. What counts as an
+    /// Returns `self` if the path is already absolute. What counts as an
     /// absolute path varies by platform - for example `C:\Path` and `\Path`
     /// are absolute on Windows but not on Unix. On Unix, these would be
-    /// converted to `/C:\Path` and `/\Path`
+    /// converted to `/C:\Path` and `/\Path`. Although not technically an
+    /// absolute path, paths starting with / or \ on Windows are considered
+    /// absolute here (as they are absolute within the current drive). This
+    /// blind conversion may cause unintuitive behaviour in paths with relative
+    /// Windows prefixes. For example C:SomePath is converted to \C:SomePath
+    /// rather than the C:\SomePath that may have been expected.
     fn to_absolute(&self) -> PathBuf;
 }
 
@@ -115,15 +121,15 @@ impl PathExt for Path {
     fn replace_dir_seps(&self) -> PathBuf {
         use std::path::MAIN_SEPARATOR;
         #[cfg(windows)]
-        let sep_to_remove = '/' as u8;
+        const SEP_TO_REMOVE: u8 = '/' as u8;
 
         #[cfg(not(windows))]
-        let sep_to_remove = '\\' as u8;
+        const SEP_TO_REMOVE: u8 = '\\' as u8;
 
         let mut bytes = Vec::from(self.as_os_str().as_encoded_bytes());
 
         for b in bytes.iter_mut() {
-            if *b == sep_to_remove {
+            if *b == SEP_TO_REMOVE {
                 *b = MAIN_SEPARATOR as u8;
             }
         }
@@ -201,13 +207,30 @@ impl PathExt for Path {
     }
 
     fn to_absolute(&self) -> PathBuf {
-        if self.is_absolute() {
+        let mut comps = self.components();
+        let is_abs = match comps.next() {
+            Some(Component::RootDir) => true,
+            Some(Component::Prefix(p)) => match p.kind() {
+                // UNC is always evaluated as absolute
+                Prefix::UNC(_, _) | Prefix::VerbatimUNC(_, _) => true,
+
+                // All verbatime paths are evaluated as absolute?
+                Prefix::Verbatim(_) | Prefix::VerbatimDisk(_) => true,
+
+                // All device paths are evaluated as absolute?
+                Prefix::DeviceNS(_) => true,
+                Prefix::Disk(_) => {
+                    comps.next() == Some(Component::RootDir)
+                },
+            }
+            _ => false,
+        };
+
+        if is_abs {
             PathBuf::from(self)
         }
         else {
-            let mut abs = PathBuf::from(MAIN_SEPARATOR_STR);
-            abs.push(self);
-            abs
+            PathBuf::from(MAIN_SEPARATOR_STR).join_raw(self)
         }
     }
 }
