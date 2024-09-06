@@ -2,7 +2,7 @@ use crate::enums::FsoType;
 use crate::env_ext::get_home_dir;
 use path_clean::clean;
 use std::ffi::OsString;
-use std::path::{Component, Path, PathBuf, Prefix, MAIN_SEPARATOR_STR};
+use std::path::{Path, PathBuf, MAIN_SEPARATOR_STR};
 
 #[cfg(test)]
 mod tests;
@@ -207,26 +207,7 @@ impl PathExt for Path {
     }
 
     fn to_absolute(&self) -> PathBuf {
-        let mut comps = self.components();
-        let is_abs = match comps.next() {
-            Some(Component::RootDir) => true,
-            Some(Component::Prefix(p)) => match p.kind() {
-                // UNC is always evaluated as absolute
-                Prefix::UNC(_, _) | Prefix::VerbatimUNC(_, _) => true,
-
-                // All verbatime paths are evaluated as absolute?
-                Prefix::Verbatim(_) | Prefix::VerbatimDisk(_) => true,
-
-                // All device paths are evaluated as absolute?
-                Prefix::DeviceNS(_) => true,
-                Prefix::Disk(_) => {
-                    comps.next() == Some(Component::RootDir)
-                },
-            }
-            _ => false,
-        };
-
-        if is_abs {
+        if self.has_root() {
             PathBuf::from(self)
         }
         else {
