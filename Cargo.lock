@@ -465,12 +465,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "path-clean"
-version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "17359afc20d7ab31fdb42bb844c8b3bb1dabd7dcf7e68428492da7f16966fcef"
-
-[[package]]
 name = "pin-project-lite"
 version = "0.2.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -884,7 +878,6 @@ dependencies = [
  "fs_extra",
  "glob-match",
  "is-root",
- "path-clean",
  "rstest",
  "rstest_reuse",
  "serde",

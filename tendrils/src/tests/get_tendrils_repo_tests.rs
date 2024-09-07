@@ -1,5 +1,7 @@
 use crate::{get_tendrils_repo, is_tendrils_repo, GetTendrilsRepoError};
-use crate::path_ext::{PathExt, UniPath};
+use crate::path_ext::UniPath;
+#[cfg(not(windows))]
+use crate::path_ext::PathExt;
 use crate::test_utils::{
     default_repo_path_as_json,
     global_cfg_file,
@@ -201,12 +203,12 @@ fn starting_dir_is_default_dir_and_is_valid_returns_dir() {
 
 #[test]
 #[serial("mut-env-var-testing")]
-fn leading_tilde_and_env_vars_in_given_path_are_resolved_and_dir_seps_are_replaced() {
+fn leading_tilde_and_env_vars_in_given_path_are_resolved_and_dir_seps_are_replaced_on_win() {
     let setup = Setup::new();
     setup.make_td_json_file(&[]);
     setup.set_home_dir();
     std::env::set_var("var", "TendrilsRepo");
-    let starting_td_repo = UniPath::from(PathBuf::from("~/<var>\\"));
+    let starting_td_repo = UniPath::from(PathBuf::from("~/<var>"));
     let expected_str = format!(
         "{}{SEP}TendrilsRepo",
         setup.temp_dir.path().to_string_lossy(),
@@ -223,7 +225,7 @@ fn leading_tilde_and_env_vars_in_default_path_are_resolved_and_dir_seps_are_repl
     let setup = Setup::new();
     setup.make_td_json_file(&[]);
     setup.make_global_cfg_file(
-        default_repo_path_as_json("~/<var>\\\\"),
+        default_repo_path_as_json("~/<var>"),
     );
     std::env::set_var("var", "TendrilsRepo");
     let expected_str = format!(
@@ -242,7 +244,7 @@ fn leading_tilde_and_env_vars_in_given_path_are_resolved_in_error_path_and_dir_s
     let setup = Setup::new();
     setup.set_home_dir();
     std::env::set_var("var", "TendrilsRepo");
-    let starting_td_repo = UniPath::from(PathBuf::from("~/<var>\\"));
+    let starting_td_repo = UniPath::from(PathBuf::from("~/<var>"));
     let expected_str = format!(
         "{}{SEP}TendrilsRepo",
         setup.temp_dir.path().to_string_lossy(),
@@ -263,7 +265,7 @@ fn leading_tilde_and_env_vars_in_given_path_are_resolved_in_error_path_and_dir_s
 fn leading_tilde_and_env_vars_in_default_path_are_resolved_in_error_path_and_dir_seps_are_replaced() {
     let setup = Setup::new();
     setup.make_global_cfg_file(
-        default_repo_path_as_json("~/<var>\\\\"),
+        default_repo_path_as_json("~/<var>"),
     );
     std::env::set_var("var", "TendrilsRepo");
     let expected_str = format!(
@@ -282,18 +284,25 @@ fn leading_tilde_and_env_vars_in_default_path_are_resolved_in_error_path_and_dir
 }
 
 #[test]
-fn given_path_is_absoluted_and_reduced() {
+fn relative_given_path_is_absoluted_and_dots_preserved_in_returned_path() {
     let setup = Setup::new();
     setup.make_td_json_file(&[]);
+    create_dir_all(&setup.td_repo.join("SkipMe")).unwrap();
 
-    let starting_td_repo =
-        setup.td_repo.join_raw(&PathBuf::from("\\/.////SkipMe\\\\.."));
-    // See issues with path_clean crate and drive letters on Windows
     #[cfg(not(windows))]
-    let starting_td_repo = PathBuf::from(".././").join_raw(&starting_td_repo);
-
+    let starting_td_repo =
+        PathBuf::from(".././").join_raw(&setup.td_repo).join(".///SkipMe/..");
+    #[cfg(not(windows))]
     let expected_str = format!(
-        "{}{SEP}TendrilsRepo",
+        "/.././{}/TendrilsRepo/.///SkipMe/..",
+        setup.temp_dir.path().to_string_lossy(),
+    );
+    #[cfg(windows)]
+    let starting_td_repo =
+        &setup.td_repo.join(".///SkipMe/..");
+    #[cfg(windows)]
+    let expected_str = format!(
+        "{}\\TendrilsRepo\\.\\\\\\SkipMe\\..",
         setup.temp_dir.path().to_string_lossy(),
     );
 
@@ -304,22 +313,31 @@ fn given_path_is_absoluted_and_reduced() {
 
 #[test]
 #[serial("mut-env-var-testing")]
-fn relative_default_path_is_absoluted_and_reduced() {
+fn relative_default_path_is_absoluted_and_dots_preserved_in_returned_path() {
     let setup = Setup::new();
-    let default_td_repo = 
-        setup.td_repo.join_raw(&PathBuf::from("\\/.////SkipMe\\\\.."));
-    // See issues with path_clean crate and drive letters on Windows
-    #[cfg(not(windows))]
-    let default_td_repo = PathBuf::from(".././").join_raw(&default_td_repo);
+    create_dir_all(&setup.td_repo.join("SkipMe")).unwrap();
 
-    setup.make_td_json_file(&[]);
-    setup.make_global_cfg_file( default_repo_path_as_json(
-        &default_td_repo.to_string_lossy().replace("\\", "\\\\")
-    ));
+    #[cfg(not(windows))]
+    let default_td_repo =
+        PathBuf::from(".././").join_raw(&setup.td_repo).join(".///SkipMe/..");
+    #[cfg(not(windows))]
     let expected_str = format!(
-        "{}{SEP}TendrilsRepo",
+        "/.././{}/TendrilsRepo/.///SkipMe/..",
         setup.temp_dir.path().to_string_lossy(),
     );
+    #[cfg(windows)]
+    let default_td_repo =
+        &setup.td_repo.join(".///SkipMe/..");
+    #[cfg(windows)]
+    let expected_str = format!(
+        "{}\\TendrilsRepo\\.\\\\\\SkipMe\\..",
+        setup.temp_dir.path().to_string_lossy(),
+    );
+
+    setup.make_td_json_file(&[]);
+    setup.make_global_cfg_file(default_repo_path_as_json(
+        &default_td_repo.to_string_lossy().replace('\\', "\\\\")
+    ));
 
     let actual = get_tendrils_repo(None).unwrap();
 
@@ -327,10 +345,10 @@ fn relative_default_path_is_absoluted_and_reduced() {
 }
 
 #[test]
-fn relative_given_path_is_absoluted_and_reduced_in_error_path() {
+fn relative_given_path_is_absoluted_and_dots_preserved_in_error_path() {
     let starting_td_repo =
-        UniPath::from(PathBuf::from(".././Some\\\\Rel//..\\Path"));
-    let expected_str = format!("{SEP}Some{SEP}Path");
+        UniPath::from(PathBuf::from(".././SomeRel/../Path"));
+    let expected_str = format!("{SEP}..{SEP}.{SEP}SomeRel{SEP}..{SEP}Path");
 
     let actual = get_tendrils_repo(Some(&starting_td_repo));
 
@@ -344,12 +362,12 @@ fn relative_given_path_is_absoluted_and_reduced_in_error_path() {
 
 #[test]
 #[serial("mut-env-var-testing")]
-fn relative_default_path_is_absoluted_and_reduced_in_error_path() {
+fn relative_default_path_is_absoluted_and_dots_preserved_in_error_path() {
     let setup = Setup::new();
     setup.make_global_cfg_file(default_repo_path_as_json(
-        &".././Some\\\\Rel//..\\Path".replace("\\", "\\\\")
+        ".././SomeRel/../Path",
     ));
-    let expected_str = format!("{SEP}Some{SEP}Path");
+    let expected_str = format!("{SEP}..{SEP}.{SEP}SomeRel{SEP}..{SEP}Path");
 
     let actual = get_tendrils_repo(None);
 

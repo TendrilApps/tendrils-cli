@@ -8,9 +8,12 @@ use std::path::MAIN_SEPARATOR as SEP;
 use std::path::MAIN_SEPARATOR_STR as SEP_STR;
 
 #[test]
-fn replaces_dir_seps_on_init() {
+fn replaces_dir_seps_on_init_on_windows() {
     let given = PathBuf::from("/mixed/dir\\seps");
-    let expected_str = format!("{SEP}mixed{SEP}dir{SEP}seps");
+    #[cfg(not(windows))]
+    let expected_str = "/mixed/dir\\seps";
+    #[cfg(windows)]
+    let expected_str = "\\mixed\\dir\\seps";
 
     let actual = UniPath::from(given);
 
@@ -43,7 +46,7 @@ fn resolves_env_vars_on_init() {
 
 #[test]
 fn converts_to_absolute_on_init() {
-    let given = PathBuf::from("some/relative\\path");
+    let given = PathBuf::from("some/relative/path");
     let expected = format!("{SEP}some{SEP}relative{SEP}path");
 
     let actual = UniPath::from(given);
@@ -52,24 +55,16 @@ fn converts_to_absolute_on_init() {
 }
 
 #[test]
-fn reduces_on_init() {
-    let given = PathBuf::from("/some//path\\\\./..");
-    let expected = format!("{SEP}some");
-
-    let actual = UniPath::from(given);
-
-    assert_eq!(actual.inner().to_string_lossy(), expected);
-}
-
-#[test]
 #[serial("mut-env-var-testing")]
-fn resolves_tilde_then_vars_then_dir_seps_then_abs_then_reduces() {
+fn resolves_tilde_then_vars_then_dir_seps_then_abs() {
     let given = PathBuf::from("~/<var>\\misc.txt");
     std::env::set_var("HOME", "~/Home/.//<var>\\");
     std::env::set_var("var", "~/./value\\\\");
-    let expected_str = format!(
-        "{SEP}~{SEP}Home{SEP}~{SEP}value{SEP}~{SEP}value{SEP}misc.txt"
-    );
+    #[cfg(not(windows))]
+    let expected_str = "/~/Home/.//~/./value\\\\\\/~/./value\\\\\\misc.txt";
+    #[cfg(windows)]
+    let expected_str =
+        "\\~\\Home\\.\\\\~\\.\\value\\\\\\\\~\\.\\value\\\\\\misc.txt";
 
     let actual = UniPath::from(given);
 
@@ -77,14 +72,15 @@ fn resolves_tilde_then_vars_then_dir_seps_then_abs_then_reduces() {
 }
 
 #[rstest]
-#[case(".", &format!("{SEP}"))]
-#[case("..", &format!("{SEP}"))]
-#[case("\\Path", &format!("{SEP}Path"))]
+#[case(".", &format!("{SEP}."))]
+#[case("..", &format!("{SEP}.."))]
 #[case("/Path", &format!("{SEP}Path"))]
-#[cfg_attr(not(windows), case("C:\\", "/C:"))]
+#[cfg_attr(not(windows), case("\\Path", "/\\Path"))]
+#[cfg_attr(windows, case("\\Path", "\\Path"))]
+#[cfg_attr(not(windows), case("C:\\", "/C:\\"))]
 #[cfg_attr(windows, case("C:\\", "C:\\"))]
 #[serial("mut-env-var-testing")]
-fn resolves_tilde_then_converts_to_absolute_then_reduces(
+fn resolves_tilde_then_replaces_seps_on_win_then_converts_to_absolute(
     #[case] tilde_value: &str,
     #[case] expected_str: &str,
 ) {
@@ -97,15 +93,15 @@ fn resolves_tilde_then_converts_to_absolute_then_reduces(
 }
 
 #[rstest]
-#[case(".", &format!("{SEP}"))]
-#[case("..", &format!("{SEP}"))]
-#[case("Path", &format!("{SEP}Path"))]
-#[case("\\Path", &format!("{SEP}Path"))]
+#[case(".", &format!("{SEP}."))]
+#[case("..", &format!("{SEP}.."))]
 #[case("/Path", &format!("{SEP}Path"))]
-#[cfg_attr(not(windows), case("C:\\", "/C:"))]
+#[cfg_attr(not(windows), case("\\Path", "/\\Path"))]
+#[cfg_attr(windows, case("\\Path", "\\Path"))]
+#[cfg_attr(not(windows), case("C:\\", "/C:\\"))]
 #[cfg_attr(windows, case("C:\\", "C:\\"))]
 #[serial("mut-env-var-testing")]
-fn resolves_vars_then_converts_to_absolute_then_reduces(
+fn resolves_vars_then_replaces_seps_on_win_then_converts_to_absolute(
     #[case] var_value: &str,
     #[case] expected_str: &str,
 ) {

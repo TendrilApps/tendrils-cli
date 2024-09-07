@@ -625,14 +625,6 @@
       "desc": "An advanced API for creating custom synchronization primitives.",
       "repo": "https://github.com/Amanieu/parking_lot"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#path-clean@1.0.1":
-    {
-      "name": "path-clean",
-      "license": "MIT OR Apache-2.0",
-      "license_files": ["LICENSE-MIT"],
-      "desc": "A Rust implementation of cleanname or path.Clean",
-      "repo": "https://github.com/danreeves/path-clean"
-    },
     "registry+https://github.com/rust-lang/crates.io-index#pin-project-lite@0.2.14":
     {
       "name": "pin-project-lite",

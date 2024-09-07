@@ -1,6 +1,5 @@
 use crate::enums::FsoType;
 use crate::env_ext::get_home_dir;
-use path_clean::clean;
 use std::ffi::OsString;
 use std::path::{Path, PathBuf, MAIN_SEPARATOR_STR};
 
@@ -18,14 +17,6 @@ pub(crate) trait PathExt {
     /// the path points to, or returns `None` if the FSO
     /// does not exist.
     fn get_type(&self) -> Option<FsoType>;
-
-    /// Removes any duplicate directory separators, and resolves any
-    /// `.` or `..` path components. Path components are resolved
-    /// *lexically* (i.e it does not follow symlinks). On Windows, this will
-    /// also replace all Unix directory separators (`/`) with the Windows
-    /// separator (`\\`) as a side effect, unless they are part of a prefix
-    /// such as a //Server/Share/ UNC prefix.
-    fn reduce(&self) -> PathBuf;
 
     /// Replaces all directory separators with those of the current platform
     /// (i.e. `\\` on Windows and `/` on all others).
@@ -68,15 +59,6 @@ pub(crate) trait PathExt {
 }
 
 impl PathExt for Path {
-    fn reduce(&self) -> PathBuf {
-        if self.as_os_str().is_empty() {
-            PathBuf::from(self)
-        }
-        else {
-            clean(self)
-        }
-    }
-
     fn join_raw(&self, path: &Path) -> PathBuf {
         let parent_bytes = self.as_os_str().as_encoded_bytes();
         let child_bytes = path.as_os_str().as_encoded_bytes();
@@ -244,8 +226,8 @@ pub fn contains_env_var(input: &Path) -> bool {
 
 /// A [`PathBuf`] wrapper that guarantees that any tilde values have been
 /// [resolved](PathExt::resolve_tilde), any environment variables have been
-/// [resolved](PathExt::resolve_env_variables), path separators have been
-/// [replaced](PathExt::replace_dir_seps) to the current platform,
+/// [resolved](PathExt::resolve_env_variables), Unix style path separators (`/`)
+/// have been [replaced](PathExt::replace_dir_seps) with `\` (Windows only),
 /// and that the path has been converted [to absolute](PathExt::to_absolute),
 /// in that order.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -265,8 +247,8 @@ impl From<&Path> for UniPath {
             value
                 .resolve_tilde()
                 .resolve_env_variables()
+                .replace_dir_seps()
                 .to_absolute()
-                .reduce()
         );
 
         #[cfg(not(windows))]
@@ -274,9 +256,7 @@ impl From<&Path> for UniPath {
             value
                 .resolve_tilde()
                 .resolve_env_variables()
-                .replace_dir_seps()
                 .to_absolute()
-                .reduce()
         );
     }
 }

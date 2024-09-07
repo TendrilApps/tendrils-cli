@@ -165,8 +165,8 @@ fn parent_is_valid_returns_ok(#[case] parent: &str) {
 #[case("Trailing\\", "Plain", &format!("{SEP}Trailing{SEP}Plain"))]
 #[case("Plain", "/Leading", &format!("{SEP}Plain{SEP}Leading"))]
 #[case("Plain", "\\Leading", &format!("{SEP}Plain{SEP}Leading"))]
-#[case("Trailing/", "/Leading", &format!("{SEP}Trailing{SEP}Leading"))]
-#[case("Trailing\\", "\\Leading", &format!("{SEP}Trailing{SEP}Leading"))]
+#[case("Trailing/", "/Leading", &format!("{SEP}Trailing{SEP}{SEP}Leading"))]
+#[case("Trailing\\", "\\Leading", &format!("{SEP}Trailing{SEP}{SEP}Leading"))]
 #[case("Plain", "C:\\Abs", &format!("{SEP}Plain{SEP}C:{SEP}Abs"))]
 #[case("Trailing/", "C:\\Abs", &format!("{SEP}Trailing{SEP}C:{SEP}Abs"))]
 #[case("Trailing\\", "C:\\Abs", &format!("{SEP}Trailing{SEP}C:{SEP}Abs"))]
@@ -198,16 +198,24 @@ fn remote_appends_name_to_parent_using_platform_dir_sep_for_all_slashes(
 #[case("Plain", "\\Leading", &format!("{SEP}Plain{SEP}G{SEP}Leading"))]
 #[case("Trailing/", "/Leading", &format!("{SEP}Trailing{SEP}G{SEP}Leading"))]
 #[case("Trailing\\", "\\Leading", &format!("{SEP}Trailing{SEP}G{SEP}Leading"))]
-#[case("Trailing//", "//Both//", &format!("{SEP}Trailing{SEP}G{SEP}Both"))]
-#[case("Trailing\\\\", "\\\\Both\\\\", &format!("{SEP}Trailing{SEP}G{SEP}Both"))]
-#[case("Parent///Slashes\\\\.././", "Name//.\\Slashes\\\\..", &format!("{SEP}Parent{SEP}G{SEP}Name"))]
-// See explanation of this odd behaviour in reduce_tests
-#[cfg_attr(not(windows), case("Plain", "C:\\Abs", "/Plain/G/C:/Abs"))]
-#[cfg_attr(windows, case("Plain", "C:\\Abs", "C:Abs"))]
-#[cfg_attr(not(windows), case("Trailing/", "C:\\Abs", "/Trailing/G/C:/Abs"))]
-#[cfg_attr(windows, case("Trailing/", "C:\\Abs", "C:Abs"))]
-#[cfg_attr(not(windows), case("Trailing\\", "C:\\Abs", "/Trailing/G/C:/Abs"))]
-#[cfg_attr(windows, case("Trailing\\", "C:\\Abs", "C:Abs"))]
+#[case(
+    "Trailing//",
+    "//Both//",
+    &format!("{SEP}Trailing{SEP}{SEP}G{SEP}{SEP}Both{SEP}{SEP}"),
+)]
+#[case(
+    "Trailing\\\\",
+    "\\\\Both\\\\",
+    &format!("{SEP}Trailing{SEP}{SEP}G{SEP}{SEP}Both{SEP}{SEP}"),
+)]
+#[case(
+    "Parent///Slashes\\\\.././",
+    "Name//.\\Slashes\\\\..",
+    &format!("{SEP}Parent{SEP}{SEP}{SEP}Slashes{SEP}{SEP}..{SEP}.{SEP}G{SEP}Name{SEP}{SEP}.{SEP}Slashes{SEP}{SEP}.."),
+)]
+#[case("Plain", "C:\\Abs", &format!("{SEP}Plain{SEP}G{SEP}C:{SEP}Abs"))]
+#[case("Trailing/", "C:\\Abs", &format!("{SEP}Trailing{SEP}G{SEP}C:{SEP}Abs"))]
+#[case("Trailing\\", "C:\\Abs", &format!("{SEP}Trailing{SEP}G{SEP}C:{SEP}Abs"))]
 fn local_appends_group_then_name_to_td_repo_using_platform_dir_sep_for_all_slashes(
     #[case] td_repo: PathBuf,
     #[case] name: &str,
