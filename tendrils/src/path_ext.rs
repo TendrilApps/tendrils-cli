@@ -224,9 +224,9 @@ pub fn contains_env_var(input: &Path) -> bool {
     next_env_var(input.as_os_str().as_encoded_bytes(), 0).is_some()
 }
 
-/// A [`PathBuf`] wrapper that guarantees that any tilde values have been
-/// [resolved](PathExt::resolve_tilde), any environment variables have been
-/// [resolved](PathExt::resolve_env_variables), Unix style path separators (`/`)
+/// A [`PathBuf`] wrapper that guarantees that any environment variables have
+/// been [resolved](PathExt::resolve_env_variables), any tilde values have been
+/// [resolved](PathExt::resolve_tilde) Unix style path separators (`/`)
 /// have been [replaced](PathExt::replace_dir_seps) with `\` (Windows only),
 /// and that the path has been converted [to absolute](PathExt::to_absolute),
 /// in that order.
@@ -245,8 +245,8 @@ impl From<&Path> for UniPath {
         #[cfg(windows)]
         return UniPath(
             value
-                .resolve_tilde()
                 .resolve_env_variables()
+                .resolve_tilde()
                 .replace_dir_seps()
                 .to_absolute()
         );
@@ -254,8 +254,8 @@ impl From<&Path> for UniPath {
         #[cfg(not(windows))]
         return UniPath(
             value
-                .resolve_tilde()
                 .resolve_env_variables()
+                .resolve_tilde()
                 .to_absolute()
         );
     }

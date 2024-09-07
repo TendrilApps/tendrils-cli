@@ -56,15 +56,15 @@ fn converts_to_absolute_on_init() {
 
 #[test]
 #[serial("mut-env-var-testing")]
-fn resolves_tilde_then_vars_then_dir_seps_then_abs() {
-    let given = PathBuf::from("~/<var>\\misc.txt");
+fn resolves_vars_then_tilde_then_dir_seps_then_abs() {
+    let given = PathBuf::from("<var>\\misc.txt");
     std::env::set_var("HOME", "~/Home/.//<var>\\");
     std::env::set_var("var", "~/./value\\\\");
     #[cfg(not(windows))]
-    let expected_str = "/~/Home/.//~/./value\\\\\\/~/./value\\\\\\misc.txt";
+    let expected_str = "/~/Home/.//<var>\\/./value\\\\\\misc.txt";
     #[cfg(windows)]
     let expected_str =
-        "\\~\\Home\\.\\\\~\\.\\value\\\\\\\\~\\.\\value\\\\\\misc.txt";
+        "\\~\\Home\\.\\\\<var>\\\\.\\value\\\\\\misc.txt";
 
     let actual = UniPath::from(given);
 
