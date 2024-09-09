@@ -46,18 +46,13 @@ pub(crate) trait PathExt {
     /// implemented, but this added complexity was avoided for now.
     fn resolve_env_variables(&self) -> PathBuf;
 
-    /// Converts a relative path to absolute by simply prepending a directory
-    /// separator. This does *not* take into account the current directory.
-    /// Returns `self` if the path is already absolute. What counts as an
-    /// absolute path varies by platform - for example `C:\Path` and `\Path`
-    /// are absolute on Windows but not on Unix. On Unix, these would be
-    /// converted to `/C:\Path` and `/\Path`. Although not technically an
-    /// absolute path, paths starting with / or \ on Windows are considered
-    /// absolute here (as they are absolute within the current drive). This
-    /// blind conversion may cause unintuitive behaviour in paths with relative
-    /// Windows prefixes. For example C:SomePath is converted to \C:SomePath
-    /// rather than the C:\SomePath that may have been expected.
-    fn to_absolute(&self) -> PathBuf;
+    /// Converts a non-rooted path to rooted by prepending it with the given
+    /// `root`. If the given `root` is not rooted either, then the default root
+    /// of `/` on Unix or `\` on Windows is used. Returns `self` if the path is
+    /// already rooted. What counts as rooted varies by platform - for example
+    /// `C:\Path` and `\\MyServer\Share\Path` are rooted on Windows but not on
+    /// Unix. This function does *not* take the current directory into account.
+    fn root(&self, root: &Path) -> PathBuf;
 }
 
 impl PathExt for Path {
@@ -195,12 +190,15 @@ impl PathExt for Path {
         }
     }
 
-    fn to_absolute(&self) -> PathBuf {
+    fn root(&self, root: &Path) -> PathBuf {
         if self.has_root() {
             PathBuf::from(self)
         }
+        else if root.has_root() {
+            root.join_raw(self)
+        }
         else {
-            PathBuf::from(MAIN_SEPARATOR_STR).join_raw(self)
+            Path::new(MAIN_SEPARATOR_STR).join_raw(self)
         }
     }
 }
@@ -231,16 +229,42 @@ pub fn contains_env_var(input: &Path) -> bool {
     next_env_var(input.as_os_str().as_encoded_bytes(), 0).is_some()
 }
 
-/// A [`PathBuf`] wrapper that guarantees that any environment variables have
-/// been [resolved](PathExt::resolve_env_variables), any tilde values have been
-/// [resolved](PathExt::resolve_tilde) Unix style path separators (`/`)
-/// have been replaced with `\` (Windows only),
-/// and that the path has been converted [to absolute](PathExt::to_absolute),
-/// in that order.
+/// A [`PathBuf`] wrapper that guarantees that the path has been resolved in
+/// this particular order:
+///     1. Any environment variables have been resolved
+///     2. A leading tilde has been resolved
+///     3. A non-rooted path has been rooted. The default conversion to rooted
+/// occurs by prepending `/` on Unix or `\` on Windows. A different root can be
+/// provided by constructing the [`UniPath`] using [`UniPath::new_with_root`].
+///     4. Unix style path separators (`/`) have been replaced with `\` (Windows
+/// only)
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub(crate) struct UniPath(PathBuf);
+pub struct UniPath(PathBuf);
 
 impl UniPath {
+    /// Converts the given `path` to a [`UniPath`] using the standard rules, but
+    /// converts relative paths to absolute by appending them to the given
+    /// `root`. If the given `root` is not absolute either, it will default to
+    /// using `/` on Unix and `\` on Windows.
+    pub fn new_with_root(path: &Path, root: &Path) -> Self {
+        #[cfg(windows)]
+        return UniPath(
+            path
+                .resolve_env_variables()
+                .resolve_tilde()
+                .root(root)
+                .replace_dir_seps()
+        );
+
+        #[cfg(not(windows))]
+        return UniPath(
+            path
+                .resolve_env_variables()
+                .resolve_tilde()
+                .root(root)
+        );
+    }
+
     /// The wrapped [`PathBuf`] that has been sanitized.
     pub fn inner(&self) -> &Path {
         &self.0
@@ -249,22 +273,7 @@ impl UniPath {
 
 impl From<&Path> for UniPath {
     fn from(value: &Path) -> Self {
-        #[cfg(windows)]
-        return UniPath(
-            value
-                .resolve_env_variables()
-                .resolve_tilde()
-                .replace_dir_seps()
-                .to_absolute()
-        );
-
-        #[cfg(not(windows))]
-        return UniPath(
-            value
-                .resolve_env_variables()
-                .resolve_tilde()
-                .to_absolute()
-        );
+        Self::new_with_root(value, &Path::new(MAIN_SEPARATOR_STR))
     }
 }
 

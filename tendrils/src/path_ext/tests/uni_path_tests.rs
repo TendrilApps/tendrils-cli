@@ -3,7 +3,7 @@ use crate::test_utils::non_utf_8_text;
 use rstest::rstest;
 use serial_test::serial;
 use std::ffi::OsString;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::path::MAIN_SEPARATOR as SEP;
 use std::path::MAIN_SEPARATOR_STR as SEP_STR;
 
@@ -45,7 +45,7 @@ fn resolves_env_vars_on_init() {
 }
 
 #[test]
-fn converts_to_absolute_on_init() {
+fn roots_with_dir_sep_on_init() {
     let given = PathBuf::from("some/relative/path");
     let expected = format!("{SEP}some{SEP}relative{SEP}path");
 
@@ -56,7 +56,7 @@ fn converts_to_absolute_on_init() {
 
 #[test]
 #[serial("mut-env-var-testing")]
-fn resolves_vars_then_tilde_then_dir_seps_then_abs() {
+fn resolves_vars_then_tilde_then_dir_seps_then_roots() {
     let given = PathBuf::from("<var>\\misc.txt");
     std::env::set_var("HOME", "~/Home/.//<var>\\");
     std::env::set_var("var", "~/./value\\\\");
@@ -80,7 +80,7 @@ fn resolves_vars_then_tilde_then_dir_seps_then_abs() {
 #[cfg_attr(not(windows), case("C:\\", "/C:\\"))]
 #[cfg_attr(windows, case("C:\\", "C:\\"))]
 #[serial("mut-env-var-testing")]
-fn resolves_tilde_then_replaces_seps_on_win_then_converts_to_absolute(
+fn resolves_tilde_then_replaces_seps_on_win_then_roots_with_dir_sep(
     #[case] tilde_value: &str,
     #[case] expected_str: &str,
 ) {
@@ -101,7 +101,7 @@ fn resolves_tilde_then_replaces_seps_on_win_then_converts_to_absolute(
 #[cfg_attr(not(windows), case("C:\\", "/C:\\"))]
 #[cfg_attr(windows, case("C:\\", "C:\\"))]
 #[serial("mut-env-var-testing")]
-fn resolves_vars_then_replaces_seps_on_win_then_converts_to_absolute(
+fn resolves_vars_then_replaces_seps_on_win_then_roots_with_dir_sep(
     #[case] var_value: &str,
     #[case] expected_str: &str,
 ) {
@@ -111,6 +111,43 @@ fn resolves_vars_then_replaces_seps_on_win_then_converts_to_absolute(
     let actual = UniPath::from(given);
 
     assert_eq!(actual.inner().to_string_lossy(), expected_str);
+}
+
+#[test]
+fn new_with_root_prepends_given_root_to_non_rooted_path_and_replaces_dir_seps() {
+    let given = PathBuf::from("RelPath");
+    #[cfg(not(windows))]
+    let expected = "/MyRoot\\/RelPath";
+    #[cfg(windows)]
+    let expected = "\\MyRoot\\RelPath";
+
+    let actual = UniPath::new_with_root(&given, &Path::new("/MyRoot\\"));
+
+    assert_eq!(actual.inner().to_string_lossy(), expected);
+}
+
+#[test]
+fn new_with_root_prepends_dir_sep_to_non_rooted_path_if_given_root_is_also_not_rooted() {
+    let given = PathBuf::from("RelPath");
+
+    let actual = UniPath::new_with_root(&given, &Path::new("NotARoot"));
+
+    assert_eq!(
+        actual.inner().to_string_lossy(),
+        format!("{SEP}RelPath")
+    );
+}
+
+#[test]
+fn new_with_root_does_not_prepend_to_a_rooted_path() {
+    let given = PathBuf::from("/Rooted/Path");
+
+    let actual = UniPath::new_with_root(&given, &Path::new("/MyRoot\\"));
+
+    assert_eq!(
+        actual.inner().to_string_lossy(),
+        format!("{SEP}Rooted{SEP}Path")
+    );
 }
 
 #[test]

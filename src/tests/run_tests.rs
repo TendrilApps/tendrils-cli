@@ -18,6 +18,7 @@ use rstest::rstest;
 use serial_test::serial;
 use std::fs::create_dir_all;
 use std::path::PathBuf;
+use std::path::MAIN_SEPARATOR_STR as SEP;
 use tendrils::test_utils::{get_disposable_dir, MockTendrilsApi};
 use tendrils::{
     ActionLog,
@@ -207,7 +208,7 @@ fn init_path_given_valid_uses_given_path_and_ignores_valid_current_dir(
         writer.all_output,
         format!(
             "Created a Tendrils repo at: {}\n",
-            given_dir.to_string_lossy()
+            &format!("{SEP}SomeGivenDir")
         )
     );
 
@@ -318,8 +319,7 @@ fn init_non_empty_dir_prints_error_message_unless_forced(#[case] force: bool) {
         assert_eq!(
             writer.all_output,
             format!(
-                "Created a Tendrils repo at: {}\n",
-                given_dir.to_string_lossy()
+                "Created a Tendrils repo at: {SEP}SomeGivenDir\n"
             )
         );
     }
@@ -431,11 +431,11 @@ fn init_given_path_is_relative_prepends_with_cd(#[case] force: bool) {
 #[case(false)]
 #[serial("cd")]
 #[cfg_attr(windows, ignore)]
-fn init_given_path_is_relative_prepends_with_root_if_cd_doesnt_exist(#[case] force: bool) {
+fn init_given_path_is_relative_and_cd_doesnt_exist_prepends_with_dir_sep(#[case] force: bool) {
     let mut api = MockTendrilsApi::new();
     let mut writer = MockWriter::new();
     let temp_dir =
-        tempdir::TempDir::new_in(get_disposable_dir(), "TempDir").unwrap();
+    tempdir::TempDir::new_in(get_disposable_dir(), "TempDir").unwrap();
     let user_given_dir = "../Relative/Path";
     let cd = temp_dir.path().join("CurrentDir");
     create_dir_all(&cd).unwrap();
@@ -443,6 +443,68 @@ fn init_given_path_is_relative_prepends_with_root_if_cd_doesnt_exist(#[case] for
     std::fs::remove_dir(&cd).unwrap();
 
     api.init_exp_dir_arg = PathBuf::from("/../Relative/Path");
+    api.init_exp_force_arg = force;
+    api.init_const_rt =
+        Err(InitError::IoError { kind: std::io::ErrorKind::NotFound });
+
+    let args = TendrilCliArgs {
+        tendrils_command: TendrilsSubcommands::Init {
+            force,
+            path: Some(user_given_dir.to_string()),
+        },
+    };
+
+    let actual_exit_code = run(args, &api, &mut writer);
+
+    assert_eq!(actual_exit_code, Err(exitcode::IOERR));
+    assert!(!cd.exists());
+}
+
+#[rstest]
+#[case(true)]
+#[case(false)]
+#[serial("mut-env-var-testing")]
+fn init_given_path_is_relative_but_resolves_to_abs_should_not_prepend_cd(#[case] force: bool) {
+    let mut api = MockTendrilsApi::new();
+    let mut writer = MockWriter::new();
+    std::env::set_var("HOME", "/Some/Abs/Path");
+    let user_given_dir = "~/Relative/Path";
+
+    api.init_exp_dir_arg = PathBuf::from("/Some/Abs/Path/Relative/Path");
+    api.init_exp_force_arg = force;
+    api.init_const_rt =
+        Err(InitError::IoError { kind: std::io::ErrorKind::NotFound });
+
+    let args = TendrilCliArgs {
+        tendrils_command: TendrilsSubcommands::Init {
+            force,
+            path: Some(user_given_dir.to_string()),
+        },
+    };
+
+    let actual_exit_code = run(args, &api, &mut writer);
+
+    assert_eq!(actual_exit_code, Err(exitcode::IOERR));
+}
+
+#[rstest]
+#[case(true)]
+#[case(false)]
+#[serial("cd", "mut-env-var-testing")]
+#[cfg_attr(windows, ignore)]
+fn init_given_path_is_relative_but_resolves_to_abs_and_cd_doesnt_exist_should_not_prepend_cd(#[case] force: bool) {
+    let mut api = MockTendrilsApi::new();
+    let mut writer = MockWriter::new();
+    std::env::set_var("HOME", "/Some/Abs/Path");
+    let user_given_dir = "~/Relative/Path";
+    let temp_dir =
+        tempdir::TempDir::new_in(get_disposable_dir(), "TempDir").unwrap();
+    let cd = temp_dir.path().join("CurrentDir");
+    create_dir_all(&cd).unwrap();
+    std::env::set_current_dir(&cd).unwrap();
+    std::fs::remove_dir(&cd).unwrap();
+
+    api.init_exp_dir_arg = PathBuf::from("/Some/Abs/Path/Relative/Path");
     api.init_exp_force_arg = force;
     api.init_const_rt =
         Err(InitError::IoError { kind: std::io::ErrorKind::NotFound });
@@ -684,7 +746,7 @@ fn tendril_action_given_path_is_relative_prepends_with_cd(
     let mut writer = MockWriter::new();
     let temp_dir =
         tempdir::TempDir::new_in(get_disposable_dir(), "TempDir").unwrap();
-    let user_given_dir = PathBuf::from("../Relative/Path");
+    let user_given_dir = "../Relative/Path";
     let cd = temp_dir.path().join("CurrentDir");
     create_dir_all(&cd).unwrap();
     std::env::set_current_dir(&cd).unwrap();
@@ -702,9 +764,8 @@ fn tendril_action_given_path_is_relative_prepends_with_cd(
         msg: "Some parse error msg".to_string(),
     }));
 
-    let path = Some(user_given_dir.to_str().unwrap().to_string());
     let tendrils_command = build_action_subcommand(
-        path,
+        Some(user_given_dir.to_string()),
         mode,
         dry_run,
         force,
@@ -726,7 +787,7 @@ fn tendril_action_given_path_is_relative_prepends_with_cd(
 #[rstest]
 #[serial("cd")]
 #[cfg_attr(windows, ignore)]
-fn tendril_action_given_path_is_relative_prepends_with_root_if_cd_doesnt_exist(
+fn tendril_action_given_path_is_relative_and_cd_doesnt_exist_prepends_with_dir_sep(
     #[values(ActionMode::Pull, ActionMode::Push, ActionMode::Link)]
     mode: ActionMode,
     #[values(true, false)] dry_run: bool,
@@ -736,8 +797,101 @@ fn tendril_action_given_path_is_relative_prepends_with_root_if_cd_doesnt_exist(
     let mut writer = MockWriter::new();
     let temp_dir =
         tempdir::TempDir::new_in(get_disposable_dir(), "TempDir").unwrap();
-    let user_given_dir = PathBuf::from("../Relative/Path");
+    let user_given_dir = "../Relative/Path";
+    let cd = temp_dir.path().join("CurrentDir");
+    create_dir_all(&cd).unwrap();
+    std::env::set_current_dir(&cd).unwrap();
+    std::fs::remove_dir(&cd).unwrap();
     let exp_passed_dir = PathBuf::from("/../Relative/Path");
+
+    api.is_tendrils_repo_const_rt = true;
+    api.ta_exp_mode = mode.clone();
+    api.ta_exp_path = Some(&exp_passed_dir);
+    api.ta_exp_filter = FilterSpec::new();
+    api.ta_exp_filter.mode = Some(mode.clone());
+    api.ta_exp_dry_run = dry_run;
+    api.ta_exp_force = force;
+    api.ta_const_rt = Err(SetupError::ConfigError(GetConfigError::ParseError {
+        cfg_type: ConfigType::Repo,
+        msg: "Some parse error msg".to_string(),
+    }));
+
+    let tendrils_command = build_action_subcommand(
+        Some(user_given_dir.to_string()),
+        mode,
+        dry_run,
+        force,
+        vec![],
+        vec![],
+        vec![],
+        vec![],
+    );
+    let args = TendrilCliArgs { tendrils_command };
+
+    let actual_exit_code = run(args, &api, &mut writer);
+
+    assert_eq!(actual_exit_code, Err(exitcode::DATAERR));
+}
+
+#[rstest]
+#[serial("mut-env-var-testing")]
+fn tendril_action_given_path_is_relative_but_resolves_to_abs_should_not_prepend_cd(
+    #[values(ActionMode::Pull, ActionMode::Push, ActionMode::Link)]
+    mode: ActionMode,
+    #[values(true, false)] dry_run: bool,
+    #[values(true, false)] force: bool,
+) {
+    let mut api = MockTendrilsApi::new();
+    let mut writer = MockWriter::new();
+    std::env::set_var("HOME", "/Some/Abs/Path");
+    let user_given_dir = "~/Relative/Path";
+    let exp_passed_dir = PathBuf::from("/Some/Abs/Path/Relative/Path");
+
+    api.is_tendrils_repo_const_rt = true;
+    api.ta_exp_mode = mode.clone();
+    api.ta_exp_path = Some(&exp_passed_dir);
+    api.ta_exp_filter = FilterSpec::new();
+    api.ta_exp_filter.mode = Some(mode.clone());
+    api.ta_exp_dry_run = dry_run;
+    api.ta_exp_force = force;
+    api.ta_const_rt = Err(SetupError::ConfigError(GetConfigError::ParseError {
+        cfg_type: ConfigType::Repo,
+        msg: "Some parse error msg".to_string(),
+    }));
+
+    let tendrils_command = build_action_subcommand(
+        Some(user_given_dir.to_string()),
+        mode,
+        dry_run,
+        force,
+        vec![],
+        vec![],
+        vec![],
+        vec![],
+    );
+    let args = TendrilCliArgs { tendrils_command };
+
+    let actual_exit_code = run(args, &api, &mut writer);
+
+    assert_eq!(actual_exit_code, Err(exitcode::DATAERR));
+}
+
+#[rstest]
+#[serial("cd", "mut-env-var-testing")]
+#[cfg_attr(windows, ignore)]
+fn tendril_action_given_path_is_relative_but_resolves_to_abs_and_cd_doesnt_exist_should_not_prepend_cd(
+    #[values(ActionMode::Pull, ActionMode::Push, ActionMode::Link)]
+    mode: ActionMode,
+    #[values(true, false)] dry_run: bool,
+    #[values(true, false)] force: bool,
+) {
+    let mut api = MockTendrilsApi::new();
+    let mut writer = MockWriter::new();
+    std::env::set_var("HOME", "/Some/Abs/Path");
+    let user_given_dir = "~/Relative/Path";
+    let exp_passed_dir = PathBuf::from("/Some/Abs/Path/Relative/Path");
+    let temp_dir =
+        tempdir::TempDir::new_in(get_disposable_dir(), "TempDir").unwrap();
     let cd = temp_dir.path().join("CurrentDir");
     create_dir_all(&cd).unwrap();
     std::env::set_current_dir(&cd).unwrap();
@@ -756,7 +910,7 @@ fn tendril_action_given_path_is_relative_prepends_with_root_if_cd_doesnt_exist(
     }));
 
     let tendrils_command = build_action_subcommand(
-        Some(user_given_dir.to_string_lossy().to_string()),
+        Some(user_given_dir.to_string()),
         mode,
         dry_run,
         force,
