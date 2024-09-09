@@ -261,7 +261,7 @@ fn remote_is_another_td_repo_proceeds_normally(
     setup.make_remote_nested_file();
     create_dir_all(setup.remote_dir.join(".tendrils")).unwrap();
     write(&setup.remote_dir.join(".tendrils/tendrils.json"), "").unwrap();
-    assert!(api.is_tendrils_repo(&setup.remote_dir));
+    assert!(api.is_tendrils_repo(&UniPath::from(&setup.remote_dir)));
 
     let mut tendril = setup.dir_tendril();
     if action == link_tendril {

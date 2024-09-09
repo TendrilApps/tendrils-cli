@@ -636,12 +636,7 @@ fn tendril_action_given_path_is_not_tendrils_repo_but_cd_is_should_print_message
     std::env::set_current_dir(&cd).unwrap();
 
     api.is_tendrils_repo_fn = Some(Box::new(move |dir| {
-        if dir == cd_for_closure {
-            true
-        }
-        else {
-            false
-        }
+        dir.inner() == cd_for_closure
     }));
     api.ta_exp_mode = mode.clone();
     api.ta_exp_path = Some(&given_dir);

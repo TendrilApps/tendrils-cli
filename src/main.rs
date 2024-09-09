@@ -131,7 +131,7 @@ fn init(
         },
     };
 
-    match api.init_tendrils_repo(&td_repo.inner(), force) {
+    match api.init_tendrils_repo(&td_repo, force) {
         Ok(()) => {
             writer.writeln(&format!(
                 "Created a Tendrils repo at: {}",
@@ -192,8 +192,15 @@ fn tendril_action_subcommand(
             &std::env::current_dir().unwrap_or_default(),
         )),
         None => match std::env::current_dir() {
-            Ok(cd) if api.is_tendrils_repo(&cd) => Some(UniPath::from(cd)),
-            Ok(_) => None,
+            Ok(cd) => {
+                let u_cd = UniPath::from(cd);
+                if api.is_tendrils_repo(&u_cd) {
+                    Some(u_cd)
+                }
+                else {
+                    None
+                }
+            },
             Err(_err) => {
                 writer.writeln(&format!(
                     "{ERR_PREFIX}: Could not get the current directory"
@@ -213,7 +220,7 @@ fn tendril_action_subcommand(
 
     let batch_result = api.tendril_action(
         mode,
-        td_repo.as_ref().map(|p| p.inner()),
+        td_repo.as_ref().map(|p| p),
         filter,
         action_args.dry_run,
         action_args.force,

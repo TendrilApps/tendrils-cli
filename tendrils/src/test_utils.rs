@@ -11,9 +11,8 @@ use crate::{
     TendrilMode,
     TendrilReport,
     TendrilsApi,
+    UniPath,
 };
-#[cfg(test)]
-use crate::path_ext::UniPath;
 use crate::config::{Config, parse_config};
 use crate::enums::GetConfigError;
 use std::env::var;
@@ -206,11 +205,11 @@ pub fn set_ra(path: &Path, can_read: bool) {
 
 pub struct MockTendrilsApi<'a> {
     pub init_const_rt: Result<(), InitError>,
-    pub init_fn: Option<Box<dyn Fn(&Path, bool) -> Result<(), InitError>>>,
+    pub init_fn: Option<Box<dyn Fn(&UniPath, bool) -> Result<(), InitError>>>,
     pub init_exp_dir_arg: PathBuf,
     pub init_exp_force_arg: bool,
     pub is_tendrils_repo_const_rt: bool,
-    pub is_tendrils_repo_fn: Option<Box<dyn Fn(&Path) -> bool>>,
+    pub is_tendrils_repo_fn: Option<Box<dyn Fn(&UniPath) -> bool>>,
     pub get_default_repo_const_rt: Result<Option<PathBuf>, GetConfigError>,
     pub get_default_repo_fn: Option<Box<dyn Fn() -> Result<Option<PathBuf>, GetConfigError>>>,
     pub tau_const_updater_rts: Vec<TendrilReport<ActionLog>>,
@@ -220,7 +219,7 @@ pub struct MockTendrilsApi<'a> {
         Box<
             dyn Fn(
                 ActionMode,
-                Option<&Path>,
+                Option<&UniPath>,
                 FilterSpec,
                 bool,
                 bool,
@@ -262,10 +261,10 @@ impl<'a> MockTendrilsApi<'a> {
 impl TendrilsApi for MockTendrilsApi<'_> {
     fn init_tendrils_repo(
         &self,
-        dir: &Path,
+        dir: &UniPath,
         force: bool,
     ) -> Result<(), InitError> {
-        assert_eq!(dir, self.init_exp_dir_arg);
+        assert_eq!(dir.inner(), self.init_exp_dir_arg);
         assert_eq!(force, self.init_exp_force_arg);
 
         if let Some(f) = self.init_fn.as_ref() {
@@ -276,7 +275,7 @@ impl TendrilsApi for MockTendrilsApi<'_> {
         }
     }
 
-    fn is_tendrils_repo(&self, dir: &Path) -> bool {
+    fn is_tendrils_repo(&self, dir: &UniPath) -> bool {
         if let Some(f) = self.is_tendrils_repo_fn.as_ref() {
             f(dir)
         }
@@ -298,7 +297,7 @@ impl TendrilsApi for MockTendrilsApi<'_> {
         &self,
         mut update_fn: F,
         _: ActionMode,
-        _: Option<&Path>,
+        _: Option<&UniPath>,
         _: FilterSpec,
         _: bool,
         _: bool,
@@ -313,16 +312,21 @@ impl TendrilsApi for MockTendrilsApi<'_> {
     fn tendril_action(
         &self,
         mode: ActionMode,
-        td_repo: Option<&Path>,
+        td_repo: Option<&UniPath>,
         filter: FilterSpec,
         dry_run: bool,
         force: bool,
     ) -> Result<Vec<TendrilReport<ActionLog>>, SetupError> {
         assert_eq!(mode, self.ta_exp_mode);
-        assert_eq!(td_repo, self.ta_exp_path);
         assert_eq!(filter, self.ta_exp_filter);
         assert_eq!(dry_run, self.ta_exp_dry_run);
         assert_eq!(force, self.ta_exp_force);
+        if let Some(p) = td_repo {
+            assert_eq!(p.inner(), self.ta_exp_path.unwrap());
+        }
+        else {
+            assert_eq!(None, self.ta_exp_path);
+        }
 
         if let Some(f) = self.ta_fn.as_ref() {
             f(mode, td_repo, filter, dry_run, force)

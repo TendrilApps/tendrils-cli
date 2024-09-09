@@ -62,14 +62,14 @@ pub trait TendrilsApi {
     /// # Arguments
     /// - `dir` - The folder to initialize
     /// - `force` - Ignores the [`InitError::NotEmpty`] error
-    fn init_tendrils_repo(&self, dir: &Path, force: bool) -> Result<(), InitError>;
+    fn init_tendrils_repo(&self, dir: &UniPath, force: bool) -> Result<(), InitError>;
 
     /// Returns `true` if the given folder is a Tendrils repo, otherwise
     /// `false`.
     /// - A Tendrils repo is defined by having a `.tendrils` subfolder with
     /// a `tendrils.json` file in it.
     /// - Note: This does *not* check that the `tendrils.json` contents are valid.
-    fn is_tendrils_repo(&self, dir: &Path) -> bool;
+    fn is_tendrils_repo(&self, dir: &UniPath) -> bool;
 
     /// Reads the `tendrils.json` file in the given Tendrils repo, and
     /// performs the action on each tendril that matches the
@@ -124,7 +124,7 @@ pub trait TendrilsApi {
         &self,
         update_fn: F,
         mode: ActionMode,
-        td_repo: Option<&Path>,
+        td_repo: Option<&UniPath>,
         filter: FilterSpec,
         dry_run: bool,
         force: bool,
@@ -135,7 +135,7 @@ pub trait TendrilsApi {
     fn tendril_action(
         &self,
         mode: ActionMode,
-        td_repo: Option<&Path>,
+        td_repo: Option<&UniPath>,
         filter: FilterSpec,
         dry_run: bool,
         force: bool,
@@ -149,46 +149,55 @@ impl TendrilsApi for TendrilsActor {
         Ok(config::get_global_config()?.default_repo_path)
     }
 
-    fn init_tendrils_repo(&self, dir: &Path, force: bool) -> Result<(), InitError> {
-        init_tendrils_repo(&UniPath::from(dir), force)
+    fn init_tendrils_repo(&self, dir: &UniPath, force: bool) -> Result<(), InitError> {
+        if !dir.inner().exists() {
+            return Err(InitError::IoError { kind: std::io::ErrorKind::NotFound });
+        }
+        else if is_tendrils_repo(dir) {
+            return Err(InitError::AlreadyInitialized);
+        }
+        else if !force && std::fs::read_dir(dir.inner())?.count() > 0 {
+            return Err(InitError::NotEmpty);
+        }
+
+        let td_dot_json_dir = dir.inner().join(".tendrils");
+        let td_json_file = td_dot_json_dir.join("tendrils.json");
+        if !td_dot_json_dir.exists() {
+            std::fs::create_dir(td_dot_json_dir)?;
+        }
+        Ok(std::fs::write(td_json_file, INIT_TD_TENDRILS_JSON)?)
     }
 
-    fn is_tendrils_repo(&self, dir: &Path) -> bool {
-        is_tendrils_repo(&UniPath::from(dir))
+    fn is_tendrils_repo(&self, dir: &UniPath) -> bool {
+        is_tendrils_repo(dir)
     }
 
     fn tendril_action_updating<F: FnMut(TendrilReport<ActionLog>)>(
         &self,
         update_fn: F,
         mode: ActionMode,
-        td_repo: Option<&Path>,
+        td_repo: Option<&UniPath>,
         filter: FilterSpec,
         dry_run: bool,
         force: bool,
     ) -> Result<(), SetupError> {
-        let resolved_td_repo;
-        let passed_repo;
-        if let Some(v) = td_repo {
-            resolved_td_repo = UniPath::from(v);
-            passed_repo = Some(&resolved_td_repo);
+        let td_repo= get_tendrils_repo(td_repo)?;
+        let config = config::get_config(&td_repo)?;
+        let all_tendrils = config.tendrils;
+
+        let filtered_tendrils = filter_tendrils(all_tendrils, filter);
+        if mode == ActionMode::Link && !filtered_tendrils.is_empty() && !can_symlink() {
+            return Err(SetupError::CannotSymlink);
         }
-        else {
-            passed_repo = None;
-        }
-        tendril_action_updating(
-            update_fn,
-            mode,
-            passed_repo,
-            filter,
-            dry_run,
-            force
-        )
+
+        batch_tendril_action(update_fn, mode, &td_repo, filtered_tendrils, dry_run, force);
+        Ok(())
     }
 
     fn tendril_action(
         &self,
         mode: ActionMode,
-        td_repo: Option<&Path>,
+        td_repo: Option<&UniPath>,
         filter: FilterSpec,
         dry_run: bool,
         force: bool,
@@ -224,48 +233,8 @@ const INIT_TD_TENDRILS_JSON: &str = r#"{
 }
 "#;
 
-fn init_tendrils_repo(dir: &UniPath, force: bool) -> Result<(), InitError> {
-    if !dir.inner().exists() {
-        return Err(InitError::IoError { kind: std::io::ErrorKind::NotFound });
-    }
-    else if is_tendrils_repo(dir) {
-        return Err(InitError::AlreadyInitialized);
-    }
-    else if !force && std::fs::read_dir(dir.inner())?.count() > 0 {
-        return Err(InitError::NotEmpty);
-    }
-
-    let td_dot_json_dir = dir.inner().join(".tendrils");
-    let td_json_file = td_dot_json_dir.join("tendrils.json");
-    if !td_dot_json_dir.exists() {
-        std::fs::create_dir(td_dot_json_dir)?;
-    }
-    Ok(std::fs::write(td_json_file, INIT_TD_TENDRILS_JSON)?)
-}
-
 fn is_tendrils_repo(dir: &UniPath) -> bool {
     dir.inner().join(".tendrils/tendrils.json").is_file()
-}
-
-fn tendril_action_updating<F: FnMut(TendrilReport<ActionLog>)>(
-    update_fn: F,
-    mode: ActionMode,
-    td_repo: Option<&UniPath>,
-    filter: FilterSpec,
-    dry_run: bool,
-    force: bool,
-) -> Result<(), SetupError> {
-    let td_repo= get_tendrils_repo(td_repo)?;
-    let config = config::get_config(&td_repo)?;
-    let all_tendrils = config.tendrils;
-
-    let filtered_tendrils = filter_tendrils(all_tendrils, filter);
-    if mode == ActionMode::Link && !filtered_tendrils.is_empty() && !can_symlink() {
-        return Err(SetupError::CannotSymlink);
-    }
-
-    batch_tendril_action(update_fn, mode, &td_repo, filtered_tendrils, dry_run, force);
-    Ok(())
 }
 
 fn copy_fso(
