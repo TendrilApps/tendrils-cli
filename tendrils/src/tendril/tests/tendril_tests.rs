@@ -162,15 +162,19 @@ fn parent_is_valid_returns_ok(#[case] parent: &str) {
 #[case("", "Plain", &format!("{SEP}Plain"))]
 #[case("Plain", "Plain", &format!("{SEP}Plain{SEP}Plain"))]
 #[case("Trailing/", "Plain", &format!("{SEP}Trailing{SEP}Plain"))]
-#[case("Trailing\\", "Plain", &format!("{SEP}Trailing{SEP}Plain"))]
+#[cfg_attr(not(windows), case("Trailing\\", "Plain", "/Trailing\\/Plain"))]
+#[cfg_attr(windows, case("Trailing\\", "Plain", "\\Trailing\\Plain"))]
 #[case("Plain", "/Leading", &format!("{SEP}Plain{SEP}Leading"))]
-#[case("Plain", "\\Leading", &format!("{SEP}Plain{SEP}Leading"))]
+#[cfg_attr(not(windows), case("Plain", "\\Leading", "/Plain/\\Leading"))]
+#[cfg_attr(windows, case("Plain", "\\Leading", "\\Plain\\Leading"))]
 #[case("Trailing/", "/Leading", &format!("{SEP}Trailing{SEP}{SEP}Leading"))]
-#[case("Trailing\\", "\\Leading", &format!("{SEP}Trailing{SEP}{SEP}Leading"))]
-#[case("Plain", "C:\\Abs", &format!("{SEP}Plain{SEP}C:{SEP}Abs"))]
-#[case("Trailing/", "C:\\Abs", &format!("{SEP}Trailing{SEP}C:{SEP}Abs"))]
-#[case("Trailing\\", "C:\\Abs", &format!("{SEP}Trailing{SEP}C:{SEP}Abs"))]
-fn remote_appends_name_to_parent_using_platform_dir_sep_for_all_slashes(
+#[cfg_attr(not(windows), case("Trailing\\", "\\Leading", "/Trailing\\/\\Leading"))]
+#[cfg_attr(windows, case("Trailing\\", "\\Leading", "\\Trailing\\\\Leading"))]
+#[case("Plain", "C:\\Abs", &format!("{SEP}Plain{SEP}C:\\Abs"))]
+#[case("Trailing/", "C:\\Abs", &format!("{SEP}Trailing{SEP}C:\\Abs"))]
+#[cfg_attr(not(windows), case("Trailing\\", "C:\\Abs", "/Trailing\\/C:\\Abs"))]
+#[cfg_attr(windows, case("Trailing\\", "C:\\Abs", "\\Trailing\\C:\\Abs"))]
+fn remote_appends_name_to_parent(
     #[case] parent: PathBuf,
     #[case] name: &str,
     #[case] expected_str: &str,
@@ -193,30 +197,39 @@ fn remote_appends_name_to_parent_using_platform_dir_sep_for_all_slashes(
 #[case("", "Plain", &format!("{SEP}G{SEP}Plain"))]
 #[case("Plain", "Plain", &format!("{SEP}Plain{SEP}G{SEP}Plain"))]
 #[case("Trailing/", "Plain", &format!("{SEP}Trailing{SEP}G{SEP}Plain"))]
-#[case("Trailing\\", "Plain", &format!("{SEP}Trailing{SEP}G{SEP}Plain"))]
+#[cfg_attr(not(windows), case("Trailing\\", "Plain", "/Trailing\\/G/Plain"))]
+#[cfg_attr(windows, case("Trailing\\", "Plain", "\\Trailing\\G\\Plain"))]
 #[case("Plain", "/Leading", &format!("{SEP}Plain{SEP}G{SEP}Leading"))]
-#[case("Plain", "\\Leading", &format!("{SEP}Plain{SEP}G{SEP}Leading"))]
+#[cfg_attr(not(windows), case("Plain", "\\Leading", "/Plain/G/\\Leading"))]
+#[cfg_attr(windows, case("Plain", "\\Leading", "\\Plain\\G\\Leading"))]
 #[case("Trailing/", "/Leading", &format!("{SEP}Trailing{SEP}G{SEP}Leading"))]
-#[case("Trailing\\", "\\Leading", &format!("{SEP}Trailing{SEP}G{SEP}Leading"))]
+#[cfg_attr(not(windows), case("Trailing\\", "\\Leading", "/Trailing\\/G/\\Leading"))]
+#[cfg_attr(windows, case("Trailing\\", "\\Leading", "\\Trailing\\G\\Leading"))]
 #[case(
     "Trailing//",
     "//Both//",
     &format!("{SEP}Trailing{SEP}{SEP}G{SEP}{SEP}Both{SEP}{SEP}"),
 )]
-#[case(
+#[cfg_attr(not(windows), case(
     "Trailing\\\\",
     "\\\\Both\\\\",
-    &format!("{SEP}Trailing{SEP}{SEP}G{SEP}{SEP}Both{SEP}{SEP}"),
+    "/Trailing\\\\/G/\\\\Both\\\\"),
+)]
+#[cfg_attr(windows, case(
+    "Trailing\\\\",
+    "\\\\Both\\\\",
+    "\\Trailing\\\\G\\\\Both\\\\"),
 )]
 #[case(
     "Parent///Slashes\\\\.././",
     "Name//.\\Slashes\\\\..",
-    &format!("{SEP}Parent{SEP}{SEP}{SEP}Slashes{SEP}{SEP}..{SEP}.{SEP}G{SEP}Name{SEP}{SEP}.{SEP}Slashes{SEP}{SEP}.."),
+    &format!("{SEP}Parent{SEP}{SEP}{SEP}Slashes\\\\..{SEP}.{SEP}G{SEP}Name{SEP}{SEP}.\\Slashes\\\\.."),
 )]
-#[case("Plain", "C:\\Abs", &format!("{SEP}Plain{SEP}G{SEP}C:{SEP}Abs"))]
-#[case("Trailing/", "C:\\Abs", &format!("{SEP}Trailing{SEP}G{SEP}C:{SEP}Abs"))]
-#[case("Trailing\\", "C:\\Abs", &format!("{SEP}Trailing{SEP}G{SEP}C:{SEP}Abs"))]
-fn local_appends_group_then_name_to_td_repo_using_platform_dir_sep_for_all_slashes(
+#[case("Plain", "C:\\Abs", &format!("{SEP}Plain{SEP}G{SEP}C:\\Abs"))]
+#[case("Trailing/", "C:\\Abs", &format!("{SEP}Trailing{SEP}G{SEP}C:\\Abs"))]
+#[cfg_attr(not(windows), case("Trailing\\", "C:\\Abs", "/Trailing\\/G/C:\\Abs"))]
+#[cfg_attr(windows, case("Trailing\\", "C:\\Abs", "\\Trailing\\G\\C:\\Abs"))]
+fn local_appends_group_then_name_to_td_repo_replacing_dir_seps_on_windows(
     #[case] td_repo: PathBuf,
     #[case] name: &str,
     #[case] expected_str: &str,

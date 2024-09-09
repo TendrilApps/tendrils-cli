@@ -10,7 +10,9 @@ pub(crate) trait PathExt {
     /// Appends the given `path` to `self`, regardless of whether the given
     /// path is absolute or relative. Any directory separators at the
     /// end of `self` or start of `path` are preserved. If neither `self` ends
-    /// with, or `path` starts with a directory separator, one is added.
+    /// with, or `path` starts with a directory separator, one is added. On
+    /// Unix, only `/` is considered a directory separator, but on Windows both
+    /// `/` and `\` are.
     fn join_raw(&self, path: &Path) -> PathBuf;
 
     /// Returns the type of the file system object that
@@ -18,8 +20,8 @@ pub(crate) trait PathExt {
     /// does not exist.
     fn get_type(&self) -> Option<FsoType>;
 
-    /// Replaces all directory separators with those of the current platform
-    /// (i.e. `\\` on Windows and `/` on all others).
+    #[cfg(windows)]
+    /// Replaces all forward slashes (`/`) with backslashes (`\`).
     fn replace_dir_seps(&self) -> PathBuf;
 
     /// Replaces the first instance of `~` with the `HOME` variable
@@ -64,6 +66,17 @@ impl PathExt for Path {
         let child_bytes = path.as_os_str().as_encoded_bytes();
         let mut raw_str = std::ffi::OsString::from(&self);
 
+        #[cfg(not(windows))]
+        if parent_bytes.ends_with(&['/' as u8])
+            || child_bytes.starts_with(&['/' as u8]) {
+            raw_str.push(path);
+        }
+        else {
+            raw_str.push(std::path::MAIN_SEPARATOR_STR);
+            raw_str.push(path);
+        }
+
+        #[cfg(windows)]
         if parent_bytes.ends_with(&['/' as u8])
             || parent_bytes.ends_with(&['\\' as u8])
             || child_bytes.starts_with(&['/' as u8])
@@ -100,19 +113,13 @@ impl PathExt for Path {
         }
     }
 
+    #[cfg(windows)]
     fn replace_dir_seps(&self) -> PathBuf {
-        use std::path::MAIN_SEPARATOR;
-        #[cfg(windows)]
-        const SEP_TO_REMOVE: u8 = '/' as u8;
-
-        #[cfg(not(windows))]
-        const SEP_TO_REMOVE: u8 = '\\' as u8;
-
         let mut bytes = Vec::from(self.as_os_str().as_encoded_bytes());
 
         for b in bytes.iter_mut() {
-            if *b == SEP_TO_REMOVE {
-                *b = MAIN_SEPARATOR as u8;
+            if *b == '/' as u8 {
+                *b = std::path::MAIN_SEPARATOR as u8;
             }
         }
 
@@ -227,7 +234,7 @@ pub fn contains_env_var(input: &Path) -> bool {
 /// A [`PathBuf`] wrapper that guarantees that any environment variables have
 /// been [resolved](PathExt::resolve_env_variables), any tilde values have been
 /// [resolved](PathExt::resolve_tilde) Unix style path separators (`/`)
-/// have been [replaced](PathExt::replace_dir_seps) with `\` (Windows only),
+/// have been replaced with `\` (Windows only),
 /// and that the path has been converted [to absolute](PathExt::to_absolute),
 /// in that order.
 #[derive(Clone, Debug, PartialEq, Eq)]

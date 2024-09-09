@@ -49,6 +49,11 @@ impl<'a> Tendril<'a> {
             return Err(InvalidTendrilError::InvalidParent);
         }
 
+        #[cfg(not(windows))]
+        let remote =
+            parent.inner().join_raw(&PathBuf::from(name));
+
+        #[cfg(windows)]
         let remote =
             parent.inner().join_raw(&PathBuf::from(name)).replace_dir_seps();
 
@@ -80,12 +85,19 @@ impl<'a> Tendril<'a> {
     /// The combination of the given Tendrils repo, [`Self::group`], and
     /// [`Self::name`]
     pub fn local(&self, td_repo: &UniPath) -> PathBuf {
-        td_repo
+        #[cfg(not(windows))]
+        return td_repo
+            .inner()
+            .join_raw(&PathBuf::from(self.group))
+            .join_raw(&PathBuf::from(self.name))
+            .into();
+        #[cfg(windows)]
+        return td_repo
             .inner()
             .join_raw(&PathBuf::from(self.group))
             .join_raw(&PathBuf::from(self.name))
             .replace_dir_seps()
-            .into()
+            .into();
     }
 
     /// The resolved path to this file system object specific to this machine,
