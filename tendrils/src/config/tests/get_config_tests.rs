@@ -9,7 +9,7 @@ use tempdir::TempDir;
 fn no_tendrils_json_file_returns_io_not_found_error() {
     let temp = TempDir::new_in(get_disposable_dir(), "Temp").unwrap();
 
-    let actual = get_config(&temp.path());
+    let actual = get_config(&temp.path().into());
 
     assert_eq!(
         actual,
@@ -26,7 +26,7 @@ fn invalid_json_returns_parse_error() {
     setup.make_dot_td_dir();
     write(&setup.td_json_file, "I'm not JSON").unwrap();
 
-    let actual = get_config(&setup.td_repo);
+    let actual = get_config(&setup.uni_td_repo());
 
     assert_eq!(
         actual,
@@ -43,7 +43,7 @@ fn empty_config_file_returns_parse_error() {
     setup.make_dot_td_dir();
     write(&setup.td_json_file, "").unwrap();
 
-    let actual = get_config(&setup.td_repo);
+    let actual = get_config(&setup.uni_td_repo());
 
     assert_eq!(
         actual,
@@ -60,7 +60,7 @@ fn empty_json_object_returns_empty_tendrils_list() {
     setup.make_dot_td_dir();
     write(&setup.td_json_file, "{}").unwrap();
 
-    let actual = get_config(&setup.td_repo);
+    let actual = get_config(&setup.uni_td_repo());
 
     assert_eq!(actual, Ok(Config { tendrils: vec![] }));
 }
@@ -83,7 +83,7 @@ fn valid_json_returns_tendrils_in_same_order_as_file() {
     ];
 
     let actual: Vec<TendrilBundle> =
-        get_config(&setup.td_repo).unwrap().tendrils;
+        get_config(&setup.uni_td_repo()).unwrap().tendrils;
 
     assert_eq!(actual, expected);
 }
@@ -94,7 +94,7 @@ fn config_file_is_unchanged() {
     setup.make_dot_td_dir();
     write(&setup.td_json_file, r#"{"tendrils": []}"#.to_string()).unwrap();
 
-    let _ = get_config(&setup.td_repo).unwrap();
+    let _ = get_config(&setup.uni_td_repo()).unwrap();
 
     assert_eq!(setup.td_json_file_contents(), r#"{"tendrils": []}"#);
 }

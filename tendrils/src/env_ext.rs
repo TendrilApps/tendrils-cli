@@ -1,13 +1,12 @@
-pub(crate) fn get_home_dir() -> Option<String> {
+pub(crate) fn get_home_dir() -> Option<std::ffi::OsString> {
     use std::env::var_os;
     if let Some(v) = var_os("HOME") {
-        return Some(v.to_string_lossy().into_owned());
+        return Some(v);
     };
     match (var_os("HOMEDRIVE"), var_os("HOMEPATH")) {
-        (Some(hd), Some(hp)) => {
-            let mut combo = String::from(hd.to_string_lossy());
-            combo.push_str(hp.to_string_lossy().as_ref());
-            return Some(combo);
+        (Some(mut hd), Some(hp)) => {
+            hd.push(hp);
+            return Some(hd);
         }
         _ => None,
     }

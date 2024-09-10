@@ -1,21 +1,22 @@
 use crate::enums::{InvalidTendrilError, OneOrMany, TendrilMode};
-use crate::path_ext::resolve_tilde;
+use crate::path_ext::{PathExt, UniPath};
 use serde::{de, Deserialize, Deserializer, Serialize};
-use std::ffi::OsString;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 #[cfg(test)]
 pub(crate) mod tests;
 
-/// A Tendril that is prepared for use with Tendril actions
+/// A tendril that is prepared for use with tendril actions
 /// and always exists in a valid state.
 /// Note: This does *not* guarantee that the path
 /// exists or is valid.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct Tendril<'a> {
+    /// Given group.
     group: &'a str,
     name: &'a str,
-    parent: PathBuf,
+    parent: UniPath,
+    remote: PathBuf,
     pub mode: TendrilMode,
 }
 
@@ -23,7 +24,7 @@ impl<'a> Tendril<'a> {
     fn new(
         group: &'a str,
         name: &'a str,
-        parent: PathBuf,
+        parent: UniPath,
         mode: TendrilMode,
     ) -> Result<Tendril<'a>, InvalidTendrilError> {
         if group.is_empty()
@@ -40,60 +41,70 @@ impl<'a> Tendril<'a> {
             return Err(InvalidTendrilError::InvalidName);
         }
 
-        let parent_str = parent.to_string_lossy();
-        if parent_str.is_empty()
-            || parent_str.contains('\n')
-            || parent_str.contains('\r')
+        let parent_bytes = parent.inner().as_os_str().as_encoded_bytes();
+        if parent_bytes.is_empty()
+            || parent_bytes.contains(&('\n' as u8))
+            || parent_bytes.contains(&('\r' as u8))
         {
             return Err(InvalidTendrilError::InvalidParent);
         }
 
-        Ok(Tendril { group, name, parent, mode })
+        #[cfg(not(windows))]
+        let remote =
+            parent.inner().join_raw(&PathBuf::from(name));
+
+        #[cfg(windows)]
+        let remote =
+            parent.inner().join_raw(&PathBuf::from(name)).replace_dir_seps();
+
+        Ok(Tendril { group, name, parent, remote, mode })
     }
 
     #[cfg(any(test, feature = "_test_utils"))]
     pub fn new_expose(
         group: &'a str,
         name: &'a str,
-        parent: PathBuf,
+        parent: UniPath,
         mode: TendrilMode,
     ) -> Result<Tendril<'a>, InvalidTendrilError> {
         Tendril::new(group, name, parent, mode)
     }
 
+    /// Name as given.
     #[cfg(test)]
     pub fn name(&self) -> &str {
         self.name
     }
 
-    pub fn parent(&self) -> &Path {
+    /// Sanitized parent path.
+    pub fn parent(&self) -> &UniPath {
         &self.parent
     }
 
-    pub fn full_path(&self) -> PathBuf {
-        use std::path::{MAIN_SEPARATOR, MAIN_SEPARATOR_STR};
-
-        let mut full_path_str = String::from(self.parent.to_string_lossy());
-        if !full_path_str.ends_with('/') && !full_path_str.ends_with('\\') {
-            full_path_str.push(MAIN_SEPARATOR);
-        }
-
-        if self.name.starts_with('/') || self.name.starts_with('\\') {
-            full_path_str.push_str(&self.name[1..]);
-        }
-        else {
-            full_path_str.push_str(self.name);
-        }
-
-        #[cfg(windows)]
-        return PathBuf::from(full_path_str.replace('/', MAIN_SEPARATOR_STR));
-
+    /// The resolved path to this file system object inside the Tendrils repo.
+    /// The combination of the given Tendrils repo, [`Self::group`], and
+    /// [`Self::name`]
+    pub fn local(&self, td_repo: &UniPath) -> PathBuf {
         #[cfg(not(windows))]
-        return PathBuf::from(full_path_str.replace('\\', MAIN_SEPARATOR_STR));
+        return td_repo
+            .inner()
+            .join_raw(&PathBuf::from(self.group))
+            .join_raw(&PathBuf::from(self.name))
+            .into();
+        #[cfg(windows)]
+        return td_repo
+            .inner()
+            .join_raw(&PathBuf::from(self.group))
+            .join_raw(&PathBuf::from(self.name))
+            .replace_dir_seps()
+            .into();
     }
 
-    pub fn local_path(&self, td_repo: &Path) -> PathBuf {
-        td_repo.join(self.group).join(self.name)
+    /// The resolved path to this file system object specific to this machine,
+    /// outside of the Tendrils repo. The combination of [`Self::parent`] and
+    /// [`Self::name`].
+    pub fn remote(&self) -> &PathBuf {
+        &self.remote
     }
 
     fn is_path(x: &str) -> bool {
@@ -176,10 +187,9 @@ impl TendrilBundle {
 
         // Resolve parents early to prevent doing this on
         // each iteration
-        let resolved_parents: Vec<PathBuf> = raw_paths
+        let resolved_parents: Vec<UniPath> = raw_paths
             .iter()
-            .map(|p| resolve_path_variables(String::from(p)))
-            .map(|p| PathBuf::from(p))
+            .map(|p| UniPath::from(PathBuf::from(p)))
             .collect();
 
         for name in self.names.iter() {
@@ -195,71 +205,6 @@ impl TendrilBundle {
 
         resolve_results
     }
-}
-
-/// Replaces all environment variables in the format `<varname>` in the
-/// given path with their values. If the variable is not found, the
-/// `<varname>` is left as-is in the path.
-///
-/// The common tilde (`~`) symbol can also be used as a prefix to the path
-/// and corresponds to the `HOME` environment variable on Unix/Windows.
-/// If `HOME` doesn't exist, it will fallback to a combination of `HOMEDRIVE`
-/// and `HOMEPATH` provided they both exist (otherwise the `~` is left as is).
-/// This fallback is mainly a Windows specific issue, but is supported on all
-/// platforms either way.
-///
-/// Any non UTF-8 characters in a variable's value or in the tilde value
-/// are replaced with the U+FFFD replacement character.
-///
-/// # Limitations
-/// If the path contains the `<pattern>` and the pattern corresponds to
-/// an environment variable, there is no way to escape the brackets
-/// to force it to use the raw path. This should only be an issue
-/// on Unix (as Windows doesn't allow `<` or `>` in paths anyways),
-/// and only when the variable exists (otherwise it uses the raw
-/// path). In the future, an escape character such as `|` could be
-/// implemented, but this added complexity was avoided for now.
-fn resolve_path_variables(mut path: String) -> PathBuf {
-    let path_temp = path.clone();
-    let vars = parse_env_variables(&path_temp);
-
-    for var in vars {
-        let var_no_brkts = &var[1..var.len() - 1];
-        let os_value =
-            std::env::var_os(var_no_brkts).unwrap_or(OsString::from(var));
-        let value = os_value.to_string_lossy();
-        path = path.replace(var, &value);
-    }
-
-    if path.starts_with('~') {
-        path = resolve_tilde(&path);
-    }
-
-    PathBuf::from(path)
-}
-
-/// Extracts all variable names in the given string that
-/// are of the form `<varname>`. The surrounding brackets
-/// are also returned.
-fn parse_env_variables(input: &str) -> Vec<&str> {
-    let mut vars = vec![];
-    let mut depth = 0;
-    let mut start_index = 0;
-
-    for (index, ch) in input.chars().enumerate() {
-        if ch == '<' {
-            start_index = index;
-            depth += 1;
-        }
-        else if ch == '>' && depth > 0 {
-            if depth > 0 {
-                vars.push(&input[start_index..=index]);
-            }
-            depth -= 1;
-        }
-    }
-
-    vars
 }
 
 fn one_or_many_to_vec<'de, D: Deserializer<'de>>(

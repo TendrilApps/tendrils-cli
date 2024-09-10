@@ -1,9 +1,10 @@
 use crate::ConfigType;
-use crate::env_ext::get_home_dir;
-use crate::tendril::TendrilBundle;
 use crate::enums::GetConfigError;
+use crate::env_ext::get_home_dir;
+use crate::path_ext::UniPath;
+use crate::tendril::TendrilBundle;
 use serde::{Deserialize, Serialize};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 #[cfg(test)]
 mod tests;
@@ -39,9 +40,9 @@ impl GlobalConfig {
 /// # Arguments
 /// - `td_repo` - Path to the Tendrils folder.
 pub(crate) fn get_config(
-    td_repo: &Path,
+    td_repo: &UniPath,
 ) -> Result<Config, GetConfigError> {
-    let config_file_path = td_repo.join(".tendrils/tendrils.json");
+    let config_file_path = td_repo.inner().join(".tendrils/tendrils.json");
     let config_file_contents = std::fs::read_to_string(config_file_path)?;
     let config = parse_config(&config_file_contents)?;
     Ok(config)

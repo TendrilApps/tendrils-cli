@@ -12,7 +12,7 @@ use cli::{
     TendrilCliArgs,
     TendrilsSubcommands,
 };
-use std::path::PathBuf;
+use std::path::Path;
 use tendrils::{
     ActionMode,
     FilterSpec,
@@ -21,6 +21,7 @@ use tendrils::{
     SetupError,
     TendrilsActor,
     TendrilsApi,
+    UniPath,
 };
 mod writer;
 use writer::Writer;
@@ -115,9 +116,12 @@ fn init(
     writer: &mut impl Writer,
 ) -> Result<(), i32> {
     let td_repo = match path {
-        Some(v) => PathBuf::from(v),
+        Some(v) => UniPath::new_with_root(
+            Path::new(&v),
+            &std::env::current_dir().unwrap_or_default(),
+        ),
         None => match std::env::current_dir() {
-            Ok(v) => v,
+            Ok(v) => UniPath::from(v),
             Err(_err) => {
                 writer.writeln(&format!(
                     "{ERR_PREFIX}: Could not get the current directory"
@@ -131,7 +135,7 @@ fn init(
         Ok(()) => {
             writer.writeln(&format!(
                 "Created a Tendrils repo at: {}",
-                &td_repo.to_string_lossy()
+                &td_repo.inner().to_string_lossy()
             ));
         }
         Err(e) => {
@@ -183,10 +187,20 @@ fn tendril_action_subcommand(
     writer: &mut impl Writer,
 ) -> Result<(), i32> {
     let td_repo = match action_args.path {
-        Some(v) => Some(PathBuf::from(v)),
+        Some(v) => Some(UniPath::new_with_root(
+            Path::new(&v),
+            &std::env::current_dir().unwrap_or_default(),
+        )),
         None => match std::env::current_dir() {
-            Ok(cd) if api.is_tendrils_repo(&cd) => Some(cd),
-            Ok(_) => None,
+            Ok(cd) => {
+                let u_cd = UniPath::from(cd);
+                if api.is_tendrils_repo(&u_cd) {
+                    Some(u_cd)
+                }
+                else {
+                    None
+                }
+            },
             Err(_err) => {
                 writer.writeln(&format!(
                     "{ERR_PREFIX}: Could not get the current directory"
@@ -206,7 +220,7 @@ fn tendril_action_subcommand(
 
     let batch_result = api.tendril_action(
         mode,
-        td_repo.as_ref().map(|p| p.as_path()),
+        td_repo.as_ref().map(|p| p),
         filter,
         action_args.dry_run,
         action_args.force,

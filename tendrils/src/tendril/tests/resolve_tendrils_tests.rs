@@ -70,14 +70,14 @@ fn first_only_true_resolves_first_parent_paths_for_all_names() {
         Ok(Tendril::new_expose(
             "SomeApp",
             "misc1.txt",
-            PathBuf::from("FirstParent"),
+            PathBuf::from("FirstParent").into(),
             TendrilMode::DirOverwrite,
         )
         .unwrap()),
         Ok(Tendril::new_expose(
             "SomeApp",
             "misc2.txt",
-            PathBuf::from("FirstParent"),
+            PathBuf::from("FirstParent").into(),
             TendrilMode::DirOverwrite,
         )
         .unwrap()),
@@ -104,42 +104,42 @@ fn first_only_false_resolves_all_parent_paths_for_all_names() {
         Ok(Tendril::new_expose(
             "SomeApp",
             "misc1.txt",
-            PathBuf::from("FirstParent"),
+            PathBuf::from("FirstParent").into(),
             TendrilMode::DirOverwrite,
         )
         .unwrap()),
         Ok(Tendril::new_expose(
             "SomeApp",
             "misc1.txt",
-            PathBuf::from("SecondParent"),
+            PathBuf::from("SecondParent").into(),
             TendrilMode::DirOverwrite,
         )
         .unwrap()),
         Ok(Tendril::new_expose(
             "SomeApp",
             "misc1.txt",
-            PathBuf::from("ThirdParent"),
+            PathBuf::from("ThirdParent").into(),
             TendrilMode::DirOverwrite,
         )
         .unwrap()),
         Ok(Tendril::new_expose(
             "SomeApp",
             "misc2.txt",
-            PathBuf::from("FirstParent"),
+            PathBuf::from("FirstParent").into(),
             TendrilMode::DirOverwrite,
         )
         .unwrap()),
         Ok(Tendril::new_expose(
             "SomeApp",
             "misc2.txt",
-            PathBuf::from("SecondParent"),
+            PathBuf::from("SecondParent").into(),
             TendrilMode::DirOverwrite,
         )
         .unwrap()),
         Ok(Tendril::new_expose(
             "SomeApp",
             "misc2.txt",
-            PathBuf::from("ThirdParent"),
+            PathBuf::from("ThirdParent").into(),
             TendrilMode::DirOverwrite,
         )
         .unwrap()),
@@ -161,21 +161,21 @@ fn duplicate_names_resolves_all() {
         Ok(Tendril::new_expose(
             "SomeApp",
             "misc.txt",
-            PathBuf::from("Parent"),
+            PathBuf::from("Parent").into(),
             TendrilMode::DirOverwrite,
         )
         .unwrap()),
         Ok(Tendril::new_expose(
             "SomeApp",
             "misc.txt",
-            PathBuf::from("Parent"),
+            PathBuf::from("Parent").into(),
             TendrilMode::DirOverwrite,
         )
         .unwrap()),
         Ok(Tendril::new_expose(
             "SomeApp",
             "misc.txt",
-            PathBuf::from("Parent"),
+            PathBuf::from("Parent").into(),
             TendrilMode::DirOverwrite,
         )
         .unwrap()),
@@ -200,21 +200,21 @@ fn duplicate_parent_paths_resolves_all() {
         Ok(Tendril::new_expose(
             "SomeApp",
             "misc.txt",
-            PathBuf::from("Parent"),
+            PathBuf::from("Parent").into(),
             TendrilMode::DirOverwrite,
         )
         .unwrap()),
         Ok(Tendril::new_expose(
             "SomeApp",
             "misc.txt",
-            PathBuf::from("Parent"),
+            PathBuf::from("Parent").into(),
             TendrilMode::DirOverwrite,
         )
         .unwrap()),
         Ok(Tendril::new_expose(
             "SomeApp",
             "misc.txt",
-            PathBuf::from("Parent"),
+            PathBuf::from("Parent").into(),
             TendrilMode::DirOverwrite,
         )
         .unwrap()),
@@ -235,28 +235,28 @@ fn vars_and_leading_tilde_in_parent_path_are_resolved_in_all() {
 
     set_parents(&mut given, &[
         PathBuf::from("<mut-testing>1"),
-        PathBuf::from("~<mut-testing>2"),
+        PathBuf::from("~\\<mut-testing>2"),
         PathBuf::from("~/<mut-testing>3"),
     ]);
     let expected = vec![
         Ok(Tendril::new_expose(
             "SomeApp",
             "misc.txt",
-            PathBuf::from("value1"),
+            PathBuf::from("value1").into(),
             TendrilMode::DirOverwrite,
         )
         .unwrap()),
         Ok(Tendril::new_expose(
             "SomeApp",
             "misc.txt",
-            PathBuf::from("MyHomevalue2"),
+            PathBuf::from("MyHome\\value2").into(),
             TendrilMode::DirOverwrite,
         )
         .unwrap()),
         Ok(Tendril::new_expose(
             "SomeApp",
             "misc.txt",
-            PathBuf::from("MyHome/value3"),
+            PathBuf::from("MyHome/value3").into(),
             TendrilMode::DirOverwrite,
         )
         .unwrap()),
@@ -268,37 +268,6 @@ fn vars_and_leading_tilde_in_parent_path_are_resolved_in_all() {
 }
 
 #[test]
-#[serial("mut-env-var-testing")]
-fn slashes_in_var_or_leading_tilde_values_are_replaced_with_platform_dir_sep() {
-    let mut given = TendrilBundle::new("SomeApp", vec!["misc.txt"]);
-    given.parents = vec!["~<mut-testing>".to_string()];
-    given.dir_merge = false;
-    std::env::set_var("mut-testing", "some\\value/");
-    std::env::set_var("HOME", "My/Home\\");
-
-    use std::path::MAIN_SEPARATOR;
-    let expected_path_str = format!(
-        "My{MAIN_SEPARATOR}Home{MAIN_SEPARATOR}some{MAIN_SEPARATOR}value{MAIN_SEPARATOR}misc.txt"
-    );
-
-    let expected = vec![Ok(Tendril::new_expose(
-        "SomeApp",
-        "misc.txt",
-        PathBuf::from("My/Home\\some\\value/"),
-        TendrilMode::DirOverwrite,
-    )
-    .unwrap())];
-
-    let actual = given.resolve_tendrils(false);
-
-    assert_eq!(actual, expected);
-    assert_eq!(
-        actual[0].as_ref().unwrap().full_path().to_string_lossy(),
-        expected_path_str
-    );
-}
-
-#[test]
 fn var_in_parent_path_doesnt_exist_returns_raw_path() {
     let mut given = TendrilBundle::new("SomeApp", vec!["misc.txt"]);
     given.dir_merge = false;
@@ -306,33 +275,7 @@ fn var_in_parent_path_doesnt_exist_returns_raw_path() {
     let expected = vec![Ok(Tendril::new_expose(
         "SomeApp",
         "misc.txt",
-        PathBuf::from("<I_do_not_exist>"),
-        TendrilMode::DirOverwrite,
-    )
-    .unwrap())];
-
-    let actual = given.resolve_tendrils(false);
-
-    assert_eq!(actual, expected);
-}
-
-#[rstest]
-#[case("<mut-testing>", "misc.txt")]
-#[case("SomeApp", "<mut-testing>")]
-#[serial("mut-env-var-testing")]
-fn var_in_group_or_name_exists_uses_raw_path(
-    #[case] group: &str,
-    #[case] name: &str,
-) {
-    let mut given = TendrilBundle::new(group, vec![name]);
-    given.dir_merge = false;
-    set_parents(&mut given, &[PathBuf::from("SomeParent")]);
-    std::env::set_var("mut-testing", "value");
-
-    let expected = vec![Ok(Tendril::new_expose(
-        group,
-        name,
-        PathBuf::from("SomeParent"),
+        PathBuf::from("<I_do_not_exist>").into(),
         TendrilMode::DirOverwrite,
     )
     .unwrap())];
@@ -355,33 +298,7 @@ fn leading_tilde_in_parent_path_tilde_value_doesnt_exist_returns_raw_path() {
     let expected = vec![Ok(Tendril::new_expose(
         "SomeApp",
         "misc.txt",
-        PathBuf::from("~/SomeParentPath"),
-        TendrilMode::DirOverwrite,
-    )
-    .unwrap())];
-
-    let actual = given.resolve_tendrils(false);
-
-    assert_eq!(actual, expected);
-}
-
-#[rstest]
-#[case("~SomeApp", "misc.txt")]
-#[case("SomeApp", "~misc.txt")]
-#[serial("mut-env-var-testing")]
-fn leading_tilde_in_group_or_name_and_tilde_value_exists_uses_raw_path(
-    #[case] group: &str,
-    #[case] name: &str,
-) {
-    let mut given = TendrilBundle::new(group, vec![name]);
-    given.dir_merge = false;
-    set_parents(&mut given, &[PathBuf::from("SomeParent")]);
-    std::env::set_var("HOME", "MyHome");
-
-    let expected = vec![Ok(Tendril::new_expose(
-        group,
-        name,
-        PathBuf::from("SomeParent"),
+        PathBuf::from("~/SomeParentPath").into(),
         TendrilMode::DirOverwrite,
     )
     .unwrap())];
@@ -409,7 +326,7 @@ fn resolves_tendril_mode_properly(
     let expected = vec![Ok(Tendril::new_expose(
         "SomeApp",
         "misc.txt",
-        PathBuf::from("SomeParentPath"),
+        PathBuf::from("SomeParentPath").into(),
         expected_mode,
     )
     .unwrap())];

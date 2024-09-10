@@ -3,14 +3,15 @@ use crate::{
     ActionMode,
     ActionLog,
     FilterSpec,
-    Fso,
     InitError,
+    PathExt,
     SetupError,
     Tendril,
     TendrilBundle,
     TendrilMode,
     TendrilReport,
     TendrilsApi,
+    UniPath,
 };
 use crate::config::{Config, parse_config};
 use crate::enums::GetConfigError;
@@ -86,9 +87,8 @@ pub fn set_parents(tendril: &mut TendrilBundle, paths: &[PathBuf]) {
     tendril.parents = path_strings;
 }
 
-/// Sets the given environment variable to a value of "fo�o" where the third
-/// character is invalid UTF-8.
-pub fn set_var_to_non_utf_8(var_name: &str) {
+/// Returns "fo�o" where the third character is invalid UTF-8.
+pub fn non_utf_8_text() -> std::ffi::OsString {
     #[cfg(unix)]
     {
         use std::ffi::OsStr;
@@ -98,8 +98,7 @@ pub fn set_var_to_non_utf_8(var_name: &str) {
         // respectively. The value 0x80 is a lone continuation byte, invalid
         // in a UTF-8 sequence.
         let source = [0x66, 0x6f, 0x80, 0x6f];
-        let non_utf8_string = OsStr::from_bytes(&source[..]);
-        std::env::set_var(var_name, non_utf8_string);
+        OsStr::from_bytes(&source[..]).to_os_string()
     }
     #[cfg(windows)]
     {
@@ -110,9 +109,7 @@ pub fn set_var_to_non_utf_8(var_name: &str) {
         // respectively. The value 0xD800 is a lone surrogate half, invalid
         // in a UTF-8 sequence.
         let source = [0x0066, 0x006f, 0xD800, 0x006f];
-        let os_string = OsString::from_wide(&source[..]);
-        let non_utf8_string = os_string.as_os_str();
-        std::env::set_var(var_name, non_utf8_string);
+        OsString::from_wide(&source[..])
     }
 }
 
@@ -208,11 +205,11 @@ pub fn set_ra(path: &Path, can_read: bool) {
 
 pub struct MockTendrilsApi<'a> {
     pub init_const_rt: Result<(), InitError>,
-    pub init_fn: Option<Box<dyn Fn(&Path, bool) -> Result<(), InitError>>>,
+    pub init_fn: Option<Box<dyn Fn(&UniPath, bool) -> Result<(), InitError>>>,
     pub init_exp_dir_arg: PathBuf,
     pub init_exp_force_arg: bool,
     pub is_tendrils_repo_const_rt: bool,
-    pub is_tendrils_repo_fn: Option<Box<dyn Fn(&Path) -> bool>>,
+    pub is_tendrils_repo_fn: Option<Box<dyn Fn(&UniPath) -> bool>>,
     pub get_default_repo_const_rt: Result<Option<PathBuf>, GetConfigError>,
     pub get_default_repo_fn: Option<Box<dyn Fn() -> Result<Option<PathBuf>, GetConfigError>>>,
     pub tau_const_updater_rts: Vec<TendrilReport<ActionLog>>,
@@ -222,7 +219,7 @@ pub struct MockTendrilsApi<'a> {
         Box<
             dyn Fn(
                 ActionMode,
-                Option<&Path>,
+                Option<&UniPath>,
                 FilterSpec,
                 bool,
                 bool,
@@ -264,10 +261,10 @@ impl<'a> MockTendrilsApi<'a> {
 impl TendrilsApi for MockTendrilsApi<'_> {
     fn init_tendrils_repo(
         &self,
-        dir: &Path,
+        dir: &UniPath,
         force: bool,
     ) -> Result<(), InitError> {
-        assert_eq!(dir, self.init_exp_dir_arg);
+        assert_eq!(dir.inner(), self.init_exp_dir_arg);
         assert_eq!(force, self.init_exp_force_arg);
 
         if let Some(f) = self.init_fn.as_ref() {
@@ -278,7 +275,7 @@ impl TendrilsApi for MockTendrilsApi<'_> {
         }
     }
 
-    fn is_tendrils_repo(&self, dir: &Path) -> bool {
+    fn is_tendrils_repo(&self, dir: &UniPath) -> bool {
         if let Some(f) = self.is_tendrils_repo_fn.as_ref() {
             f(dir)
         }
@@ -300,7 +297,7 @@ impl TendrilsApi for MockTendrilsApi<'_> {
         &self,
         mut update_fn: F,
         _: ActionMode,
-        _: Option<&Path>,
+        _: Option<&UniPath>,
         _: FilterSpec,
         _: bool,
         _: bool,
@@ -315,16 +312,21 @@ impl TendrilsApi for MockTendrilsApi<'_> {
     fn tendril_action(
         &self,
         mode: ActionMode,
-        td_repo: Option<&Path>,
+        td_repo: Option<&UniPath>,
         filter: FilterSpec,
         dry_run: bool,
         force: bool,
     ) -> Result<Vec<TendrilReport<ActionLog>>, SetupError> {
         assert_eq!(mode, self.ta_exp_mode);
-        assert_eq!(td_repo, self.ta_exp_path);
         assert_eq!(filter, self.ta_exp_filter);
         assert_eq!(dry_run, self.ta_exp_dry_run);
         assert_eq!(force, self.ta_exp_force);
+        if let Some(p) = td_repo {
+            assert_eq!(p.inner(), self.ta_exp_path.unwrap());
+        }
+        else {
+            assert_eq!(None, self.ta_exp_path);
+        }
 
         if let Some(f) = self.ta_fn.as_ref() {
             f(mode, td_repo, filter, dry_run, force)
@@ -446,7 +448,7 @@ impl Setup {
         Tendril::new_expose(
             "SomeApp",
             "misc.txt",
-            self.parent_dir.clone(),
+            self.parent_dir.clone().into(),
             TendrilMode::DirOverwrite,
         )
         .unwrap()
@@ -457,7 +459,7 @@ impl Setup {
         Tendril::new_expose(
             "SomeApp",
             "misc",
-            self.parent_dir.clone(),
+            self.parent_dir.clone().into(),
             TendrilMode::DirOverwrite,
         )
         .unwrap()
@@ -468,7 +470,7 @@ impl Setup {
         Tendril::new_expose(
             "SomeApp",
             "SubDir/misc.txt",
-            self.parent_dir.clone(),
+            self.parent_dir.clone().into(),
             TendrilMode::DirOverwrite,
         )
         .unwrap()
@@ -479,7 +481,7 @@ impl Setup {
         Tendril::new_expose(
             "SomeApp",
             "SubDir/misc",
-            self.parent_dir.clone(),
+            self.parent_dir.clone().into(),
             TendrilMode::DirOverwrite,
         )
         .unwrap()
@@ -600,6 +602,7 @@ impl Setup {
         write(global_cfg_file(), json).unwrap();
     }
 
+    /// Sets the home directory to the [`Setup::temp_dir`].
     /// Note: This changes the `HOME` environment variable for the process
     /// so should not be run in parallel with other tests where this may
     /// interfere.
@@ -676,4 +679,10 @@ impl Setup {
         write(&self.local_nra_nested_file, "Local nested file contents").unwrap();
         create_dir_all(&self.local_nra_nested_file).unwrap();
     }
+
+    #[cfg(test)]
+    pub(crate) fn uni_td_repo(&self) -> UniPath {
+        UniPath::from(&self.td_repo)
+    }
 }
+
