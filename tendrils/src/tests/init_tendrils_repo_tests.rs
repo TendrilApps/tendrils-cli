@@ -23,7 +23,7 @@ fn creates_dot_tendrils_dir_and_contents_in_empty_dir(#[case] force: bool) {
     let expected_t1 = TendrilBundle {
         group: "SomeApp".to_string(),
         names: vec!["SomeFile.ext".to_string()],
-        parents: vec!["path/to/containing/folder".to_string()],
+        parents: vec!["/path/to/containing/folder".to_string()],
         dir_merge: false,
         link: false,
         profiles: vec![],
@@ -32,9 +32,9 @@ fn creates_dot_tendrils_dir_and_contents_in_empty_dir(#[case] force: bool) {
         group: "SomeApp2".to_string(),
         names: vec!["SomeFile2.ext".to_string(), "SomeFolder3".to_string()],
         parents: vec![
-            "path/to/containing/folder2".to_string(),
-            "path/to/containing/folder3".to_string(),
-            "path/to/containing/folder4".to_string(),
+            "/path/to/containing/folder2".to_string(),
+            "/path/to/containing/folder3".to_string(),
+            "~/path/to/containing/folder4".to_string(),
         ],
         dir_merge: false,
         link: true,

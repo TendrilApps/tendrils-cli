@@ -215,15 +215,15 @@ const INIT_TD_TENDRILS_JSON: &str = r#"{
         {
             "group": "SomeApp",
             "names": "SomeFile.ext",
-            "parents": "path/to/containing/folder"
+            "parents": "/path/to/containing/folder"
         },
         {
             "group": "SomeApp2",
             "names": ["SomeFile2.ext", "SomeFolder3"],
             "parents": [
-                "path/to/containing/folder2",
-                "path/to/containing/folder3",
-                "path/to/containing/folder4"
+                "/path/to/containing/folder2",
+                "/path/to/containing/folder3",
+                "~/path/to/containing/folder4"
             ],
             "dir-merge": false,
             "link": true,
