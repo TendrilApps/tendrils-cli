@@ -518,7 +518,7 @@ fn link_tendril(
     }
 
     let local_type;
-    if td_repo.inner().exists() && log.local_type().is_none() {
+    if log.local_type().is_none() {
         // Local does not exist - copy it first
         if let Err(e) = copy_fso(
             log.resolved_path(),
@@ -573,13 +573,6 @@ fn pull_tendril(
     }
     else if is_recursive_tendril(td_repo, log.resolved_path()) {
         log.result = Err(TendrilActionError::Recursion);
-        return log;
-    }
-    else if !td_repo.inner().exists() {
-        log.result = Err(TendrilActionError::IoError {
-            kind: std::io::ErrorKind::NotFound,
-            loc: Location::Dest,
-        });
         return log;
     }
 

@@ -34,6 +34,7 @@ fn remote_exists_copies_to_local(
     #[case] name: &str,
     #[values(true, false)] force: bool,
     #[values(true, false)] as_dir: bool,
+    #[values(true, false)] repo_exists: bool,
 ) {
     let mut setup = Setup::new();
     setup.remote_file = setup.parent_dir.join(&name);
@@ -42,7 +43,9 @@ fn remote_exists_copies_to_local(
     setup.local_file = setup.group_dir.join(&name);
     setup.local_dir = setup.group_dir.join(&name);
     setup.local_nested_file = setup.local_dir.join("nested.txt");
-    setup.make_td_repo_dir();
+    if repo_exists {
+        setup.make_td_repo_dir();
+    }
     let exp_res_path;
     let exp_remote_type;
     if as_dir {
@@ -55,6 +58,7 @@ fn remote_exists_copies_to_local(
         exp_res_path = setup.remote_file.clone();
         exp_remote_type = Some(FsoType::File);
     }
+    assert_eq!(setup.td_repo.exists(), repo_exists);
 
     let tendril = Tendril::new_expose(
         "SomeApp",

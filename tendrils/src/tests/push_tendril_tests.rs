@@ -250,6 +250,54 @@ fn remote_is_symlink_returns_type_mismatch_error_unless_forced(
     }
 }
 
+#[rstest]
+fn local_doesnt_exist_returns_io_error_not_found(
+    #[values(true, false)] dry_run: bool,
+    #[values(true, false)] force: bool,
+    #[values(true, false)] repo_exists: bool,
+) {
+    let setup = Setup::new();
+    let file_tendril = setup.file_tendril();
+    let dir_tendril = setup.dir_tendril();
+    let exp_remote_type_file;
+    let exp_remote_type_dir;
+    setup.make_remote_file();
+    setup.make_remote_dir();
+    if repo_exists {
+        setup.make_td_repo_dir();
+    }
+    exp_remote_type_file = Some(FsoType::File);
+    exp_remote_type_dir = Some(FsoType::Dir);
+    assert_eq!(setup.td_repo.exists(), repo_exists);
+
+    let file_actual = push_tendril(&setup.uni_td_repo(), &file_tendril, dry_run, force);
+    let dir_actual = push_tendril(&setup.uni_td_repo(), &dir_tendril, dry_run, force);
+
+    let exp_loc = Location::Source;
+    let exp_result = Err(TendrilActionError::IoError {
+        kind: std::io::ErrorKind::NotFound,
+        loc: exp_loc,
+    });
+    assert_eq!(
+        file_actual,
+        ActionLog::new(
+            None,
+            exp_remote_type_file,
+            setup.remote_file.clone(),
+            exp_result.clone(),
+        )
+    );
+    assert_eq!(
+        dir_actual,
+        ActionLog::new(
+            None,
+            exp_remote_type_dir,
+            setup.remote_dir.clone(),
+            exp_result,
+        )
+    );
+}
+
 // AKA `source_is_file_and_dest_is_dir`
 #[rstest]
 #[case(TendrilMode::DirMerge)]

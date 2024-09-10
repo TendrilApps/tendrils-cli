@@ -511,12 +511,15 @@ fn non_link_mode_tendril_returns_mode_mismatch_error(
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn local_doesnt_exist_but_td_repo_does_copies_remote_to_local_then_links_unless_dryrun(
+fn local_doesnt_exist_copies_remote_to_local_then_links_unless_dryrun(
     #[case] dry_run: bool,
     #[values(true, false)] force: bool,
+    #[values(true, false)] repo_exists: bool,
 ) {
     let setup = Setup::new();
-    setup.make_td_repo_dir();
+    if repo_exists {
+        setup.make_td_repo_dir();
+    }
     setup.make_remote_file();
     setup.make_remote_nested_file();
     assert!(!setup.local_file.exists());
