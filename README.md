@@ -58,7 +58,7 @@ td init
 - Items are grouped into subfolders by their [`group`](#tendrilsjson-schema) name
 
 ## Version Control & Synchronization
-- Tendrils itself does not have versioning or synchronization functionality, but the Tendrils folder is often placed inside a synchronized folder such as OneDrive, or under a version control system such as Git
+- Tendrils itself does not have versioning or synchronization functionality, but the Tendrils folder is often placed inside a synchronized folder such as OneDrive, or under a version control system like Git
     - In the case of Git, the `.git` folder would be at the top level of the Tendrils folder. The folder would be both a Git repo and a Tendrils repo
 
 # Tendril Styles
@@ -149,6 +149,8 @@ structure to [parent](#parents)
 "parents": ["~/parent/folder1", "~/parent/folder2"]
 ```
 - Parents cannot be empty strings, and cannot contain line breaks
+- Cross-platform paths should use `/` instead of `\` due to [handling of directory separators](#directory-separators)
+- Care must be taken to avoid [recursive tendrils](#recursive-tendrils)
 
 ### `dir-merge`
 - Specifies the merge strategy when folders are copied to or from the [Tendrils repo](#tendrils-repo)
@@ -243,15 +245,15 @@ td push --force (-f)
 ```
 
 ## Specifying the Tendrils repo
-- If no path argument is provided:
+- If no `--path` argument is provided:
     1. Tendrils will first check if the current working directory is a [Tendrils repo](#tendrils-repo). If it is, this folder (and the tendrils defined in its [`tendrils.json`](#tendrilsjson)) will be used for the command
     2. If the CWD is not a Tendrils folder, then the [default repo](#default-repo-path) will be checked
 - A path can be explicitly set using the `--path` argument
     - Available on all of the actions listed above
-    - If a path is provided, the current working directory and the [default repo](#default-repo-path) are not considered
-- A path containing a leading `~` will be [resolved](#resolving-tilde-)
+    - In general, the [path resolving](#path-resolving) rules will be applied, with the exception of:
+        - Relative paths will be appended to the *current working directory* instead of appending it to `/` or `\`
 ``` bash
-td push --path some/tendrils/folder
+td push --path /some/tendrils/folder
 ```
 
 ## Filtering Tendrils
@@ -304,12 +306,18 @@ td push -P home mac
 - Will include any tendrils with the `home` or `mac` profile, and any that don't have a profile
 
 # Path Resolving
+- Paths will be resolved in the following order:
+    1. Environment variables [are resolved](#resolving-environment-variables)
+    2. A leading tilde (`~`) [is resolved](#resolving-tilde-)
+    3. Relative paths are [converted to absolute](#relative-paths)
+    4. Directory separators [are replaced](#directory-separators)
+
 ## Resolving Environment Variables
-- A [parent](#parents) path containing environment variables in the form `<VAR_NAME>` will be replaced with the variable values
+- A [parent ](#parents) path containing environment variables in the form `<VAR_NAME>` will be replaced with the variable values
 ``` json
 "parents": "<APPDATA>\\Local\\SomeApp"
 ```
-- The above example will resolve to `C:\\Users\\YourUsername\\AppData\\Local\\SomeApp` on a typical Windows installation
+- The above example will resolve to `C:\Users\YourUsername\AppData\Local\SomeApp` on a typical Windows installation
 - A path can contain multiple environment variables
 
 ## Resolving Tilde (`~`)
@@ -322,12 +330,36 @@ td push -P home mac
 - The above example will resolve to `your/home/path/documents`
 
 ## Directory Separators
-- Directory separators (`\` and `/`) are replaced by the current platform's standard separators:
-    - `\` on Windows
-    - `/` on everything else
+- Forward slashes (`/`) are replaced by backslashes (`\`) on Windows only
+- Backslashes are not changed on Unix
+- If a path is intended for cross-platform use, it should be specified using `/` for all directory separatators
 
 ## Relative Paths
-- Are not officially supported and their behaviour is undefined
+- If the path is still relative after [resolving variables](#resolving-environment-variables) and [tilde](#resolving-tilde-), it will be converted to absolute by prepending `/` on Unix or `\` on Windows
+- What counts as an absolute path varies by platform
+    - `C:\Path` and `\\MyServer\Share\Path` are absolute on Windows but not on Unix. On Unix, these would be converted to `/C:\Path` and `/\\MyServer\Share\Path`
+- This blind conversion can cause some unintuitive behaviour on Windows
+    - For example `C:` or `C:SomePath` are converted to `\C:` and `\C:SomePath` rather than the `C:\` and `C:\SomePath` that may have been expected
+- `.` or `..` components are not modified and are left to the OS to resolve
+    - For example `/Users/MyUser/./Desktop/../Downloads` would be passed as-is to the OS, and the OS should resolve this to `/Users/MyUser/Downloads`
+
+## Other URL Types
+- Other URL types such as `file:///` and `https://` are not supported
+
+## Recursive Tendrils
+- Recursive tendrils can cause [actions](#tendril-actions) to fail, or can cause unintuitive copying/linking behaviour
+- Occurs in any of the following cases:
+    - The remote path is a directory that contains the Tendrils repo
+    - The remote path is the Tendrils repo
+    - The remote path is a file or directory inside the Tendrils repo
+- An attempt is made to detect these cases, but due to the vast number of ways to specify a path, there are several cases in which these checks can fail
+    - *The user must take special care to prevent specifying a recursive tendril*
+
+| Repo Path | Recursive Remote Path |
+| --- | --- |
+| `/Users/MyUser/MyRepo` | `/Users/MyUser` |
+| `/Users/MyUser/MyRepo` | `/Users/MyUser/MyRepo` |
+| `/Users/MyUser/MyRepo` | `/Users/MyUser/MyRepo/misc.txt` |
 
 # Configuration
 - Global configuration files are stored in the `~/.tendrils` folder
@@ -346,6 +378,7 @@ td push -P home mac
 
 #### `default-repo-path`
 - Used to [specify](#specifying-the-tendrils-repo) the default tendrils repo if it is not otherwise provided
+- Should be an absolute path, otherwise it will be [converted to one](#relative-paths)
 
 # Developer Notes
 - Prior to development, run the [`setup-tendrils.sh`](./dev/setup-tendrils.sh) script
