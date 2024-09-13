@@ -1,9 +1,14 @@
-use crate::{InvalidTendrilError, Tendril, TendrilMode};
+use crate::{InvalidTendrilError, Tendril, TendrilMode, UniPath};
 use crate::test_utils::non_utf_8_text;
 use rstest::rstest;
 use rstest_reuse::{self, apply, template};
 use serial_test::serial;
-use std::path::{PathBuf, MAIN_SEPARATOR as SEP, MAIN_SEPARATOR_STR as SEP_STR};
+use std::path::{
+    Path,
+    PathBuf,
+    MAIN_SEPARATOR as SEP,
+    MAIN_SEPARATOR_STR as SEP_STR,
+};
 
 #[template]
 #[rstest]
@@ -49,6 +54,7 @@ pub fn forbidden_groups(#[case] value: &str) {}
 #[apply(invalid_groups_and_names)]
 fn group_is_invalid_returns_invalid_group_error(#[case] group: &str) {
     let actual = Tendril::new_expose(
+        &UniPath::from(Path::new("/Repo")),
         group,
         "misc.txt",
         PathBuf::from("SomePath").into(),
@@ -72,6 +78,7 @@ fn group_is_forbidden_returns_invalid_group_error(#[case] group: &str) {
 #[apply(invalid_groups_and_names)]
 fn name_is_invalid_returns_invalid_name_error(#[case] name: &str) {
     let actual = Tendril::new_expose(
+        &UniPath::from(Path::new("/Repo")),
         "SomeApp",
         name,
         PathBuf::from("SomePath").into(),
@@ -87,6 +94,7 @@ fn name_is_invalid_returns_invalid_name_error(#[case] name: &str) {
 #[case("Carriage\rReturn")]
 fn parent_is_invalid_returns_invalid_parent_error(#[case] parent: &str) {
     let actual = Tendril::new_expose(
+        &UniPath::from(Path::new("/Repo")),
         "SomeApp",
         "misc.txt",
         PathBuf::from(parent).into(),
@@ -100,6 +108,7 @@ fn parent_is_invalid_returns_invalid_parent_error(#[case] parent: &str) {
 #[apply(valid_groups_and_names)]
 fn group_is_valid_returns_ok(#[case] group: &str) {
     Tendril::new_expose(
+        &UniPath::from(Path::new("/Repo")),
         group,
         "misc.txt",
         PathBuf::from("SomePath").into(),
@@ -111,6 +120,7 @@ fn group_is_valid_returns_ok(#[case] group: &str) {
 #[apply(valid_groups_and_names)]
 fn name_is_valid_returns_ok(#[case] name: &str) {
     Tendril::new_expose(
+        &UniPath::from(Path::new("/Repo")),
         "SomeApp",
         name,
         PathBuf::from("SomePath").into(),
@@ -132,6 +142,7 @@ fn name_is_forbidden_group_returns_ok(#[case] name: &str) {
 #[apply(forbidden_groups)]
 fn name_subdir_is_forbidden_group_returns_ok(#[case] subdir_name: &str) {
     Tendril::new_expose(
+        &UniPath::from(Path::new("/Repo")),
         "SomeApp",
         &format!("{subdir_name}/misc.txt"),
         PathBuf::from("SomePath").into(),
@@ -150,6 +161,7 @@ fn name_subdir_is_forbidden_group_returns_ok(#[case] subdir_name: &str) {
 #[case(" \\ some \\ path \\ ")]
 fn parent_is_valid_returns_ok(#[case] parent: &str) {
     Tendril::new_expose(
+        &UniPath::from(Path::new("/Repo")),
         "SomeApp",
         "misc.txt",
         PathBuf::from(parent).into(),
@@ -181,6 +193,7 @@ fn remote_appends_name_to_parent(
 ) {
     // See `join_raw` tests for more edge cases
     let tendril = Tendril::new_expose(
+        &UniPath::from(Path::new("/Repo")),
         "SomeApp",
         name,
         parent.into(),
@@ -236,6 +249,7 @@ fn local_appends_group_then_name_to_td_repo_replacing_dir_seps_on_windows(
 ) {
     // See `join_raw` tests for more edge cases
     let tendril = Tendril::new_expose(
+        &UniPath::from(td_repo),
         "G",
         name,
         PathBuf::from("Parent").into(),
@@ -243,7 +257,7 @@ fn local_appends_group_then_name_to_td_repo_replacing_dir_seps_on_windows(
     )
     .unwrap();
 
-    let actual = tendril.local(&td_repo.into());
+    let actual = tendril.local();
 
     assert_eq!(actual.to_string_lossy(), expected_str);
 }
@@ -254,6 +268,7 @@ fn remote_does_not_resolve_vars_in_name() {
     std::env::set_var("var", "value");
 
     let tendril = Tendril::new_expose(
+        &UniPath::from(Path::new("/Repo")),
         "SomeApp",
         "<var>",
         PathBuf::from("<var>").into(),
@@ -269,6 +284,7 @@ fn remote_does_not_resolve_vars_in_name() {
 #[test]
 fn remote_preserves_non_utf8_in_parent() {
     let tendril = Tendril::new_expose(
+        &UniPath::from(Path::new("/Repo")),
         "SomeApp",
         "misc.txt",
         PathBuf::from(non_utf_8_text()).into(),
@@ -291,6 +307,7 @@ fn local_does_not_resolve_vars_in_name_or_group() {
     std::env::set_var("var", "value");
 
     let tendril = Tendril::new_expose(
+        &UniPath::from(Path::new("<var>")),
         "<var>",
         "<var>",
         PathBuf::from("Parent").into(),
@@ -298,7 +315,7 @@ fn local_does_not_resolve_vars_in_name_or_group() {
     )
     .unwrap();
 
-    let actual = tendril.local(&PathBuf::from("<var>").into());
+    let actual = tendril.local().to_path_buf();
 
     assert_eq!(
         actual,

@@ -48,6 +48,7 @@ fn remote_is_given_td_repo_returns_recursion_error(
     let setup = Setup::new();
 
     let mut tendril = Tendril::new_expose(
+        setup.uni_td_repo(),
         "SomeApp",
         "TendrilsRepo",
         setup.td_repo.parent().unwrap().into(),
@@ -89,6 +90,7 @@ fn remote_is_ancestor_to_given_td_repo_returns_recursion_error(
         .join("TendrilsRepo");
 
     let mut tendril = Tendril::new_expose(
+        setup.uni_td_repo(),
         "SomeApp",
         "Nested1",
         setup.parent_dir.clone().into(),
@@ -130,6 +132,7 @@ fn remote_is_direct_child_of_given_td_repo_returns_recursion_error(
     write(&remote_file, "Remote file contents").unwrap();
 
     let mut tendril = Tendril::new_expose(
+        &UniPath::from(&td_repo),
         "SomeApp",
         "misc.txt",
         parent_dir.into(),
@@ -172,6 +175,7 @@ fn remote_is_nested_child_of_given_td_repo_returns_recursion_error(
     write(&remote_file, "Remote file contents").unwrap();
 
     let mut tendril = Tendril::new_expose(
+        &UniPath::from(&td_repo),
         "SomeApp",
         "misc.txt",
         parent_dir.into(),
@@ -311,6 +315,7 @@ fn remote_is_global_config_dir_proceeds_normally(
     setup.remote_dir = global_cfg_dir();
 
     let mut tendril = Tendril::new_expose(
+        setup.uni_td_repo(),
         "SomeApp",
         ".tendrils",
         home_dir().into(),
@@ -364,6 +369,7 @@ fn remote_is_in_global_config_dir_proceeds_normally(
     setup.remote_file = global_cfg_file();
 
     let mut tendril = Tendril::new_expose(
+        setup.uni_td_repo(),
         "SomeApp",
         "global-config.json",
         global_cfg_dir().into(),
@@ -529,6 +535,7 @@ fn var_in_any_field_exists_uses_raw_path_even_if_var_exists(
     std::env::set_var("mut-testing", "NON-EXISTENT PATH");
 
     let mut tendril = Tendril::new_expose(
+        setup.uni_td_repo(),
         group,
         name,
         setup.parent_dir.clone().into(),
@@ -1374,6 +1381,7 @@ fn windows_platform_parent_is_root_returns_permission_error_unless_dry_run_or_di
     }
 
     let file_tendril = Tendril::new_expose(
+        setup.uni_td_repo(),
         "SomeApp",
         "tendrils_test_file.txt",
         setup.parent_dir.clone().into(),
@@ -1381,6 +1389,7 @@ fn windows_platform_parent_is_root_returns_permission_error_unless_dry_run_or_di
     )
     .unwrap();
     let dir_tendril = Tendril::new_expose(
+        setup.uni_td_repo(),
         "SomeApp",
         "tendrils_test_dir",
         setup.parent_dir.clone().into(),
@@ -1494,6 +1503,7 @@ fn non_windows_platform_parent_is_root_returns_permission_error_unless_dry_run(
     }
 
     let file_tendril = Tendril::new_expose(
+        setup.uni_td_repo(),
         "SomeApp",
         "tendrils_test_file.txt",
         setup.parent_dir.clone().into(),
@@ -1501,6 +1511,7 @@ fn non_windows_platform_parent_is_root_returns_permission_error_unless_dry_run(
     )
     .unwrap();
     let dir_tendril = Tendril::new_expose(
+        setup.uni_td_repo(),
         "SomeApp",
         "tendrils_test_dir",
         setup.parent_dir.clone().into(),

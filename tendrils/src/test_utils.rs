@@ -446,6 +446,7 @@ impl Setup {
     #[allow(private_interfaces)]
     pub fn file_tendril(&self) -> Tendril {
         Tendril::new_expose(
+            self.uni_td_repo(),
             "SomeApp",
             "misc.txt",
             self.parent_dir.clone().into(),
@@ -457,6 +458,7 @@ impl Setup {
     #[allow(private_interfaces)]
     pub fn dir_tendril(&self) -> Tendril {
         Tendril::new_expose(
+            self.uni_td_repo(),
             "SomeApp",
             "misc",
             self.parent_dir.clone().into(),
@@ -468,6 +470,7 @@ impl Setup {
     #[allow(private_interfaces)]
     pub fn subdir_file_tendril(&self) -> Tendril {
         Tendril::new_expose(
+            self.uni_td_repo(),
             "SomeApp",
             "SubDir/misc.txt",
             self.parent_dir.clone().into(),
@@ -479,6 +482,7 @@ impl Setup {
     #[allow(private_interfaces)]
     pub fn subdir_dir_tendril(&self) -> Tendril {
         Tendril::new_expose(
+            self.uni_td_repo(),
             "SomeApp",
             "SubDir/misc",
             self.parent_dir.clone().into(),
@@ -680,7 +684,6 @@ impl Setup {
         create_dir_all(&self.local_nra_nested_file).unwrap();
     }
 
-    #[cfg(test)]
     pub(crate) fn uni_td_repo(&self) -> UniPath {
         UniPath::from(&self.td_repo)
     }

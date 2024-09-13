@@ -1,7 +1,7 @@
 use crate::enums::{InvalidTendrilError, OneOrMany, TendrilMode};
 use crate::path_ext::{PathExt, UniPath};
 use serde::{de, Deserialize, Deserializer, Serialize};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[cfg(test)]
 pub(crate) mod tests;
@@ -16,12 +16,15 @@ pub(crate) struct Tendril<'a> {
     group: &'a str,
     name: &'a str,
     parent: UniPath,
+    local: PathBuf,
     remote: PathBuf,
     pub mode: TendrilMode,
 }
 
 impl<'a> Tendril<'a> {
     fn new(
+        td_repo: impl AsRef<UniPath>,
+        // td_repo: &'a UniPath,
         group: &'a str,
         name: &'a str,
         parent: UniPath,
@@ -50,6 +53,22 @@ impl<'a> Tendril<'a> {
         }
 
         #[cfg(not(windows))]
+        let local = td_repo
+            .as_ref()
+            .inner()
+            .join_raw(&Path::new(group))
+            .join_raw(&Path::new(name))
+            .into();
+        #[cfg(windows)]
+        let local = td_repo
+            .as_ref()
+            .inner()
+            .join_raw(&Path::new(group))
+            .join_raw(&Path::new(name))
+            .replace_dir_seps()
+            .into();
+
+        #[cfg(not(windows))]
         let remote =
             parent.inner().join_raw(&PathBuf::from(name));
 
@@ -57,17 +76,18 @@ impl<'a> Tendril<'a> {
         let remote =
             parent.inner().join_raw(&PathBuf::from(name)).replace_dir_seps();
 
-        Ok(Tendril { group, name, parent, remote, mode })
+        Ok(Tendril { group, name, parent, local, remote, mode })
     }
 
     #[cfg(any(test, feature = "_test_utils"))]
     pub fn new_expose(
+        td_repo: impl AsRef<UniPath>,
         group: &'a str,
         name: &'a str,
         parent: UniPath,
         mode: TendrilMode,
     ) -> Result<Tendril<'a>, InvalidTendrilError> {
-        Tendril::new(group, name, parent, mode)
+        Tendril::new(td_repo, group, name, parent, mode)
     }
 
     /// Name as given.
@@ -84,20 +104,8 @@ impl<'a> Tendril<'a> {
     /// The resolved path to this file system object inside the Tendrils repo.
     /// The combination of the given Tendrils repo, [`Self::group`], and
     /// [`Self::name`]
-    pub fn local(&self, td_repo: &UniPath) -> PathBuf {
-        #[cfg(not(windows))]
-        return td_repo
-            .inner()
-            .join_raw(&PathBuf::from(self.group))
-            .join_raw(&PathBuf::from(self.name))
-            .into();
-        #[cfg(windows)]
-        return td_repo
-            .inner()
-            .join_raw(&PathBuf::from(self.group))
-            .join_raw(&PathBuf::from(self.name))
-            .replace_dir_seps()
-            .into();
+    pub fn local(&self) -> &PathBuf {
+        &self.local
     }
 
     /// The resolved path to this file system object specific to this machine,
@@ -166,8 +174,9 @@ impl TendrilBundle {
         }
     }
 
-    pub(crate) fn resolve_tendrils(
-        &self,
+    pub(crate) fn resolve_tendrils<'a>(
+        &'a self,
+        td_repo: &'a UniPath,
         first_only: bool,
     ) -> Vec<Result<Tendril, InvalidTendrilError>> {
         let mode = match (self.dir_merge, self.link) {
@@ -195,6 +204,7 @@ impl TendrilBundle {
         for name in self.names.iter() {
             for resolved_parent in resolved_parents.iter() {
                 resolve_results.push(Tendril::new(
+                    td_repo,
                     &self.group,
                     name,
                     resolved_parent.clone(),

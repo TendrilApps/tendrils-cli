@@ -492,7 +492,7 @@ fn link_tendril(
     dry_run: bool,
     mut force: bool,
 ) -> ActionLog {
-    let target = tendril.local(td_repo);
+    let target = tendril.local();
     let create_at = tendril.remote();
 
     let mut log = ActionLog::new(
@@ -557,7 +557,7 @@ fn pull_tendril(
     dry_run: bool,
     force: bool,
 ) -> ActionLog {
-    let dest = tendril.local(td_repo);
+    let dest = tendril.local();
     let source = tendril.remote();
 
     let mut log = ActionLog::new(
@@ -596,7 +596,7 @@ fn push_tendril(
     dry_run: bool,
     force: bool,
 ) -> ActionLog {
-    let source = tendril.local(td_repo);
+    let source = tendril.local();
     let dest = tendril.remote();
 
     let mut log = ActionLog::new(
@@ -780,7 +780,7 @@ fn batch_tendril_action<F: FnMut(TendrilReport<ActionLog>)>(
 
     for bundle in td_bundles.into_iter() {
         let bundle_rc = std::rc::Rc::new(bundle);
-        let tendrils = bundle_rc.resolve_tendrils(first_only);
+        let tendrils = bundle_rc.resolve_tendrils(td_repo, first_only);
 
         // The number of parents that were considered when
         // resolving the tendril bundle
@@ -811,7 +811,7 @@ fn batch_tendril_action<F: FnMut(TendrilReport<ActionLog>)>(
                     // unnecessarily.
                     let remote = v.remote();
                     Ok(ActionLog::new(
-                        v.local(td_repo).get_type(),
+                        v.local().get_type(),
                         remote.get_type(),
                         remote.to_path_buf(),
                         Err(TendrilActionError::IoError {
