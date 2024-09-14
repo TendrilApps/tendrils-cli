@@ -207,7 +207,6 @@ fn remote_appends_name_to_parent(
 }
 
 #[rstest]
-#[case("", "Plain", &format!("{SEP}G{SEP}Plain"))]
 #[case("Plain", "Plain", &format!("{SEP}Plain{SEP}G{SEP}Plain"))]
 #[case("Trailing/", "Plain", &format!("{SEP}Trailing{SEP}G{SEP}Plain"))]
 #[cfg_attr(not(windows), case("Trailing\\", "Plain", "/Trailing\\/G/Plain"))]
@@ -321,4 +320,39 @@ fn local_does_not_resolve_vars_in_name_or_group() {
         actual,
         PathBuf::from(SEP_STR).join("value").join("<var>").join("<var>")
     );
+}
+
+#[rstest]
+#[case("/path/misc", "/path")] // Is repo
+#[case("/path/misc/TdRepo", "/path")] // Ancestor to repo
+#[case("/TdRepo", "/TdRepo")] // Direct child of repo
+#[case("/TdRepo", "/TdRepo/nested")] // Nested child of repo
+#[case("", "/anything")] // Nested child of repo
+#[case("/", "/anything")] // Nested child of repo
+fn recursive_remote_returns_recursion_error(
+    #[case] td_repo: PathBuf,
+    #[case] parent: PathBuf,
+) {
+    let actual = Tendril::new(
+        UniPath::from(td_repo),
+        "SomeApp",
+        "misc",
+        UniPath::from(parent),
+        TendrilMode::DirOverwrite,
+    );
+
+    assert_eq!(actual, Err(InvalidTendrilError::Recursion));
+}
+
+#[test]
+fn remote_is_sibling_to_given_td_repo_proceeds_normally() {
+    let actual = Tendril::new(
+        UniPath::from(Path::new("/path/TdRepo")),
+        "SomeApp",
+        "misc",
+        UniPath::from(Path::new("/path")),
+        TendrilMode::DirOverwrite,
+    );
+
+    assert!(actual.is_ok());
 }

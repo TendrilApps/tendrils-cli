@@ -6,7 +6,6 @@
 //! - [`crate::tests::push_tendril_tests`]
 
 use crate::test_utils::{
-    get_disposable_dir,
     global_cfg_dir,
     global_cfg_file,
     home_dir,
@@ -34,177 +33,13 @@ use rstest_reuse::{self, apply, template};
 use serial_test::serial;
 use std::fs::{create_dir_all, read_to_string, remove_dir, remove_file, write};
 use std::path::PathBuf;
-use tempdir::TempDir;
-
-#[rstest]
-#[case(link_tendril)]
-#[case(pull_tendril)]
-#[case(push_tendril)]
-fn remote_is_given_td_repo_returns_recursion_error(
-    #[case] action: fn(&UniPath, &Tendril, bool, bool) -> ActionLog,
-    #[values(true, false)] dry_run: bool,
-    #[values(true, false)] force: bool,
-) {
-    let setup = Setup::new();
-
-    let mut tendril = Tendril::new_expose(
-        setup.uni_td_repo(),
-        "SomeApp",
-        "TendrilsRepo",
-        setup.td_repo.parent().unwrap().into(),
-        TendrilMode::DirOverwrite,
-    )
-    .unwrap();
-    if action == link_tendril {
-        tendril.mode = TendrilMode::Link;
-    }
-
-    let actual = action(&setup.uni_td_repo(), &tendril, dry_run, force);
-
-    assert_eq!(
-        actual,
-        ActionLog::new(
-            None,
-            None,
-            tendril.parent().inner().join(tendril.name()),
-            Err(TendrilActionError::Recursion),
-        )
-    );
-}
-
-#[rstest]
-#[case(link_tendril)]
-#[case(pull_tendril)]
-#[case(push_tendril)]
-fn remote_is_ancestor_to_given_td_repo_returns_recursion_error(
-    #[case] action: fn(&UniPath, &Tendril, bool, bool) -> ActionLog,
-    #[values(true, false)] dry_run: bool,
-    #[values(true, false)] force: bool,
-) {
-    let mut setup = Setup::new();
-    setup.td_repo = setup
-        .parent_dir
-        .join("Nested1")
-        .join("Nested2")
-        .join("Nested3")
-        .join("TendrilsRepo");
-
-    let mut tendril = Tendril::new_expose(
-        setup.uni_td_repo(),
-        "SomeApp",
-        "Nested1",
-        setup.parent_dir.clone().into(),
-        TendrilMode::DirOverwrite,
-    )
-    .unwrap();
-    if action == link_tendril {
-        tendril.mode = TendrilMode::Link;
-    }
-
-    let actual = action(&setup.uni_td_repo(), &tendril, dry_run, force);
-
-    assert_eq!(
-        actual,
-        ActionLog::new(
-            None,
-            None,
-            tendril.parent().inner().join(tendril.name()),
-            Err(TendrilActionError::Recursion),
-        )
-    );
-}
-
-#[rstest]
-#[case(link_tendril)]
-#[case(pull_tendril)]
-#[case(push_tendril)]
-fn remote_is_direct_child_of_given_td_repo_returns_recursion_error(
-    #[case] action: fn(&UniPath, &Tendril, bool, bool) -> ActionLog,
-    #[values(true, false)] dry_run: bool,
-    #[values(true, false)] force: bool,
-) {
-    let temp_td_repo =
-        TempDir::new_in(get_disposable_dir(), "TendrilsRepo").unwrap();
-    let td_repo = temp_td_repo.path().to_path_buf();
-    let resolved_repo = UniPath::from(&td_repo);
-    let parent_dir = td_repo.clone();
-    let remote_file = parent_dir.join("misc.txt");
-    write(&remote_file, "Remote file contents").unwrap();
-
-    let mut tendril = Tendril::new_expose(
-        &UniPath::from(&td_repo),
-        "SomeApp",
-        "misc.txt",
-        parent_dir.into(),
-        TendrilMode::DirOverwrite,
-    )
-    .unwrap();
-    if action == link_tendril {
-        tendril.mode = TendrilMode::Link;
-    }
-
-    let actual = action(&resolved_repo, &tendril, dry_run, force);
-
-    assert_eq!(
-        actual,
-        ActionLog::new(
-            None,
-            Some(FsoType::File),
-            tendril.parent().inner().join(tendril.name()),
-            Err(TendrilActionError::Recursion),
-        )
-    );
-}
-
-#[rstest]
-#[case(link_tendril)]
-#[case(pull_tendril)]
-#[case(push_tendril)]
-fn remote_is_nested_child_of_given_td_repo_returns_recursion_error(
-    #[case] action: fn(&UniPath, &Tendril, bool, bool) -> ActionLog,
-    #[values(true, false)] dry_run: bool,
-    #[values(true, false)] force: bool,
-) {
-    let temp_td_repo =
-        TempDir::new_in(get_disposable_dir(), "TendrilsRepo").unwrap();
-    let td_repo = temp_td_repo.path().to_path_buf();
-    let resolved_repo = UniPath::from(&td_repo);
-    let parent_dir = td_repo.join("Nested1").join("Nested2").join("Nested3");
-    let remote_file = parent_dir.join("misc.txt");
-    create_dir_all(&remote_file.parent().unwrap()).unwrap();
-    write(&remote_file, "Remote file contents").unwrap();
-
-    let mut tendril = Tendril::new_expose(
-        &UniPath::from(&td_repo),
-        "SomeApp",
-        "misc.txt",
-        parent_dir.into(),
-        TendrilMode::DirOverwrite,
-    )
-    .unwrap();
-    if action == link_tendril {
-        tendril.mode = TendrilMode::Link;
-    }
-
-    let actual = action(&resolved_repo, &tendril, dry_run, force);
-
-    assert_eq!(
-        actual,
-        ActionLog::new(
-            None,
-            Some(FsoType::File),
-            tendril.parent().inner().join(tendril.name()),
-            Err(TendrilActionError::Recursion),
-        )
-    );
-}
 
 #[rstest]
 #[case(link_tendril)]
 #[case(pull_tendril)]
 #[case(push_tendril)]
 fn remote_is_sibling_to_given_td_repo_proceeds_normally(
-    #[case] action: fn(&UniPath, &Tendril, bool, bool) -> ActionLog,
+    #[case] action: fn(&Tendril, bool, bool) -> ActionLog,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -230,7 +65,7 @@ fn remote_is_sibling_to_given_td_repo_proceeds_normally(
         exp_remote_type = Some(FsoType::Dir);
     }
 
-    let actual = action(&setup.uni_td_repo(), &tendril, dry_run, force);
+    let actual = action(&tendril, dry_run, force);
 
     let exp_result;
     if dry_run {
@@ -255,7 +90,7 @@ fn remote_is_sibling_to_given_td_repo_proceeds_normally(
 #[case(pull_tendril)]
 #[case(push_tendril)]
 fn remote_is_another_td_repo_proceeds_normally(
-    #[case] action: fn(&UniPath, &Tendril, bool, bool) -> ActionLog,
+    #[case] action: fn(&Tendril, bool, bool) -> ActionLog,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -272,7 +107,7 @@ fn remote_is_another_td_repo_proceeds_normally(
         tendril.mode = TendrilMode::Link;
     }
 
-    let actual = action(&setup.uni_td_repo(), &tendril, dry_run, force);
+    let actual = action(&tendril, dry_run, force);
 
     let exp_result;
     if action == link_tendril && !force {
@@ -304,7 +139,7 @@ fn remote_is_another_td_repo_proceeds_normally(
 #[case(push_tendril)]
 #[serial("mut-env-var-testing")]
 fn remote_is_global_config_dir_proceeds_normally(
-    #[case] action: fn(&UniPath, &Tendril, bool, bool) -> ActionLog,
+    #[case] action: fn(&Tendril, bool, bool) -> ActionLog,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -325,7 +160,7 @@ fn remote_is_global_config_dir_proceeds_normally(
         tendril.mode = TendrilMode::Link;
     }
 
-    let actual = action(&setup.uni_td_repo(), &tendril, dry_run, force);
+    let actual = action(&tendril, dry_run, force);
 
     let exp_result;
     if action == link_tendril && !force {
@@ -357,7 +192,7 @@ fn remote_is_global_config_dir_proceeds_normally(
 #[case(push_tendril)]
 #[serial("mut-env-var-testing")]
 fn remote_is_in_global_config_dir_proceeds_normally(
-    #[case] action: fn(&UniPath, &Tendril, bool, bool) -> ActionLog,
+    #[case] action: fn(&Tendril, bool, bool) -> ActionLog,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -379,7 +214,7 @@ fn remote_is_in_global_config_dir_proceeds_normally(
         tendril.mode = TendrilMode::Link;
     }
 
-    let actual = action(&setup.uni_td_repo(), &tendril, dry_run, force);
+    let actual = action(&tendril, dry_run, force);
 
     let exp_result;
     if action == link_tendril && !force {
@@ -411,7 +246,7 @@ fn remote_is_in_global_config_dir_proceeds_normally(
 #[case(push_tendril)]
 #[serial("mut-env-var-testing")]
 fn repo_is_global_cfg_dir_and_config_file_exists_proceeds_normally(
-    #[case] action: fn(&UniPath, &Tendril, bool, bool) -> ActionLog,
+    #[case] action: fn(&Tendril, bool, bool) -> ActionLog,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -428,7 +263,7 @@ fn repo_is_global_cfg_dir_and_config_file_exists_proceeds_normally(
         tendril.mode = TendrilMode::Link;
     }
 
-    let actual = action(&setup.uni_td_repo(), &tendril, dry_run, force);
+    let actual = action(&tendril, dry_run, force);
 
     let exp_result;
     if action == link_tendril && !force {
@@ -460,7 +295,7 @@ fn repo_is_global_cfg_dir_and_config_file_exists_proceeds_normally(
 #[case(push_tendril)]
 #[serial("mut-env-var-testing")]
 fn repo_is_in_global_cfg_dir_and_config_file_exists_proceeds_normally(
-    #[case] action: fn(&UniPath, &Tendril, bool, bool) -> ActionLog,
+    #[case] action: fn(&Tendril, bool, bool) -> ActionLog,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -477,7 +312,7 @@ fn repo_is_in_global_cfg_dir_and_config_file_exists_proceeds_normally(
         tendril.mode = TendrilMode::Link;
     }
 
-    let actual = action(&setup.uni_td_repo(), &tendril, dry_run, force);
+    let actual = action(&tendril, dry_run, force);
 
     let exp_result;
     if action == link_tendril && !force {
@@ -514,7 +349,6 @@ fn var_in_any_field_exists_uses_raw_path_even_if_var_exists(
     #[case] group: &str,
     #[case] name: &str,
     #[values(link_tendril, pull_tendril, push_tendril)] action: fn(
-        &UniPath,
         &Tendril,
         bool,
         bool,
@@ -554,7 +388,7 @@ fn var_in_any_field_exists_uses_raw_path_even_if_var_exists(
         exp_remote_type = Some(FsoType::File);
     }
 
-    let actual = action(&setup.uni_td_repo(), &tendril, dry_run, force);
+    let actual = action(&tendril, dry_run, force);
 
     let exp_result;
     if dry_run {
@@ -579,7 +413,7 @@ fn var_in_any_field_exists_uses_raw_path_even_if_var_exists(
 #[case(pull_tendril)]
 #[case(push_tendril)]
 fn other_tendrils_in_same_group_dir_are_unchanged(
-    #[case] action: fn(&UniPath, &Tendril, bool, bool) -> ActionLog,
+    #[case] action: fn(&Tendril, bool, bool) -> ActionLog,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -619,8 +453,8 @@ fn other_tendrils_in_same_group_dir_are_unchanged(
         exp_remote_type_dir = Some(FsoType::Dir);
     }
 
-    let file_actual = action(&setup.uni_td_repo(), &file_tendril, dry_run, force);
-    let dir_actual = action(&setup.uni_td_repo(), &dir_tendril, dry_run, force);
+    let file_actual = action(&file_tendril, dry_run, force);
+    let dir_actual = action(&dir_tendril, dry_run, force);
 
     // Check that other tendril is unchanged
     let some_other_local_file_contents =
@@ -667,7 +501,7 @@ fn other_tendrils_in_same_group_dir_are_unchanged(
 #[case(pull_tendril)]
 #[case(push_tendril)]
 fn other_files_in_subdir_are_unchanged(
-    #[case] action: fn(&UniPath, &Tendril, bool, bool) -> ActionLog,
+    #[case] action: fn(&Tendril, bool, bool) -> ActionLog,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -695,9 +529,9 @@ fn other_files_in_subdir_are_unchanged(
         setup.make_remote_subdir_nested_file();
     }
     let subdir_file_actual =
-        action(&setup.uni_td_repo(), &subdir_file_tendril, dry_run, force);
+        action(&subdir_file_tendril, dry_run, force);
     let subdir_dir_actual =
-        action(&setup.uni_td_repo(), &subdir_dir_tendril, dry_run, force);
+        action(&subdir_dir_tendril, dry_run, force);
 
     let exp_result;
     let mut exp_remote_type_file = Some(FsoType::File);
@@ -748,7 +582,7 @@ fn other_files_in_subdir_are_unchanged(
 #[case(pull_tendril)]
 #[case(push_tendril)]
 fn remote_parent_doesnt_exist_returns_io_error_not_found(
-    #[case] action: fn(&UniPath, &Tendril, bool, bool) -> ActionLog,
+    #[case] action: fn(&Tendril, bool, bool) -> ActionLog,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -781,12 +615,12 @@ fn remote_parent_doesnt_exist_returns_io_error_not_found(
     assert!(!subdir_file_tendril.parent().inner().exists());
     assert!(!subdir_dir_tendril.parent().inner().exists());
 
-    let file_actual = action(&setup.uni_td_repo(), &file_tendril, dry_run, force);
-    let dir_actual = action(&setup.uni_td_repo(), &dir_tendril, dry_run, force);
+    let file_actual = action(&file_tendril, dry_run, force);
+    let dir_actual = action(&dir_tendril, dry_run, force);
     let subdir_file_actual =
-        action(&setup.uni_td_repo(), &subdir_file_tendril, dry_run, force);
+        action(&subdir_file_tendril, dry_run, force);
     let subdir_dir_actual =
-        action(&setup.uni_td_repo(), &subdir_dir_tendril, dry_run, force);
+        action(&subdir_dir_tendril, dry_run, force);
 
     let exp_loc = match action == pull_tendril {
         true => Location::Source,
@@ -852,7 +686,7 @@ fn remote_parent_doesnt_exist_returns_io_error_not_found(
 #[case(pull_tendril)]
 #[case(push_tendril)]
 fn remote_direct_parent_doesnt_exist_but_parent_does_should_create_subdirs_then_succeed(
-    #[case] action: fn(&UniPath, &Tendril, bool, bool) -> ActionLog,
+    #[case] action: fn(&Tendril, bool, bool) -> ActionLog,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -870,10 +704,8 @@ fn remote_direct_parent_doesnt_exist_but_parent_does_should_create_subdirs_then_
     assert!(!subdir_file_tendril.remote().parent().unwrap().exists());
     assert!(!subdir_dir_tendril.remote().parent().unwrap().exists());
 
-    let subdir_file_actual =
-        action(&subdir_file_setup.uni_td_repo(), &subdir_file_tendril, dry_run, force);
-    let subdir_dir_actual =
-        action(&subdir_dir_setup.uni_td_repo(), &subdir_dir_tendril, dry_run, force);
+    let subdir_file_actual = action(&subdir_file_tendril, dry_run, force);
+    let subdir_dir_actual = action(&subdir_dir_tendril, dry_run, force);
 
     let exp_result;
     if action == pull_tendril {
@@ -938,7 +770,7 @@ fn remote_direct_parent_doesnt_exist_but_parent_does_should_create_subdirs_then_
 #[case(pull_tendril)]
 #[case(push_tendril)]
 fn link_mode_tendril_returns_mode_mismatch_error(
-    #[case] action: fn(&UniPath, &Tendril, bool, bool) -> ActionLog,
+    #[case] action: fn(&Tendril, bool, bool) -> ActionLog,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -949,7 +781,7 @@ fn link_mode_tendril_returns_mode_mismatch_error(
     let mut tendril = setup.file_tendril();
     tendril.mode = TendrilMode::Link;
 
-    let actual = action(&setup.uni_td_repo(), &tendril, dry_run, force);
+    let actual = action(&tendril, dry_run, force);
 
     assert_eq!(
         actual,
@@ -985,7 +817,7 @@ fn cases_that_do_not_modify_local(
 
 #[apply(cases_that_do_not_modify_local)]
 fn local_is_unchanged(
-    #[case] action: fn(&UniPath, &Tendril, bool, bool) -> ActionLog,
+    #[case] action: fn(&Tendril, bool, bool) -> ActionLog,
     #[case] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -1017,8 +849,8 @@ fn local_is_unchanged(
         exp_remote_type_dir = Some(FsoType::Dir);
     }
 
-    let file_actual = action(&setup.uni_td_repo(), &file_tendril, dry_run, force);
-    let dir_actual = action(&setup.uni_td_repo(), &dir_tendril, dry_run, force);
+    let file_actual = action(&file_tendril, dry_run, force);
+    let dir_actual = action(&dir_tendril, dry_run, force);
 
     let exp_result;
     if dry_run {
@@ -1054,7 +886,7 @@ fn local_is_unchanged(
 
 #[apply(cases_that_do_not_modify_local)]
 fn local_symlink_is_unchanged(
-    #[case] action: fn(&UniPath, &Tendril, bool, bool) -> ActionLog,
+    #[case] action: fn(&Tendril, bool, bool) -> ActionLog,
     #[case] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -1089,8 +921,8 @@ fn local_symlink_is_unchanged(
         exp_remote_type_dir = Some(FsoType::Dir);
     }
 
-    let file_actual = action(&setup.uni_td_repo(), &file_tendril, dry_run, force);
-    let dir_actual = action(&setup.uni_td_repo(), &dir_tendril, dry_run, force);
+    let file_actual = action(&file_tendril, dry_run, force);
+    let dir_actual = action(&dir_tendril, dry_run, force);
 
     let exp_loc = match action == pull_tendril {
         true => Location::Dest,
@@ -1163,7 +995,7 @@ fn cases_that_do_not_modify_remote(
 
 #[apply(cases_that_do_not_modify_remote)]
 fn remote_is_unchanged(
-    #[case] action: fn(&UniPath, &Tendril, bool, bool) -> ActionLog,
+    #[case] action: fn(&Tendril, bool, bool) -> ActionLog,
     #[case] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -1180,8 +1012,8 @@ fn remote_is_unchanged(
         dir_tendril.mode = TendrilMode::Link;
     }
 
-    let file_actual = action(&setup.uni_td_repo(), &file_tendril, dry_run, force);
-    let dir_actual = action(&setup.uni_td_repo(), &dir_tendril, dry_run, force);
+    let file_actual = action(&file_tendril, dry_run, force);
+    let dir_actual = action(&dir_tendril, dry_run, force);
 
     let exp_file_result;
     let exp_dir_result;
@@ -1230,7 +1062,7 @@ fn remote_is_unchanged(
 
 #[apply(cases_that_do_not_modify_remote)]
 fn remote_symlink_is_unchanged(
-    #[case] action: fn(&UniPath, &Tendril, bool, bool) -> ActionLog,
+    #[case] action: fn(&Tendril, bool, bool) -> ActionLog,
     #[case] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -1250,8 +1082,8 @@ fn remote_symlink_is_unchanged(
         dir_tendril.mode = TendrilMode::Link;
     }
 
-    let file_actual = action(&setup.uni_td_repo(), &file_tendril, dry_run, force);
-    let dir_actual = action(&setup.uni_td_repo(), &dir_tendril, dry_run, force);
+    let file_actual = action(&file_tendril, dry_run, force);
+    let dir_actual = action(&dir_tendril, dry_run, force);
 
     let exp_file_result;
     let exp_dir_result;
@@ -1309,7 +1141,7 @@ fn remote_symlink_is_unchanged(
 #[case(pull_tendril)]
 #[case(push_tendril)]
 fn current_dir_is_unchanged(
-    #[case] action: fn(&UniPath, &Tendril, bool, bool) -> ActionLog,
+    #[case] action: fn(&Tendril, bool, bool) -> ActionLog,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -1325,8 +1157,8 @@ fn current_dir_is_unchanged(
         dir_tendril.mode = TendrilMode::Link;
     }
 
-    let file_actual = action(&setup.uni_td_repo(), &file_tendril, dry_run, force);
-    let dir_actual = action(&setup.uni_td_repo(), &dir_tendril, dry_run, force);
+    let file_actual = action(&file_tendril, dry_run, force);
+    let dir_actual = action(&dir_tendril, dry_run, force);
 
     let exp_result = Err(TendrilActionError::IoError {
         kind: std::io::ErrorKind::NotFound,
@@ -1355,7 +1187,7 @@ fn current_dir_is_unchanged(
 #[cfg_attr(not(windows), ignore)]
 #[serial("root")]
 fn windows_platform_parent_is_root_returns_permission_error_unless_dry_run_or_dir(
-    #[case] action: fn(&UniPath, &Tendril, bool, bool) -> ActionLog,
+    #[case] action: fn(&Tendril, bool, bool) -> ActionLog,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -1397,8 +1229,8 @@ fn windows_platform_parent_is_root_returns_permission_error_unless_dry_run_or_di
     )
     .unwrap();
 
-    let file_actual = action(&setup.uni_td_repo(), &file_tendril, dry_run, force);
-    let dir_actual = action(&setup.uni_td_repo(), &dir_tendril, dry_run, force);
+    let file_actual = action(&file_tendril, dry_run, force);
+    let dir_actual = action(&dir_tendril, dry_run, force);
 
     let exp_file_result;
     let exp_dir_result;
@@ -1482,7 +1314,7 @@ fn windows_platform_parent_is_root_returns_permission_error_unless_dry_run_or_di
 #[cfg_attr(windows, ignore)]
 #[serial("root")]
 fn non_windows_platform_parent_is_root_returns_permission_error_unless_dry_run(
-    #[case] action: fn(&UniPath, &Tendril, bool, bool) -> ActionLog,
+    #[case] action: fn(&Tendril, bool, bool) -> ActionLog,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -1519,8 +1351,8 @@ fn non_windows_platform_parent_is_root_returns_permission_error_unless_dry_run(
     )
     .unwrap();
 
-    let file_actual = action(&setup.uni_td_repo(), &file_tendril, dry_run, force);
-    let dir_actual = action(&setup.uni_td_repo(), &dir_tendril, dry_run, force);
+    let file_actual = action(&file_tendril, dry_run, force);
+    let dir_actual = action(&dir_tendril, dry_run, force);
 
     let exp_result;
     if action == pull_tendril {

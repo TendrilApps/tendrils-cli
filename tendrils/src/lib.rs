@@ -479,15 +479,7 @@ fn get_tendrils_repo(
     }
 }
 
-fn is_recursive_tendril(td_repo: &UniPath, tendril_full_path: &Path) -> bool {
-    let repo_inner = td_repo.inner();
-    repo_inner == tendril_full_path
-        || repo_inner.ancestors().any(|p| p == tendril_full_path)
-        || tendril_full_path.ancestors().any(|p| p == repo_inner)
-}
-
 fn link_tendril(
-    td_repo: &UniPath,
     tendril: &Tendril,
     dry_run: bool,
     mut force: bool,
@@ -503,10 +495,6 @@ fn link_tendril(
     );
     if tendril.mode != TendrilMode::Link {
         log.result = Err(TendrilActionError::ModeMismatch);
-        return log;
-    }
-    if is_recursive_tendril(td_repo, log.resolved_path()) {
-        log.result = Err(TendrilActionError::Recursion);
         return log;
     }
     if !tendril.parent().inner().exists() {
@@ -552,7 +540,6 @@ fn link_tendril(
 }
 
 fn pull_tendril(
-    td_repo: &UniPath,
     tendril: &Tendril,
     dry_run: bool,
     force: bool,
@@ -571,10 +558,6 @@ fn pull_tendril(
         log.result = Err(TendrilActionError::ModeMismatch);
         return log;
     }
-    else if is_recursive_tendril(td_repo, log.resolved_path()) {
-        log.result = Err(TendrilActionError::Recursion);
-        return log;
-    }
 
     let dir_merge = tendril.mode == TendrilMode::DirMerge;
     log.result = copy_fso(
@@ -591,7 +574,6 @@ fn pull_tendril(
 }
 
 fn push_tendril(
-    td_repo: &UniPath,
     tendril: &Tendril,
     dry_run: bool,
     force: bool,
@@ -607,10 +589,6 @@ fn push_tendril(
     );
     if tendril.mode == TendrilMode::Link {
         log.result = Err(TendrilActionError::ModeMismatch);
-        return log;
-    }
-    if is_recursive_tendril(td_repo, log.resolved_path()) {
-        log.result = Err(TendrilActionError::Recursion);
         return log;
     }
     if !tendril.parent().inner().exists() {
@@ -792,16 +770,16 @@ fn batch_tendril_action<F: FnMut(TendrilReport<ActionLog>)>(
         for (i, tendril) in tendrils.into_iter().enumerate() {
             let log = match (tendril, &mode, can_symlink) {
                 (Ok(v), ActionMode::Pull, _) => {
-                    Ok(pull_tendril(td_repo, &v, dry_run, force))
+                    Ok(pull_tendril(&v, dry_run, force))
                 }
                 (Ok(v), ActionMode::Push, _) => {
-                    Ok(push_tendril(td_repo, &v, dry_run, force))
+                    Ok(push_tendril(&v, dry_run, force))
                 }
                 (Ok(v), ActionMode::Out, _) if v.mode != TendrilMode::Link => {
-                    Ok(push_tendril(td_repo, &v, dry_run, force))
+                    Ok(push_tendril(&v, dry_run, force))
                 }
                 (Ok(v), ActionMode::Out | ActionMode::Link, true) => {
-                    Ok(link_tendril(td_repo, &v, dry_run, force))
+                    Ok(link_tendril(&v, dry_run, force))
                 }
                 (Ok(v), ActionMode::Link | ActionMode::Out, false) => {
                     // Do not attempt to symlink if it has already been

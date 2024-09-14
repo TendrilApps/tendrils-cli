@@ -24,7 +24,6 @@ pub(crate) struct Tendril<'a> {
 impl<'a> Tendril<'a> {
     fn new(
         td_repo: impl AsRef<UniPath>,
-        // td_repo: &'a UniPath,
         group: &'a str,
         name: &'a str,
         parent: UniPath,
@@ -53,6 +52,18 @@ impl<'a> Tendril<'a> {
         }
 
         #[cfg(not(windows))]
+        let remote =
+            parent.inner().join_raw(&PathBuf::from(name));
+
+        #[cfg(windows)]
+        let remote =
+            parent.inner().join_raw(&PathBuf::from(name)).replace_dir_seps();
+
+        if Self::is_recursive(td_repo.as_ref(), &remote) {
+            return Err(InvalidTendrilError::Recursion)
+        }
+
+        #[cfg(not(windows))]
         let local = td_repo
             .as_ref()
             .inner()
@@ -68,14 +79,6 @@ impl<'a> Tendril<'a> {
             .replace_dir_seps()
             .into();
 
-        #[cfg(not(windows))]
-        let remote =
-            parent.inner().join_raw(&PathBuf::from(name));
-
-        #[cfg(windows)]
-        let remote =
-            parent.inner().join_raw(&PathBuf::from(name)).replace_dir_seps();
-
         Ok(Tendril { group, name, parent, local, remote, mode })
     }
 
@@ -87,7 +90,7 @@ impl<'a> Tendril<'a> {
         parent: UniPath,
         mode: TendrilMode,
     ) -> Result<Tendril<'a>, InvalidTendrilError> {
-        Tendril::new(td_repo, group, name, parent, mode)
+        Tendril::new(td_repo.as_ref(), group, name, parent, mode)
     }
 
     /// Name as given.
@@ -117,6 +120,13 @@ impl<'a> Tendril<'a> {
 
     fn is_path(x: &str) -> bool {
         x.contains('/') || x.contains('\\')
+    }
+
+    fn is_recursive(td_repo: &UniPath, remote: &Path) -> bool {
+        let repo_inner = td_repo.inner();
+        repo_inner == remote
+            || repo_inner.ancestors().any(|p| p == remote)
+            || remote.ancestors().any(|p| p == repo_inner)
     }
 }
 

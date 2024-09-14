@@ -69,7 +69,7 @@ fn remote_exists_copies_to_local(
     )
     .unwrap();
 
-    let actual = pull_tendril(&setup.uni_td_repo(), &tendril, false, force);
+    let actual = pull_tendril(&tendril, false, force);
 
     assert_eq!(
         actual,
@@ -111,9 +111,9 @@ fn remote_is_symlink_returns_type_mismatch_error_unless_forced_then_copies_symli
     let dir_tendril = setup.dir_tendril();
 
     let file_actual =
-        pull_tendril(&setup.uni_td_repo(), &file_tendril, dry_run, force);
+        pull_tendril(&file_tendril, dry_run, force);
     let dir_actual =
-        pull_tendril(&setup.uni_td_repo(), &dir_tendril, dry_run, force);
+        pull_tendril(&dir_tendril, dry_run, force);
 
     let exp_file_result;
     let exp_dir_result;
@@ -194,9 +194,9 @@ fn local_is_symlink_returns_type_mismatch_error_unless_forced(
     let dir_tendril = setup.dir_tendril();
 
     let file_actual =
-        pull_tendril(&setup.uni_td_repo(), &file_tendril, dry_run, force);
+        pull_tendril(&file_tendril, dry_run, force);
     let dir_actual =
-        pull_tendril(&setup.uni_td_repo(), &dir_tendril, dry_run, force);
+        pull_tendril(&dir_tendril, dry_run, force);
 
     let exp_file_result;
     let exp_dir_result;
@@ -275,7 +275,7 @@ fn remote_is_file_and_local_is_dir_returns_type_mismatch_error_unless_forced(
     let mut tendril = setup.file_tendril();
     tendril.mode = mode;
 
-    let actual = pull_tendril(&setup.uni_td_repo(), &tendril, dry_run, force);
+    let actual = pull_tendril(&tendril, dry_run, force);
 
     let exp_result = match (dry_run, force) {
         (_, false) => Err(TendrilActionError::TypeMismatch {
@@ -323,7 +323,7 @@ fn remote_is_dir_and_local_is_file_returns_type_mismatch_error_unless_forced(
     let mut tendril = setup.dir_tendril();
     tendril.mode = mode;
 
-    let actual = pull_tendril(&setup.uni_td_repo(), &tendril, dry_run, force);
+    let actual = pull_tendril(&tendril, dry_run, force);
 
     let exp_result = match (dry_run, force) {
         (_, false) => Err(TendrilActionError::TypeMismatch {
@@ -374,7 +374,7 @@ fn file_tendril_overwrites_local_file_regardless_of_dir_merge_mode(
     let mut tendril = setup.file_tendril();
     tendril.mode = mode;
 
-    let actual = pull_tendril(&setup.uni_td_repo(), &tendril, false, force);
+    let actual = pull_tendril(&tendril, false, force);
 
     assert_eq!(
         actual,
@@ -410,7 +410,7 @@ fn dir_overwrite_w_dir_tendril_replaces_local_dir_recursively(
     let mut tendril = setup.dir_tendril();
     tendril.mode = TendrilMode::DirOverwrite;
 
-    let actual = pull_tendril(&setup.uni_td_repo(), &tendril, false, force);
+    let actual = pull_tendril(&tendril, false, force);
 
     assert_eq!(
         actual,
@@ -451,7 +451,7 @@ fn dir_merge_w_dir_tendril_merges_w_local_dir_recursively(#[case] force: bool) {
     let mut tendril = setup.dir_tendril();
     tendril.mode = TendrilMode::DirMerge;
 
-    let actual = pull_tendril(&setup.uni_td_repo(), &tendril, false, force);
+    let actual = pull_tendril(&tendril, false, force);
 
     assert_eq!(
         actual,
@@ -496,7 +496,7 @@ fn dir_overwrite_w_subdir_dir_tendril_replaces_local_subdir_dir_recursively(
     let mut tendril = setup.subdir_dir_tendril();
     tendril.mode = TendrilMode::DirOverwrite;
 
-    let actual = pull_tendril(&setup.uni_td_repo(), &tendril, false, force);
+    let actual = pull_tendril(&tendril, false, force);
 
     assert_eq!(
         actual,
@@ -539,7 +539,7 @@ fn dir_merge_w_subdir_dir_tendril_merges_w_local_subdir_dir_recursively(
     let mut tendril = setup.subdir_dir_tendril();
     tendril.mode = TendrilMode::DirMerge;
 
-    let actual = pull_tendril(&setup.uni_td_repo(), &tendril, false, force);
+    let actual = pull_tendril(&tendril, false, force);
 
     assert_eq!(
         actual,
@@ -582,7 +582,7 @@ fn no_read_access_from_remote_file_returns_io_error_permission_denied_unless_dry
     )
     .unwrap();
 
-    let actual = pull_tendril(&setup.uni_td_repo(), &tendril, dry_run, force);
+    let actual = pull_tendril(&tendril, dry_run, force);
 
     assert!(is_empty(&setup.group_dir));
     let exp_result;
@@ -626,7 +626,7 @@ fn no_read_access_from_remote_dir_returns_io_error_permission_denied_unless_dry_
     )
     .unwrap();
 
-    let actual = pull_tendril(&setup.uni_td_repo(), &tendril, dry_run, force);
+    let actual = pull_tendril(&tendril, dry_run, force);
 
     set_ra(&setup.remote_nra_dir, true);
     assert!(is_empty(&setup.group_dir));
@@ -677,7 +677,7 @@ fn no_write_access_at_local_file_returns_io_error_permission_denied_unless_dry_r
 
     let tendril = setup.file_tendril();
 
-    let actual = pull_tendril(&setup.uni_td_repo(), &tendril, dry_run, force);
+    let actual = pull_tendril(&tendril, dry_run, force);
 
     // Cleanup
     let mut parent_perms = metadata(&setup.group_dir).unwrap().permissions();
@@ -727,7 +727,7 @@ fn no_write_access_at_local_dir_returns_io_error_permission_denied_unless_dry_ru
 
     let tendril = setup.dir_tendril();
 
-    let actual = pull_tendril(&setup.uni_td_repo(), &tendril, dry_run, force);
+    let actual = pull_tendril(&tendril, dry_run, force);
 
     // Cleanup
     perms.set_readonly(false);
@@ -773,7 +773,7 @@ fn remote_doesnt_exist_but_parent_does_returns_io_error_not_found(
     assert!(tendril.remote().parent().unwrap().exists());
     assert!(!tendril.remote().exists());
 
-    let actual = pull_tendril(&setup.uni_td_repo(), &tendril, dry_run, force);
+    let actual = pull_tendril(&tendril, dry_run, force);
 
     assert_eq!(
         actual,
@@ -820,17 +820,15 @@ fn group_dir_is_created_if_it_doesnt_exist(
     let subdir_dir_tendril = subdir_dir_setup.subdir_dir_tendril();
 
     let file_actual =
-        pull_tendril(&file_setup.uni_td_repo(), &file_tendril, dry_run, force);
+        pull_tendril(&file_tendril, dry_run, force);
     let dir_actual =
-        pull_tendril(&dir_setup.uni_td_repo(), &dir_tendril, dry_run, force);
+        pull_tendril(&dir_tendril, dry_run, force);
     let subdir_file_actual = pull_tendril(
-        &subdir_file_setup.uni_td_repo(),
         &subdir_file_tendril,
         dry_run,
         force,
     );
     let subdir_dir_actual = pull_tendril(
-        &subdir_dir_setup.uni_td_repo(),
         &subdir_dir_tendril,
         dry_run,
         force,
@@ -926,7 +924,7 @@ fn group_dir_is_file_returns_io_error_already_exists_unless_dry_run(
         tendril = setup.file_tendril();
     }
 
-    let actual = pull_tendril(&setup.uni_td_repo(), &tendril, dry_run, force);
+    let actual = pull_tendril(&tendril, dry_run, force);
 
     let exp_result;
     if dry_run {
