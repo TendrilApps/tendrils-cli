@@ -32,32 +32,24 @@ impl<'a> Tendril<'a> {
         if group.is_empty()
             || Tendril::is_path(group)
             || group.to_lowercase() == ".tendrils"
-            || group.to_lowercase() == ".git"
-            || group.contains('\n')
-            || group.contains('\r')
         {
             return Err(InvalidTendrilError::InvalidGroup);
         }
 
-        if name.is_empty() || name.contains('\n') || name.contains('\r') {
+        if name.is_empty() {
             return Err(InvalidTendrilError::InvalidName);
         }
 
-        let parent_bytes = parent.inner().as_os_str().as_encoded_bytes();
-        if parent_bytes.is_empty()
-            || parent_bytes.contains(&('\n' as u8))
-            || parent_bytes.contains(&('\r' as u8))
-        {
+        if parent.inner().as_os_str().is_empty() {
             return Err(InvalidTendrilError::InvalidParent);
         }
 
         #[cfg(not(windows))]
-        let remote =
-            parent.inner().join_raw(&PathBuf::from(name));
+        let remote = parent.inner().join_raw(&Path::new(name));
 
         #[cfg(windows)]
         let remote =
-            parent.inner().join_raw(&PathBuf::from(name)).replace_dir_seps();
+            parent.inner().join_raw(&Path::new(name)).replace_dir_seps();
 
         if Self::is_recursive(td_repo.as_ref(), &remote) {
             return Err(InvalidTendrilError::Recursion)

@@ -17,47 +17,34 @@ use crate::{
     TendrilMode,
 };
 use rstest::rstest;
-use rstest_reuse::{self, apply};
 use std::fs::{create_dir_all, metadata, set_permissions};
-use std::path::PathBuf;
 
 /// See also [`crate::tests::common_action_tests::remote_is_unchanged`] for
 /// `dry_run` case
-#[apply(crate::tendril::tests::tendril_tests::valid_groups_and_names)]
+#[rstest]
 fn remote_parent_and_local_exist_symlink_to_local_is_created(
-    #[case] name: &str,
     #[values(true, false)] force: bool,
     #[values(true, false)] as_dir: bool,
 ) {
-    let mut setup = Setup::new();
-    setup.remote_file = setup.parent_dir.join(&name);
-    setup.remote_dir = setup.parent_dir.join(&name);
-    setup.remote_nested_file = setup.remote_dir.join("nested.txt");
-    setup.local_file = setup.group_dir.join(&name);
-    setup.local_dir = setup.group_dir.join(&name);
-    setup.local_nested_file = setup.local_dir.join("nested.txt");
+    let setup = Setup::new();
+    let exp_remote_path;
+    let mut tendril;
     if as_dir {
         setup.make_local_nested_file();
+        exp_remote_path = setup.remote_dir.clone();
+        tendril = setup.dir_tendril();
     }
     else {
         setup.make_local_file();
+        exp_remote_path = setup.remote_file.clone();
+        tendril = setup.file_tendril();
     }
+    tendril.mode = TendrilMode::Link;
     assert!(!setup.remote_file.exists());
     assert!(!setup.remote_dir.exists());
 
-    let tendril = Tendril::new_expose(
-        setup.uni_td_repo(),
-        "SomeApp",
-        name,
-        setup.parent_dir.clone().into(),
-        TendrilMode::Link,
-    )
-    .unwrap();
-
     let actual = link_tendril(&tendril, false, force);
 
-    use std::env::consts::FAMILY;
-    let expected_target: PathBuf;
     let exp_local_type;
     if as_dir {
         assert_eq!(
@@ -66,36 +53,18 @@ fn remote_parent_and_local_exist_symlink_to_local_is_created(
         );
         assert!(setup.remote_dir.is_symlink());
         exp_local_type = Some(FsoType::Dir);
-        if FAMILY == "windows" && name.ends_with('.') {
-            // Trailing dots are dropped by the Windows filesystem
-            let stripped_name = &name[..name.len() - 1];
-            expected_target =
-                setup.local_dir.parent().unwrap().join(stripped_name);
-        }
-        else {
-            expected_target = setup.local_dir;
-        }
         assert_eq!(
             std::fs::read_link(setup.remote_dir).unwrap(),
-            expected_target,
+            setup.local_dir,
         );
     }
     else {
         assert_eq!(setup.remote_file_contents(), "Local file contents");
         assert!(setup.remote_file.is_symlink());
         exp_local_type = Some(FsoType::File);
-        if FAMILY == "windows" && name.ends_with('.') {
-            // Trailing dots are dropped by the Windows filesystem
-            let stripped_name = &name[..name.len() - 1];
-            expected_target =
-                setup.local_file.parent().unwrap().join(stripped_name);
-        }
-        else {
-            expected_target = setup.local_file;
-        }
         assert_eq!(
             std::fs::read_link(setup.remote_file).unwrap(),
-            expected_target
+            setup.local_file,
         );
     }
     assert_eq!(
@@ -103,7 +72,7 @@ fn remote_parent_and_local_exist_symlink_to_local_is_created(
         ActionLog::new(
             exp_local_type,
             None,
-            setup.parent_dir.join(name),
+            exp_remote_path,
             Ok(TendrilActionSuccess::New),
         )
     );

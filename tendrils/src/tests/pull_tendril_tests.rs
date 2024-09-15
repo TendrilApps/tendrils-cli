@@ -18,7 +18,6 @@ use crate::{
     TendrilMode,
 };
 use rstest::rstest;
-use rstest_reuse::apply;
 use std::fs::{
     create_dir_all,
     metadata,
@@ -29,45 +28,32 @@ use std::fs::{
 
 /// See also [`crate::tests::common_action_tests::local_is_unchanged`] for
 /// `dry_run` case
-#[apply(crate::tendril::tests::tendril_tests::valid_groups_and_names)]
+#[rstest]
 fn remote_exists_copies_to_local(
-    #[case] name: &str,
     #[values(true, false)] force: bool,
     #[values(true, false)] as_dir: bool,
     #[values(true, false)] repo_exists: bool,
 ) {
-    let mut setup = Setup::new();
-    setup.remote_file = setup.parent_dir.join(&name);
-    setup.remote_dir = setup.parent_dir.join(&name);
-    setup.remote_nested_file = setup.remote_dir.join("nested.txt");
-    setup.local_file = setup.group_dir.join(&name);
-    setup.local_dir = setup.group_dir.join(&name);
-    setup.local_nested_file = setup.local_dir.join("nested.txt");
+    let setup = Setup::new();
     if repo_exists {
         setup.make_td_repo_dir();
     }
     let exp_res_path;
     let exp_remote_type;
+    let tendril;
     if as_dir {
         setup.make_remote_nested_file();
         exp_res_path = setup.remote_dir.clone();
         exp_remote_type = Some(FsoType::Dir);
+        tendril = setup.dir_tendril()
     }
     else {
         setup.make_remote_file();
         exp_res_path = setup.remote_file.clone();
         exp_remote_type = Some(FsoType::File);
+        tendril = setup.file_tendril()
     }
     assert_eq!(setup.td_repo.exists(), repo_exists);
-
-    let tendril = Tendril::new_expose(
-        setup.uni_td_repo(),
-        "SomeApp",
-        name,
-        setup.parent_dir.clone().into(),
-        TendrilMode::DirOverwrite,
-    )
-    .unwrap();
 
     let actual = pull_tendril(&tendril, false, force);
 

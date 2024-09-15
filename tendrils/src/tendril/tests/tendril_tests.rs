@@ -22,6 +22,11 @@ use std::path::{
 #[case("tendrils.json")]
 #[case("Tendrils.json")]
 #[case("TENDRILS.JSON")]
+#[case("New\nLine")]
+#[case("Carriage\rReturn")]
+#[case(".git")]
+#[case(".Git")]
+#[case(".GIT")]
 pub fn valid_groups_and_names(#[case] value: &str) {}
 
 #[template]
@@ -37,15 +42,10 @@ pub fn valid_names_but_invalid_groups(#[case] value: &str) {}
 #[template]
 #[rstest]
 #[case("")]
-#[case("New\nLine")]
-#[case("Carriage\rReturn")]
 pub fn invalid_groups_and_names(#[case] value: &str) {}
 
 #[template]
 #[rstest]
-#[case(".git")]
-#[case(".Git")]
-#[case(".GIT")]
 #[case(".tendrils")]
 #[case(".Tendrils")]
 #[case(".TENDRILS")]
@@ -87,22 +87,6 @@ fn name_is_invalid_returns_invalid_name_error(#[case] name: &str) {
     .unwrap_err();
 
     assert_eq!(actual, InvalidTendrilError::InvalidName);
-}
-
-#[rstest]
-#[case("New\nLine")]
-#[case("Carriage\rReturn")]
-fn parent_is_invalid_returns_invalid_parent_error(#[case] parent: &str) {
-    let actual = Tendril::new_expose(
-        &UniPath::from(Path::new("/Repo")),
-        "SomeApp",
-        "misc.txt",
-        PathBuf::from(parent).into(),
-        TendrilMode::DirOverwrite,
-    )
-    .unwrap_err();
-
-    assert_eq!(actual, InvalidTendrilError::InvalidParent);
 }
 
 #[apply(valid_groups_and_names)]
