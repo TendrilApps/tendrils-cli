@@ -79,6 +79,101 @@ fn remote_exists_copies_to_local(
 }
 
 #[rstest]
+fn remote_doesnt_exist_returns_io_error_not_found(
+    #[values(true, false)] dry_run: bool,
+    #[values(true, false)] force: bool,
+) {
+    let mut setup = Setup::new();
+    setup.parent_dir = setup.parent_dir.join("IDoNotExist");
+    setup.remote_file = setup.parent_dir.join("misc.txt");
+    setup.remote_dir = setup.parent_dir.join("misc");
+    setup.remote_nested_file = setup.remote_dir.join("nested.txt");
+    setup.remote_subdir_file = setup.parent_dir.join("SubDir/misc.txt");
+    setup.remote_subdir_dir = setup.parent_dir.join("SubDir/misc");
+    setup.remote_subdir_nested_file =
+        setup.remote_subdir_dir.join("nested.txt");
+    setup.make_local_file();
+    setup.make_local_nested_file();
+    setup.make_local_subdir_file();
+    setup.make_local_subdir_nested_file();
+
+    let file_tendril = setup.file_tendril();
+    let dir_tendril = setup.dir_tendril();
+    let subdir_file_tendril = setup.subdir_file_tendril();
+    let subdir_dir_tendril = setup.subdir_dir_tendril();
+    assert!(!file_tendril.parent().inner().exists());
+    assert!(!dir_tendril.parent().inner().exists());
+    assert!(!subdir_file_tendril.parent().inner().exists());
+    assert!(!subdir_dir_tendril.parent().inner().exists());
+
+    let file_actual = pull_tendril(&file_tendril, dry_run, force);
+    let dir_actual = pull_tendril(&dir_tendril, dry_run, force);
+    let subdir_file_actual =
+        pull_tendril(&subdir_file_tendril, dry_run, force);
+    let subdir_dir_actual =
+        pull_tendril(&subdir_dir_tendril, dry_run, force);
+
+    let exp_result = Err(TendrilActionError::IoError {
+        kind: std::io::ErrorKind::NotFound,
+        loc: Location::Source
+    });
+    assert_eq!(
+        file_actual,
+        ActionLog::new(
+            Some(FsoType::File),
+            None,
+            setup.remote_file.clone(),
+            exp_result.clone(),
+        )
+    );
+    assert_eq!(
+        dir_actual,
+        ActionLog::new(
+            Some(FsoType::Dir),
+            None,
+            setup.remote_dir.clone(),
+            exp_result.clone(),
+        )
+    );
+    assert_eq!(
+        subdir_file_actual,
+        ActionLog::new(
+            Some(FsoType::File),
+            None,
+            setup.remote_subdir_file.clone(),
+            exp_result.clone(),
+        )
+    );
+    assert_eq!(
+        subdir_dir_actual,
+        ActionLog::new(
+            Some(FsoType::Dir),
+            None,
+            setup.remote_subdir_dir.clone(),
+            exp_result,
+        )
+    );
+    assert_eq!(setup.local_file_contents(), "Local file contents");
+    assert_eq!(
+        setup.local_nested_file_contents(),
+        "Local nested file contents"
+    );
+    assert_eq!(
+        setup.local_subdir_file_contents(),
+        "Local subdir file contents"
+    );
+    assert_eq!(
+        setup.local_subdir_nested_file_contents(),
+        "Local subdir nested file contents"
+    );
+    assert!(!setup.remote_file.exists());
+    assert!(!setup.remote_dir.exists());
+    assert!(!setup.remote_subdir_file.exists());
+    assert!(!setup.remote_subdir_dir.exists());
+}
+
+
+#[rstest]
 #[case(true)]
 #[case(false)]
 fn remote_is_symlink_returns_type_mismatch_error_unless_forced_then_copies_symlink_target_contents_keeps_remote_name(

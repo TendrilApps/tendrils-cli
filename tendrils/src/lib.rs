@@ -497,13 +497,6 @@ fn link_tendril(
         log.result = Err(TendrilActionError::ModeMismatch);
         return log;
     }
-    if !tendril.parent().inner().exists() {
-        log.result = Err(TendrilActionError::IoError {
-            kind: std::io::ErrorKind::NotFound,
-            loc: Location::Dest,
-        });
-        return log;
-    }
 
     let local_type;
     if log.local_type().is_none() {
@@ -589,13 +582,6 @@ fn push_tendril(
     );
     if tendril.mode == TendrilMode::Link {
         log.result = Err(TendrilActionError::ModeMismatch);
-        return log;
-    }
-    if !tendril.parent().inner().exists() {
-        log.result = Err(TendrilActionError::IoError {
-            kind: std::io::ErrorKind::NotFound,
-            loc: Location::Dest,
-        });
         return log;
     }
 

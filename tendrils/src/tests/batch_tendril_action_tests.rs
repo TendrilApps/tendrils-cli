@@ -863,10 +863,6 @@ fn parent_path_vars_are_resolved(
     let expected_resolved_path = format!(
         "{SEP}My{SEP}Home{SEP}I_do_not_exist{SEP}value{SEP}misc.txt"
     );
-    let expected_loc = match mode {
-        ActionMode::Pull => Location::Source,
-        _ => Location::Dest,
-    };
     let expected = vec![TendrilReport {
         orig_tendril: Rc::new(tendril),
         name: "misc.txt".to_string(),
@@ -876,7 +872,7 @@ fn parent_path_vars_are_resolved(
             PathBuf::from(expected_resolved_path.clone()),
             Err(TendrilActionError::IoError {
                 kind: std::io::ErrorKind::NotFound,
-                loc: expected_loc,
+                loc: Location::Source,
             }),
         )),
     }];

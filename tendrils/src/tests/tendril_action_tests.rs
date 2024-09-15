@@ -596,16 +596,9 @@ fn tendril_action_tendrils_are_filtered_by_parents(
     t2.link = mode == ActionMode::Link;
     t3.link = mode == ActionMode::Link;
 
-    let loc;
-    if mode == ActionMode::Pull {
-        loc = Location::Source;
-    }
-    else {
-        loc = Location::Dest;
-    }
     let io_err = Err(TendrilActionError::IoError {
         kind: std::io::ErrorKind::NotFound,
-        loc,
+        loc: Location::Source,
     });
     let t2_result = TendrilReport {
         orig_tendril: Rc::new(t2.clone()),

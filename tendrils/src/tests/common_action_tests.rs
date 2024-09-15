@@ -579,20 +579,20 @@ fn other_files_in_subdir_are_unchanged(
 
 #[rstest]
 #[case(link_tendril)]
-#[case(pull_tendril)]
 #[case(push_tendril)]
-fn remote_parent_doesnt_exist_returns_io_error_not_found(
+fn remote_parent_doesnt_exist_creates_anyways(
     #[case] action: fn(&Tendril, bool, bool) -> ActionLog,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
     let mut setup = Setup::new();
-    setup.parent_dir = setup.parent_dir.join("IDoNotExist");
-    setup.remote_file = setup.parent_dir.join("misc.txt");
-    setup.remote_dir = setup.parent_dir.join("misc");
+    setup.remote_file = setup.parent_dir.join("IDoNotExist1/misc.txt");
+    setup.remote_dir = setup.parent_dir.join("IDoNotExist2/misc");
     setup.remote_nested_file = setup.remote_dir.join("nested.txt");
-    setup.remote_subdir_file = setup.parent_dir.join("SubDir/misc.txt");
-    setup.remote_subdir_dir = setup.parent_dir.join("SubDir/misc");
+    setup.remote_subdir_file =
+        setup.parent_dir.join("IDoNotExist3/SubDir/misc.txt");
+    setup.remote_subdir_dir =
+        setup.parent_dir.join("IDoNotExist4/SubDir/misc");
     setup.remote_subdir_nested_file =
         setup.remote_subdir_dir.join("nested.txt");
     setup.make_local_file();
@@ -600,20 +600,44 @@ fn remote_parent_doesnt_exist_returns_io_error_not_found(
     setup.make_local_subdir_file();
     setup.make_local_subdir_nested_file();
 
-    let mut file_tendril = setup.file_tendril();
-    let mut dir_tendril = setup.dir_tendril();
-    let mut subdir_file_tendril = setup.subdir_file_tendril();
-    let mut subdir_dir_tendril = setup.subdir_dir_tendril();
+    let mut file_tendril = Tendril::new_expose(
+        &setup.uni_td_repo(),
+        "SomeApp",
+        "misc.txt",
+        UniPath::from(setup.parent_dir.join("IDoNotExist1")),
+        TendrilMode::DirOverwrite,
+    ).unwrap();
+    let mut dir_tendril = Tendril::new_expose(
+        &setup.uni_td_repo(),
+        "SomeApp",
+        "misc",
+        UniPath::from(setup.parent_dir.join("IDoNotExist2")),
+        TendrilMode::DirOverwrite,
+    ).unwrap();
+    let mut subdir_file_tendril = Tendril::new_expose(
+        &setup.uni_td_repo(),
+        "SomeApp",
+        "SubDir/misc.txt",
+        UniPath::from(setup.parent_dir.join("IDoNotExist3")),
+        TendrilMode::DirOverwrite,
+    ).unwrap();
+    let mut subdir_dir_tendril = Tendril::new_expose(
+        &setup.uni_td_repo(),
+        "SomeApp",
+        "SubDir/misc",
+        UniPath::from(setup.parent_dir.join("IDoNotExist4")),
+        TendrilMode::DirOverwrite,
+    ).unwrap();
     if action == link_tendril {
         file_tendril.mode = TendrilMode::Link;
         dir_tendril.mode = TendrilMode::Link;
         subdir_file_tendril.mode = TendrilMode::Link;
         subdir_dir_tendril.mode = TendrilMode::Link;
     }
-    assert!(!file_tendril.parent().inner().exists());
-    assert!(!dir_tendril.parent().inner().exists());
-    assert!(!subdir_file_tendril.parent().inner().exists());
-    assert!(!subdir_dir_tendril.parent().inner().exists());
+    assert!(!file_tendril.remote().parent().unwrap().exists());
+    assert!(!dir_tendril.remote().parent().unwrap().exists());
+    assert!(!subdir_file_tendril.remote().parent().unwrap().exists());
+    assert!(!subdir_dir_tendril.remote().parent().unwrap().exists());
 
     let file_actual = action(&file_tendril, dry_run, force);
     let dir_actual = action(&dir_tendril, dry_run, force);
@@ -622,14 +646,13 @@ fn remote_parent_doesnt_exist_returns_io_error_not_found(
     let subdir_dir_actual =
         action(&subdir_dir_tendril, dry_run, force);
 
-    let exp_loc = match action == pull_tendril {
-        true => Location::Source,
-        false => Location::Dest,
-    };
-    let exp_result = Err(TendrilActionError::IoError {
-        kind: std::io::ErrorKind::NotFound,
-        loc: exp_loc.clone(),
-    });
+    let exp_result;
+    if dry_run {
+        exp_result = Ok(TendrilActionSuccess::NewSkipped);
+    }
+    else {
+        exp_result = Ok(TendrilActionSuccess::New);
+    }
     assert_eq!(
         file_actual,
         ActionLog::new(
@@ -679,6 +702,27 @@ fn remote_parent_doesnt_exist_returns_io_error_not_found(
         setup.local_subdir_nested_file_contents(),
         "Local subdir nested file contents"
     );
+    if dry_run {
+        assert!(!setup.remote_file.exists());
+        assert!(!setup.remote_dir.exists());
+        assert!(!setup.remote_subdir_file.exists());
+        assert!(!setup.remote_subdir_dir.exists());
+    }
+    else {
+        assert_eq!(setup.remote_file_contents(), "Local file contents");
+        assert_eq!(
+            setup.remote_nested_file_contents(),
+            "Local nested file contents"
+        );
+        assert_eq!(
+            setup.remote_subdir_file_contents(),
+            "Local subdir file contents"
+        );
+        assert_eq!(
+            setup.remote_subdir_nested_file_contents(),
+            "Local subdir nested file contents"
+        );
+    }
 }
 
 #[rstest]

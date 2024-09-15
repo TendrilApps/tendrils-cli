@@ -92,6 +92,7 @@ impl<'a> Tendril<'a> {
     }
 
     /// Sanitized parent path.
+    #[cfg(test)]
     pub fn parent(&self) -> &UniPath {
         &self.parent
     }
