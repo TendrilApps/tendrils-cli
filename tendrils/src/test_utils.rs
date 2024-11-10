@@ -80,11 +80,11 @@ pub fn parse_config_expose(
     parse_config(json)
 }
 
-pub fn set_parents(tendril: &mut TendrilBundle, paths: &[PathBuf]) {
+pub fn set_remotes(tendril: &mut TendrilBundle, remotes: &[PathBuf]) {
     let path_strings: Vec<String> =
-        paths.iter().map(|x| String::from(x.to_str().unwrap())).collect();
+        remotes.iter().map(|x| String::from(x.to_str().unwrap())).collect();
 
-    tendril.parents = path_strings;
+    tendril.remotes = path_strings;
 }
 
 /// Returns "fo�o" where the third character is invalid UTF-8.
@@ -438,8 +438,8 @@ impl Setup {
     }
 
     pub fn file_tendril_bundle(&self) -> TendrilBundle {
-        let mut bundle = TendrilBundle::new("SomeApp", vec!["misc.txt"]);
-        bundle.parents = vec![self.parent_dir.to_string_lossy().to_string()];
+        let mut bundle = TendrilBundle::new("SomeApp/misc.txt");
+        bundle.remotes = vec![self.remote_file.to_string_lossy().to_string()];
         bundle
     }
 
@@ -447,9 +447,8 @@ impl Setup {
     pub fn file_tendril(&self) -> Tendril {
         Tendril::new_expose(
             self.uni_td_repo(),
-            "SomeApp",
-            "misc.txt",
-            self.parent_dir.clone().into(),
+            PathBuf::from("SomeApp/misc.txt"),
+            self.parent_dir.join("misc.txt").into(),
             TendrilMode::DirOverwrite,
         )
         .unwrap()
@@ -459,9 +458,8 @@ impl Setup {
     pub fn dir_tendril(&self) -> Tendril {
         Tendril::new_expose(
             self.uni_td_repo(),
-            "SomeApp",
-            "misc",
-            self.parent_dir.clone().into(),
+            PathBuf::from("SomeApp/misc"),
+            self.parent_dir.join("misc").into(),
             TendrilMode::DirOverwrite,
         )
         .unwrap()
@@ -471,9 +469,8 @@ impl Setup {
     pub fn subdir_file_tendril(&self) -> Tendril {
         Tendril::new_expose(
             self.uni_td_repo(),
-            "SomeApp",
-            "SubDir/misc.txt",
-            self.parent_dir.clone().into(),
+            PathBuf::from("SomeApp/SubDir/misc.txt"),
+            self.parent_dir.join("SubDir/misc.txt").into(),
             TendrilMode::DirOverwrite,
         )
         .unwrap()
@@ -483,9 +480,8 @@ impl Setup {
     pub fn subdir_dir_tendril(&self) -> Tendril {
         Tendril::new_expose(
             self.uni_td_repo(),
-            "SomeApp",
-            "SubDir/misc",
-            self.parent_dir.clone().into(),
+            PathBuf::from("SomeApp/SubDir/misc"),
+            self.parent_dir.join("SubDir/misc").into(),
             TendrilMode::DirOverwrite,
         )
         .unwrap()

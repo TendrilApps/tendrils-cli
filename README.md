@@ -13,7 +13,7 @@
     - Quickly editing miscellaneous files in a common place rather than tracking them down individually
     - Multiple settings profiles within one user
 - Where Tendrils isn't as useful:
-    - Ephemeral environments, such as Docker containers. It's likely simpler to use a one-off script to put the files where they belong
+    - Ephemeral environments, such as Docker containers. It's likely simpler to use a one-off script/Dockerfile to put the files where they belong
 
 # License & Acknowledgements
 - GPLv3 - See additional licensing information in the [license file](./LICENSE.md)
@@ -54,12 +54,13 @@ td init
 
 # Tendrils Repo
 - Serves as a common location for all of the tendrils defined in the [`tendrils.json`](#tendrilsjson) file
+- The master copies are stored here
 - Any folder with a `.tendrils` subfolder containing a [`tendrils.json`](#tendrilsjson) file is considered a Tendrils repo
-- Items are grouped into subfolders by their [`group`](#tendrilsjson-schema) name
+    - Similar to how a Git repo has a `.git` folder at its top level
+- Items are structured according to their [`local`](#tendrilsjson-schema) path
 
 ## Version Control & Synchronization
-- Tendrils itself does not have versioning or synchronization functionality, but the Tendrils folder is often placed inside a synchronized folder such as OneDrive, or under a version control system like Git
-    - In the case of Git, the `.git` folder would be at the top level of the Tendrils folder. The folder would be both a Git repo and a Tendrils repo
+- Tendrils itself does not have versioning or synchronization functionality, but the Tendrils repo is often placed inside a synchronized folder such as OneDrive, or under a version control system like Git
 
 # Tendril Styles
 ## Push/Pull Style
@@ -77,6 +78,8 @@ td init
 
 ## `tendrils.json` Schema
 - The json schema is intended to be flexible and to allow defining multiple tendrils in a compact form
+
+TODO: To be updated once schema is updated
 ```json
 {
     "tendrils": [
@@ -107,49 +110,47 @@ td init
 - `null` is not valid in any of these fields
 - Must only contain valid UTF-8 characters
 
-### `group`
-- The name of the group/app that the tendril belongs to
-- Items in the [Tendrils repo](#tendrils-repo) will be placed into subfolders with this `group` name 
-- Group cannot be an empty string, cannot contain line breaks, and cannot be a path (i.e cannot contain `/` or `\`)
-- Some specific values are invalid to prevent interfering with other common files/folders that may also be in the [Tendrils repo](#tendrils-repo). These invalid values are not case sensitive:
-    - `.tendrils`
-    - `.git`
-- See [Filtering by Group](#filtering-by-group)
+### `local`
+- The path to the master copy of the file/folder inside the [Tendrils Repo](#tendrils-repo)
+    - This path is appended to the Tendrils repo
+- If the path specifies multiple subfolders, the corresponding folder structure will be created
+    - These paths should use `/` instead of `\` due to better cross-platform support
+- Variables/other values in `local` are *not* [resolved](#path-resolving), but directory separators are [replaced](#directory-separators) on Windows
+- The `local` should not:
+    - Be whitespace only
+    - Point to the repo itself
+    - Point to anything outside of the repo
+    - Have path components containing only `..`
+    - Point to the `.tendrils` folder or anything inside of it
+- An attempt is made to detect values that break the guidelines above, but there are several edge cases that may not be detected
+- See [Filtering by Local](#filtering-by-locals)
+```json
+# These paths are relative to the root of the Tendrils repo
+"local": "file.txt" # Becomes /path/to/tendrils/repo/file.txt
 
-### `names`
-- A list of file and/or folder names
-- Each name defines a tendril at each [parent](#parents) location
-- If the list is empty, no tendrils are defined
-- If there is only one name, the square brackets can be omitted
-``` json
-"names": "file.txt"
 # Or
-"names": ["file.txt"]
+"local": "SomeFolder" # Becomes /path/to/tendrils/repo/SomeFolder/file.txt
+
 # Or
-"names": ["file.txt", "SomeFolder", "Subdirectory/file.txt"]
+"local": "SomeFolder/file.txt" # Becomes /path/to/tendrils/repo/SomeFolder/file.txt
 ```
-- If a name is a path with one or more subdirectory levels, it will append this
-structure to [parent](#parents)
-    - This structure will also be maintained within the [Tendrils repo](#tendrils-repo)
-- Names cannot be empty strings and cannot contain line breaks
-- See [Filtering by Name](#filtering-by-name)
 
-### `parents`
-- A list of folder paths containing the files/subfolders in [`names`](#names) (i.e. their parent folder)
-- Each parent defines a tendril for each name
+### `remotes`
+- A list of paths to the files/folders throughout the host machine that are associated with the corresponding [`local`](#local)
+- Each remote defines a tendril
 - Environment variables and some path abbreviations are supported
     - See [Path Resolving](#path-resolving)
 - If the list is empty, no tendrils are defined
-- If there is only one parent, the square brackets can be omitted
+- If there is only one remote, the square brackets can be omitted
 ``` json
-"parents": "~/parent/folder"
+"remotes": "~/some/specific/location/file.txt"
 # Or
-"parents": ["~/parent/folder"]
+"remotes": ["~/some/specific/location/SomeFolder"]
 # Or
-"parents": ["~/parent/folder1", "~/parent/folder2"]
+"remotes": ["~/some/specific/location/file.txt", "~/another/specific/location/file.txt"]
 ```
-- Parents cannot be empty strings, and cannot contain line breaks
-- Cross-platform paths should use `/` instead of `\` due to [handling of directory separators](#directory-separators)
+- Remotes should be absolute paths
+- Cross-platform paths should use `/` instead of `\` due to [the handling of directory separators](#directory-separators)
 - Care must be taken to avoid [recursive tendrils](#recursive-tendrils)
 
 ### `dir-merge`
@@ -192,7 +193,7 @@ structure to [parent](#parents)
 ## Pulling
 - Copies tendrils from their locations on the computer to the [Tendrils repo](#tendrils-repo)
 - Only operates on [push/pull style](#pushpull-style) tendrils
-- Only the *first* [parent](#parents) is used
+- Only the *first* [remote](#remotes) is used
 
 ```bash
 td pull
@@ -201,7 +202,7 @@ td pull
 ## Pushing
 - Copies tendrils from the Tendrils folder to their various locations on the machine
 - Only operates on [push/pull style](#pushpull-style) tendrils
-- *Each* [parent](#parents) is used
+- *Each* [remote](#remotes) is used
 ```bash
 td push
 ```
@@ -209,7 +210,7 @@ td push
 ## Linking
 - Creates symlinks at the various locations on the computer to the tendrils in the [Tendrils repo](#tendrils-repo)
 - Only operates on [link style](#link-style) tendrils
-- *Each* [parent](#parents) is used
+- *Each* [remote](#remotes) is used
 ``` bash
 td link
 ```
@@ -261,38 +262,27 @@ td push --path /some/tendrils/folder
 - For the filters below that support glob patterns, these are resolved using the [`glob-match`](https://crates.io/crates/glob-match) crate
     - Consult this crate's documentation for the syntax
 
-### Filtering by Group
-- Using the `--group (-g)` argument
+### Filtering by Locals
+- Using the `--locals (-l)` argument
 - Available on all of the actions listed above
-- Only tendrils who's [group](#group) matches any of the given filters will be included
+- Only tendrils who's [local](#local) matches any of the given filters will be included
     - Glob patterns are supported
 ``` bash
-td link -g App1 App2
+td link -l file1.txt SomeFolder/file2.txt **/*.json
 ```
-- Will only include tendrils whose group is exactly `App1` or `App2`
+- Will only include tendrils whose local path is exactly `file1.txt` or `SomeFolder/file2.txt`, and all JSON files
 
-### Filtering by Name
-- Using the `--names (-n)` argument
+### Filtering by Remotes
+- Using the `--remotes (-r)` argument
 - Available on all of the actions listed above
-- Only includes tendril [names](#names) that match any of the given names
+- Only includes tendril [remotes](#remotes) that match any of the given remotes
     - Glob patterns are supported
-- Any tendril names that do not match are omitted, and any tendrils without any matching names are omitted entirely.
+- Any tendril remotes that do not match are omitted, and any tendrils without any matching remotes are omitted entirely.
+- Note: Remotes are filtered *before* they are [resolved](#path-resolving)
 ``` bash
-td link -n file1.txt file2.txt *.json
+td push -p ~/Library/SomeApp/config.json **/*OneDrive*/**
 ```
-- Will only include tendrils whose name is exactly `file1.txt` or `file2.txt`, and all JSON files
-
-### Filtering by Parents
-- Using the `--parents (-p)` argument
-- Available on all of the actions listed above
-- Only includes tendril [parents](#parents) that match any of the given parents
-    - Glob patterns are supported
-- Any tendril parents that do not match are omitted, and any tendrils without any matching parents are omitted entirely.
-- Note: Parents are filtered *before* they are [resolved](#path-resolving)
-``` bash
-td push -p ~/Library/** **/*OneDrive*/**
-```
-- Will only include tendrils whose parent is in the user's `Library` folder, or any path that contains `OneDrive`
+- Will only include tendrils whose remote is exactly `~/Library/SomeApp/config.json`, or any path that contains `OneDrive`
 
 ### Filtering by Profile
 - Using the `--profiles (-P)` argument
@@ -313,21 +303,27 @@ td push -P home mac
     4. Directory separators [are replaced](#directory-separators)
 
 ## Resolving Environment Variables
-- A [parent ](#parents) path containing environment variables in the form `<VAR_NAME>` will be replaced with the variable values
+- A [remote path](#remotes) or [repo path](#specifying-the-tendrils-repo) containing environment variables in the form `<VAR_NAME>` will be replaced with the variable values
 ``` json
-"parents": "<APPDATA>\\Local\\SomeApp"
+"remotes": "<APPDATA>\\Local\\SomeApp\\file.txt"
 ```
-- The above example will resolve to `C:\Users\YourUsername\AppData\Local\SomeApp` on a typical Windows installation
+- The above example will resolve to `C:\Users\YourUsername\AppData\Local\SomeApp\\file.txt` on a typical Windows installation
+``` bash
+td push --path <OneDrive>/MyRepo
+```
 - A path can contain multiple environment variables
 
 ## Resolving Tilde (`~`)
-- A [parent](#parents) path or a [repo path](#specifying-the-tendrils-repo) with a leading tilde will replace the `~` with the value of the `HOME` environment variable
+- A [remote path](#remotes) or a [repo path](#specifying-the-tendrils-repo) with a leading tilde will replace the `~` with the value of the `HOME` environment variable
     - If `HOME` is not set, it will fall back to the combination of `HOMEDRIVE` and `HOMEPATH`
     - If either of those are not set, the raw path is used
 ``` json
-"parents": "~/documents"
+"remotes": "~/documents/file.txt"
 ```
-- The above example will resolve to `your/home/path/documents`
+- The above example will resolve to `your/home/path/documents/file.txt`
+``` bash
+td push --path ~/MyRepo
+```
 
 ## Directory Separators
 - Forward slashes (`/`) are replaced by backslashes (`\`) on Windows only

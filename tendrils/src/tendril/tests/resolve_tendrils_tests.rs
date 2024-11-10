@@ -1,4 +1,4 @@
-use crate::test_utils::set_parents;
+use crate::test_utils::set_remotes;
 use crate::{Tendril, TendrilBundle, TendrilMode, UniPath};
 use rstest::rstest;
 use serial_test::serial;
@@ -9,25 +9,20 @@ use std::path::{Path, PathBuf};
 #[case(false)]
 fn empty_parent_list_returns_empty(#[case] first_only: bool) {
     let td_repo = UniPath::from(Path::new("/Repo"));
-    let mut given = TendrilBundle::new("SomeApp", vec!["misc.txt"]);
+    let mut given = TendrilBundle::new("SomeLocal");
 
-    set_parents(&mut given, &[]);
+    set_remotes(&mut given, &[]);
 
     let actual = given.resolve_tendrils(&td_repo, first_only);
 
     assert_eq!(actual, vec![]);
 }
 
-#[rstest]
-#[case("", "misc.txt")]
-#[case("SomeApp", "")]
-fn invalid_tendril_returns_invalid_tendril(
-    #[case] group: &str,
-    #[case] name: &str,
-) {
+#[test]
+fn invalid_tendril_returns_invalid_tendril() {
     let td_repo = UniPath::from(Path::new("/Repo"));
-    let mut given = TendrilBundle::new(group, vec![name]);
-    set_parents(&mut given, &[
+    let mut given = TendrilBundle::new("");
+    set_remotes(&mut given, &[
         PathBuf::from("SomeParentPath1"),
         PathBuf::from("SomeParentPath2"),
         PathBuf::from("SomeParentPath3"),
@@ -41,16 +36,11 @@ fn invalid_tendril_returns_invalid_tendril(
     assert_eq!(actual.len(), 3);
 }
 
-#[rstest]
-#[case("", "misc.txt")]
-#[case("SomeApp", "")]
-fn invalid_tendril_and_empty_parent_list_returns_empty(
-    #[case] group: &str,
-    #[case] name: &str,
-) {
+#[test]
+fn invalid_tendril_and_empty_parent_list_returns_empty() {
     let td_repo = UniPath::from(Path::new("/Repo"));
-    let mut given = TendrilBundle::new(group, vec![name]);
-    set_parents(&mut given, &[]);
+    let mut given = TendrilBundle::new("");
+    set_remotes(&mut given, &[]);
 
     let actual = given.resolve_tendrils(&td_repo, false);
 
@@ -58,32 +48,23 @@ fn invalid_tendril_and_empty_parent_list_returns_empty(
 }
 
 #[test]
-fn first_only_true_resolves_first_parent_paths_for_all_names() {
+fn first_only_true_resolves_first_remote_path_only() {
     let td_repo = UniPath::from(Path::new("/Repo"));
     let mut given =
-        TendrilBundle::new("SomeApp", vec!["misc1.txt", "misc2.txt"]);
+        TendrilBundle::new("SomeLocal");
     given.dir_merge = false;
 
-    set_parents(&mut given, &[
-        PathBuf::from("FirstParent"),
-        PathBuf::from("SecondParent"),
-        PathBuf::from("ThirdParent"),
+    set_remotes(&mut given, &[
+        PathBuf::from("FirstRemote"),
+        PathBuf::from("SecondRemote"),
+        PathBuf::from("ThirdRemote"),
     ]);
 
     let expected = vec![
         Ok(Tendril::new_expose(
             &td_repo,
-            "SomeApp",
-            "misc1.txt",
-            PathBuf::from("FirstParent").into(),
-            TendrilMode::DirOverwrite,
-        )
-        .unwrap()),
-        Ok(Tendril::new_expose(
-            &td_repo,
-            "SomeApp",
-            "misc2.txt",
-            PathBuf::from("FirstParent").into(),
+            "SomeLocal".into(),
+            PathBuf::from("FirstRemote").into(),
             TendrilMode::DirOverwrite,
         )
         .unwrap()),
@@ -95,64 +76,36 @@ fn first_only_true_resolves_first_parent_paths_for_all_names() {
 }
 
 #[test]
-fn first_only_false_resolves_all_parent_paths_for_all_names() {
+fn first_only_false_resolves_all_remote_paths() {
     let td_repo = UniPath::from(Path::new("/Repo"));
-    let mut given =
-        TendrilBundle::new("SomeApp", vec!["misc1.txt", "misc2.txt"]);
+    let mut given = TendrilBundle::new("SomeLocal");
     given.dir_merge = false;
 
-    set_parents(&mut given, &[
-        PathBuf::from("FirstParent"),
-        PathBuf::from("SecondParent"),
-        PathBuf::from("ThirdParent"),
+    set_remotes(&mut given, &[
+        PathBuf::from("FirstRemote"),
+        PathBuf::from("SecondRemote"),
+        PathBuf::from("ThirdRemote"),
     ]);
 
     let expected = vec![
         Ok(Tendril::new_expose(
             &td_repo,
-            "SomeApp",
-            "misc1.txt",
-            PathBuf::from("FirstParent").into(),
+            "SomeLocal".into(),
+            PathBuf::from("FirstRemote").into(),
             TendrilMode::DirOverwrite,
         )
         .unwrap()),
         Ok(Tendril::new_expose(
             &td_repo,
-            "SomeApp",
-            "misc1.txt",
-            PathBuf::from("SecondParent").into(),
+            "SomeLocal".into(),
+            PathBuf::from("SecondRemote").into(),
             TendrilMode::DirOverwrite,
         )
         .unwrap()),
         Ok(Tendril::new_expose(
             &td_repo,
-            "SomeApp",
-            "misc1.txt",
-            PathBuf::from("ThirdParent").into(),
-            TendrilMode::DirOverwrite,
-        )
-        .unwrap()),
-        Ok(Tendril::new_expose(
-            &td_repo,
-            "SomeApp",
-            "misc2.txt",
-            PathBuf::from("FirstParent").into(),
-            TendrilMode::DirOverwrite,
-        )
-        .unwrap()),
-        Ok(Tendril::new_expose(
-            &td_repo,
-            "SomeApp",
-            "misc2.txt",
-            PathBuf::from("SecondParent").into(),
-            TendrilMode::DirOverwrite,
-        )
-        .unwrap()),
-        Ok(Tendril::new_expose(
-            &td_repo,
-            "SomeApp",
-            "misc2.txt",
-            PathBuf::from("ThirdParent").into(),
+            "SomeLocal".into(),
+            PathBuf::from("ThirdRemote").into(),
             TendrilMode::DirOverwrite,
         )
         .unwrap()),
@@ -164,78 +117,35 @@ fn first_only_false_resolves_all_parent_paths_for_all_names() {
 }
 
 #[test]
-fn duplicate_names_resolves_all() {
+fn duplicate_remotes_resolves_all() {
     let td_repo = UniPath::from(Path::new("/Repo"));
-    let mut given =
-        TendrilBundle::new("SomeApp", vec!["misc.txt", "misc.txt", "misc.txt"]);
-    given.dir_merge = false;
-    set_parents(&mut given, &[PathBuf::from("Parent")]);
-
-    let expected = vec![
-        Ok(Tendril::new_expose(
-            &td_repo,
-            "SomeApp",
-            "misc.txt",
-            PathBuf::from("Parent").into(),
-            TendrilMode::DirOverwrite,
-        )
-        .unwrap()),
-        Ok(Tendril::new_expose(
-            &td_repo,
-            "SomeApp",
-            "misc.txt",
-            PathBuf::from("Parent").into(),
-            TendrilMode::DirOverwrite,
-        )
-        .unwrap()),
-        Ok(Tendril::new_expose(
-            &td_repo,
-            "SomeApp",
-            "misc.txt",
-            PathBuf::from("Parent").into(),
-            TendrilMode::DirOverwrite,
-        )
-        .unwrap()),
-    ];
-
-    let actual = given.resolve_tendrils(&td_repo, false);
-
-    assert_eq!(actual, expected);
-}
-
-#[test]
-fn duplicate_parent_paths_resolves_all() {
-    let td_repo = UniPath::from(Path::new("/Repo"));
-    let mut given = TendrilBundle::new("SomeApp", vec!["misc.txt"]);
+    let mut given = TendrilBundle::new("SomeLocal");
     given.dir_merge = false;
 
-    set_parents(&mut given, &[
-        PathBuf::from("Parent"),
-        PathBuf::from("Parent"),
-        PathBuf::from("Parent"),
+    set_remotes(&mut given, &[
+        PathBuf::from("Remote"),
+        PathBuf::from("Remote"),
+        PathBuf::from("Remote"),
     ]);
     let expected = vec![
         Ok(Tendril::new_expose(
             &td_repo,
-            "SomeApp",
-            "misc.txt",
-            PathBuf::from("Parent").into(),
+            "SomeLocal".into(),
+            PathBuf::from("Remote").into(),
             TendrilMode::DirOverwrite,
         )
         .unwrap()),
         Ok(Tendril::new_expose(
             &td_repo,
-            "SomeApp",
-            "misc.txt",
-            PathBuf::from("Parent").into(),
+            "SomeLocal".into(),
+            PathBuf::from("Remote").into(),
             TendrilMode::DirOverwrite,
         )
         .unwrap()),
         Ok(Tendril::new_expose(
             &td_repo,
-            "SomeApp",
-            "misc.txt",
-            PathBuf::from("Parent").into(),
+            "SomeLocal".into(),
+            PathBuf::from("Remote").into(),
             TendrilMode::DirOverwrite,
         )
         .unwrap()),
@@ -248,14 +158,14 @@ fn duplicate_parent_paths_resolves_all() {
 
 #[test]
 #[serial("mut-env-var-testing")]
-fn vars_and_leading_tilde_in_parent_path_are_resolved_in_all() {
+fn vars_and_leading_tilde_in_remote_path_are_resolved_in_all() {
     let td_repo = UniPath::from(Path::new("/Repo"));
-    let mut given = TendrilBundle::new("SomeApp", vec!["misc.txt"]);
+    let mut given = TendrilBundle::new("SomeLocal");
     given.dir_merge = false;
     std::env::set_var("mut-testing", "value");
     std::env::set_var("HOME", "MyHome");
 
-    set_parents(&mut given, &[
+    set_remotes(&mut given, &[
         PathBuf::from("<mut-testing>1"),
         PathBuf::from("~\\<mut-testing>2"),
         PathBuf::from("~/<mut-testing>3"),
@@ -263,24 +173,21 @@ fn vars_and_leading_tilde_in_parent_path_are_resolved_in_all() {
     let expected = vec![
         Ok(Tendril::new_expose(
             &td_repo,
-            "SomeApp",
-            "misc.txt",
+            "SomeLocal".into(),
             PathBuf::from("value1").into(),
             TendrilMode::DirOverwrite,
         )
         .unwrap()),
         Ok(Tendril::new_expose(
             &td_repo,
-            "SomeApp",
-            "misc.txt",
+            "SomeLocal".into(),
             PathBuf::from("MyHome\\value2").into(),
             TendrilMode::DirOverwrite,
         )
         .unwrap()),
         Ok(Tendril::new_expose(
             &td_repo,
-            "SomeApp",
-            "misc.txt",
+            "SomeLocal".into(),
             PathBuf::from("MyHome/value3").into(),
             TendrilMode::DirOverwrite,
         )
@@ -293,15 +200,14 @@ fn vars_and_leading_tilde_in_parent_path_are_resolved_in_all() {
 }
 
 #[test]
-fn var_in_parent_path_doesnt_exist_returns_raw_path() {
+fn var_in_remote_path_doesnt_exist_returns_raw_path() {
     let td_repo = UniPath::from(Path::new("/Repo"));
-    let mut given = TendrilBundle::new("SomeApp", vec!["misc.txt"]);
+    let mut given = TendrilBundle::new("SomeLocal");
     given.dir_merge = false;
-    set_parents(&mut given, &[PathBuf::from("<I_do_not_exist>".to_string())]);
+    set_remotes(&mut given, &[PathBuf::from("<I_do_not_exist>".to_string())]);
     let expected = vec![Ok(Tendril::new_expose(
         &td_repo,
-        "SomeApp",
-        "misc.txt",
+        "SomeLocal".into(),
         PathBuf::from("<I_do_not_exist>").into(),
         TendrilMode::DirOverwrite,
     )
@@ -314,20 +220,19 @@ fn var_in_parent_path_doesnt_exist_returns_raw_path() {
 
 #[test]
 #[serial("mut-env-var-testing")]
-fn leading_tilde_in_parent_path_tilde_value_doesnt_exist_returns_raw_path() {
+fn leading_tilde_in_remote_path_tilde_value_doesnt_exist_returns_raw_path() {
     let td_repo = UniPath::from(Path::new("/Repo"));
-    let mut given = TendrilBundle::new("SomeApp", vec!["misc.txt"]);
+    let mut given = TendrilBundle::new("SomeLocal");
     given.dir_merge = false;
-    set_parents(&mut given, &[PathBuf::from("~/SomeParentPath".to_string())]);
+    set_remotes(&mut given, &[PathBuf::from("~/SomeRemotePath".to_string())]);
     std::env::remove_var("HOME");
     std::env::remove_var("HOMEDRIVE");
     std::env::remove_var("HOMEPATH");
 
     let expected = vec![Ok(Tendril::new_expose(
         &td_repo,
-        "SomeApp",
-        "misc.txt",
-        PathBuf::from("~/SomeParentPath").into(),
+        "SomeLocal".into(),
+        PathBuf::from("~/SomeRemotePath").into(),
         TendrilMode::DirOverwrite,
     )
     .unwrap())];
@@ -348,16 +253,15 @@ fn resolves_tendril_mode_properly(
     #[case] expected_mode: TendrilMode,
 ) {
     let td_repo = UniPath::from(Path::new("/Repo"));
-    let mut given = TendrilBundle::new("SomeApp", vec!["misc.txt"]);
+    let mut given = TendrilBundle::new("SomeLocal");
     given.dir_merge = dir_merge;
     given.link = link;
-    set_parents(&mut given, &[PathBuf::from("SomeParentPath")]);
+    set_remotes(&mut given, &[PathBuf::from("SomeRemotePath")]);
 
     let expected = vec![Ok(Tendril::new_expose(
         &td_repo,
-        "SomeApp",
-        "misc.txt",
-        PathBuf::from("SomeParentPath").into(),
+        "SomeLocal".into(),
+        PathBuf::from("SomeRemotePath").into(),
         expected_mode,
     )
     .unwrap())];

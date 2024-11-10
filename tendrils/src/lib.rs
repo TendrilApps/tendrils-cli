@@ -213,17 +213,15 @@ impl TendrilsApi for TendrilsActor {
 const INIT_TD_TENDRILS_JSON: &str = r#"{
     "tendrils": [
         {
-            "group": "SomeApp",
-            "names": "SomeFile.ext",
-            "parents": "/path/to/containing/folder"
+            "local": "SomeApp/SomeFile.ext",
+            "remotes": "/path/to/SomeFile.ext"
         },
         {
-            "group": "SomeApp2",
-            "names": ["SomeFile2.ext", "SomeFolder3"],
-            "parents": [
-                "/path/to/containing/folder2",
-                "/path/to/containing/folder3",
-                "~/path/to/containing/folder4"
+            "local": "SomeApp2/SomeFolder",
+            "remotes": [
+                "/path/to/SomeFolder",
+                "/another/path/to/SomeFolder",
+                "~/path/to/DifferentName"
             ],
             "dir-merge": false,
             "link": true,
@@ -484,8 +482,8 @@ fn link_tendril(
     dry_run: bool,
     mut force: bool,
 ) -> ActionLog {
-    let target = tendril.local();
-    let create_at = tendril.remote();
+    let target = tendril.local_abs();
+    let create_at = tendril.remote().inner();
 
     let mut log = ActionLog::new(
         target.get_type(),
@@ -537,8 +535,8 @@ fn pull_tendril(
     dry_run: bool,
     force: bool,
 ) -> ActionLog {
-    let dest = tendril.local();
-    let source = tendril.remote();
+    let dest = tendril.local_abs();
+    let source = tendril.remote().inner();
 
     let mut log = ActionLog::new(
         dest.get_type(),
@@ -571,8 +569,8 @@ fn push_tendril(
     dry_run: bool,
     force: bool,
 ) -> ActionLog {
-    let source = tendril.local();
-    let dest = tendril.remote();
+    let source = tendril.local_abs();
+    let dest = tendril.remote().inner();
 
     let mut log = ActionLog::new(
         source.get_type(),
@@ -746,14 +744,7 @@ fn batch_tendril_action<F: FnMut(TendrilReport<ActionLog>)>(
         let bundle_rc = std::rc::Rc::new(bundle);
         let tendrils = bundle_rc.resolve_tendrils(td_repo, first_only);
 
-        // The number of parents that were considered when
-        // resolving the tendril bundle
-        let num_parents = match first_only {
-            true => 1,
-            false => bundle_rc.parents.len(),
-        };
-
-        for (i, tendril) in tendrils.into_iter().enumerate() {
+        for tendril in tendrils.into_iter() {
             let log = match (tendril, &mode, can_symlink) {
                 (Ok(v), ActionMode::Pull, _) => {
                     Ok(pull_tendril(&v, dry_run, force))
@@ -775,9 +766,9 @@ fn batch_tendril_action<F: FnMut(TendrilReport<ActionLog>)>(
                     // unnecessarily.
                     let remote = v.remote();
                     Ok(ActionLog::new(
-                        v.local().get_type(),
-                        remote.get_type(),
-                        remote.to_path_buf(),
+                        v.local_abs().get_type(),
+                        remote.inner().get_type(),
+                        remote.inner().to_path_buf(),
                         Err(TendrilActionError::IoError {
                             kind: std::io::ErrorKind::PermissionDenied,
                             loc: Location::Dest,
@@ -787,12 +778,9 @@ fn batch_tendril_action<F: FnMut(TendrilReport<ActionLog>)>(
                 (Err(e), _, _) => Err(e),
             };
 
-            let name_idx = ((i / num_parents) as f32).floor() as usize;
-            let name = bundle_rc.names[name_idx].clone();
-
             let report = TendrilReport {
                 orig_tendril: std::rc::Rc::clone(&bundle_rc),
-                name,
+                local: bundle_rc.local.clone(),
                 log,
             };
 

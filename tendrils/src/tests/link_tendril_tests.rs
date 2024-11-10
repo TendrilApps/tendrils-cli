@@ -22,7 +22,7 @@ use std::fs::{create_dir_all, metadata, set_permissions};
 /// See also [`crate::tests::common_action_tests::remote_is_unchanged`] for
 /// `dry_run` case
 #[rstest]
-fn remote_parent_and_local_exist_symlink_to_local_is_created(
+fn local_exists_symlink_to_local_is_created(
     #[values(true, false)] force: bool,
     #[values(true, false)] as_dir: bool,
 ) {
@@ -161,6 +161,61 @@ fn remote_exists_and_is_not_symlink_returns_type_mismatch_error_unless_forced(
             Some(FsoType::Dir),
             setup.remote_dir,
             exp_dir_result,
+        )
+    );
+}
+
+#[rstest]
+fn remote_parent_doesnt_exist_creates_full_parent_structure(
+    #[values(true, false)] force: bool,
+    #[values(true, false)] as_dir: bool,
+) {
+    let setup = Setup::new();
+    let exp_remote_path;
+    let mut tendril;
+    if as_dir {
+        setup.make_local_subdir_nested_file();
+        exp_remote_path = setup.remote_subdir_dir.clone();
+        tendril = setup.subdir_dir_tendril();
+        assert!(!setup.remote_subdir_dir.parent().unwrap().exists());
+    }
+    else {
+        setup.make_local_subdir_file();
+        exp_remote_path = setup.remote_subdir_file.clone();
+        tendril = setup.subdir_file_tendril();
+        assert!(!setup.remote_subdir_file.parent().unwrap().exists());
+    }
+    tendril.mode = TendrilMode::Link;
+
+    let actual = link_tendril(&tendril, false, force);
+
+    let exp_local_type;
+    if as_dir {
+        assert_eq!(
+            setup.remote_subdir_nested_file_contents(),
+            "Local subdir nested file contents"
+        );
+        exp_local_type = Some(FsoType::Dir);
+        assert_eq!(
+            std::fs::read_link(setup.remote_subdir_dir).unwrap(),
+            setup.local_subdir_dir,
+        );
+    }
+    else {
+        assert_eq!(setup.remote_subdir_file_contents(), "Local subdir file contents");
+        exp_local_type = Some(FsoType::File);
+        assert_eq!(
+            std::fs::read_link(setup.remote_subdir_file).unwrap(),
+            setup.local_subdir_file,
+        );
+    }
+    assert_eq!(
+        actual,
+        ActionLog::new(
+            exp_local_type,
+            None,
+            exp_remote_path,
+            Ok(TendrilActionSuccess::New),
         )
     );
 }
@@ -327,9 +382,8 @@ fn no_read_access_from_local_file_returns_success(
 
     let tendril = Tendril::new_expose(
         setup.uni_td_repo(),
-        "SomeApp",
-        "nra.txt",
-        setup.parent_dir.clone().into(),
+        "SomeApp/nra.txt".into(),
+        setup.remote_nra_file.clone().into(),
         TendrilMode::Link,
     )
     .unwrap();
@@ -371,9 +425,8 @@ fn no_read_access_from_local_dir_returns_success(
 
     let tendril = Tendril::new_expose(
         setup.uni_td_repo(),
-        "SomeApp",
-        "nra",
-        setup.parent_dir.clone().into(),
+        "SomeApp/nra".into(),
+        setup.remote_nra_dir.clone().into(),
         TendrilMode::Link,
     )
     .unwrap();

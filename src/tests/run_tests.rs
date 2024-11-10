@@ -57,13 +57,12 @@ fn build_action_subcommand(
     mode: ActionMode,
     dry_run: bool,
     force: bool,
-    groups: Vec<String>,
-    names: Vec<String>,
-    parents: Vec<String>,
+    locals: Vec<String>,
+    remotes: Vec<String>,
     profiles: Vec<String>,
 ) -> TendrilsSubcommands {
     let action_args = ActionArgs { path, dry_run, force };
-    let filter_args = FilterArgs { groups, names, parents, profiles };
+    let filter_args = FilterArgs { locals, remotes, profiles };
 
     match mode {
         ActionMode::Pull => {
@@ -601,7 +600,6 @@ fn tendril_action_no_path_given_and_no_cd_prints_message(
         vec![],
         vec![],
         vec![],
-        vec![],
     );
     let args = TendrilCliArgs { tendrils_command };
 
@@ -657,7 +655,6 @@ fn tendril_action_given_path_is_not_tendrils_repo_but_cd_is_should_print_message
         vec![],
         vec![],
         vec![],
-        vec![],
     );
     let args = TendrilCliArgs { tendrils_command };
 
@@ -708,7 +705,6 @@ fn tendril_action_given_path_and_cd_are_both_tendrils_repos_uses_given_path(
         mode,
         dry_run,
         force,
-        vec![],
         vec![],
         vec![],
         vec![],
@@ -767,7 +763,6 @@ fn tendril_action_given_path_is_relative_prepends_with_cd(
         vec![],
         vec![],
         vec![],
-        vec![],
     );
     let args = TendrilCliArgs { tendrils_command };
 
@@ -819,7 +814,6 @@ fn tendril_action_given_path_is_relative_and_cd_doesnt_exist_prepends_with_dir_s
         vec![],
         vec![],
         vec![],
-        vec![],
     );
     let args = TendrilCliArgs { tendrils_command };
 
@@ -859,7 +853,6 @@ fn tendril_action_given_path_is_relative_but_resolves_to_abs_should_not_prepend_
         mode,
         dry_run,
         force,
-        vec![],
         vec![],
         vec![],
         vec![],
@@ -912,7 +905,6 @@ fn tendril_action_given_path_is_relative_but_resolves_to_abs_and_cd_doesnt_exist
         vec![],
         vec![],
         vec![],
-        vec![],
     );
     let args = TendrilCliArgs { tendrils_command };
 
@@ -954,7 +946,6 @@ fn tendril_action_prints_returned_resolved_path_when_invalid_td_repo(
         vec![],
         vec![],
         vec![],
-        vec![],
     );
     let args = TendrilCliArgs { tendrils_command };
 
@@ -981,9 +972,8 @@ fn tendril_action_prints_table_in_specific_format(
     let given_dir = PathBuf::from("/SomeGivenDir");
     let link = mode == ActionMode::Link;
     let orig_tendril = std::rc::Rc::new(TendrilBundle {
-        group: "SomeApp".to_string(),
-        names: vec!["n1".to_string(), "n2".to_string()],
-        parents: vec!["p1".to_string()],
+        local: "SomeApp/misc.txt".to_string(),
+        remotes: vec!["r1/misc.txt".to_string(), "r2/misc.txt".to_string()],
         profiles: vec![],
         link,
         dir_merge: false,
@@ -1003,21 +993,21 @@ fn tendril_action_prints_table_in_specific_format(
     api.ta_const_rt = Ok(vec![
         TendrilReport {
             orig_tendril: orig_tendril.clone(),
-            name: "n1".to_string(),
+            local: "SomeApp/misc.txt".to_string(),
             log: Ok(ActionLog::new(
                 Some(FsoType::File),
                 None,
-                PathBuf::from("p1n1"),
+                PathBuf::from("r1/misc.txt"),
                 ok_result,
             )),
         },
         TendrilReport {
             orig_tendril: orig_tendril.clone(),
-            name: "n2".to_string(),
+            local: "SomeApp/misc.txt".to_string(),
             log: Ok(ActionLog::new(
                 Some(FsoType::File),
                 None,
-                PathBuf::from("p1n2"),
+                PathBuf::from("r2/misc.txt"),
                 err_result,
             )),
         },
@@ -1033,39 +1023,37 @@ fn tendril_action_prints_table_in_specific_format(
         vec![],
         vec![],
         vec![],
-        vec![],
     );
     let args = TendrilCliArgs { tendrils_command };
 
     let _ = run(args, &api, &mut writer);
 
     // Update this example table as format changes in the future
-    // ╭─────────┬──────┬──────┬──────────────────╮
-    // │ Group   │ Name │ Path │ Report           │
-    // ├─────────┼──────┼──────┼──────────────────┤
-    // │ SomeApp │ n1   │ p1n1 │ Created          │
-    // ├─────────┼──────┼──────┼──────────────────┤
-    // │ SomeApp │ n2   │ p1n2 │ Source not found │
-    // ╰─────────┴──────┴──────┴──────────────────╯
-    let exp_link_n1 = ansi_hyperlink("p1n1", "p1n1");
-    let exp_link_n2 = ansi_hyperlink("p1n2", "p1n2");
+    // ╭──────────────────┬─────────────┬──────────────────╮
+    // │ Local            │ Remote      │ Report           │
+    // ├──────────────────┼─────────────┼──────────────────┤
+    // │ SomeApp/misc.txt │ r1/misc.txt │ Created          │
+    // ├──────────────────┼─────────────┼──────────────────┤
+    // │ SomeApp/misc.txt │ r2/misc.txt │ Source not found │
+    // ╰──────────────────┴─────────────┴──────────────────╯
+    let exp_link_n1 = ansi_hyperlink("r1/misc.txt", "r1/misc.txt");
+    let exp_link_n2 = ansi_hyperlink("r2/misc.txt", "r2/misc.txt");
     let exp_output_lines = vec![
-        "╭─────────┬──────┬──────┬──────────────────╮".to_string(),
+        "╭──────────────────┬─────────────┬──────────────────╮".to_string(),
         format!(
-            "│ {color_bright_green}{style_underline}Group{color_reset}{style_reset}   \
-            │ {color_bright_green}{style_underline}Name{color_reset}{style_reset} \
-            │ {color_bright_green}{style_underline}Path{color_reset}{style_reset} \
+            "│ {color_bright_green}{style_underline}Local{color_reset}{style_reset}            \
+            │ {color_bright_green}{style_underline}Remote{color_reset}{style_reset}      \
             │ {color_bright_green}{style_underline}Report{color_reset}{style_reset}           │"
         ),
-        "├─────────┼──────┼──────┼──────────────────┤".to_string(),
+        "├──────────────────┼─────────────┼──────────────────┤".to_string(),
         format!(
-            "│ SomeApp │ n1   │ {exp_link_n1} │ {color_bright_green}Created{color_reset}          │"
+            "│ SomeApp/misc.txt │ {exp_link_n1} │ {color_bright_green}Created{color_reset}          │"
         ),
-        "├─────────┼──────┼──────┼──────────────────┤".to_string(),
+        "├──────────────────┼─────────────┼──────────────────┤".to_string(),
         format!(
-            "│ SomeApp │ n2   │ {exp_link_n2} │ {color_bright_red}Source not found{color_reset} │"
+            "│ SomeApp/misc.txt │ {exp_link_n2} │ {color_bright_red}Source not found{color_reset} │"
         ),
-        "╰─────────┴──────┴──────┴──────────────────╯".to_string(),
+        "╰──────────────────┴─────────────┴──────────────────╯".to_string(),
     ];
 
     for (i, exp_line) in exp_output_lines.into_iter().enumerate() {
@@ -1091,9 +1079,8 @@ fn tendril_action_if_all_pass_they_are_totalled_and_returns_ok(
     let given_dir = PathBuf::from("/SomeGivenDir");
     let link = mode == ActionMode::Link;
     let orig_tendril = std::rc::Rc::new(TendrilBundle {
-        group: "SomeApp".to_string(),
-        names: vec!["n1".to_string(), "n2".to_string(), "n3".to_string()],
-        parents: vec!["p1".to_string()],
+        local: "misc.txt".to_string(),
+        remotes: vec!["r1".to_string(), "r2".to_string(), "r3".to_string()],
         profiles: vec![],
         link,
         dir_merge: false,
@@ -1109,31 +1096,31 @@ fn tendril_action_if_all_pass_they_are_totalled_and_returns_ok(
     api.ta_const_rt = Ok(vec![
         TendrilReport {
             orig_tendril: orig_tendril.clone(),
-            name: "n1".to_string(),
+            local: "misc.txt".to_string(),
             log: Ok(ActionLog::new(
                 Some(FsoType::File),
                 None,
-                PathBuf::from("p1n1"),
+                PathBuf::from("r1"),
                 ok_result.clone(),
             )),
         },
         TendrilReport {
             orig_tendril: orig_tendril.clone(),
-            name: "n2".to_string(),
+            local: "misc.txt".to_string(),
             log: Ok(ActionLog::new(
                 None,
                 None,
-                PathBuf::from("p1n2"),
+                PathBuf::from("r2"),
                 ok_result.clone(),
             )),
         },
         TendrilReport {
             orig_tendril: orig_tendril.clone(),
-            name: "n3".to_string(),
+            local: "misc.txt".to_string(),
             log: Ok(ActionLog::new(
                 Some(FsoType::Dir),
                 None,
-                PathBuf::from("p1n3"),
+                PathBuf::from("r3"),
                 ok_result,
             )),
         },
@@ -1146,7 +1133,6 @@ fn tendril_action_if_all_pass_they_are_totalled_and_returns_ok(
         mode,
         dry_run,
         force,
-        vec![],
         vec![],
         vec![],
         vec![],
@@ -1179,9 +1165,8 @@ fn tendril_action_if_any_fail_they_are_totalled_and_returns_exit_code(
     let given_dir = PathBuf::from("/SomeGivenDir");
     let link = mode == ActionMode::Link;
     let orig_tendril = std::rc::Rc::new(TendrilBundle {
-        group: "SomeApp".to_string(),
-        names: vec!["n1".to_string(), "n2".to_string(), "n3".to_string()],
-        parents: vec!["p1".to_string()],
+        local: "misc.txt".to_string(),
+        remotes: vec!["r1".to_string(), "r2".to_string(), "r3".to_string()],
         profiles: vec![],
         link,
         dir_merge: false,
@@ -1201,31 +1186,31 @@ fn tendril_action_if_any_fail_they_are_totalled_and_returns_exit_code(
     api.ta_const_rt = Ok(vec![
         TendrilReport {
             orig_tendril: orig_tendril.clone(),
-            name: "n1".to_string(),
+            local: "misc.txt".to_string(),
             log: Ok(ActionLog::new(
                 Some(FsoType::File),
                 None,
-                PathBuf::from("p1n1"),
+                PathBuf::from("r1"),
                 ok_result.clone(),
             )),
         },
         TendrilReport {
             orig_tendril: orig_tendril.clone(),
-            name: "n2".to_string(),
+            local: "misc.txt".to_string(),
             log: Ok(ActionLog::new(
                 None,
                 None,
-                PathBuf::from("p1n2"),
+                PathBuf::from("r2"),
                 err_result,
             )),
         },
         TendrilReport {
             orig_tendril: orig_tendril.clone(),
-            name: "n3".to_string(),
+            local: "misc.txt".to_string(),
             log: Ok(ActionLog::new(
                 Some(FsoType::Dir),
                 None,
-                PathBuf::from("p1n3"),
+                PathBuf::from("r3"),
                 ok_result,
             )),
         },
@@ -1238,7 +1223,6 @@ fn tendril_action_if_any_fail_they_are_totalled_and_returns_exit_code(
         mode,
         dry_run,
         force,
-        vec![],
         vec![],
         vec![],
         vec![],
@@ -1270,12 +1254,26 @@ fn tendril_action_order_of_reports_is_unchanged(
     let mut api = MockTendrilsApi::new();
     let given_dir = PathBuf::from("/SomeGivenDir");
     let link = mode == ActionMode::Link;
-    let orig_tendril = std::rc::Rc::new(TendrilBundle {
-        group: "SomeApp".to_string(),
+    let orig_tendril_1 = std::rc::Rc::new(TendrilBundle {
+        local: "l1".to_string(),
         // Non alphabetical order
-        names: vec!["n2".to_string(), "n1".to_string(), "n3".to_string()],
+        remotes: vec!["r1_2".to_string(), "r1_1".to_string(), "r1_3".to_string()],
+        profiles: vec![],
+        link,
+        dir_merge: false,
+    });
+    let orig_tendril_2 = std::rc::Rc::new(TendrilBundle {
+        local: "l2".to_string(),
         // Non alphabetical order
-        parents: vec!["p3".to_string(), "p1".to_string(), "p2".to_string()],
+        remotes: vec!["r2_3".to_string(), "r2_2".to_string(), "r2_1".to_string()],
+        profiles: vec![],
+        link,
+        dir_merge: false,
+    });
+    let orig_tendril_3 = std::rc::Rc::new(TendrilBundle {
+        local: "l3".to_string(),
+        // Non alphabetical order
+        remotes: vec!["r3_3".to_string(), "r3_1".to_string(), "r3_2".to_string()],
         profiles: vec![],
         link,
         dir_merge: false,
@@ -1293,92 +1291,92 @@ fn tendril_action_order_of_reports_is_unchanged(
     api.ta_exp_force = force;
     api.ta_const_rt = Ok(vec![
         TendrilReport {
-            orig_tendril: orig_tendril.clone(),
-            name: "n2".to_string(),
+            orig_tendril: orig_tendril_2.clone(),
+            local: "l2".to_string(),
             log: Ok(ActionLog::new(
                 None,
                 None,
-                PathBuf::from("p3n2"),
+                PathBuf::from("r2_3"),
                 result.clone(),
             )),
         },
         TendrilReport {
-            orig_tendril: orig_tendril.clone(),
-            name: "n2".to_string(),
+            orig_tendril: orig_tendril_2.clone(),
+            local: "l2".to_string(),
             log: Ok(ActionLog::new(
                 None,
                 None,
-                PathBuf::from("p1n2"),
+                PathBuf::from("r2_2"),
                 result.clone(),
             )),
         },
         TendrilReport {
-            orig_tendril: orig_tendril.clone(),
-            name: "n2".to_string(),
+            orig_tendril: orig_tendril_2.clone(),
+            local: "l2".to_string(),
             log: Ok(ActionLog::new(
                 None,
                 None,
-                PathBuf::from("p2n2"),
+                PathBuf::from("r2_1"),
                 result.clone(),
             )),
         },
         TendrilReport {
-            orig_tendril: orig_tendril.clone(),
-            name: "n1".to_string(),
+            orig_tendril: orig_tendril_1.clone(),
+            local: "l1".to_string(),
             log: Ok(ActionLog::new(
                 None,
                 None,
-                PathBuf::from("p3n1"),
+                PathBuf::from("r1_2"),
                 result.clone(),
             )),
         },
         TendrilReport {
-            orig_tendril: orig_tendril.clone(),
-            name: "n1".to_string(),
+            orig_tendril: orig_tendril_1.clone(),
+            local: "l1".to_string(),
             log: Ok(ActionLog::new(
                 None,
                 None,
-                PathBuf::from("p1n1"),
+                PathBuf::from("r1_1"),
                 result.clone(),
             )),
         },
         TendrilReport {
-            orig_tendril: orig_tendril.clone(),
-            name: "n1".to_string(),
+            orig_tendril: orig_tendril_1.clone(),
+            local: "l1".to_string(),
             log: Ok(ActionLog::new(
                 None,
                 None,
-                PathBuf::from("p2n1"),
+                PathBuf::from("r1_3"),
                 result.clone(),
             )),
         },
         TendrilReport {
-            orig_tendril: orig_tendril.clone(),
-            name: "n3".to_string(),
+            orig_tendril: orig_tendril_3.clone(),
+            local: "l3".to_string(),
             log: Ok(ActionLog::new(
                 None,
                 None,
-                PathBuf::from("p3n3"),
+                PathBuf::from("r3_3"),
                 result.clone(),
             )),
         },
         TendrilReport {
-            orig_tendril: orig_tendril.clone(),
-            name: "n3".to_string(),
+            orig_tendril: orig_tendril_3.clone(),
+            local: "l3".to_string(),
             log: Ok(ActionLog::new(
                 None,
                 None,
-                PathBuf::from("p1n3"),
+                PathBuf::from("r3_1"),
                 result.clone(),
             )),
         },
         TendrilReport {
-            orig_tendril: orig_tendril.clone(),
-            name: "n3".to_string(),
+            orig_tendril: orig_tendril_3.clone(),
+            local: "l3".to_string(),
             log: Ok(ActionLog::new(
                 None,
                 None,
-                PathBuf::from("p2n3"),
+                PathBuf::from("r3_2"),
                 result.clone(),
             )),
         },
@@ -1391,7 +1389,6 @@ fn tendril_action_order_of_reports_is_unchanged(
         mode,
         dry_run,
         force,
-        vec![],
         vec![],
         vec![],
         vec![],
@@ -1409,15 +1406,15 @@ fn tendril_action_order_of_reports_is_unchanged(
              Failed: {color_bright_red}9{color_reset}"
         )
     );
-    assert!(writer.all_output_lines()[3].contains("p3n2"));
-    assert!(writer.all_output_lines()[5].contains("p1n2"));
-    assert!(writer.all_output_lines()[7].contains("p2n2"));
-    assert!(writer.all_output_lines()[9].contains("p3n1"));
-    assert!(writer.all_output_lines()[11].contains("p1n1"));
-    assert!(writer.all_output_lines()[13].contains("p2n1"));
-    assert!(writer.all_output_lines()[15].contains("p3n3"));
-    assert!(writer.all_output_lines()[17].contains("p1n3"));
-    assert!(writer.all_output_lines()[19].contains("p2n3"));
+    assert!(writer.all_output_lines()[3] .contains("r2_3"));
+    assert!(writer.all_output_lines()[5] .contains("r2_2"));
+    assert!(writer.all_output_lines()[7] .contains("r2_1"));
+    assert!(writer.all_output_lines()[9] .contains("r1_2"));
+    assert!(writer.all_output_lines()[11].contains("r1_1"));
+    assert!(writer.all_output_lines()[13].contains("r1_3"));
+    assert!(writer.all_output_lines()[15].contains("r3_3"));
+    assert!(writer.all_output_lines()[17].contains("r3_1"));
+    assert!(writer.all_output_lines()[19].contains("r3_2"));
 }
 
 #[rstest]
@@ -1432,15 +1429,13 @@ fn tendril_action_filters_are_passed_properly(
 ) {
     let mut api = MockTendrilsApi::new();
     let given_dir = PathBuf::from("/SomeGivenDir");
-    let groups_filter = vec!["App1".to_string(), "App2".to_string()];
-    let names_filter = vec!["misc1.txt".to_string(), "misc2.txt".to_string()];
-    let parents_filter = vec!["p/1".to_string(), "p/2".to_string()];
-    let profiles_filter = vec!["P/1".to_string(), "P/2".to_string()];
+    let locals_filter = vec!["l1".to_string(), "l2".to_string()];
+    let remotes_filter = vec!["r1".to_string(), "r2".to_string()];
+    let profiles_filter = vec!["p1".to_string(), "p2".to_string()];
     let filter = FilterSpec {
         mode: Some(mode.clone()),
-        groups: &groups_filter.clone(),
-        names: &names_filter.clone(),
-        parents: &parents_filter.clone(),
+        locals: &locals_filter.clone(),
+        remotes: &remotes_filter.clone(),
         profiles: &profiles_filter.clone(),
     };
 
@@ -1459,9 +1454,8 @@ fn tendril_action_filters_are_passed_properly(
         mode.clone(),
         dry_run,
         force,
-        groups_filter,
-        names_filter,
-        parents_filter,
+        locals_filter,
+        remotes_filter,
         profiles_filter,
     );
     let args = TendrilCliArgs { tendrils_command };
@@ -1499,7 +1493,6 @@ fn tendril_action_empty_reports_list_prints_message(
         mode,
         dry_run,
         force,
-        vec![],
         vec![],
         vec![],
         vec![],

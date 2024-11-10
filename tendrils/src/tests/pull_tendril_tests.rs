@@ -101,10 +101,10 @@ fn remote_doesnt_exist_returns_io_error_not_found(
     let dir_tendril = setup.dir_tendril();
     let subdir_file_tendril = setup.subdir_file_tendril();
     let subdir_dir_tendril = setup.subdir_dir_tendril();
-    assert!(!file_tendril.parent().inner().exists());
-    assert!(!dir_tendril.parent().inner().exists());
-    assert!(!subdir_file_tendril.parent().inner().exists());
-    assert!(!subdir_dir_tendril.parent().inner().exists());
+    assert!(!file_tendril.remote().inner().exists());
+    assert!(!dir_tendril.remote().inner().exists());
+    assert!(!subdir_file_tendril.remote().inner().exists());
+    assert!(!subdir_dir_tendril.remote().inner().exists());
 
     let file_actual = pull_tendril(&file_tendril, dry_run, force);
     let dir_actual = pull_tendril(&dir_tendril, dry_run, force);
@@ -656,9 +656,8 @@ fn no_read_access_from_remote_file_returns_io_error_permission_denied_unless_dry
 
     let tendril = Tendril::new_expose(
         setup.uni_td_repo(),
-        "SomeApp",
-        "nra.txt",
-        setup.parent_dir.clone().into(),
+        "SomeApp/nra.txt".into(),
+        setup.remote_nra_file.clone().into(),
         TendrilMode::DirOverwrite,
     )
     .unwrap();
@@ -700,9 +699,8 @@ fn no_read_access_from_remote_dir_returns_io_error_permission_denied_unless_dry_
 
     let tendril = Tendril::new_expose(
         setup.uni_td_repo(),
-        "SomeApp",
-        "nra",
-        setup.parent_dir.clone().into(),
+        "SomeApp/nra".into(),
+        setup.remote_nra_dir.clone().into(),
         TendrilMode::DirOverwrite,
     )
     .unwrap();
@@ -851,8 +849,8 @@ fn remote_doesnt_exist_but_parent_does_returns_io_error_not_found(
     setup.make_parent_dir();
 
     let tendril = setup.file_tendril();
-    assert!(tendril.remote().parent().unwrap().exists());
-    assert!(!tendril.remote().exists());
+    assert!(tendril.remote().inner().parent().unwrap().exists());
+    assert!(!tendril.remote().inner().exists());
 
     let actual = pull_tendril(&tendril, dry_run, force);
 

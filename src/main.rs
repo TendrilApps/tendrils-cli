@@ -212,9 +212,8 @@ fn tendril_action_subcommand(
 
     let filter = FilterSpec {
         mode: Some(mode.clone()),
-        groups: &filter_args.groups,
-        names: &filter_args.names,
-        parents: &filter_args.parents,
+        locals: &filter_args.locals,
+        remotes: &filter_args.remotes,
         profiles: &filter_args.profiles,
     };
 

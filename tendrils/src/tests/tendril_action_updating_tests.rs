@@ -49,10 +49,12 @@ fn returns_result_after_each_operation(
 ) {
     let api = TendrilsActor {};
     let setup = Setup::new();
-    setup.make_remote_file();
-    setup.make_remote_nested_file();
+    setup.make_local_file();
+    setup.make_local_nested_file();
     let mut bundle = setup.file_tendril_bundle();
-    bundle.names.push("misc".to_string()); // Add the folder
+    bundle.remotes.push(
+        setup.remote_nested_file.to_string_lossy().to_string()
+    ); // Add another remote
     setup.make_td_json_file(&[bundle.clone()]);
     let filter = FilterSpec::new();
 
@@ -67,42 +69,42 @@ fn returns_result_after_each_operation(
         if call_counter == 1 {
             assert_eq!(r, TendrilReport {
                 orig_tendril: Rc::new(bundle.clone()),
-                name: bundle.names[0].clone(),
+                local: bundle.local.clone(),
                 log: Ok(ActionLog::new(
-                    None,
                     Some(FsoType::File),
+                    None,
                     setup.remote_file.clone(),
                     expected_success.clone(),
                 )),
             });
             if dry_run {
-                assert!(!setup.local_file.exists())
+                assert!(!setup.remote_file.exists())
             }
             else {
-                assert_eq!(setup.local_file_contents(), "Remote file contents");
+                assert_eq!(setup.remote_file_contents(), "Local file contents");
             }
-            assert!(!setup.local_dir.exists())
+            assert!(!setup.remote_dir.exists())
         }
         else if call_counter == 2 {
             assert_eq!(r, TendrilReport {
                 orig_tendril: Rc::new(bundle.clone()),
-                name: bundle.names[1].clone(),
+                local: bundle.local.clone(),
                 log: Ok(ActionLog::new(
+                    Some(FsoType::File),
                     None,
-                    Some(FsoType::Dir),
-                    setup.remote_dir.clone(),
+                    setup.remote_nested_file.clone(),
                     expected_success.clone(),
                 )),
             });
             if dry_run {
-                assert!(!setup.local_file.exists());
-                assert!(!setup.local_dir.exists());
+                assert!(!setup.remote_file.exists());
+                assert!(!setup.remote_dir.exists());
             }
             else {
-                assert_eq!(setup.local_file_contents(), "Remote file contents");
+                assert_eq!(setup.remote_file_contents(), "Local file contents");
                 assert_eq!(
-                    setup.local_nested_file_contents(),
-                    "Remote nested file contents"
+                    setup.remote_nested_file_contents(),
+                    "Local file contents" // Note lack of "nested"
                 );
             }
         }
@@ -115,7 +117,7 @@ fn returns_result_after_each_operation(
 
     api.tendril_action_updating(
         updater,
-        ActionMode::Pull,
+        ActionMode::Push,
         Some(&setup.uni_td_repo()),
         filter,
         dry_run,

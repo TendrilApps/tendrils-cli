@@ -28,7 +28,7 @@ use std::fs::{
 /// See also [`crate::tests::common_action_tests::remote_is_unchanged`] for
 /// `dry_run` case
 #[rstest]
-fn remote_parent_and_local_exist_copies_to_remote(
+fn local_exists_copies_to_remote(
     #[values(true, false)] force: bool,
     #[values(true, false)] as_dir: bool,
 ) {
@@ -238,6 +238,53 @@ fn remote_is_symlink_returns_type_mismatch_error_unless_forced(
             "Target nested file contents"
         );
     }
+}
+
+#[rstest]
+fn remote_parent_doesnt_exist_creates_full_parent_structure(
+    #[values(true, false)] force: bool,
+    #[values(true, false)] as_dir: bool,
+) {
+    let setup = Setup::new();
+    let exp_local_type;
+    let exp_remote_path;
+    let tendril;
+    if as_dir {
+        setup.make_local_subdir_nested_file();
+        exp_local_type = Some(FsoType::Dir);
+        exp_remote_path = setup.remote_subdir_dir.clone();
+        tendril = setup.subdir_dir_tendril();
+        assert!(!setup.remote_subdir_dir.parent().unwrap().exists());
+    }
+    else {
+        setup.make_local_subdir_file();
+        exp_local_type = Some(FsoType::File);
+        exp_remote_path = setup.remote_subdir_file.clone();
+        tendril = setup.subdir_file_tendril();
+        assert!(!setup.remote_subdir_file.parent().unwrap().exists());
+    }
+
+    let actual = push_tendril(&tendril, false, force);
+
+    assert_eq!(
+        actual,
+        ActionLog::new(
+            exp_local_type,
+            None,
+            exp_remote_path,
+            Ok(TendrilActionSuccess::New),
+        )
+    );
+    if as_dir {
+        assert_eq!(
+            setup.remote_subdir_nested_file_contents(),
+            "Local subdir nested file contents"
+        );
+    }
+    else {
+        assert_eq!(setup.remote_subdir_file_contents(), "Local subdir file contents");
+    }
+    assert_eq!(setup.group_dir.read_dir().iter().count(), 1);
 }
 
 #[rstest]
@@ -601,9 +648,8 @@ fn no_read_access_from_local_file_returns_io_error_permission_denied_unless_dry_
 
     let tendril = Tendril::new_expose(
         setup.uni_td_repo(),
-        "SomeApp",
-        "nra.txt",
-        setup.parent_dir.clone().into(),
+        "SomeApp/nra.txt".into(),
+        setup.remote_nra_file.clone().into(),
         TendrilMode::DirOverwrite,
     )
     .unwrap();
@@ -645,9 +691,8 @@ fn no_read_access_from_local_dir_returns_io_error_permission_denied_unless_dry_r
 
     let tendril = Tendril::new_expose(
         setup.uni_td_repo(),
-        "SomeApp",
-        "nra",
-        setup.parent_dir.clone().into(),
+        "SomeApp/nra".into(),
+        setup.remote_nra_dir.clone().into(),
         TendrilMode::DirOverwrite,
     )
     .unwrap();

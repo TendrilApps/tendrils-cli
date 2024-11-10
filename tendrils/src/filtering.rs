@@ -13,21 +13,15 @@ pub struct FilterSpec<'a> {
     /// `None`, or [`ActionMode::Out`] all tendrils will match.
     pub mode: Option<ActionMode>,
 
-    /// Matches only those tendrils whose group matches any of the given
-    /// groups. Glob patterns are supported.
-    pub groups: &'a [String],
+    /// Matches only those tendrils whose local matches any of the given
+    /// locals. Glob patterns are supported.
+    pub locals: &'a [String],
 
-    /// Matches only those tendril names that match any of the given names.
-    /// Any tendril names that do not match are omitted, and any tendrils
-    /// without any matching names are omitted entirely. Glob patterns
+    /// Matches only those tendril remotes that match any of the given remotes.
+    /// Any tendril remotes that do not match are omitted, and any tendrils
+    /// without any matching remotes are omitted entirely. Glob patterns
     /// are supported.
-    pub names: &'a [String],
-
-    /// Matches only those tendril parents that match any of the given parents.
-    /// Any tendril parents that do not match are omitted, and any tendrils
-    /// without any matching parents are omitted entirely. Glob patterns
-    /// are supported.
-    pub parents: &'a [String],
+    pub remotes: &'a [String],
 
     /// Matches only those tendrils that match any of the given profiles, and
     /// those that belong to all profiles (i.e. those that do not have any
@@ -40,9 +34,8 @@ impl<'a> FilterSpec<'a> {
     pub fn new() -> FilterSpec<'a> {
         FilterSpec {
             mode: None,
-            groups: &[],
-            names: &[],
-            parents: &[],
+            locals: &[],
+            remotes: &[],
             profiles: &[],
         }
     }
@@ -61,9 +54,8 @@ pub(crate) fn filter_tendrils(
     };
 
     filtered = filter_by_profiles(filtered, filter.profiles);
-    filtered = filter_by_group(filtered, filter.groups);
-    filtered = filter_by_names(filtered, filter.names);
-    filter_by_parents(filtered, filter.parents)
+    filtered = filter_by_locals(filtered, filter.locals);
+    filter_by_remotes(filtered, filter.remotes)
 }
 
 fn filter_by_mode(
@@ -99,62 +91,39 @@ fn filter_by_profiles(
         .collect()
 }
 
-fn filter_by_group(
+fn filter_by_locals(
     tendrils: Vec<TendrilBundle>,
-    groups: &[String],
+    locals: &[String],
 ) -> Vec<TendrilBundle> {
-    if groups.is_empty() {
+    if locals.is_empty() {
         return tendrils;
     }
 
     tendrils
         .into_iter()
-        .filter(|t| groups.iter().any(|f| glob_match(f, &t.group)))
+        .filter(|t| locals.iter().any(|f| glob_match(f, &t.local)))
         .collect()
 }
 
-fn filter_by_names(
+fn filter_by_remotes(
     mut tendrils: Vec<TendrilBundle>,
-    names: &[String],
+    remotes: &[String],
 ) -> Vec<TendrilBundle> {
-    if names.is_empty() {
+    if remotes.is_empty() {
         return tendrils;
     }
 
     for t in tendrils.iter_mut() {
-        let filtered_names_iter = t.names.iter().filter_map(|n| {
-            if names.iter().any(|f| glob_match(f, n)) {
-                Some(n.to_owned())
+        let filtered_remotes_iter = t.remotes.iter().filter_map(|r| {
+            if remotes.iter().any(|f| glob_match(f, r)) {
+                Some(r.to_owned())
             }
             else {
                 None
             }
         });
-        t.names = filtered_names_iter.collect();
+        t.remotes = filtered_remotes_iter.collect();
     }
 
-    tendrils.into_iter().filter(|t| !t.names.is_empty()).collect()
-}
-
-fn filter_by_parents(
-    mut tendrils: Vec<TendrilBundle>,
-    parents: &[String],
-) -> Vec<TendrilBundle> {
-    if parents.is_empty() {
-        return tendrils;
-    }
-
-    for t in tendrils.iter_mut() {
-        let filtered_parents_iter = t.parents.iter().filter_map(|p| {
-            if parents.iter().any(|f| glob_match(f, p)) {
-                Some(p.to_owned())
-            }
-            else {
-                None
-            }
-        });
-        t.parents = filtered_parents_iter.collect();
-    }
-
-    tendrils.into_iter().filter(|t| !t.parents.is_empty()).collect()
+    tendrils.into_iter().filter(|t| !t.remotes.is_empty()).collect()
 }

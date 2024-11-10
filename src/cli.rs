@@ -109,20 +109,16 @@ pub(crate) struct ActionArgs {
 
 #[derive(Args, Clone, Debug, Eq, PartialEq)]
 pub(crate) struct FilterArgs {
-    /// List of groups to filter for. Globs accepted.
+    /// List of locals to filter for. Globs accepted.
     #[arg(short, long, num_args = ..)]
-    pub groups: Vec<String>,
+    pub locals: Vec<String>,
 
-    /// List of names to filter for. Globs accepted.
+    /// List of remotes to filter for. Globs accepted.
     #[arg(short, long, num_args = ..)]
-    pub names: Vec<String>,
-
-    /// List of parents to filter for. Globs accepted.
-    #[arg(short, long, num_args = ..)]
-    pub parents: Vec<String>,
+    pub remotes: Vec<String>,
 
     /// Explicitly sets the list of profiles to filter for. Globs accepted.
-    #[arg(short='P', long, num_args = ..)]
+    #[arg(short, long, num_args = ..)]
     pub profiles: Vec<String>,
 }
 
@@ -186,9 +182,8 @@ pub(crate) fn print_reports(
 
     let mut tbl = TdTable::new();
     tbl.set_header(&[
-        String::from("Group"),
-        String::from("Name"),
-        String::from("Path"),
+        String::from("Local"),
+        String::from("Remote"),
         String::from("Report"),
     ]);
 
@@ -206,8 +201,7 @@ pub(crate) fn print_reports(
         };
 
         tbl.push_row(&[
-            report.orig_tendril.group.clone(),
-            report.name.clone(),
+            report.local.clone(),
             styled_path,
             styled_result,
         ]);

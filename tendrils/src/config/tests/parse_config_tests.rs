@@ -68,10 +68,10 @@ fn ignores_extra_top_level_fields() {
 }
 
 #[test]
-fn json_missing_group_returns_error() {
+fn json_missing_local_returns_error() {
     let original_tendril_json = SampleTendrils::tendril_1_json();
     let partial_tendril_json =
-        original_tendril_json.replace(r#""group": "MyApp","#, "");
+        original_tendril_json.replace(r#""local": "settings.json","#, "");
     assert_ne!(&original_tendril_json, &partial_tendril_json);
 
     let given =
@@ -80,30 +80,14 @@ fn json_missing_group_returns_error() {
     let actual = parse_config(&given);
 
     assert!(actual.is_err());
-    assert!(format!("{:?}", actual).contains("missing field `group`"));
+    assert!(format!("{:?}", actual).contains("missing field `local`"));
 }
 
 #[test]
-fn json_missing_names_returns_error() {
-    let original_tendril_json = SampleTendrils::tendril_1_json();
-    let partial_tendril_json =
-        original_tendril_json.replace(r#""names": "settings.json","#, "");
-    assert_ne!(&original_tendril_json, &partial_tendril_json);
-
-    let given =
-        SampleTendrils::build_tendrils_json(&[partial_tendril_json]);
-
-    let actual = parse_config(&given);
-
-    assert!(actual.is_err());
-    assert!(format!("{:?}", actual).contains("missing field `names`"));
-}
-
-#[test]
-fn json_missing_parents_returns_error() {
+fn json_missing_remotes_returns_error() {
     let original_tendril_json = SampleTendrils::tendril_2_json();
     let partial_tendril_json = original_tendril_json
-        .replace(r#""parents": ["some/parent/path"],"#, "");
+        .replace(r#""remotes": ["some/remote/path/settings2.json"],"#, "");
     assert_ne!(&original_tendril_json, &partial_tendril_json);
 
     let given =
@@ -112,7 +96,7 @@ fn json_missing_parents_returns_error() {
     let actual = parse_config(&given);
 
     assert!(actual.is_err());
-    assert!(format!("{:?}", actual).contains("missing field `parents`"));
+    assert!(format!("{:?}", actual).contains("missing field `remotes`"));
 }
 
 #[test]
@@ -169,10 +153,10 @@ fn json_missing_profiles_defaults_to_empty() {
 }
 
 #[test]
-fn json_group_is_null_returns_error() {
+fn json_local_is_null_returns_error() {
     let original_tendril_json = SampleTendrils::tendril_1_json();
     let partial_tendril_json = original_tendril_json
-        .replace(r#""group": "MyApp","#, r#""group": null,"#);
+        .replace(r#""local": "settings.json","#, r#""local": null,"#);
     assert_ne!(&original_tendril_json, &partial_tendril_json);
 
     let given =
@@ -185,44 +169,10 @@ fn json_group_is_null_returns_error() {
 }
 
 #[test]
-fn json_names_is_null_returns_error() {
-    let original_tendril_json = SampleTendrils::tendril_1_json();
-    let partial_tendril_json = original_tendril_json
-        .replace(r#""names": "settings.json","#, r#""names": null,"#);
-    assert_ne!(&original_tendril_json, &partial_tendril_json);
-
-    let given =
-        SampleTendrils::build_tendrils_json(&[partial_tendril_json]);
-
-    let actual = parse_config(&given);
-
-    assert!(actual.is_err());
-    assert!(format!("{:?}", actual).contains("data did not match any variant of untagged enum OneOrMany"));
-}
-
-#[test]
-fn json_individual_name_is_null_returns_error() {
-    let original_tendril_json = SampleTendrils::tendril_1_json();
-    let partial_tendril_json = original_tendril_json.replace(
-        r#""names": "settings.json","#,
-        r#""names": ["settings.json", null],"#,
-    );
-    assert_ne!(&original_tendril_json, &partial_tendril_json);
-
-    let given =
-        SampleTendrils::build_tendrils_json(&[partial_tendril_json]);
-
-    let actual = parse_config(&given);
-
-    assert!(actual.is_err());
-    assert!(format!("{:?}", actual).contains("data did not match any variant of untagged enum OneOrMany"));
-}
-
-#[test]
-fn json_parents_is_null_returns_error() {
+fn json_remotes_is_null_returns_error() {
     let original_tendril_json = SampleTendrils::tendril_2_json();
     let partial_tendril_json = original_tendril_json
-        .replace(r#""parents": ["some/parent/path"],"#, r#""parents": null,"#);
+        .replace(r#""remotes": ["some/remote/path/settings2.json"],"#, r#""remotes": null,"#);
     assert_ne!(&original_tendril_json, &partial_tendril_json);
 
     let given =
@@ -235,11 +185,11 @@ fn json_parents_is_null_returns_error() {
 }
 
 #[test]
-fn json_individual_parent_is_null_returns_error() {
+fn json_individual_remote_is_null_returns_error() {
     let original_tendril_json = SampleTendrils::tendril_2_json();
     let partial_tendril_json = original_tendril_json.replace(
-        r#""parents": ["some/parent/path"],"#,
-        r#""parents": ["some/parent/path", null],"#,
+        r#""remotes": ["some/remote/path/settings2.json"],"#,
+        r#""remotes": ["some/remote/path/settings2.json", null],"#,
     );
     assert_ne!(&original_tendril_json, &partial_tendril_json);
 
@@ -346,8 +296,8 @@ fn multiple_tendrils_in_json_returns_tendrils_in_given_order() {
 fn ignores_extra_tendril_json_field() {
     let original_tendril_json = SampleTendrils::tendril_1_json();
     let extra_field_tendril_json = original_tendril_json.replace(
-        r#""names": "settings.json","#,
-        r#""names": "settings.json", "extra-field": true,"#,
+        r#""local": "settings.json","#,
+        r#""local": "settings.json", "extra-field": true,"#,
     );
     assert_ne!(original_tendril_json, extra_field_tendril_json);
 
@@ -362,27 +312,11 @@ fn ignores_extra_tendril_json_field() {
 }
 
 #[test]
-fn non_list_single_name_returns_list_of_len_1() {
-    let original_tendril_json = SampleTendrils::tendril_1_json();
-    assert!(original_tendril_json.contains(r#""names": "settings.json","#));
-
-    let given =
-        SampleTendrils::build_tendrils_json(&[original_tendril_json]);
-
-    let expected = [SampleTendrils::tendril_1()].to_vec();
-
-    let actual = parse_config(&given).unwrap().tendrils;
-
-    assert_eq!(actual, expected);
-    assert_eq!(actual[0].names, vec!["settings.json"]);
-}
-
-#[test]
-fn non_list_single_parent_returns_list_of_len_1() {
+fn non_list_single_remote_returns_list_of_len_1() {
     let original_tendril_json = SampleTendrils::tendril_2_json();
     let modified_json = original_tendril_json.replace(
-        r#""parents": ["some/parent/path"],"#,
-        r#""parents": "some/parent/path","#,
+        r#""remotes": ["some/remote/path/settings2.json"],"#,
+        r#""remotes": "some/remote/path/settings2.json","#,
     );
     assert_ne!(original_tendril_json, modified_json);
 
@@ -393,7 +327,7 @@ fn non_list_single_parent_returns_list_of_len_1() {
     let actual = parse_config(&given).unwrap().tendrils;
 
     assert_eq!(actual, expected);
-    assert_eq!(actual[0].parents, vec!["some/parent/path"]);
+    assert_eq!(actual[0].remotes, vec!["some/remote/path/settings2.json"]);
 }
 
 #[test]

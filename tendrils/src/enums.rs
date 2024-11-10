@@ -392,9 +392,7 @@ pub enum TendrilMode {
 /// Indicates an invalid tendril field.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum InvalidTendrilError {
-    InvalidGroup,
-    InvalidName,
-    InvalidParent,
+    InvalidLocal,
 
     /// The tendril remote conflicts with the Tendrils repo. This can occur if:
     /// - Including the Tendrils repo as a tendril
