@@ -1,7 +1,8 @@
 use crate::enums::{InvalidTendrilError, OneOrMany, TendrilMode};
 use crate::path_ext::{PathExt, UniPath};
 use serde::{de, Deserialize, Deserializer, Serialize};
-use std::path::PathBuf;
+use std::ffi::OsStr;
+use std::path::{Component, Path, PathBuf};
 
 #[cfg(test)]
 pub(crate) mod tests;
@@ -11,104 +12,98 @@ pub(crate) mod tests;
 /// Note: This does *not* guarantee that the path
 /// exists or is valid.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub(crate) struct Tendril<'a> {
-    /// Given group.
-    group: &'a str,
-    name: &'a str,
-    parent: UniPath,
-    remote: PathBuf,
+pub(crate) struct Tendril {
+    /// Path to the local file relative to the root of the Tendrils repo
+    local: PathBuf,
+    local_abs: PathBuf,
+    remote: UniPath,
     pub mode: TendrilMode,
 }
 
-impl<'a> Tendril<'a> {
+impl Tendril {
     fn new(
-        group: &'a str,
-        name: &'a str,
-        parent: UniPath,
+        td_repo: impl AsRef<UniPath>,
+        local: PathBuf,
+        remote: UniPath,
         mode: TendrilMode,
-    ) -> Result<Tendril<'a>, InvalidTendrilError> {
-        if group.is_empty()
-            || Tendril::is_path(group)
-            || group.to_lowercase() == ".tendrils"
-            || group.to_lowercase() == ".git"
-            || group.contains('\n')
-            || group.contains('\r')
-        {
-            return Err(InvalidTendrilError::InvalidGroup);
+    ) -> Result<Tendril, InvalidTendrilError> {
+        if local.components().any(|c| c == Component::ParentDir) {
+            return Err(InvalidTendrilError::InvalidLocal);
         }
 
-        if name.is_empty() || name.contains('\n') || name.contains('\r') {
-            return Err(InvalidTendrilError::InvalidName);
+        let mut local_sub_comps = local.components();
+        if match local_sub_comps.next() {
+            Some(Component::Normal(c))
+                if Self::is_forbidden_dir(c) => true,
+            Some(Component::RootDir | Component::CurDir) => match local_sub_comps.next() {
+                Some(Component::Normal(c)) if Self::is_forbidden_dir(c) => true,
+                None => true,
+                _ => false,
+            }
+            None => true,
+            _ => false,
+        }
+        {
+            return Err(InvalidTendrilError::InvalidLocal);
         }
 
-        let parent_bytes = parent.inner().as_os_str().as_encoded_bytes();
-        if parent_bytes.is_empty()
-            || parent_bytes.contains(&('\n' as u8))
-            || parent_bytes.contains(&('\r' as u8))
-        {
-            return Err(InvalidTendrilError::InvalidParent);
+        if Self::is_recursive(td_repo.as_ref().inner(), remote.inner()) {
+            return Err(InvalidTendrilError::Recursion)
         }
 
         #[cfg(not(windows))]
-        let remote =
-            parent.inner().join_raw(&PathBuf::from(name));
-
+        let local_abs = td_repo
+            .as_ref()
+            .inner()
+            .join_raw(&local)
+            .into();
         #[cfg(windows)]
-        let remote =
-            parent.inner().join_raw(&PathBuf::from(name)).replace_dir_seps();
+        let local_abs = td_repo
+            .as_ref()
+            .inner()
+            .join_raw(&local)
+            .replace_dir_seps()
+            .into();
 
-        Ok(Tendril { group, name, parent, remote, mode })
+        Ok(Tendril { local, local_abs, remote, mode })
     }
 
     #[cfg(any(test, feature = "_test_utils"))]
     pub fn new_expose(
-        group: &'a str,
-        name: &'a str,
-        parent: UniPath,
+        td_repo: impl AsRef<UniPath>,
+        local: PathBuf,
+        remote: UniPath,
         mode: TendrilMode,
-    ) -> Result<Tendril<'a>, InvalidTendrilError> {
-        Tendril::new(group, name, parent, mode)
+    ) -> Result<Tendril, InvalidTendrilError> {
+        Tendril::new(td_repo.as_ref(), local, remote, mode)
     }
 
-    /// Name as given.
-    #[cfg(test)]
-    pub fn name(&self) -> &str {
-        self.name
-    }
-
-    /// Sanitized parent path.
-    pub fn parent(&self) -> &UniPath {
-        &self.parent
-    }
-
-    /// The resolved path to this file system object inside the Tendrils repo.
-    /// The combination of the given Tendrils repo, [`Self::group`], and
-    /// [`Self::name`]
-    pub fn local(&self, td_repo: &UniPath) -> PathBuf {
-        #[cfg(not(windows))]
-        return td_repo
-            .inner()
-            .join_raw(&PathBuf::from(self.group))
-            .join_raw(&PathBuf::from(self.name))
-            .into();
-        #[cfg(windows)]
-        return td_repo
-            .inner()
-            .join_raw(&PathBuf::from(self.group))
-            .join_raw(&PathBuf::from(self.name))
-            .replace_dir_seps()
-            .into();
+    /// The absolute path to this file system object inside the Tendrils repo.
+    /// The combination of the given Tendrils repo and its `local`.
+    pub fn local_abs(&self) -> &Path {
+        &self.local_abs
     }
 
     /// The resolved path to this file system object specific to this machine,
-    /// outside of the Tendrils repo. The combination of [`Self::parent`] and
-    /// [`Self::name`].
-    pub fn remote(&self) -> &PathBuf {
+    /// outside of the Tendrils repo.
+    pub fn remote(&self) -> &UniPath {
         &self.remote
     }
 
-    fn is_path(x: &str) -> bool {
-        x.contains('/') || x.contains('\\')
+    fn is_forbidden_dir(path_comp: &OsStr) -> bool {
+        match path_comp.to_string_lossy().to_lowercase().trim() {
+            ".tendrils" => true,
+            #[cfg(windows)] // Trailing dots are ignored on Windows
+            ".tendrils." => true,
+            "" => true,
+            _ => false,
+        }
+    }
+
+    fn is_recursive(td_repo: &Path, remote: &Path) -> bool {
+        td_repo == remote
+            || td_repo.ancestors().any(|p| p == remote)
+            || remote.ancestors().any(|p| p == td_repo)
     }
 }
 
@@ -116,20 +111,15 @@ impl<'a> Tendril<'a> {
 /// by Tendrils.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct TendrilBundle {
-    /// The group by which this tendril will be sorted in
-    /// the Tendrils repo.
-    pub group: String,
+    /// The path to the master file/folder relative to the root of the
+    /// Tendrils repo.
+    pub local: String,
 
-    /// A list of file/folder names, each one belonging to each of the
-    /// `parents`.
+    /// A list of absolute paths to the various locations on the machine at
+    /// which to recreate the [`Self::local`]. Each `local` and
+    /// `remote` pair forms a tendril.
     #[serde(deserialize_with = "one_or_many_to_vec")]
-    pub names: Vec<String>,
-
-    /// A list of parent folders containing the files/folders in `names`.
-    /// Each parent will be combined with each name to expand to individual
-    /// tendrils.
-    #[serde(deserialize_with = "one_or_many_to_vec")]
-    pub parents: Vec<String>,
+    pub remotes: Vec<String>,
 
     /// `true` indicates that each tendril will have
     /// [`crate::TendrilMode::DirMerge`]. `false` indicates
@@ -155,19 +145,19 @@ pub struct TendrilBundle {
 
 impl TendrilBundle {
     #[cfg(any(test, feature = "_test_utils"))]
-    pub fn new(group: &str, names: Vec<&str>) -> TendrilBundle {
+    pub fn new(local: &str) -> TendrilBundle {
         TendrilBundle {
-            group: String::from(group),
-            names: names.into_iter().map(|n: &str| String::from(n)).collect(),
-            parents: vec![],
+            local: String::from(local),
+            remotes: vec![],
             dir_merge: false,
             link: false,
             profiles: vec![],
         }
     }
 
-    pub(crate) fn resolve_tendrils(
-        &self,
+    pub(crate) fn resolve_tendrils<'a>(
+        &'a self,
+        td_repo: &'a UniPath,
         first_only: bool,
     ) -> Vec<Result<Tendril, InvalidTendrilError>> {
         let mode = match (self.dir_merge, self.link) {
@@ -176,31 +166,21 @@ impl TendrilBundle {
             (_, true) => TendrilMode::Link,
         };
 
-        let raw_paths = match (first_only, self.parents.is_empty()) {
-            (true, false) => vec![self.parents[0].clone()],
-            (false, false) => self.parents.clone(),
+        let remotes = match (first_only, self.remotes.is_empty()) {
+            (true, false) => vec![self.remotes[0].clone()],
+            (false, false) => self.remotes.clone(),
             (_, true) => vec![],
         };
 
-        let mut resolve_results =
-            Vec::with_capacity(self.names.len() * self.parents.len());
+        let mut resolve_results = Vec::with_capacity(remotes.len());
 
-        // Resolve parents early to prevent doing this on
-        // each iteration
-        let resolved_parents: Vec<UniPath> = raw_paths
-            .iter()
-            .map(|p| UniPath::from(PathBuf::from(p)))
-            .collect();
-
-        for name in self.names.iter() {
-            for resolved_parent in resolved_parents.iter() {
-                resolve_results.push(Tendril::new(
-                    &self.group,
-                    name,
-                    resolved_parent.clone(),
-                    mode.clone(),
-                ));
-            }
+        for remote in remotes.into_iter() {
+            resolve_results.push(Tendril::new(
+                td_repo,
+                PathBuf::from(&self.local),
+                UniPath::from(PathBuf::from(remote)),
+                mode.clone(),
+            ));
         }
 
         resolve_results

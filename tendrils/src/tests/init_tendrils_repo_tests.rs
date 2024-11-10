@@ -21,20 +21,18 @@ fn creates_dot_tendrils_dir_and_contents_in_empty_dir(#[case] force: bool) {
     let setup = Setup::new();
     setup.make_td_repo_dir();
     let expected_t1 = TendrilBundle {
-        group: "SomeApp".to_string(),
-        names: vec!["SomeFile.ext".to_string()],
-        parents: vec!["/path/to/containing/folder".to_string()],
+        local: "SomeApp/SomeFile.ext".to_string(),
+        remotes: vec!["/path/to/SomeFile.ext".to_string()],
         dir_merge: false,
         link: false,
         profiles: vec![],
     };
     let expected_t2 = TendrilBundle {
-        group: "SomeApp2".to_string(),
-        names: vec!["SomeFile2.ext".to_string(), "SomeFolder3".to_string()],
-        parents: vec![
-            "/path/to/containing/folder2".to_string(),
-            "/path/to/containing/folder3".to_string(),
-            "~/path/to/containing/folder4".to_string(),
+        local: "SomeApp2/SomeFolder".to_string(),
+        remotes: vec![
+            "/path/to/SomeFolder".to_string(),
+            "/another/path/to/SomeFolder".to_string(),
+            "~/path/to/DifferentName".to_string(),
         ],
         dir_merge: false,
         link: true,

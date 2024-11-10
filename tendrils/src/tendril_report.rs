@@ -12,9 +12,8 @@ use std::path::PathBuf;
 pub struct TendrilReport<T: TendrilLog> {
     /// The original tendril bundle that this tendril was expanded from
     pub orig_tendril: std::rc::Rc<TendrilBundle>,
-    /// The name of the tendril that was expanded. If this `orig_tendril`
-    /// contains many names, this indicate which was used
-    pub name: String,
+    /// The tendril's relative local path.
+    pub local: String,
     /// Result containing the log from the operation, provided
     /// the tendril was valid.
     /// Otherwise, it contains the [`InvalidTendrilError`]

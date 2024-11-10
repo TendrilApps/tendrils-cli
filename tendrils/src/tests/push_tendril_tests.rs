@@ -17,7 +17,6 @@ use crate::{
     TendrilMode,
 };
 use rstest::rstest;
-use rstest_reuse::{self, apply};
 use std::fs::{
     create_dir_all,
     metadata,
@@ -28,45 +27,36 @@ use std::fs::{
 
 /// See also [`crate::tests::common_action_tests::remote_is_unchanged`] for
 /// `dry_run` case
-#[apply(crate::tendril::tests::tendril_tests::valid_groups_and_names)]
-fn remote_parent_and_local_exist_copies_to_remote(
-    #[case] name: &str,
+#[rstest]
+fn local_exists_copies_to_remote(
     #[values(true, false)] force: bool,
     #[values(true, false)] as_dir: bool,
 ) {
-    let mut setup = Setup::new();
-    setup.remote_file = setup.parent_dir.join(&name);
-    setup.remote_dir = setup.parent_dir.join(&name);
-    setup.remote_nested_file = setup.remote_dir.join("nested.txt");
-    setup.local_file = setup.group_dir.join(&name);
-    setup.local_dir = setup.group_dir.join(&name);
-    setup.local_nested_file = setup.local_dir.join("nested.txt");
+    let setup = Setup::new();
     let exp_local_type;
+    let exp_remote_path;
+    let tendril;
     if as_dir {
         setup.make_local_nested_file();
         exp_local_type = Some(FsoType::Dir);
+        exp_remote_path = setup.remote_dir.clone();
+        tendril = setup.dir_tendril();
     }
     else {
         setup.make_local_file();
         exp_local_type = Some(FsoType::File);
+        exp_remote_path = setup.remote_file.clone();
+        tendril = setup.file_tendril();
     }
 
-    let tendril = Tendril::new_expose(
-        "SomeApp",
-        name,
-        setup.parent_dir.clone().into(),
-        TendrilMode::DirOverwrite,
-    )
-    .unwrap();
-
-    let actual = push_tendril(&setup.uni_td_repo(), &tendril, false, force);
+    let actual = push_tendril(&tendril, false, force);
 
     assert_eq!(
         actual,
         ActionLog::new(
             exp_local_type,
             None,
-            setup.remote_file.clone(),
+            exp_remote_path,
             Ok(TendrilActionSuccess::New),
         )
     );
@@ -101,9 +91,9 @@ fn local_is_symlink_returns_type_mismatch_error_unless_forced_then_copies_symlin
     let dir_tendril = setup.dir_tendril();
 
     let file_actual =
-        push_tendril(&setup.uni_td_repo(), &file_tendril, dry_run, force);
+        push_tendril(&file_tendril, dry_run, force);
     let dir_actual =
-        push_tendril(&setup.uni_td_repo(), &dir_tendril, dry_run, force);
+        push_tendril(&dir_tendril, dry_run, force);
 
     let exp_file_result;
     let exp_dir_result;
@@ -185,9 +175,9 @@ fn remote_is_symlink_returns_type_mismatch_error_unless_forced(
     let dir_tendril = setup.dir_tendril();
 
     let file_actual =
-        push_tendril(&setup.uni_td_repo(), &file_tendril, dry_run, force);
+        push_tendril(&file_tendril, dry_run, force);
     let dir_actual =
-        push_tendril(&setup.uni_td_repo(), &dir_tendril, dry_run, force);
+        push_tendril(&dir_tendril, dry_run, force);
 
     let exp_file_result;
     let exp_dir_result;
@@ -251,6 +241,53 @@ fn remote_is_symlink_returns_type_mismatch_error_unless_forced(
 }
 
 #[rstest]
+fn remote_parent_doesnt_exist_creates_full_parent_structure(
+    #[values(true, false)] force: bool,
+    #[values(true, false)] as_dir: bool,
+) {
+    let setup = Setup::new();
+    let exp_local_type;
+    let exp_remote_path;
+    let tendril;
+    if as_dir {
+        setup.make_local_subdir_nested_file();
+        exp_local_type = Some(FsoType::Dir);
+        exp_remote_path = setup.remote_subdir_dir.clone();
+        tendril = setup.subdir_dir_tendril();
+        assert!(!setup.remote_subdir_dir.parent().unwrap().exists());
+    }
+    else {
+        setup.make_local_subdir_file();
+        exp_local_type = Some(FsoType::File);
+        exp_remote_path = setup.remote_subdir_file.clone();
+        tendril = setup.subdir_file_tendril();
+        assert!(!setup.remote_subdir_file.parent().unwrap().exists());
+    }
+
+    let actual = push_tendril(&tendril, false, force);
+
+    assert_eq!(
+        actual,
+        ActionLog::new(
+            exp_local_type,
+            None,
+            exp_remote_path,
+            Ok(TendrilActionSuccess::New),
+        )
+    );
+    if as_dir {
+        assert_eq!(
+            setup.remote_subdir_nested_file_contents(),
+            "Local subdir nested file contents"
+        );
+    }
+    else {
+        assert_eq!(setup.remote_subdir_file_contents(), "Local subdir file contents");
+    }
+    assert_eq!(setup.group_dir.read_dir().iter().count(), 1);
+}
+
+#[rstest]
 fn local_doesnt_exist_returns_io_error_not_found(
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
@@ -270,8 +307,8 @@ fn local_doesnt_exist_returns_io_error_not_found(
     exp_remote_type_dir = Some(FsoType::Dir);
     assert_eq!(setup.td_repo.exists(), repo_exists);
 
-    let file_actual = push_tendril(&setup.uni_td_repo(), &file_tendril, dry_run, force);
-    let dir_actual = push_tendril(&setup.uni_td_repo(), &dir_tendril, dry_run, force);
+    let file_actual = push_tendril(&file_tendril, dry_run, force);
+    let dir_actual = push_tendril(&dir_tendril, dry_run, force);
 
     let exp_loc = Location::Source;
     let exp_result = Err(TendrilActionError::IoError {
@@ -314,7 +351,7 @@ fn local_is_file_and_remote_is_dir_returns_type_mismatch_error_unless_forced(
     let mut tendril = setup.file_tendril();
     tendril.mode = mode;
 
-    let actual = push_tendril(&setup.uni_td_repo(), &tendril, dry_run, force);
+    let actual = push_tendril(&tendril, dry_run, force);
 
     let exp_result = match (dry_run, force) {
         (_, false) => Err(TendrilActionError::TypeMismatch {
@@ -360,7 +397,7 @@ fn local_is_dir_and_remote_is_file_returns_type_mismatch_error_unless_forced(
     let mut tendril = setup.dir_tendril();
     tendril.mode = mode;
 
-    let actual = push_tendril(&setup.uni_td_repo(), &tendril, dry_run, force);
+    let actual = push_tendril(&tendril, dry_run, force);
 
     let exp_result = match (dry_run, force) {
         (_, false) => Err(TendrilActionError::TypeMismatch {
@@ -410,7 +447,7 @@ fn file_tendril_overwrites_remote_file_regardless_of_dir_merge_mode(
     let mut tendril = setup.file_tendril();
     tendril.mode = mode;
 
-    let actual = push_tendril(&setup.uni_td_repo(), &tendril, false, force);
+    let actual = push_tendril(&tendril, false, force);
 
     assert_eq!(
         actual,
@@ -446,7 +483,7 @@ fn dir_overwrite_w_dir_tendril_replaces_remote_dir_recursively(
     let mut tendril = setup.dir_tendril();
     tendril.mode = TendrilMode::DirOverwrite;
 
-    let actual = push_tendril(&setup.uni_td_repo(), &tendril, false, force);
+    let actual = push_tendril(&tendril, false, force);
 
     assert_eq!(
         actual,
@@ -487,7 +524,7 @@ fn dir_merge_w_dir_tendril_merges_w_local_dir_recursively(#[case] force: bool) {
     let mut tendril = setup.dir_tendril();
     tendril.mode = TendrilMode::DirMerge;
 
-    let actual = push_tendril(&setup.uni_td_repo(), &tendril, false, force);
+    let actual = push_tendril(&tendril, false, force);
 
     assert_eq!(
         actual,
@@ -532,7 +569,7 @@ fn dir_overwrite_w_subdir_dir_tendril_replaces_remote_dir_recursively(
     let mut tendril = setup.subdir_dir_tendril();
     tendril.mode = TendrilMode::DirOverwrite;
 
-    let actual = push_tendril(&setup.uni_td_repo(), &tendril, false, force);
+    let actual = push_tendril(&tendril, false, force);
 
     assert_eq!(
         actual,
@@ -575,7 +612,7 @@ fn dir_merge_w_subdir_dir_tendril_merges_w_local_dir_recursively(
     let mut tendril = setup.subdir_dir_tendril();
     tendril.mode = TendrilMode::DirMerge;
 
-    let actual = push_tendril(&setup.uni_td_repo(), &tendril, false, force);
+    let actual = push_tendril(&tendril, false, force);
 
     assert_eq!(
         actual,
@@ -610,14 +647,14 @@ fn no_read_access_from_local_file_returns_io_error_permission_denied_unless_dry_
     setup.make_local_nra_file();
 
     let tendril = Tendril::new_expose(
-        "SomeApp",
-        "nra.txt",
-        setup.parent_dir.clone().into(),
+        setup.uni_td_repo(),
+        "SomeApp/nra.txt".into(),
+        setup.remote_nra_file.clone().into(),
         TendrilMode::DirOverwrite,
     )
     .unwrap();
 
-    let actual = push_tendril(&setup.uni_td_repo(), &tendril, dry_run, force);
+    let actual = push_tendril(&tendril, dry_run, force);
 
     let exp_result;
     if dry_run {
@@ -653,14 +690,14 @@ fn no_read_access_from_local_dir_returns_io_error_permission_denied_unless_dry_r
     setup.make_local_nra_dir();
 
     let tendril = Tendril::new_expose(
-        "SomeApp",
-        "nra",
-        setup.parent_dir.clone().into(),
+        setup.uni_td_repo(),
+        "SomeApp/nra".into(),
+        setup.remote_nra_dir.clone().into(),
         TendrilMode::DirOverwrite,
     )
     .unwrap();
 
-    let actual = push_tendril(&setup.uni_td_repo(), &tendril, dry_run, force);
+    let actual = push_tendril(&tendril, dry_run, force);
 
     set_ra(&setup.local_nra_dir, true);
     let exp_result;
@@ -711,7 +748,7 @@ fn no_write_access_at_remote_file_returns_io_error_permission_denied_unless_dry_
 
     let tendril = setup.file_tendril();
 
-    let actual = push_tendril(&setup.uni_td_repo(), &tendril, dry_run, force);
+    let actual = push_tendril(&tendril, dry_run, force);
 
     // Cleanup
     let mut parent_perms = metadata(&setup.parent_dir).unwrap().permissions();
@@ -761,7 +798,7 @@ fn no_write_access_at_remote_dir_returns_io_error_permission_denied_unless_dry_r
 
     let tendril = setup.dir_tendril();
 
-    let actual = push_tendril(&setup.uni_td_repo(), &tendril, dry_run, force);
+    let actual = push_tendril(&tendril, dry_run, force);
 
     // Cleanup
     perms.set_readonly(false);

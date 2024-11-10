@@ -288,3 +288,9 @@ impl From<PathBuf> for UniPath {
         Self::from(value.as_path())
     }
 }
+
+impl AsRef<UniPath> for UniPath {
+    fn as_ref(&self) -> &UniPath {
+        &self
+    }
+}

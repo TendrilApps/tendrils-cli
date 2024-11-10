@@ -269,12 +269,6 @@ pub enum TendrilActionError {
     /// - Attempting to link a push/pull tendril
     ModeMismatch,
 
-    /// The tendril action would result in recursive copying/linking, such as:
-    /// - Including the Tendrils repo as a tendril
-    /// - A folder tendril that is an ancestor to the Tendrils repo
-    /// - A tendril that is inside the Tendrils repo
-    Recursion,
-
     /// The type of the remote and local file system objects do not match, or
     /// do not match the expected types, such as:
     /// - The source is a file but the destination is a folder
@@ -327,7 +321,6 @@ impl ToString for TendrilActionError {
             TendrilActionError::ModeMismatch => {
                 String::from("Wrong tendril style")
             }
-            TendrilActionError::Recursion => String::from("Recursive tendril"),
             TendrilActionError::TypeMismatch { loc: Source, mistype: File } => {
                 String::from("Unexpected file at source")
             }
@@ -399,9 +392,13 @@ pub enum TendrilMode {
 /// Indicates an invalid tendril field.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum InvalidTendrilError {
-    InvalidGroup,
-    InvalidName,
-    InvalidParent,
+    InvalidLocal,
+
+    /// The tendril remote conflicts with the Tendrils repo. This can occur if:
+    /// - Including the Tendrils repo as a tendril
+    /// - A folder tendril is an ancestor to the Tendrils repo
+    /// - A tendril is inside the Tendrils repo
+    Recursion,
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq)]

@@ -213,17 +213,15 @@ impl TendrilsApi for TendrilsActor {
 const INIT_TD_TENDRILS_JSON: &str = r#"{
     "tendrils": [
         {
-            "group": "SomeApp",
-            "names": "SomeFile.ext",
-            "parents": "/path/to/containing/folder"
+            "local": "SomeApp/SomeFile.ext",
+            "remotes": "/path/to/SomeFile.ext"
         },
         {
-            "group": "SomeApp2",
-            "names": ["SomeFile2.ext", "SomeFolder3"],
-            "parents": [
-                "/path/to/containing/folder2",
-                "/path/to/containing/folder3",
-                "~/path/to/containing/folder4"
+            "local": "SomeApp2/SomeFolder",
+            "remotes": [
+                "/path/to/SomeFolder",
+                "/another/path/to/SomeFolder",
+                "~/path/to/DifferentName"
             ],
             "dir-merge": false,
             "link": true,
@@ -479,21 +477,13 @@ fn get_tendrils_repo(
     }
 }
 
-fn is_recursive_tendril(td_repo: &UniPath, tendril_full_path: &Path) -> bool {
-    let repo_inner = td_repo.inner();
-    repo_inner == tendril_full_path
-        || repo_inner.ancestors().any(|p| p == tendril_full_path)
-        || tendril_full_path.ancestors().any(|p| p == repo_inner)
-}
-
 fn link_tendril(
-    td_repo: &UniPath,
     tendril: &Tendril,
     dry_run: bool,
     mut force: bool,
 ) -> ActionLog {
-    let target = tendril.local(td_repo);
-    let create_at = tendril.remote();
+    let target = tendril.local_abs();
+    let create_at = tendril.remote().inner();
 
     let mut log = ActionLog::new(
         target.get_type(),
@@ -503,17 +493,6 @@ fn link_tendril(
     );
     if tendril.mode != TendrilMode::Link {
         log.result = Err(TendrilActionError::ModeMismatch);
-        return log;
-    }
-    if is_recursive_tendril(td_repo, log.resolved_path()) {
-        log.result = Err(TendrilActionError::Recursion);
-        return log;
-    }
-    if !tendril.parent().inner().exists() {
-        log.result = Err(TendrilActionError::IoError {
-            kind: std::io::ErrorKind::NotFound,
-            loc: Location::Dest,
-        });
         return log;
     }
 
@@ -552,13 +531,12 @@ fn link_tendril(
 }
 
 fn pull_tendril(
-    td_repo: &UniPath,
     tendril: &Tendril,
     dry_run: bool,
     force: bool,
 ) -> ActionLog {
-    let dest = tendril.local(td_repo);
-    let source = tendril.remote();
+    let dest = tendril.local_abs();
+    let source = tendril.remote().inner();
 
     let mut log = ActionLog::new(
         dest.get_type(),
@@ -569,10 +547,6 @@ fn pull_tendril(
 
     if tendril.mode == TendrilMode::Link {
         log.result = Err(TendrilActionError::ModeMismatch);
-        return log;
-    }
-    else if is_recursive_tendril(td_repo, log.resolved_path()) {
-        log.result = Err(TendrilActionError::Recursion);
         return log;
     }
 
@@ -591,13 +565,12 @@ fn pull_tendril(
 }
 
 fn push_tendril(
-    td_repo: &UniPath,
     tendril: &Tendril,
     dry_run: bool,
     force: bool,
 ) -> ActionLog {
-    let source = tendril.local(td_repo);
-    let dest = tendril.remote();
+    let source = tendril.local_abs();
+    let dest = tendril.remote().inner();
 
     let mut log = ActionLog::new(
         source.get_type(),
@@ -607,17 +580,6 @@ fn push_tendril(
     );
     if tendril.mode == TendrilMode::Link {
         log.result = Err(TendrilActionError::ModeMismatch);
-        return log;
-    }
-    if is_recursive_tendril(td_repo, log.resolved_path()) {
-        log.result = Err(TendrilActionError::Recursion);
-        return log;
-    }
-    if !tendril.parent().inner().exists() {
-        log.result = Err(TendrilActionError::IoError {
-            kind: std::io::ErrorKind::NotFound,
-            loc: Location::Dest,
-        });
         return log;
     }
 
@@ -780,28 +742,21 @@ fn batch_tendril_action<F: FnMut(TendrilReport<ActionLog>)>(
 
     for bundle in td_bundles.into_iter() {
         let bundle_rc = std::rc::Rc::new(bundle);
-        let tendrils = bundle_rc.resolve_tendrils(first_only);
+        let tendrils = bundle_rc.resolve_tendrils(td_repo, first_only);
 
-        // The number of parents that were considered when
-        // resolving the tendril bundle
-        let num_parents = match first_only {
-            true => 1,
-            false => bundle_rc.parents.len(),
-        };
-
-        for (i, tendril) in tendrils.into_iter().enumerate() {
+        for tendril in tendrils.into_iter() {
             let log = match (tendril, &mode, can_symlink) {
                 (Ok(v), ActionMode::Pull, _) => {
-                    Ok(pull_tendril(td_repo, &v, dry_run, force))
+                    Ok(pull_tendril(&v, dry_run, force))
                 }
                 (Ok(v), ActionMode::Push, _) => {
-                    Ok(push_tendril(td_repo, &v, dry_run, force))
+                    Ok(push_tendril(&v, dry_run, force))
                 }
                 (Ok(v), ActionMode::Out, _) if v.mode != TendrilMode::Link => {
-                    Ok(push_tendril(td_repo, &v, dry_run, force))
+                    Ok(push_tendril(&v, dry_run, force))
                 }
                 (Ok(v), ActionMode::Out | ActionMode::Link, true) => {
-                    Ok(link_tendril(td_repo, &v, dry_run, force))
+                    Ok(link_tendril(&v, dry_run, force))
                 }
                 (Ok(v), ActionMode::Link | ActionMode::Out, false) => {
                     // Do not attempt to symlink if it has already been
@@ -811,9 +766,9 @@ fn batch_tendril_action<F: FnMut(TendrilReport<ActionLog>)>(
                     // unnecessarily.
                     let remote = v.remote();
                     Ok(ActionLog::new(
-                        v.local(td_repo).get_type(),
-                        remote.get_type(),
-                        remote.to_path_buf(),
+                        v.local_abs().get_type(),
+                        remote.inner().get_type(),
+                        remote.inner().to_path_buf(),
                         Err(TendrilActionError::IoError {
                             kind: std::io::ErrorKind::PermissionDenied,
                             loc: Location::Dest,
@@ -823,12 +778,9 @@ fn batch_tendril_action<F: FnMut(TendrilReport<ActionLog>)>(
                 (Err(e), _, _) => Err(e),
             };
 
-            let name_idx = ((i / num_parents) as f32).floor() as usize;
-            let name = bundle_rc.names[name_idx].clone();
-
             let report = TendrilReport {
                 orig_tendril: std::rc::Rc::clone(&bundle_rc),
-                name,
+                local: bundle_rc.local.clone(),
                 log,
             };
 

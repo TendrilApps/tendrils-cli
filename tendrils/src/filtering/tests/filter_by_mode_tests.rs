@@ -17,11 +17,11 @@ fn empty_tendril_list_returns_empty(#[case] action_mode: ActionMode) {
 
 #[test]
 fn link_action_only_includes_tendrils_with_link_true() {
-    let mut t1 = TendrilBundle::new("SomeApp", vec!["misc.txt"]);
-    t1.link = false;
-    let mut t2 = TendrilBundle::new("SomeApp", vec!["misc2.txt"]);
-    t2.link = true;
-    let mut t3 = TendrilBundle::new("SomeApp", vec!["misc3.txt"]);
+    let mut t1 = TendrilBundle::new("SomeLocal");
+    t1.link = false;                          
+    let mut t2 = TendrilBundle::new("SomeLocal");
+    t2.link = true;                           
+    let mut t3 = TendrilBundle::new("SomeLocal");
     t3.link = false;
     let tendrils = vec![t1.clone(), t2.clone(), t3.clone()];
 
@@ -36,11 +36,11 @@ fn link_action_only_includes_tendrils_with_link_true() {
 fn non_link_action_only_includes_tendrils_with_link_false(
     #[case] action_mode: ActionMode,
 ) {
-    let mut t1 = TendrilBundle::new("SomeApp", vec!["misc.txt"]);
-    t1.link = false;
-    let mut t2 = TendrilBundle::new("SomeApp", vec!["misc2.txt"]);
-    t2.link = true;
-    let mut t3 = TendrilBundle::new("SomeApp", vec!["misc3.txt"]);
+    let mut t1 = TendrilBundle::new("SomeLocal");
+    t1.link = false;                          
+    let mut t2 = TendrilBundle::new("SomeLocal");
+    t2.link = true;                           
+    let mut t3 = TendrilBundle::new("SomeLocal");
     t3.link = false;
     let tendrils = vec![t1.clone(), t2.clone(), t3.clone()];
 
@@ -51,11 +51,11 @@ fn non_link_action_only_includes_tendrils_with_link_false(
 
 #[test]
 fn out_action_includes_all() {
-    let mut t1 = TendrilBundle::new("SomeApp", vec!["misc.txt"]);
+    let mut t1 = TendrilBundle::new("SomeLocal");
     t1.link = false;
-    let mut t2 = TendrilBundle::new("SomeApp", vec!["misc2.txt"]);
+    let mut t2 = TendrilBundle::new("SomeLocal");
     t2.link = true;
-    let mut t3 = TendrilBundle::new("SomeApp", vec!["misc3.txt"]);
+    let mut t3 = TendrilBundle::new("SomeLocal");
     t3.link = false;
     let tendrils = vec![t1.clone(), t2.clone(), t3.clone()];
 
