@@ -21,6 +21,11 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use tempdir::TempDir;
 
+// Serial test sets
+pub const SERIAL_CD: &str = "cd";
+pub const SERIAL_MUT_ENV_VARS: &str = "mut-env-var";
+pub const SERIAL_ROOT: &str = "root";
+
 pub fn get_disposable_dir() -> PathBuf {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .parent()

@@ -137,7 +137,7 @@ fn remote_is_another_td_repo_proceeds_normally(
 #[case(link_tendril)]
 #[case(pull_tendril)]
 #[case(push_tendril)]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn remote_is_global_config_dir_proceeds_normally(
     #[case] action: fn(&Tendril, bool, bool) -> ActionLog,
     #[values(true, false)] dry_run: bool,
@@ -189,7 +189,7 @@ fn remote_is_global_config_dir_proceeds_normally(
 #[case(link_tendril)]
 #[case(pull_tendril)]
 #[case(push_tendril)]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn remote_is_in_global_config_dir_proceeds_normally(
     #[case] action: fn(&Tendril, bool, bool) -> ActionLog,
     #[values(true, false)] dry_run: bool,
@@ -242,7 +242,7 @@ fn remote_is_in_global_config_dir_proceeds_normally(
 #[case(link_tendril)]
 #[case(pull_tendril)]
 #[case(push_tendril)]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn repo_is_global_cfg_dir_and_config_file_exists_proceeds_normally(
     #[case] action: fn(&Tendril, bool, bool) -> ActionLog,
     #[values(true, false)] dry_run: bool,
@@ -291,7 +291,7 @@ fn repo_is_global_cfg_dir_and_config_file_exists_proceeds_normally(
 #[case(link_tendril)]
 #[case(pull_tendril)]
 #[case(push_tendril)]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn repo_is_in_global_cfg_dir_and_config_file_exists_proceeds_normally(
     #[case] action: fn(&Tendril, bool, bool) -> ActionLog,
     #[values(true, false)] dry_run: bool,
@@ -340,7 +340,7 @@ fn repo_is_in_global_cfg_dir_and_config_file_exists_proceeds_normally(
 #[case("<mut-testing>")]
 #[case("<I_DO_NOT_EXIST>")]
 #[cfg_attr(windows, ignore)] // These are invalid paths on Windows
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn var_in_local_uses_raw_path_even_if_var_exists(
     #[case] local: &str,
     #[values(link_tendril, pull_tendril, push_tendril)] action: fn(
@@ -1215,7 +1215,7 @@ fn current_dir_is_unchanged(
 #[case(pull_tendril)]
 #[case(push_tendril)]
 #[cfg_attr(not(windows), ignore)]
-#[serial("root")]
+#[serial(SERIAL_ROOT)]
 fn windows_platform_parent_is_root_returns_permission_error_unless_dry_run_or_dir(
     #[case] action: fn(&Tendril, bool, bool) -> ActionLog,
     #[values(true, false)] dry_run: bool,
@@ -1340,7 +1340,7 @@ fn windows_platform_parent_is_root_returns_permission_error_unless_dry_run_or_di
 #[case(pull_tendril)]
 #[case(push_tendril)]
 #[cfg_attr(windows, ignore)]
-#[serial("root")]
+#[serial(SERIAL_ROOT)]
 fn non_windows_platform_parent_is_root_returns_permission_error_unless_dry_run(
     #[case] action: fn(&Tendril, bool, bool) -> ActionLog,
     #[values(true, false)] dry_run: bool,

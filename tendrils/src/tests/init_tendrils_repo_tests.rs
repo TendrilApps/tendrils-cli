@@ -1,5 +1,10 @@
 use crate::config::{Config, parse_config_expose};
-use crate::test_utils::{global_cfg_dir, global_cfg_file, home_dir, Setup};
+use crate::test_utils::{
+    global_cfg_dir,
+    global_cfg_file,
+    home_dir,
+    Setup
+};
 use crate::{
     is_tendrils_repo,
     InitError,
@@ -88,7 +93,7 @@ fn creates_dot_tendrils_dir_and_contents_in_empty_dir(#[case] force: bool) {
 #[rstest]
 #[case(true)]
 #[case(false)]
-#[serial("cd")]
+#[serial(SERIAL_CD)]
 fn does_not_change_cd(#[case] force: bool) {
     let api = TendrilsActor {};
     let setup = Setup::new();
@@ -245,7 +250,7 @@ fn dir_contains_non_empty_dot_tendrils_dir_returns_not_empty_error_unless_forced
 #[rstest]
 #[case(true)]
 #[case(false)]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn init_in_home_dir_with_global_cfg_file_returns_non_empty_error_unless_forced(
     #[case] force: bool,
 ) {
@@ -273,7 +278,7 @@ fn init_in_home_dir_with_global_cfg_file_returns_non_empty_error_unless_forced(
 #[rstest]
 #[case(true)]
 #[case(false)]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn init_in_global_cfg_dir_with_global_cfg_file_returns_non_empty_error_unless_forced(
     #[case] force: bool,
 ) {

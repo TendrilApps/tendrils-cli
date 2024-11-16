@@ -13,7 +13,7 @@ const EMPTY_CONFIG: GlobalConfig = GlobalConfig {
 };
 
 #[test]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn no_config_file_returns_empty_config() {
     let setup = Setup::new();
     setup.set_home_dir();
@@ -28,7 +28,7 @@ fn no_config_file_returns_empty_config() {
 }
 
 #[test]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn invalid_json_returns_parse_error() {
     let setup = Setup::new();
     setup.make_global_cfg_file("I'm not JSON".to_string());
@@ -45,7 +45,7 @@ fn invalid_json_returns_parse_error() {
 }
 
 #[test]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn empty_config_file_returns_parse_error() {
     let setup = Setup::new();
     setup.make_global_cfg_file("".to_string());
@@ -62,7 +62,7 @@ fn empty_config_file_returns_parse_error() {
 }
 
 #[test]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn empty_json_object_returns_empty_config() {
     let setup = Setup::new();
     setup.make_global_cfg_file("{}".to_string());
@@ -76,7 +76,7 @@ fn empty_json_object_returns_empty_config() {
 }
 
 #[test]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn no_read_access_to_config_file_returns_io_permission_error() {
     let setup = Setup::new();
     setup.make_global_cfg_file("".to_string());
@@ -96,7 +96,7 @@ fn no_read_access_to_config_file_returns_io_permission_error() {
 }
 
 #[test]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn valid_json_returns_config_values() {
     let setup = Setup::new();
     setup.make_global_cfg_file(
@@ -114,7 +114,7 @@ fn valid_json_returns_config_values() {
 }
 
 #[test]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn config_file_is_unchanged() {
     let setup = Setup::new();
     setup.make_global_cfg_file(

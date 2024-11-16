@@ -21,7 +21,7 @@ fn replaces_dir_seps_on_init_on_windows() {
 }
 
 #[test]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn resolves_tilde_on_init() {
     let given = PathBuf::from("~");
     std::env::set_var("HOME", "MyHome");
@@ -33,7 +33,7 @@ fn resolves_tilde_on_init() {
 }
 
 #[test]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn resolves_env_vars_on_init() {
     let given = PathBuf::from("<var>");
     std::env::set_var("var", "value");
@@ -55,7 +55,7 @@ fn roots_with_dir_sep_on_init() {
 }
 
 #[test]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn resolves_vars_then_tilde_then_dir_seps_then_roots() {
     let given = PathBuf::from("<var>\\misc.txt");
     std::env::set_var("HOME", "~/Home/.//<var>\\");
@@ -79,7 +79,7 @@ fn resolves_vars_then_tilde_then_dir_seps_then_roots() {
 #[cfg_attr(windows, case("\\Path", "\\Path"))]
 #[cfg_attr(not(windows), case("C:\\", "/C:\\"))]
 #[cfg_attr(windows, case("C:\\", "C:\\"))]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn resolves_tilde_then_replaces_seps_on_win_then_roots_with_dir_sep(
     #[case] tilde_value: &str,
     #[case] expected_str: &str,
@@ -100,7 +100,7 @@ fn resolves_tilde_then_replaces_seps_on_win_then_roots_with_dir_sep(
 #[cfg_attr(windows, case("\\Path", "\\Path"))]
 #[cfg_attr(not(windows), case("C:\\", "/C:\\"))]
 #[cfg_attr(windows, case("C:\\", "C:\\"))]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn resolves_vars_then_replaces_seps_on_win_then_roots_with_dir_sep(
     #[case] var_value: &str,
     #[case] expected_str: &str,
@@ -151,7 +151,7 @@ fn new_with_root_does_not_prepend_to_a_rooted_path() {
 }
 
 #[test]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn non_utf8_is_preserved() {
     let mut given_str = OsString::from("~/<");
     given_str.push(non_utf_8_text());

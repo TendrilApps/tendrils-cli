@@ -17,7 +17,7 @@ use std::path::PathBuf;
 #[case("wrong_format_mut-testing>")]
 #[case("wrong_format<mut-testing")]
 #[case("wrong_format>mut-testing<")]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn no_vars_returns_given_path(#[case] given: PathBuf) {
     let expected = PathBuf::from(given.clone());
     std::env::set_var("mut-testing", "value");
@@ -41,7 +41,7 @@ fn var_doesnt_exist_returns_raw_path() {
 #[case("<Mut-Testing>")]
 #[case("<MUT-TESTING>")]
 #[case("<mut-testinG>")]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 #[cfg_attr(windows, ignore)] // Env vars on Windows are not case sensitive
 fn wrong_capitalization_of_var_name_returns_raw_path(#[case] given: PathBuf) {
     let expected = given.clone();
@@ -80,7 +80,7 @@ fn wrong_capitalization_of_var_name_returns_raw_path(#[case] given: PathBuf) {
 #[case("\\\\?\\<mut-testing>", "\\\\?\\value")] // Verbatim
 #[case("\\\\.\\UNC\\<mut-testing>\\<mut-testing>", "\\\\.\\UNC\\value\\value")]
 #[case("\\\\?\\UNC\\<mut-testing>\\<mut-testing>", "\\\\?\\UNC\\value\\value")]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn var_in_path_is_replaced_with_value(
     #[case] given: PathBuf,
     #[case] expected: PathBuf,
@@ -104,7 +104,7 @@ fn var_in_path_is_replaced_with_value(
 #[case("<var\\name\\that\\is\\a\\path>")]
 #[case("<var/name/that/is/a/path>")]
 #[case("<var name with spaces>")]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn weird_var_names_still_replace_with_value(#[case] var_name: String) {
     let given = PathBuf::from(var_name.clone());
     let expected = PathBuf::from("value");
@@ -121,7 +121,7 @@ fn weird_var_names_still_replace_with_value(#[case] var_name: String) {
 #[case("<var>", "var", "var")]
 #[case("<var><var><var>", "<var>", "<var><var><var>")]
 #[case("<var><var><var>", "var", "varvarvar")]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn value_is_given_var_name_keeps_value(
     #[case] given: PathBuf,
     #[case] value: String,
@@ -141,7 +141,7 @@ fn value_is_given_var_name_keeps_value(
 #[case("<var2><var1>", "<var2>", "<var1>", "<var1><var2>")]
 #[case("<var1><var2>", "var2", "value2", "var2value2")]
 #[case("<var2><var1>", "var2", "value2", "value2var2")]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn value_is_another_var_name_keeps_value(
     #[case] given: PathBuf,
     #[case] var1_value: String,
@@ -157,7 +157,7 @@ fn value_is_another_var_name_keeps_value(
 }
 
 #[test]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn non_utf_8_var_name_is_preserved_if_var_does_not_exist() {
     let mut given_str = OsString::from("Path/With/Non/<");
     given_str.push(non_utf_8_text());
@@ -173,7 +173,7 @@ fn non_utf_8_var_name_is_preserved_if_var_does_not_exist() {
 }
 
 #[test]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn non_utf_8_var_name_is_replaced_if_var_exists() {
     let mut given_str = OsString::from("Path/With/Non/<");
     given_str.push(non_utf_8_text());
@@ -189,7 +189,7 @@ fn non_utf_8_var_name_is_replaced_if_var_exists() {
 }
 
 #[test]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn non_utf8_in_var_value_is_preserved() {
     let given = PathBuf::from("<mut-testing>");
     let expected = PathBuf::from(non_utf_8_text());
@@ -201,7 +201,7 @@ fn non_utf8_in_var_value_is_preserved() {
 }
 
 #[test]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn tilde_in_given_path_is_not_resolved() {
     let given = PathBuf::from("~/<mut-testing>");
     let expected = PathBuf::from("~/value");
@@ -216,7 +216,7 @@ fn tilde_in_given_path_is_not_resolved() {
 }
 
 #[test]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn tilde_in_var_value_is_not_resolved() {
     let given = PathBuf::from("<mut-testing>");
     let expected = PathBuf::from("~/value");
@@ -235,7 +235,7 @@ fn tilde_in_var_value_is_not_resolved() {
 }
 
 #[test]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn dir_seps_are_preserved() {
     let given = PathBuf::from("/path/with\\mixed\\<mut-testing>/dir\\seps");
     let expected_str = "/path/with\\mixed\\value/dir\\seps";
@@ -252,7 +252,7 @@ fn dir_seps_are_preserved() {
 #[case("/AbsPath")]
 #[case("\\AbsPath")]
 #[case("C:\\AbsPath")]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn var_value_is_absolute_path_adds_raw_value(#[case] var_value: &str) {
     let given = PathBuf::from("Some/Path/<mut-testing>");
     let expected_str = format!("Some/Path/{var_value}");

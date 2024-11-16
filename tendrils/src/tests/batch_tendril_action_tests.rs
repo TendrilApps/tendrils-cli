@@ -5,7 +5,7 @@ use crate::path_ext::UniPath;
 use crate::test_utils::{
     get_disposable_dir,
     is_empty,
-    Setup
+    Setup,
 };
 use crate::{
     batch_tendril_action,
@@ -731,7 +731,7 @@ fn out_returns_tendril_and_result_for_each_given_link_or_push_style(
 }
 
 #[rstest]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn remote_path_vars_are_resolved(
     #[values(ActionMode::Push, ActionMode::Pull, ActionMode::Link)]
     mode: ActionMode,

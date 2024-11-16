@@ -223,7 +223,7 @@ fn appends_local_to_td_repo_replacing_dir_seps_on_windows(
 }
 
 #[test]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn local_does_not_resolve_vars() {
     std::env::set_var("var", "value");
 
@@ -241,7 +241,7 @@ fn local_does_not_resolve_vars() {
 }
 
 #[test]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn remote_resolves_any_vars() {
     std::env::set_var("var", "value");
 

@@ -1,6 +1,11 @@
 use crate::{TendrilsActor, TendrilsApi};
 use crate::config::parse_config_expose;
-use crate::test_utils::{get_disposable_dir, global_cfg_dir, home_dir, Setup};
+use crate::test_utils::{
+    get_disposable_dir,
+    global_cfg_dir,
+    home_dir,
+    Setup
+};
 use serial_test::serial;
 use std::fs::{create_dir_all, write};
 use tempdir::TempDir;
@@ -93,7 +98,7 @@ fn valid_tendrils_json_file_returns_true() {
 }
 
 #[test]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn home_dir_with_global_cfg_file_and_td_json_returns_true() {
     let api = TendrilsActor {};
     let setup = Setup::new();
@@ -108,7 +113,7 @@ fn home_dir_with_global_cfg_file_and_td_json_returns_true() {
 }
 
 #[test]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn home_dir_with_global_cfg_file_but_no_td_json_returns_false() {
     let api = TendrilsActor {};
     let setup = Setup::new();
@@ -120,7 +125,7 @@ fn home_dir_with_global_cfg_file_but_no_td_json_returns_false() {
 }
 
 #[test]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn global_config_dir_can_be_tendrils_folder() {
     let api = TendrilsActor {};
     let setup = Setup::new();

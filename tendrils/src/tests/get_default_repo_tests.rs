@@ -9,7 +9,7 @@ use serial_test::serial;
 use std::path::PathBuf;
 
 #[test]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn config_file_does_not_exist_returns_none() {
     let api = TendrilsActor {};
     let setup = Setup::new();
@@ -22,7 +22,7 @@ fn config_file_does_not_exist_returns_none() {
 }
 
 #[test]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn invalid_json_returns_parse_error() {
     let api = TendrilsActor {};
     let setup = Setup::new();
@@ -56,7 +56,7 @@ fn invalid_json_returns_parse_error() {
 #[case("\\nSomePath\\n ", "\nSomePath\n ")]
 #[case("\\nSome\\nPath\\n ", "\nSome\nPath\n ")]
 #[case("\\r\\n \\tSomePath\\r\\n \\t", "\r\n \tSomePath\r\n \t")]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn config_file_exists_returns_unaltered_path_even_if_invalid(
     #[case] field_contents: &str,
     #[case] exp_field_contents: &str

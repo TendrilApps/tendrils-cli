@@ -18,7 +18,7 @@ fn invalid_tendril_returns_invalid_tendril() {
 #[case("<mut-testing>1", "value1")]
 #[case("~\\<mut-testing>2", "MyHome\\value2")]
 #[case("~/<mut-testing>3", "MyHome/value3")]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn vars_and_leading_tilde_in_remote_path_are_resolved(
     #[case] remote: String,
     #[case] expected_remote: PathBuf,
@@ -62,7 +62,7 @@ fn var_in_remote_path_doesnt_exist_returns_raw_path() {
 }
 
 #[test]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn leading_tilde_in_remote_path_tilde_value_doesnt_exist_returns_raw_path() {
     let td_repo = UniPath::from(Path::new("/Repo"));
     let mut given = RawTendril::new("SomeLocal");

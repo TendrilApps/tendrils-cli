@@ -35,7 +35,7 @@
       "desc": "A library for parsing ANSI Escape Codes",
       "repo": "https://gitlab.com/zhiburt/ansitok"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#anstream@0.6.14":
+    "registry+https://github.com/rust-lang/crates.io-index#anstream@0.6.18":
     {
       "name": "anstream",
       "license": "MIT OR Apache-2.0",
@@ -46,7 +46,7 @@
       "desc": "A simple cross platform library for writing colored text to a terminal.",
       "repo": "https://github.com/rust-cli/anstyle.git"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#anstyle-parse@0.2.4":
+    "registry+https://github.com/rust-lang/crates.io-index#anstyle-parse@0.2.6":
     {
       "name": "anstyle-parse",
       "license": "MIT OR Apache-2.0",
@@ -57,7 +57,7 @@
       "desc": "Parse ANSI Style Escapes",
       "repo": "https://github.com/rust-cli/anstyle.git"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#anstyle-query@1.0.3":
+    "registry+https://github.com/rust-lang/crates.io-index#anstyle-query@1.1.2":
     {
       "name": "anstyle-query",
       "license": "MIT OR Apache-2.0",
@@ -66,9 +66,9 @@
         "LICENSE-MIT"
       ],
       "desc": "Look up colored console capabilities",
-      "repo": "https://github.com/rust-cli/anstyle"
+      "repo": "https://github.com/rust-cli/anstyle.git"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#anstyle-wincon@3.0.3":
+    "registry+https://github.com/rust-lang/crates.io-index#anstyle-wincon@3.0.6":
     {
       "name": "anstyle-wincon",
       "license": "MIT OR Apache-2.0",
@@ -79,7 +79,7 @@
       "desc": "Styling legacy Windows terminals",
       "repo": "https://github.com/rust-cli/anstyle.git"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#anstyle@1.0.7":
+    "registry+https://github.com/rust-lang/crates.io-index#anstyle@1.0.10":
     {
       "name": "anstyle",
       "license": "MIT OR Apache-2.0",
@@ -102,7 +102,7 @@
       "desc": "A vector with fixed capacity, backed by an array (it can be stored on the stack too). Implements fixed capacity ArrayVec and ArrayString.",
       "repo": "https://github.com/bluss/arrayvec"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#autocfg@1.3.0":
+    "registry+https://github.com/rust-lang/crates.io-index#autocfg@1.4.0":
     {
       "name": "autocfg",
       "license": "Apache-2.0 OR MIT",
@@ -113,7 +113,7 @@
       "desc": "Automatic cfg for Rust compiler features",
       "repo": "https://github.com/cuviper/autocfg"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#bitflags@2.5.0":
+    "registry+https://github.com/rust-lang/crates.io-index#bitflags@2.6.0":
     {
       "name": "bitflags",
       "license": "MIT OR Apache-2.0",
@@ -136,6 +136,17 @@
       "desc": "count occurrences of a given byte, or the number of UTF-8 code points, in a byte slice, fast",
       "repo": "https://github.com/llogiq/bytecount"
     },
+    "registry+https://github.com/rust-lang/crates.io-index#byteorder@1.5.0":
+    {
+      "name": "byteorder",
+      "license": "Unlicense OR MIT",
+      "license_files":
+      [
+        "LICENSE-MIT"
+      ],
+      "desc": "Library for reading/writing numbers in big-endian and little-endian.",
+      "repo": "https://github.com/BurntSushi/byteorder"
+    },
     "registry+https://github.com/rust-lang/crates.io-index#cfg-if@1.0.0":
     {
       "name": "cfg-if",
@@ -148,7 +159,7 @@
       "desc": "A macro to ergonomically define an item depending on a large number of #[cfg]\nparameters. Structured like an if-else chain, the first matching branch is the\nitem that gets emitted.\n",
       "repo": "https://github.com/alexcrichton/cfg-if"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#clap@4.5.4":
+    "registry+https://github.com/rust-lang/crates.io-index#clap@4.5.21":
     {
       "name": "clap",
       "license": "MIT OR Apache-2.0",
@@ -159,7 +170,7 @@
       "desc": "A simple to use, efficient, and full-featured Command Line Argument Parser",
       "repo": "https://github.com/clap-rs/clap"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#clap_builder@4.5.2":
+    "registry+https://github.com/rust-lang/crates.io-index#clap_builder@4.5.21":
     {
       "name": "clap_builder",
       "license": "MIT OR Apache-2.0",
@@ -170,7 +181,7 @@
       "desc": "A simple to use, efficient, and full-featured Command Line Argument Parser",
       "repo": "https://github.com/clap-rs/clap"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#clap_derive@4.5.4":
+    "registry+https://github.com/rust-lang/crates.io-index#clap_derive@4.5.18":
     {
       "name": "clap_derive",
       "license": "MIT OR Apache-2.0",
@@ -179,9 +190,9 @@
         "LICENSE-MIT"
       ],
       "desc": "Parse command line argument by defining a struct, derive crate.",
-      "repo": "https://github.com/clap-rs/clap/tree/master/clap_derive"
+      "repo": "https://github.com/clap-rs/clap"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#clap_lex@0.7.0":
+    "registry+https://github.com/rust-lang/crates.io-index#clap_lex@0.7.3":
     {
       "name": "clap_lex",
       "license": "MIT OR Apache-2.0",
@@ -190,9 +201,9 @@
         "LICENSE-MIT"
       ],
       "desc": "Minimal, flexible command line parser",
-      "repo": "https://github.com/clap-rs/clap/tree/master/clap_lex"
+      "repo": "https://github.com/clap-rs/clap"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#colorchoice@1.0.1":
+    "registry+https://github.com/rust-lang/crates.io-index#colorchoice@1.0.3":
     {
       "name": "colorchoice",
       "license": "MIT OR Apache-2.0",
@@ -201,18 +212,7 @@
         "LICENSE-MIT"
       ],
       "desc": "Global override of color control",
-      "repo": "https://github.com/rust-cli/anstyle"
-    },
-    "registry+https://github.com/rust-lang/crates.io-index#dashmap@5.5.3":
-    {
-      "name": "dashmap",
-      "license": "MIT",
-      "license_files":
-      [
-        "LICENSE"
-      ],
-      "desc": "Blazing fast concurrent HashMap for Rust.",
-      "repo": "https://github.com/xacrimon/dashmap"
+      "repo": "https://github.com/rust-cli/anstyle.git"
     },
     "registry+https://github.com/rust-lang/crates.io-index#equivalent@1.0.1":
     {
@@ -270,7 +270,7 @@
       "desc": "Rust crate for the Fuchsia cryptographically secure pseudorandom number generator",
       "repo": "https://fuchsia.googlesource.com/fuchsia/+/master/garnet/public/rust/fuchsia-cprng"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#futures-channel@0.3.30":
+    "registry+https://github.com/rust-lang/crates.io-index#futures-channel@0.3.31":
     {
       "name": "futures-channel",
       "license": "MIT OR Apache-2.0",
@@ -281,7 +281,7 @@
       "desc": "Channels for asynchronous communication using futures-rs.\n",
       "repo": "https://github.com/rust-lang/futures-rs"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#futures-core@0.3.30":
+    "registry+https://github.com/rust-lang/crates.io-index#futures-core@0.3.31":
     {
       "name": "futures-core",
       "license": "MIT OR Apache-2.0",
@@ -292,7 +292,7 @@
       "desc": "The core traits and types in for the `futures` library.\n",
       "repo": "https://github.com/rust-lang/futures-rs"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#futures-executor@0.3.30":
+    "registry+https://github.com/rust-lang/crates.io-index#futures-executor@0.3.31":
     {
       "name": "futures-executor",
       "license": "MIT OR Apache-2.0",
@@ -303,7 +303,7 @@
       "desc": "Executors for asynchronous tasks based on the futures-rs library.\n",
       "repo": "https://github.com/rust-lang/futures-rs"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#futures-io@0.3.30":
+    "registry+https://github.com/rust-lang/crates.io-index#futures-io@0.3.31":
     {
       "name": "futures-io",
       "license": "MIT OR Apache-2.0",
@@ -314,7 +314,7 @@
       "desc": "The `AsyncRead`, `AsyncWrite`, `AsyncSeek`, and `AsyncBufRead` traits for the futures-rs library.\n",
       "repo": "https://github.com/rust-lang/futures-rs"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#futures-macro@0.3.30":
+    "registry+https://github.com/rust-lang/crates.io-index#futures-macro@0.3.31":
     {
       "name": "futures-macro",
       "license": "MIT OR Apache-2.0",
@@ -325,7 +325,7 @@
       "desc": "The futures-rs procedural macro implementations.\n",
       "repo": "https://github.com/rust-lang/futures-rs"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#futures-sink@0.3.30":
+    "registry+https://github.com/rust-lang/crates.io-index#futures-sink@0.3.31":
     {
       "name": "futures-sink",
       "license": "MIT OR Apache-2.0",
@@ -336,7 +336,7 @@
       "desc": "The asynchronous `Sink` trait for the futures-rs library.\n",
       "repo": "https://github.com/rust-lang/futures-rs"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#futures-task@0.3.30":
+    "registry+https://github.com/rust-lang/crates.io-index#futures-task@0.3.31":
     {
       "name": "futures-task",
       "license": "MIT OR Apache-2.0",
@@ -359,7 +359,7 @@
       "desc": "Timeouts for futures.\n",
       "repo": "https://github.com/async-rs/futures-timer"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#futures-util@0.3.30":
+    "registry+https://github.com/rust-lang/crates.io-index#futures-util@0.3.31":
     {
       "name": "futures-util",
       "license": "MIT OR Apache-2.0",
@@ -370,7 +370,7 @@
       "desc": "Common utilities and extension traits for the futures-rs library.\n",
       "repo": "https://github.com/rust-lang/futures-rs"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#futures@0.3.30":
+    "registry+https://github.com/rust-lang/crates.io-index#futures@0.3.31":
     {
       "name": "futures",
       "license": "MIT OR Apache-2.0",
@@ -414,7 +414,7 @@
       "desc": "Support for matching file paths against Unix shell style patterns.\n",
       "repo": "https://github.com/rust-lang/glob"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#hashbrown@0.14.5":
+    "registry+https://github.com/rust-lang/crates.io-index#hashbrown@0.15.1":
     {
       "name": "hashbrown",
       "license": "MIT OR Apache-2.0",
@@ -447,7 +447,7 @@
       "desc": "heck is a case conversion library.",
       "repo": "https://github.com/withoutboats/heck"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#indexmap@2.2.6":
+    "registry+https://github.com/rust-lang/crates.io-index#indexmap@2.6.0":
     {
       "name": "indexmap",
       "license": "Apache-2.0 OR MIT",
@@ -480,7 +480,7 @@
       "desc": "A simple library to detect whether you are root/admin or not",
       "repo": "https://gitlab.com/caralice/is-root"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#is_terminal_polyfill@1.70.0":
+    "registry+https://github.com/rust-lang/crates.io-index#is_terminal_polyfill@1.70.1":
     {
       "name": "is_terminal_polyfill",
       "license": "MIT OR Apache-2.0",
@@ -502,19 +502,7 @@
       "desc": "Fast integer primitive to string conversion",
       "repo": "https://github.com/dtolnay/itoa"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#lazy_static@1.4.0":
-    {
-      "name": "lazy_static",
-      "license": "MIT/Apache-2.0",
-      "license_files":
-      [
-        "LICENSE-APACHE",
-        "LICENSE-MIT"
-      ],
-      "desc": "A macro for declaring lazily evaluated statics in Rust.",
-      "repo": "https://github.com/rust-lang-nursery/lazy-static.rs"
-    },
-    "registry+https://github.com/rust-lang/crates.io-index#libc@0.2.154":
+    "registry+https://github.com/rust-lang/crates.io-index#libc@0.2.164":
     {
       "name": "libc",
       "license": "MIT OR Apache-2.0",
@@ -536,7 +524,7 @@
       "desc": "Wrappers to create fully-featured Mutex and RwLock types. Compatible with no_std.",
       "repo": "https://github.com/Amanieu/parking_lot"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#log@0.4.21":
+    "registry+https://github.com/rust-lang/crates.io-index#log@0.4.22":
     {
       "name": "log",
       "license": "MIT OR Apache-2.0",
@@ -547,7 +535,7 @@
       "desc": "A lightweight logging facade for Rust\n",
       "repo": "https://github.com/rust-lang/log"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#memchr@2.7.2":
+    "registry+https://github.com/rust-lang/crates.io-index#memchr@2.7.4":
     {
       "name": "memchr",
       "license": "Unlicense OR MIT",
@@ -581,7 +569,7 @@
       "desc": "A byte-oriented, zero-copy, parser combinators library",
       "repo": "https://github.com/Geal/nom"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#once_cell@1.19.0":
+    "registry+https://github.com/rust-lang/crates.io-index#once_cell@1.20.2":
     {
       "name": "once_cell",
       "license": "MIT OR Apache-2.0",
@@ -592,7 +580,7 @@
       "desc": "Single assignment cells and lazy values.",
       "repo": "https://github.com/matklad/once_cell"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#papergrid@0.11.0":
+    "registry+https://github.com/rust-lang/crates.io-index#papergrid@0.12.0":
     {
       "name": "papergrid",
       "license": "MIT",
@@ -603,7 +591,7 @@
       "desc": "Papergrid is a core library to print a table",
       "repo": "https://github.com/zhiburt/tabled"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#parking_lot@0.12.2":
+    "registry+https://github.com/rust-lang/crates.io-index#parking_lot@0.12.3":
     {
       "name": "parking_lot",
       "license": "MIT OR Apache-2.0",
@@ -625,7 +613,7 @@
       "desc": "An advanced API for creating custom synchronization primitives.",
       "repo": "https://github.com/Amanieu/parking_lot"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#pin-project-lite@0.2.14":
+    "registry+https://github.com/rust-lang/crates.io-index#pin-project-lite@0.2.15":
     {
       "name": "pin-project-lite",
       "license": "Apache-2.0 OR MIT",
@@ -647,7 +635,7 @@
       "desc": "Utilities for pinning\n",
       "repo": "https://github.com/rust-lang-nursery/pin-utils"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#ppv-lite86@0.2.17":
+    "registry+https://github.com/rust-lang/crates.io-index#ppv-lite86@0.2.20":
     {
       "name": "ppv-lite86",
       "license": "MIT/Apache-2.0",
@@ -658,6 +646,17 @@
       ],
       "desc": "Implementation of the crypto-simd API for x86",
       "repo": "https://github.com/cryptocorrosion/cryptocorrosion"
+    },
+    "registry+https://github.com/rust-lang/crates.io-index#proc-macro-crate@3.2.0":
+    {
+      "name": "proc-macro-crate",
+      "license": "MIT OR Apache-2.0",
+      "license_files":
+      [
+        "LICENSE-MIT"
+      ],
+      "desc": "Replacement for crate (macro_rules keyword) in proc-macros\n",
+      "repo": "https://github.com/bkchr/proc-macro-crate"
     },
     "registry+https://github.com/rust-lang/crates.io-index#proc-macro-error-attr@1.0.4":
     {
@@ -681,7 +680,7 @@
       "desc": "Almost drop-in replacement to panics in proc-macros",
       "repo": "https://gitlab.com/CreepySkeleton/proc-macro-error"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#proc-macro2@1.0.82":
+    "registry+https://github.com/rust-lang/crates.io-index#proc-macro2@1.0.89":
     {
       "name": "proc-macro2",
       "license": "MIT OR Apache-2.0",
@@ -692,7 +691,7 @@
       "desc": "A substitute implementation of the compiler's `proc_macro` API to decouple token-based libraries from the procedural macro use case.",
       "repo": "https://github.com/dtolnay/proc-macro2"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#quote@1.0.36":
+    "registry+https://github.com/rust-lang/crates.io-index#quote@1.0.37":
     {
       "name": "quote",
       "license": "MIT OR Apache-2.0",
@@ -783,7 +782,7 @@
       "desc": "An implementation of random number generator based on rdrand and rdseed instructions",
       "repo": "https://github.com/nagisa/rust_rdrand/"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#redox_syscall@0.5.1":
+    "registry+https://github.com/rust-lang/crates.io-index#redox_syscall@0.5.7":
     {
       "name": "redox_syscall",
       "license": "MIT",
@@ -794,7 +793,7 @@
       "desc": "A Rust library to access raw Redox system calls",
       "repo": "https://gitlab.redox-os.org/redox-os/syscall"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#regex-automata@0.4.6":
+    "registry+https://github.com/rust-lang/crates.io-index#regex-automata@0.4.9":
     {
       "name": "regex-automata",
       "license": "MIT OR Apache-2.0",
@@ -805,7 +804,7 @@
       "desc": "Automata construction and matching using regular expressions.",
       "repo": "https://github.com/rust-lang/regex/tree/master/regex-automata"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#regex-syntax@0.8.3":
+    "registry+https://github.com/rust-lang/crates.io-index#regex-syntax@0.8.5":
     {
       "name": "regex-syntax",
       "license": "MIT OR Apache-2.0",
@@ -816,7 +815,7 @@
       "desc": "A regular expression parser.",
       "repo": "https://github.com/rust-lang/regex/tree/master/regex-syntax"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#regex@1.10.4":
+    "registry+https://github.com/rust-lang/crates.io-index#regex@1.11.1":
     {
       "name": "regex",
       "license": "MIT OR Apache-2.0",
@@ -850,51 +849,49 @@
       "desc": "A safe, reliable implementation of remove_dir_all for Windows",
       "repo": "https://github.com/XAMPPRocky/remove_dir_all.git"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#rstest@0.18.2":
+    "registry+https://github.com/rust-lang/crates.io-index#rstest@0.23.0":
     {
       "name": "rstest",
       "license": "MIT OR Apache-2.0",
       "license_files":
       [
-        "LICENCE-MIT"
+        "LICENSE-MIT"
       ],
       "desc": "Rust fixture based test framework. It use procedural macro\nto implement fixtures and table based tests.\n",
       "repo": "https://github.com/la10736/rstest"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#rstest_macros@0.18.2":
+    "registry+https://github.com/rust-lang/crates.io-index#rstest_macros@0.23.0":
     {
       "name": "rstest_macros",
       "license": "MIT OR Apache-2.0",
       "license_files":
       [
-        "LICENCE-MIT"
+        "LICENSE-MIT"
       ],
       "desc": "Rust fixture based test framework. It use procedural macro\nto implement fixtures and table based tests.\n",
       "repo": "https://github.com/la10736/rstest"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#rstest_reuse@0.6.0":
+    "registry+https://github.com/rust-lang/crates.io-index#rstest_reuse@0.7.0":
     {
       "name": "rstest_reuse",
-      "license": "MIT/Apache-2.0",
+      "license": "MIT OR Apache-2.0",
       "license_files":
       [
-        "LICENCE-MIT",
-        "LICENSE-APACHE"
+        "LICENSE-MIT"
       ],
       "desc": "Reuse rstest attributes: create a set of tests and apply it \nto every scenario you want to test.\n",
       "repo": "https://github.com/la10736/rstest"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#rustc_version@0.4.0":
+    "registry+https://github.com/rust-lang/crates.io-index#rustc_version@0.4.1":
     {
       "name": "rustc_version",
-      "license": "MIT/Apache-2.0",
+      "license": "MIT OR Apache-2.0",
       "license_files":
       [
-        "LICENSE-MIT",
-        "LICENSE-APACHE"
+        "LICENSE-MIT"
       ],
       "desc": "A library for querying the version of a installed rustc compiler",
-      "repo": "https://github.com/Kimundi/rustc-version-rs"
+      "repo": "https://github.com/djc/rustc-version-rs"
     },
     "registry+https://github.com/rust-lang/crates.io-index#ryu@1.0.18":
     {
@@ -907,6 +904,17 @@
       "desc": "Fast floating point to string conversion",
       "repo": "https://github.com/dtolnay/ryu"
     },
+    "registry+https://github.com/rust-lang/crates.io-index#scc@2.2.5":
+    {
+      "name": "scc",
+      "license": "Apache-2.0",
+      "license_files":
+      [
+        "LICENSE"
+      ],
+      "desc": "High performance containers and utilities for concurrent and asynchronous programming",
+      "repo": "https://github.com/wvwwvwwv/scalable-concurrent-containers/"
+    },
     "registry+https://github.com/rust-lang/crates.io-index#scopeguard@1.2.0":
     {
       "name": "scopeguard",
@@ -917,6 +925,17 @@
       ],
       "desc": "A RAII scope guard that will run a given closure when it goes out of scope,\neven if the code between panics (assuming unwinding panic).\n\nDefines the macros `defer!`, `defer_on_unwind!`, `defer_on_success!` as\nshorthands for guards with one of the implemented strategies.\n",
       "repo": "https://github.com/bluss/scopeguard"
+    },
+    "registry+https://github.com/rust-lang/crates.io-index#sdd@3.0.4":
+    {
+      "name": "sdd",
+      "license": "Apache-2.0",
+      "license_files":
+      [
+        "LICENSE"
+      ],
+      "desc": "Scalable lock-free delayed memory reclaimer",
+      "repo": "https://github.com/wvwwvwwv/scalable-delayed-dealloc/"
     },
     "registry+https://github.com/rust-lang/crates.io-index#semver@1.0.23":
     {
@@ -929,7 +948,7 @@
       "desc": "Parser and evaluator for Cargo's flavor of Semantic Versioning",
       "repo": "https://github.com/dtolnay/semver"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#serde@1.0.201":
+    "registry+https://github.com/rust-lang/crates.io-index#serde@1.0.215":
     {
       "name": "serde",
       "license": "MIT OR Apache-2.0",
@@ -940,7 +959,7 @@
       "desc": "A generic serialization/deserialization framework",
       "repo": "https://github.com/serde-rs/serde"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#serde_derive@1.0.201":
+    "registry+https://github.com/rust-lang/crates.io-index#serde_derive@1.0.215":
     {
       "name": "serde_derive",
       "license": "MIT OR Apache-2.0",
@@ -951,7 +970,7 @@
       "desc": "Macros 1.1 implementation of #[derive(Serialize, Deserialize)]",
       "repo": "https://github.com/serde-rs/serde"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#serde_json@1.0.117":
+    "registry+https://github.com/rust-lang/crates.io-index#serde_json@1.0.132":
     {
       "name": "serde_json",
       "license": "MIT OR Apache-2.0",
@@ -962,7 +981,7 @@
       "desc": "A JSON serialization file format",
       "repo": "https://github.com/serde-rs/json"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#serde_spanned@0.6.6":
+    "registry+https://github.com/rust-lang/crates.io-index#serde_spanned@0.6.8":
     {
       "name": "serde_spanned",
       "license": "MIT OR Apache-2.0",
@@ -973,7 +992,7 @@
       "desc": "Serde-compatible spanned Value",
       "repo": "https://github.com/toml-rs/toml"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#serial_test@2.0.0":
+    "registry+https://github.com/rust-lang/crates.io-index#serial_test@3.2.0":
     {
       "name": "serial_test",
       "license": "MIT",
@@ -984,7 +1003,7 @@
       "desc": "Allows for the creation of serialised Rust tests",
       "repo": "https://github.com/palfrey/serial_test/"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#serial_test_derive@2.0.0":
+    "registry+https://github.com/rust-lang/crates.io-index#serial_test_derive@3.2.0":
     {
       "name": "serial_test_derive",
       "license": "MIT",
@@ -1039,7 +1058,7 @@
       "desc": "Parser for Rust source code",
       "repo": "https://github.com/dtolnay/syn"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#syn@2.0.62":
+    "registry+https://github.com/rust-lang/crates.io-index#syn@2.0.87":
     {
       "name": "syn",
       "license": "MIT OR Apache-2.0",
@@ -1050,7 +1069,7 @@
       "desc": "Parser for Rust source code",
       "repo": "https://github.com/dtolnay/syn"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#tabled@0.15.0":
+    "registry+https://github.com/rust-lang/crates.io-index#tabled@0.16.0":
     {
       "name": "tabled",
       "license": "MIT",
@@ -1061,7 +1080,7 @@
       "desc": "An easy to use library for pretty print tables of Rust `struct`s and `enum`s.",
       "repo": "https://github.com/zhiburt/tabled"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#tabled_derive@0.7.0":
+    "registry+https://github.com/rust-lang/crates.io-index#tabled_derive@0.8.0":
     {
       "name": "tabled_derive",
       "license": "MIT",
@@ -1095,7 +1114,7 @@
       "desc": "A native Rust encoder and decoder of TOML-formatted files and streams. Provides\nimplementations of the standard Serialize/Deserialize traits for TOML data to\nfacilitate deserializing and serializing Rust structures.\n",
       "repo": "https://github.com/toml-rs/toml"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#toml_datetime@0.6.6":
+    "registry+https://github.com/rust-lang/crates.io-index#toml_datetime@0.6.8":
     {
       "name": "toml_datetime",
       "license": "MIT OR Apache-2.0",
@@ -1117,7 +1136,18 @@
       "desc": "Yet another format-preserving TOML parser.",
       "repo": "https://github.com/toml-rs/toml"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#unicode-ident@1.0.12":
+    "registry+https://github.com/rust-lang/crates.io-index#toml_edit@0.22.22":
+    {
+      "name": "toml_edit",
+      "license": "MIT OR Apache-2.0",
+      "license_files":
+      [
+        "LICENSE-MIT"
+      ],
+      "desc": "Yet another format-preserving TOML parser.",
+      "repo": "https://github.com/toml-rs/toml"
+    },
+    "registry+https://github.com/rust-lang/crates.io-index#unicode-ident@1.0.13":
     {
       "name": "unicode-ident",
       "license": "(MIT OR Apache-2.0) AND Unicode-DFS-2016",
@@ -1129,13 +1159,14 @@
       "desc": "Determine whether characters have the XID_Start or XID_Continue properties according to Unicode Standard Annex #31",
       "repo": "https://github.com/dtolnay/unicode-ident"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#unicode-width@0.1.12":
+    "registry+https://github.com/rust-lang/crates.io-index#unicode-width@0.1.11":
     {
       "name": "unicode-width",
-      "license": "MIT OR Apache-2.0",
+      "license": "MIT/Apache-2.0",
       "license_files":
       [
-        "LICENSE-MIT"
+        "LICENSE-MIT",
+        "LICENSE-APACHE"
       ],
       "desc": "Determine displayed width of `char` and `str` types\naccording to Unicode Standard Annex #11 rules.\n",
       "repo": "https://github.com/unicode-rs/unicode-width"
@@ -1151,7 +1182,7 @@
       "desc": "Library for accessing Unix users and groups",
       "repo": "https://github.com/ogham/rust-users"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#utf8parse@0.2.1":
+    "registry+https://github.com/rust-lang/crates.io-index#utf8parse@0.2.2":
     {
       "name": "utf8parse",
       "license": "Apache-2.0 OR MIT",
@@ -1162,7 +1193,7 @@
       "desc": "Table-driven UTF-8 parser",
       "repo": "https://github.com/alacritty/vte"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#version_check@0.9.4":
+    "registry+https://github.com/rust-lang/crates.io-index#version_check@0.9.5":
     {
       "name": "version_check",
       "license": "MIT/Apache-2.0",
@@ -1185,16 +1216,16 @@
       "desc": "Parser for implementing terminal emulators",
       "repo": "https://github.com/alacritty/vte"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#vte_generate_state_changes@0.1.1":
+    "registry+https://github.com/rust-lang/crates.io-index#vte_generate_state_changes@0.1.2":
     {
       "name": "vte_generate_state_changes",
       "license": "Apache-2.0 OR MIT",
       "license_files":
       [
-        "https://raw.githubusercontent.com/jwilm/vte/master/LICENSE-MIT"
+        "LICENSE-MIT"
       ],
       "desc": "Proc macro for generating VTE state changes",
-      "repo": "https://github.com/jwilm/vte"
+      "repo": "https://github.com/alacritty/vte"
     },
     "registry+https://github.com/rust-lang/crates.io-index#wasi@0.11.0+wasi-snapshot-preview1":
     {
@@ -1254,7 +1285,7 @@
       "desc": "Rust for Windows",
       "repo": "https://github.com/microsoft/windows-rs"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#windows-sys@0.52.0":
+    "registry+https://github.com/rust-lang/crates.io-index#windows-sys@0.59.0":
     {
       "name": "windows-sys",
       "license": "MIT OR Apache-2.0",
@@ -1276,7 +1307,7 @@
       "desc": "Import libs for Windows",
       "repo": "https://github.com/microsoft/windows-rs"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#windows-targets@0.52.5":
+    "registry+https://github.com/rust-lang/crates.io-index#windows-targets@0.52.6":
     {
       "name": "windows-targets",
       "license": "MIT OR Apache-2.0",
@@ -1298,7 +1329,7 @@
       "desc": "Import lib for Windows",
       "repo": "https://github.com/microsoft/windows-rs"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#windows_aarch64_gnullvm@0.52.5":
+    "registry+https://github.com/rust-lang/crates.io-index#windows_aarch64_gnullvm@0.52.6":
     {
       "name": "windows_aarch64_gnullvm",
       "license": "MIT OR Apache-2.0",
@@ -1320,7 +1351,7 @@
       "desc": "Import lib for Windows",
       "repo": "https://github.com/microsoft/windows-rs"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#windows_aarch64_msvc@0.52.5":
+    "registry+https://github.com/rust-lang/crates.io-index#windows_aarch64_msvc@0.52.6":
     {
       "name": "windows_aarch64_msvc",
       "license": "MIT OR Apache-2.0",
@@ -1342,7 +1373,7 @@
       "desc": "Import lib for Windows",
       "repo": "https://github.com/microsoft/windows-rs"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#windows_i686_gnu@0.52.5":
+    "registry+https://github.com/rust-lang/crates.io-index#windows_i686_gnu@0.52.6":
     {
       "name": "windows_i686_gnu",
       "license": "MIT OR Apache-2.0",
@@ -1353,7 +1384,7 @@
       "desc": "Import lib for Windows",
       "repo": "https://github.com/microsoft/windows-rs"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#windows_i686_gnullvm@0.52.5":
+    "registry+https://github.com/rust-lang/crates.io-index#windows_i686_gnullvm@0.52.6":
     {
       "name": "windows_i686_gnullvm",
       "license": "MIT OR Apache-2.0",
@@ -1375,7 +1406,7 @@
       "desc": "Import lib for Windows",
       "repo": "https://github.com/microsoft/windows-rs"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#windows_i686_msvc@0.52.5":
+    "registry+https://github.com/rust-lang/crates.io-index#windows_i686_msvc@0.52.6":
     {
       "name": "windows_i686_msvc",
       "license": "MIT OR Apache-2.0",
@@ -1397,7 +1428,7 @@
       "desc": "Import lib for Windows",
       "repo": "https://github.com/microsoft/windows-rs"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#windows_x86_64_gnu@0.52.5":
+    "registry+https://github.com/rust-lang/crates.io-index#windows_x86_64_gnu@0.52.6":
     {
       "name": "windows_x86_64_gnu",
       "license": "MIT OR Apache-2.0",
@@ -1419,7 +1450,7 @@
       "desc": "Import lib for Windows",
       "repo": "https://github.com/microsoft/windows-rs"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#windows_x86_64_gnullvm@0.52.5":
+    "registry+https://github.com/rust-lang/crates.io-index#windows_x86_64_gnullvm@0.52.6":
     {
       "name": "windows_x86_64_gnullvm",
       "license": "MIT OR Apache-2.0",
@@ -1441,7 +1472,7 @@
       "desc": "Import lib for Windows",
       "repo": "https://github.com/microsoft/windows-rs"
     },
-    "registry+https://github.com/rust-lang/crates.io-index#windows_x86_64_msvc@0.52.5":
+    "registry+https://github.com/rust-lang/crates.io-index#windows_x86_64_msvc@0.52.6":
     {
       "name": "windows_x86_64_msvc",
       "license": "MIT OR Apache-2.0",
@@ -1453,6 +1484,17 @@
       "repo": "https://github.com/microsoft/windows-rs"
     },
     "registry+https://github.com/rust-lang/crates.io-index#winnow@0.5.40":
+    {
+      "name": "winnow",
+      "license": "MIT",
+      "license_files":
+      [
+        "LICENSE-MIT"
+      ],
+      "desc": "A byte-oriented, zero-copy, parser combinators library",
+      "repo": "https://github.com/winnow-rs/winnow"
+    },
+    "registry+https://github.com/rust-lang/crates.io-index#winnow@0.6.20":
     {
       "name": "winnow",
       "license": "MIT",
@@ -1484,6 +1526,28 @@
       ],
       "desc": "Create and set windows icons and metadata for executables",
       "repo": "https://github.com/BenjaminRi/winresource"
+    },
+    "registry+https://github.com/rust-lang/crates.io-index#zerocopy-derive@0.7.35":
+    {
+      "name": "zerocopy-derive",
+      "license": "BSD-2-Clause OR Apache-2.0 OR MIT",
+      "license_files":
+      [
+        "LICENSE-MIT"
+      ],
+      "desc": "Custom derive for traits from the zerocopy crate",
+      "repo": "https://github.com/google/zerocopy"
+    },
+    "registry+https://github.com/rust-lang/crates.io-index#zerocopy@0.7.35":
+    {
+      "name": "zerocopy",
+      "license": "BSD-2-Clause OR Apache-2.0 OR MIT",
+      "license_files":
+      [
+        "LICENSE-MIT"
+      ],
+      "desc": "Utilities for zero-copy parsing and serialization",
+      "repo": "https://github.com/google/zerocopy"
     }
   }
 }

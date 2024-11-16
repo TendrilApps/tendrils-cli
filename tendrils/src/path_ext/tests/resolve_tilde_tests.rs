@@ -12,7 +12,7 @@ use std::path::PathBuf;
 #[case("~\\Some\\Path", "MyHome\\Some\\Path")]
 #[case("~/~/Some/Path", "MyHome/~/Some/Path")]
 #[case("~\\~\\Some\\Path", "MyHome\\~\\Some\\Path")]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn leading_standalone_tilde_is_replaced_with_home_if_home_exists_regardless_of_fallback_vars(
     #[case] given: PathBuf,
     #[case] expected_str: String,
@@ -46,7 +46,7 @@ fn leading_standalone_tilde_is_replaced_with_home_if_home_exists_regardless_of_f
 #[case("~\\Some\\Path", "X:\\MyHomePath\\Some\\Path")]
 #[case("~/~/Some/Path", "X:\\MyHomePath/~/Some/Path")]
 #[case("~\\~\\Some\\Path", "X:\\MyHomePath\\~\\Some\\Path")]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn leading_standalone_tilde_is_replaced_with_homedrive_plus_homepath_if_home_doesnt_exist(
     #[case] given: PathBuf,
     #[case] expected_str: String,
@@ -64,7 +64,7 @@ fn leading_standalone_tilde_is_replaced_with_homedrive_plus_homepath_if_home_doe
 #[case(false, false)]
 #[case(true, false)]
 #[case(false, true)]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn leading_tilde_returns_given_if_home_and_either_homedrive_or_homepath_dont_exist(
     #[case] homedrive_exists: bool,
     #[case] homepath_exists: bool,
@@ -109,7 +109,7 @@ fn leading_tilde_returns_given_if_home_and_either_homedrive_or_homepath_dont_exi
 #[case("\\\\server\\share\\~")]
 #[case("\\\\?\\~")]
 #[case("\\\\.\\~")]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn crowded_or_non_leading_tilde_returns_given(#[case] given: PathBuf) {
     let expected = PathBuf::from(given.clone());
     std::env::set_var("var", "value");
@@ -123,7 +123,7 @@ fn crowded_or_non_leading_tilde_returns_given(#[case] given: PathBuf) {
 }
 
 #[test]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn var_in_path_is_not_resolved() {
     let given = PathBuf::from("~/Path/With/<var>");
     assert!(contains_env_var(&given));
@@ -136,7 +136,7 @@ fn var_in_path_is_not_resolved() {
 }
 
 #[test]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn tilde_value_is_another_var_returns_raw_tilde_value() {
     let home_value = "<var>";
     let home_path = PathBuf::from(&home_value);
@@ -152,7 +152,7 @@ fn tilde_value_is_another_var_returns_raw_tilde_value() {
 #[rstest]
 #[case(true)]
 #[case(false)]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn non_utf8_in_path_is_preserved(#[case] home_exists: bool) {
     let mut given_str = std::ffi::OsString::from("~/");
     given_str.push(non_utf_8_text());
@@ -185,7 +185,7 @@ fn non_utf8_in_path_is_preserved(#[case] home_exists: bool) {
 #[rstest]
 #[case(true)]
 #[case(false)]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn non_utf8_in_tilde_value_is_preserved(#[case] home_exists: bool) {
     let non_utf_8 = non_utf_8_text();
     if home_exists {
@@ -222,7 +222,7 @@ fn non_utf8_in_tilde_value_is_preserved(#[case] home_exists: bool) {
 #[case("~/Home")]
 #[case("~\\Home")]
 #[case( "../Home/./..")]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn tilde_value_is_misc_returns_raw_tilde_value(#[case] home: &str) {
     std::env::set_var("HOME", home);
 
@@ -249,7 +249,7 @@ fn tilde_value_is_misc_returns_raw_tilde_value(#[case] home: &str) {
 #[case("Plain", "C:\\Abs")]
 #[case("Trailing/", "/Abs")]
 #[case("Trailing\\", "\\Abs")]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn home_path_and_homedrive_values_are_misc_returns_raw_value_appended(
     #[case] home_drive: String,
     #[case] home_path: &str,

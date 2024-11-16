@@ -35,9 +35,6 @@ pub use tendril_report::{ActionLog, TendrilLog, TendrilReport};
 
 #[cfg(test)]
 mod tests;
-#[cfg(test)]
-// Must be included in top level of the crate (see rstest_reuse docs)
-use rstest_reuse;
 
 #[cfg(any(test, feature = "_test_utils"))]
 pub mod test_utils;

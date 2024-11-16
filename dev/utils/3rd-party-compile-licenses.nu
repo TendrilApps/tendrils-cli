@@ -1,5 +1,7 @@
 use 3rd-party-update-cargo-deps.nu filter_workspace_crates
 
+const LOG_FILE = "./target/nu-log.txt"
+
 def main [formatted_mdata_path: string] {
     let formatted_mdata = (open $formatted_mdata_path)
     mut formatted_cargo_deps = $formatted_mdata.cargo-dependencies
@@ -33,6 +35,12 @@ def main [formatted_mdata_path: string] {
 # Supports a crate that has the license nested up to 1 deep
 # (i.e. crate_folder/src/LICENSE, up to crate_folder/LICENSE)
 def get_license_texts [dep: record] {
+    if not ("cargo_dep" in $dep) {
+        # Useful for debugging
+        $dep.name | save $LOG_FILE -f
+        1 / 0
+    }
+
     let local_src_path = (get_local_src_path $dep.cargo_dep)
 
     if (($dep.license_files | length) < 1) {
@@ -54,7 +62,7 @@ def get_license_texts [dep: record] {
         if ($lic_file | is_https_url) {
             $lic_txt = ($lic_txt + (curl $lic_file -s -f))
             if ($env.LAST_EXIT_CODE != 0) {
-                $"Could not fetch $($lic_file) from the given URL"
+                $"Could not fetch $($lic_file) from the given URL" | save $LOG_FILE -f
                 1 / 0
             }
         } else if ($lic_path1 | path exists) {
@@ -64,7 +72,7 @@ def get_license_texts [dep: record] {
             try {
                 $lic_txt = ($lic_txt + (open $lic_path2))
             } catch {
-                $"\n\nCould not open ($lic_path2)"
+                $"\n\nCould not open ($lic_path2)" | save $LOG_FILE -f
                 1 / 0
             }
         }

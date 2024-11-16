@@ -12,7 +12,7 @@ use std::fs::{create_dir_all, write};
 use std::path::{MAIN_SEPARATOR as SEP, PathBuf};
 
 #[test]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn starting_dir_invalid_default_not_set_returns_given_invalid_err() {
     let setup = Setup::new();
     let starting_td_repo = setup.uni_td_repo();
@@ -31,7 +31,7 @@ fn starting_dir_invalid_default_not_set_returns_given_invalid_err() {
 }
 
 #[test]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn starting_dir_invalid_default_invalid_returns_given_invalid_err() {
     let setup = Setup::new();
     let starting_td_repo = setup.uni_td_repo();
@@ -49,7 +49,7 @@ fn starting_dir_invalid_default_invalid_returns_given_invalid_err() {
 }
 
 #[test]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn starting_dir_invalid_default_valid_returns_given_invalid_err() {
     let setup = Setup::new();
     let starting_td_repo = UniPath::from(
@@ -74,7 +74,7 @@ fn starting_dir_invalid_default_valid_returns_given_invalid_err() {
 }
 
 #[test]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn starting_dir_valid_default_not_set_returns_starting_dir() {
     let setup = Setup::new();
     let starting_td_repo = setup.uni_td_repo();
@@ -89,7 +89,7 @@ fn starting_dir_valid_default_not_set_returns_starting_dir() {
 }
 
 #[test]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn starting_dir_valid_default_valid_returns_starting_dir() {
     let setup = Setup::new();
     let starting_td_repo = setup.uni_td_repo();
@@ -112,7 +112,7 @@ fn starting_dir_valid_default_valid_returns_starting_dir() {
 }
 
 #[test]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn starting_dir_valid_default_invalid_returns_starting_dir() {
     let setup = Setup::new();
     let starting_td_repo = setup.uni_td_repo();
@@ -132,7 +132,7 @@ fn starting_dir_valid_default_invalid_returns_starting_dir() {
 }
 
 #[test]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn starting_dir_none_default_not_set_returns_default_not_set_err() {
     let setup = Setup::new();
     let starting_td_repo = None;
@@ -145,7 +145,7 @@ fn starting_dir_none_default_not_set_returns_default_not_set_err() {
 }
 
 #[test]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn starting_dir_none_default_invalid_returns_default_invalid_err() {
     let setup = Setup::new();
     let starting_td_repo = None;
@@ -166,7 +166,7 @@ fn starting_dir_none_default_invalid_returns_default_invalid_err() {
 }
 
 #[test]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn starting_dir_none_default_valid_returns_default() {
     let setup = Setup::new();
     let starting_td_repo = None;
@@ -183,7 +183,7 @@ fn starting_dir_none_default_valid_returns_default() {
 }
 
 #[test]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn starting_dir_is_default_dir_and_is_valid_returns_dir() {
     let setup = Setup::new();
     let starting_td_repo = setup.uni_td_repo();
@@ -202,7 +202,7 @@ fn starting_dir_is_default_dir_and_is_valid_returns_dir() {
 }
 
 #[test]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn leading_tilde_and_env_vars_in_given_path_are_resolved_and_dir_seps_are_replaced_on_win() {
     let setup = Setup::new();
     setup.make_td_json_file(&[]);
@@ -220,7 +220,7 @@ fn leading_tilde_and_env_vars_in_given_path_are_resolved_and_dir_seps_are_replac
 }
 
 #[test]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn leading_tilde_and_env_vars_in_default_path_are_resolved_and_dir_seps_are_replaced() {
     let setup = Setup::new();
     setup.make_td_json_file(&[]);
@@ -239,7 +239,7 @@ fn leading_tilde_and_env_vars_in_default_path_are_resolved_and_dir_seps_are_repl
 }
 
 #[test]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn leading_tilde_and_env_vars_in_given_path_are_resolved_in_error_path_and_dir_seps_are_replaced() {
     let setup = Setup::new();
     setup.set_home_dir();
@@ -261,7 +261,7 @@ fn leading_tilde_and_env_vars_in_given_path_are_resolved_in_error_path_and_dir_s
 }
 
 #[test]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn leading_tilde_and_env_vars_in_default_path_are_resolved_in_error_path_and_dir_seps_are_replaced() {
     let setup = Setup::new();
     setup.make_global_cfg_file(
@@ -312,7 +312,7 @@ fn relative_given_path_is_absoluted_and_dots_preserved_in_returned_path() {
 }
 
 #[test]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn relative_default_path_is_absoluted_and_dots_preserved_in_returned_path() {
     let setup = Setup::new();
     create_dir_all(&setup.td_repo.join("SkipMe")).unwrap();
@@ -361,7 +361,7 @@ fn relative_given_path_is_absoluted_and_dots_preserved_in_error_path() {
 }
 
 #[test]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn relative_default_path_is_absoluted_and_dots_preserved_in_error_path() {
     let setup = Setup::new();
     setup.make_global_cfg_file(default_repo_path_as_json(

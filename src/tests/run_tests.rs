@@ -144,7 +144,7 @@ fn about_acknowledgements_returns_message_and_hyperlink_to_repo_third_party_file
 #[rstest]
 #[case(true)]
 #[case(false)]
-#[serial("cd")]
+#[serial(SERIAL_CD)]
 fn init_no_path_given_uses_current_dir(#[case] force: bool) {
     let mut api = MockTendrilsApi::new();
     let mut writer = MockWriter::new();
@@ -177,7 +177,7 @@ fn init_no_path_given_uses_current_dir(#[case] force: bool) {
 #[rstest]
 #[case(true)]
 #[case(false)]
-#[serial("cd")]
+#[serial(SERIAL_CD)]
 fn init_path_given_valid_uses_given_path_and_ignores_valid_current_dir(
     #[case] force: bool,
 ) {
@@ -220,7 +220,7 @@ fn init_path_given_valid_uses_given_path_and_ignores_valid_current_dir(
 #[case(true)]
 #[case(false)]
 #[cfg_attr(windows, ignore)]
-#[serial("cd")]
+#[serial(SERIAL_CD)]
 fn init_path_given_valid_uses_given_path_and_ignores_missing_current_dir(
     #[case] force: bool,
 ) {
@@ -260,7 +260,7 @@ fn init_path_given_valid_uses_given_path_and_ignores_missing_current_dir(
 #[rstest]
 #[case(true)]
 #[case(false)]
-#[serial("cd")]
+#[serial(SERIAL_CD)]
 #[cfg_attr(windows, ignore)]
 fn init_no_path_given_and_no_cd_prints_error_message(#[case] force: bool) {
     let mut api = MockTendrilsApi::new();
@@ -395,7 +395,7 @@ fn init_dir_does_not_exist_prints_io_error_message(#[case] force: bool) {
 #[rstest]
 #[case(true)]
 #[case(false)]
-#[serial("cd")]
+#[serial(SERIAL_CD)]
 fn init_given_path_is_relative_prepends_with_cd(#[case] force: bool) {
     let mut api = MockTendrilsApi::new();
     let mut writer = MockWriter::new();
@@ -429,7 +429,7 @@ fn init_given_path_is_relative_prepends_with_cd(#[case] force: bool) {
 #[rstest]
 #[case(true)]
 #[case(false)]
-#[serial("cd")]
+#[serial(SERIAL_CD)]
 #[cfg_attr(windows, ignore)]
 fn init_given_path_is_relative_and_cd_doesnt_exist_prepends_with_dir_sep(#[case] force: bool) {
     let mut api = MockTendrilsApi::new();
@@ -463,7 +463,7 @@ fn init_given_path_is_relative_and_cd_doesnt_exist_prepends_with_dir_sep(#[case]
 #[rstest]
 #[case(true)]
 #[case(false)]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn init_given_path_is_relative_but_resolves_to_abs_should_not_prepend_cd(#[case] force: bool) {
     let mut api = MockTendrilsApi::new();
     let mut writer = MockWriter::new();
@@ -490,7 +490,7 @@ fn init_given_path_is_relative_but_resolves_to_abs_should_not_prepend_cd(#[case]
 #[rstest]
 #[case(true)]
 #[case(false)]
-#[serial("cd", "mut-env-var-testing")]
+#[serial(SERIAL_CD, SERIAL_MUT_ENV_VARS)]
 #[cfg_attr(windows, ignore)]
 fn init_given_path_is_relative_but_resolves_to_abs_and_cd_doesnt_exist_should_not_prepend_cd(#[case] force: bool) {
     let mut api = MockTendrilsApi::new();
@@ -574,7 +574,7 @@ fn path_io_error_accessing_global_config_file_prints_message() {
 }
 
 #[rstest]
-#[serial("cd")]
+#[serial(SERIAL_CD)]
 #[cfg_attr(windows, ignore)]
 fn tendril_action_no_path_given_and_no_cd_prints_message(
     #[values(ActionMode::Pull, ActionMode::Push, ActionMode::Link)]
@@ -617,7 +617,7 @@ fn tendril_action_no_path_given_and_no_cd_prints_message(
 // TODO: Test no path given and cd is Tendrils repo
 
 #[rstest]
-#[serial("cd")]
+#[serial(SERIAL_CD)]
 fn tendril_action_given_path_is_not_tendrils_repo_but_cd_is_should_print_message(
     #[values(ActionMode::Pull, ActionMode::Push, ActionMode::Link)]
     mode: ActionMode,
@@ -672,7 +672,7 @@ fn tendril_action_given_path_is_not_tendrils_repo_but_cd_is_should_print_message
 }
 
 #[rstest]
-#[serial("cd")]
+#[serial(SERIAL_CD)]
 fn tendril_action_given_path_and_cd_are_both_tendrils_repos_uses_given_path(
     #[values(ActionMode::Pull, ActionMode::Push, ActionMode::Link)]
     mode: ActionMode,
@@ -727,7 +727,7 @@ fn tendril_action_given_path_and_cd_are_both_tendrils_repos_uses_given_path(
 }
 
 #[rstest]
-#[serial("cd")]
+#[serial(SERIAL_CD)]
 fn tendril_action_given_path_is_relative_prepends_with_cd(
     #[values(ActionMode::Pull, ActionMode::Push, ActionMode::Link)]
     mode: ActionMode,
@@ -776,7 +776,7 @@ fn tendril_action_given_path_is_relative_prepends_with_cd(
 }
 
 #[rstest]
-#[serial("cd")]
+#[serial(SERIAL_CD)]
 #[cfg_attr(windows, ignore)]
 fn tendril_action_given_path_is_relative_and_cd_doesnt_exist_prepends_with_dir_sep(
     #[values(ActionMode::Pull, ActionMode::Push, ActionMode::Link)]
@@ -824,7 +824,7 @@ fn tendril_action_given_path_is_relative_and_cd_doesnt_exist_prepends_with_dir_s
 }
 
 #[rstest]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn tendril_action_given_path_is_relative_but_resolves_to_abs_should_not_prepend_cd(
     #[values(ActionMode::Pull, ActionMode::Push, ActionMode::Link)]
     mode: ActionMode,
@@ -866,7 +866,7 @@ fn tendril_action_given_path_is_relative_but_resolves_to_abs_should_not_prepend_
 }
 
 #[rstest]
-#[serial("cd", "mut-env-var-testing")]
+#[serial(SERIAL_CD, SERIAL_MUT_ENV_VARS)]
 #[cfg_attr(windows, ignore)]
 fn tendril_action_given_path_is_relative_but_resolves_to_abs_and_cd_doesnt_exist_should_not_prepend_cd(
     #[values(ActionMode::Pull, ActionMode::Push, ActionMode::Link)]

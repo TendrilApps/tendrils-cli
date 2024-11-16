@@ -112,7 +112,7 @@ fn given_td_repo_is_invalid_returns_no_valid_td_repo_err(
 }
 
 #[rstest]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn given_td_repo_is_none_default_td_repo_invalid_returns_no_valid_td_repo_err(
     #[values(ActionMode::Push, ActionMode::Pull, ActionMode::Link)]
     mode: ActionMode,
@@ -144,7 +144,7 @@ fn given_td_repo_is_none_default_td_repo_invalid_returns_no_valid_td_repo_err(
 }
 
 #[rstest]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn given_td_repo_is_none_default_td_repo_not_set_returns_no_valid_td_repo_err(
     #[values(ActionMode::Push, ActionMode::Pull, ActionMode::Link)]
     mode: ActionMode,
@@ -173,7 +173,7 @@ fn given_td_repo_is_none_default_td_repo_not_set_returns_no_valid_td_repo_err(
 }
 
 #[rstest]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn given_td_repo_is_none_default_td_repo_is_valid_uses_default_td_repo(
     #[values(ActionMode::Push, ActionMode::Pull, ActionMode::Link)]
     mode: ActionMode,
@@ -221,7 +221,7 @@ fn given_td_repo_is_none_default_td_repo_is_valid_uses_default_td_repo(
 }
 
 #[rstest]
-#[serial("mut-env-var-testing")]
+#[serial(SERIAL_MUT_ENV_VARS)]
 fn leading_tilde_or_env_vars_in_default_repo_path_are_resolved(
     #[values(ActionMode::Push, ActionMode::Pull, ActionMode::Link)]
     mode: ActionMode,
