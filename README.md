@@ -79,39 +79,49 @@ td init
 ## `tendrils.json` Schema
 - The json schema is intended to be flexible and to allow defining multiple tendrils in a compact form
 
-TODO: To be updated once schema is updated
 ```json
 {
-    "tendrils": [
-        {
-            "group": "Group/app Name",
-            "names": [
-                "file1.txt",
-                "file2.md",
-                "folder1"
-            ],
-            "parents": [
-                "~/path/to/parent/folder",
-                "parent/with/<ENV_VAR>",
+    "tendrils": {
+        "SomeApp/SomeFile.ext": {
+            "remotes": "/path/to/SomeFile.ext"
+        },
+        "SomeApp2/SomeFolder": {
+            "remotes": [
+                "/path/to/SomeFolder",
+                "/path/to/DifferentName",
+                "~/path/in/home/dir/SomeFolder",
+                "/path/using/<MY-ENV-VAR>/SomeFolder"
             ],
             "dir-merge": false,
-            "link": false,
-            "profiles": [
-                "home",
-                "work",
-            ]
-        }
-    ]
+            "link": true,
+            "profiles": ["home", "work"]
+        },
+        "SomeApp3/file.txt": [
+            {
+                "remotes": "~/unix/specific/path/file.txt",
+                "link": true,
+                "profiles": "unix"
+            },
+            {
+                "remotes": "~/windows/specific/path/file.txt",
+                "link": false,
+                "profiles": "windows"
+            }
+        ]
+    }
 }
 ```
-- The example above would define 6 tendrils
-    - One for each of the 3 names in each of the 2 parent folders
-    - The profiles/tendril modes are applied to all of these tendrils
+- Each entry in the `tendrils` dictionary above defines a set of tendrils
+- The example above would define 7 tendrils
+    - 1 tendril for `SomeApp/SomeFile.ext`
+    - 4 tendrils for `SomeApp2/SomeFolder`
+    - 2 tendrils for `SomeApp3/file.txt`
+        - Note that unlike the first two, this entry is an array (using square brackets `[]` rather than `{}`) which allows specifying unique properties for the different remote locations
 - `null` is not valid in any of these fields
 - Must only contain valid UTF-8 characters
 
-### `local`
-- The path to the master copy of the file/folder inside the [Tendrils Repo](#tendrils-repo)
+### Local Path
+- The keys in the `tendrils` dictionary represent the path to the master copy of the file/folder inside the [Tendrils Repo](#tendrils-repo)
     - This path is appended to the Tendrils repo
 - If the path specifies multiple subfolders, the corresponding folder structure will be created
     - These paths should use `/` instead of `\` due to better cross-platform support
@@ -126,17 +136,17 @@ TODO: To be updated once schema is updated
 - See [Filtering by Local](#filtering-by-locals)
 ```json
 # These paths are relative to the root of the Tendrils repo
-"local": "file.txt" # Becomes /path/to/tendrils/repo/file.txt
+"file.txt" # Becomes /path/to/tendrils/repo/file.txt
 
 # Or
-"local": "SomeFolder" # Becomes /path/to/tendrils/repo/SomeFolder/file.txt
+"SomeFolder" # Becomes /path/to/tendrils/repo/SomeFolder/file.txt
 
 # Or
-"local": "SomeFolder/file.txt" # Becomes /path/to/tendrils/repo/SomeFolder/file.txt
+"SomeFolder/file.txt" # Becomes /path/to/tendrils/repo/SomeFolder/file.txt
 ```
 
 ### `remotes`
-- A list of paths to the files/folders throughout the host machine that are associated with the corresponding [`local`](#local)
+- A list of paths to the files/folders throughout the host machine that are associated with the corresponding [master copy](#local-path)
 - Each remote defines a tendril
 - Environment variables and some path abbreviations are supported
     - See [Path Resolving](#path-resolving)
@@ -169,7 +179,7 @@ TODO: To be updated once schema is updated
 - If this field is omitted, it defaults to `false`
 
 ### `profiles`
-- Provide an additional means for associating groups of tendrils (in a broader sense than `group`)
+- Provide an additional means for associating groups of tendrils
     - They may group by context, and often map to a specific computer (`home`, `work`, etc), or to a group of computers (`unix`, `windows`, etc)
     - They may also be used to group by category (`configs`, `scripts`, etc.)
 - A tendril can belong to several profiles at once
@@ -265,12 +275,13 @@ td push --path /some/tendrils/folder
 ### Filtering by Locals
 - Using the `--locals (-l)` argument
 - Available on all of the actions listed above
-- Only tendrils who's [local](#local) matches any of the given filters will be included
+- Only tendrils who's [local](#local-path) matches any of the given filters will be included
     - Glob patterns are supported
 ``` bash
 td link -l file1.txt SomeFolder/file2.txt **/*.json
 ```
 - Will only include tendrils whose local path is exactly `file1.txt` or `SomeFolder/file2.txt`, and all JSON files
+- Note: Local paths are filtered *before* appending to the [repo](#tendrils-repo) path
 
 ### Filtering by Remotes
 - Using the `--remotes (-r)` argument

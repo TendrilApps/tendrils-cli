@@ -1,4 +1,4 @@
-use crate::{ActionMode, TendrilBundle};
+use crate::{ActionMode, RawTendril, TendrilMode};
 use glob_match::glob_match;
 
 #[cfg(test)]
@@ -45,9 +45,9 @@ impl<'a> FilterSpec<'a> {
 /// The filters are cumulative (i.e. the tendril must match all filters to
 /// be included in the final result).
 pub(crate) fn filter_tendrils(
-    tendrils: Vec<TendrilBundle>,
+    tendrils: Vec<RawTendril>,
     filter: FilterSpec,
-) -> Vec<TendrilBundle> {
+) -> Vec<RawTendril> {
     let mut filtered = match filter.mode {
         Some(v) => filter_by_mode(tendrils.to_vec(), v),
         None => tendrils.to_vec(),
@@ -59,23 +59,28 @@ pub(crate) fn filter_tendrils(
 }
 
 fn filter_by_mode(
-    tendrils: Vec<TendrilBundle>,
+    tendrils: Vec<RawTendril>,
     mode: ActionMode,
-) -> Vec<TendrilBundle> {
+) -> Vec<RawTendril> {
     if mode == ActionMode::Out {
         return tendrils;
     }
 
     tendrils
         .into_iter()
-        .filter(|t| t.link == (mode == ActionMode::Link))
+        .filter(|t| match (&t.mode, &mode) {
+            (TendrilMode::Link, ActionMode::Link) => true,
+            (TendrilMode::Link, _) => false,
+            (_, ActionMode::Link) => false,
+            (_, _) => true,
+        })
         .collect()
 }
 
 fn filter_by_profiles(
-    tendrils: Vec<TendrilBundle>,
+    tendrils: Vec<RawTendril>,
     profiles: &[String],
-) -> Vec<TendrilBundle> {
+) -> Vec<RawTendril> {
     if profiles.is_empty() {
         return tendrils;
     }
@@ -92,9 +97,9 @@ fn filter_by_profiles(
 }
 
 fn filter_by_locals(
-    tendrils: Vec<TendrilBundle>,
+    tendrils: Vec<RawTendril>,
     locals: &[String],
-) -> Vec<TendrilBundle> {
+) -> Vec<RawTendril> {
     if locals.is_empty() {
         return tendrils;
     }
@@ -106,24 +111,15 @@ fn filter_by_locals(
 }
 
 fn filter_by_remotes(
-    mut tendrils: Vec<TendrilBundle>,
+    tendrils: Vec<RawTendril>,
     remotes: &[String],
-) -> Vec<TendrilBundle> {
+) -> Vec<RawTendril> {
     if remotes.is_empty() {
         return tendrils;
     }
 
-    for t in tendrils.iter_mut() {
-        let filtered_remotes_iter = t.remotes.iter().filter_map(|r| {
-            if remotes.iter().any(|f| glob_match(f, r)) {
-                Some(r.to_owned())
-            }
-            else {
-                None
-            }
-        });
-        t.remotes = filtered_remotes_iter.collect();
-    }
-
-    tendrils.into_iter().filter(|t| !t.remotes.is_empty()).collect()
+    tendrils
+        .into_iter()
+        .filter(|t| remotes.iter().any(|f| glob_match(f, &t.remote)))
+        .collect()
 }

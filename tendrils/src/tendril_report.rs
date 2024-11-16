@@ -1,22 +1,22 @@
 use crate::{
     FsoType,
     InvalidTendrilError,
+    RawTendril,
     TendrilActionError,
     TendrilActionSuccess,
-    TendrilBundle,
 };
 use std::path::PathBuf;
 
-/// Generic report format for any operation on a [`TendrilBundle`]
+/// Generic report format for any operation on a [`RawTendril`]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct TendrilReport<T: TendrilLog> {
-    /// The original tendril bundle that this tendril was expanded from
-    pub orig_tendril: std::rc::Rc<TendrilBundle>,
+    /// The original tendril bundle that this tendril was expanded from.
+    pub raw_tendril: RawTendril,
     /// The tendril's relative local path.
     pub local: String,
     /// Result containing the log from the operation, provided
     /// the tendril was valid.
-    /// Otherwise, it contains the [`InvalidTendrilError`]
+    /// Otherwise, it contains the [`InvalidTendrilError`].
     pub log: Result<T, InvalidTendrilError>,
 }
 

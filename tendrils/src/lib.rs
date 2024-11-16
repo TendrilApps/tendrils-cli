@@ -29,7 +29,7 @@ use std::fs::{create_dir_all, remove_dir_all, remove_file};
 use std::path::{Path, PathBuf};
 mod tendril;
 use tendril::Tendril;
-pub use tendril::TendrilBundle;
+pub use tendril::RawTendril;
 mod tendril_report;
 pub use tendril_report::{ActionLog, TendrilLog, TendrilReport};
 
@@ -75,7 +75,7 @@ pub trait TendrilsApi {
     /// performs the action on each tendril that matches the
     /// filter.
     ///
-    /// The order of the actions maintains the order of the tendril bundles found in
+    /// The order of the actions maintains the order of the [`UPDATE ME`] tendril bundles found in
     /// the `tendrils.json`, but each one is expanded into individual tendrils firstly by
     /// each of its `names`, then by each of its `parents`. For example, for a
     /// list of two tendril bundles [t1, t2], each having multiple names [n1, n2] and
@@ -117,9 +117,8 @@ pub trait TendrilsApi {
     ///
     /// # Returns
     /// A [`TendrilReport`] containing an [`ActionLog`] for each tendril action.
-    /// A given [`TendrilBundle`] may result in many actions if it includes
-    /// multiple names and/or parents. Returns a [`SetupError`] if there are
-    /// any issues in setting up the batch of actions.
+    /// Returns a [`SetupError`] if there are any issues in setting up the
+    /// batch of actions.
     fn tendril_action_updating<F: FnMut(TendrilReport<ActionLog>)>(
         &self,
         update_fn: F,
@@ -183,7 +182,7 @@ impl TendrilsApi for TendrilsActor {
     ) -> Result<(), SetupError> {
         let td_repo= get_tendrils_repo(td_repo)?;
         let config = config::get_config(&td_repo)?;
-        let all_tendrils = config.tendrils;
+        let all_tendrils = config.raw_tendrils;
 
         let filtered_tendrils = filter_tendrils(all_tendrils, filter);
         if mode == ActionMode::Link && !filtered_tendrils.is_empty() && !can_symlink() {
@@ -211,23 +210,34 @@ impl TendrilsApi for TendrilsActor {
 }
 
 const INIT_TD_TENDRILS_JSON: &str = r#"{
-    "tendrils": [
-        {
-            "local": "SomeApp/SomeFile.ext",
+    "tendrils": {
+        "SomeApp/SomeFile.ext": {
             "remotes": "/path/to/SomeFile.ext"
         },
-        {
-            "local": "SomeApp2/SomeFolder",
+        "SomeApp2/SomeFolder": {
             "remotes": [
                 "/path/to/SomeFolder",
-                "/another/path/to/SomeFolder",
-                "~/path/to/DifferentName"
+                "/path/to/DifferentName",
+                "~/path/in/home/dir/SomeFolder",
+                "/path/using/<MY-ENV-VAR>/SomeFolder"
             ],
             "dir-merge": false,
             "link": true,
             "profiles": ["home", "work"]
-        }
-    ]
+        },
+        "SomeApp3/file.txt": [
+            {
+                "remotes": "~/unix/specific/path/file.txt",
+                "link": true,
+                "profiles": "unix"
+            },
+            {
+                "remotes": "~/windows/specific/path/file.txt",
+                "link": false,
+                "profiles": "windows"
+            }
+        ]
+    }
 }
 "#;
 
@@ -732,59 +742,56 @@ fn batch_tendril_action<F: FnMut(TendrilReport<ActionLog>)>(
     mut update_fn: F,
     mode: ActionMode,
     td_repo: &UniPath,
-    td_bundles: Vec<TendrilBundle>,
+    raw_tendrils: Vec<RawTendril>,
     dry_run: bool,
     force: bool,
 ) {
-    let first_only = mode == ActionMode::Pull;
     let can_symlink =
         (mode == ActionMode::Link || mode == ActionMode::Out) && can_symlink();
 
-    for bundle in td_bundles.into_iter() {
-        let bundle_rc = std::rc::Rc::new(bundle);
-        let tendrils = bundle_rc.resolve_tendrils(td_repo, first_only);
+    for raw_tendril in raw_tendrils.into_iter() {
+        let tendril = raw_tendril.resolve(td_repo);
 
-        for tendril in tendrils.into_iter() {
-            let log = match (tendril, &mode, can_symlink) {
-                (Ok(v), ActionMode::Pull, _) => {
-                    Ok(pull_tendril(&v, dry_run, force))
-                }
-                (Ok(v), ActionMode::Push, _) => {
-                    Ok(push_tendril(&v, dry_run, force))
-                }
-                (Ok(v), ActionMode::Out, _) if v.mode != TendrilMode::Link => {
-                    Ok(push_tendril(&v, dry_run, force))
-                }
-                (Ok(v), ActionMode::Out | ActionMode::Link, true) => {
-                    Ok(link_tendril(&v, dry_run, force))
-                }
-                (Ok(v), ActionMode::Link | ActionMode::Out, false) => {
-                    // Do not attempt to symlink if it has already been
-                    // determined that the process
-                    // does not have the required permissions.
-                    // This prevents deleting any of the remote files
-                    // unnecessarily.
-                    let remote = v.remote();
-                    Ok(ActionLog::new(
-                        v.local_abs().get_type(),
-                        remote.inner().get_type(),
-                        remote.inner().to_path_buf(),
-                        Err(TendrilActionError::IoError {
-                            kind: std::io::ErrorKind::PermissionDenied,
-                            loc: Location::Dest,
-                        }),
-                    ))
-                }
-                (Err(e), _, _) => Err(e),
-            };
+        let log = match (tendril, &mode, can_symlink) {
+            (Ok(v), ActionMode::Pull, _) => {
+                Ok(pull_tendril(&v, dry_run, force))
+            }
+            (Ok(v), ActionMode::Push, _) => {
+                Ok(push_tendril(&v, dry_run, force))
+            }
+            (Ok(v), ActionMode::Out, _) if v.mode != TendrilMode::Link => {
+                Ok(push_tendril(&v, dry_run, force))
+            }
+            (Ok(v), ActionMode::Out | ActionMode::Link, true) => {
+                Ok(link_tendril(&v, dry_run, force))
+            }
+            (Ok(v), ActionMode::Link | ActionMode::Out, false) => {
+                // Do not attempt to symlink if it has already been
+                // determined that the process
+                // does not have the required permissions.
+                // This prevents deleting any of the remote files
+                // unnecessarily.
+                let remote = v.remote();
+                Ok(ActionLog::new(
+                    v.local_abs().get_type(),
+                    remote.inner().get_type(),
+                    remote.inner().to_path_buf(),
+                    Err(TendrilActionError::IoError {
+                        kind: std::io::ErrorKind::PermissionDenied,
+                        loc: Location::Dest,
+                    }),
+                ))
+            }
+            (Err(e), _, _) => Err(e),
+        };
 
-            let report = TendrilReport {
-                orig_tendril: std::rc::Rc::clone(&bundle_rc),
-                local: bundle_rc.local.clone(),
-                log,
-            };
+        let local = raw_tendril.local.clone();
+        let report = TendrilReport {
+            raw_tendril,
+            local,
+            log,
+        };
 
-            update_fn(report);
-        }
+        update_fn(report);
     }
 }

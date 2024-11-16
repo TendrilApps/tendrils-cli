@@ -1,6 +1,5 @@
-use crate::enums::{InvalidTendrilError, OneOrMany, TendrilMode};
+use crate::enums::{InvalidTendrilError, TendrilMode};
 use crate::path_ext::{PathExt, UniPath};
-use serde::{de, Deserialize, Deserializer, Serialize};
 use std::ffi::OsStr;
 use std::path::{Component, Path, PathBuf};
 
@@ -107,10 +106,10 @@ impl Tendril {
     }
 }
 
-/// Represents a bundle of file system objects that are controlled
-/// by Tendrils.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
-pub struct TendrilBundle {
+/// Contains the unresolved, unvalidated information to define a single
+/// tendril.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RawTendril {
     /// The path to the master file/folder relative to the root of the
     /// Tendrils repo.
     pub local: String,
@@ -118,79 +117,34 @@ pub struct TendrilBundle {
     /// A list of absolute paths to the various locations on the machine at
     /// which to recreate the [`Self::local`]. Each `local` and
     /// `remote` pair forms a tendril.
-    #[serde(deserialize_with = "one_or_many_to_vec")]
-    pub remotes: Vec<String>,
-
-    /// `true` indicates that each tendril will have
-    /// [`crate::TendrilMode::DirMerge`]. `false` indicates
-    /// [`crate::TendrilMode::DirOverwrite`]. Note: this field
-    /// may be overriden depending on the value of `link`.
-    #[serde(rename = "dir-merge")]
-    #[serde(default)]
-    pub dir_merge: bool,
-
-    /// `true` indicates that each tendril will have
-    /// [`crate::TendrilMode::Link`], regardless of what the `dir_merge`
-    /// setting is. `false` indicates that the `dir_merge` setting will be
-    /// used.
-    #[serde(default)]
-    pub link: bool,
+    pub remote: String,
+    pub mode: TendrilMode,
 
     /// A list of profiles to which this tendril belongs. If empty,
     /// this tendril is considered to be included in *all* profiles.
-    #[serde(default)]
-    #[serde(deserialize_with = "one_or_many_to_vec")]
     pub profiles: Vec<String>,
 }
 
-impl TendrilBundle {
+impl RawTendril {
     #[cfg(any(test, feature = "_test_utils"))]
-    pub fn new(local: &str) -> TendrilBundle {
-        TendrilBundle {
-            local: String::from(local),
-            remotes: vec![],
-            dir_merge: false,
-            link: false,
+    pub fn new(local: &str) -> RawTendril {
+        RawTendril {
+            local: local.to_string(),
+            remote: "".to_string(),
+            mode: TendrilMode::DirOverwrite,
             profiles: vec![],
         }
     }
 
-    pub(crate) fn resolve_tendrils<'a>(
+    pub(crate) fn resolve<'a>(
         &'a self,
         td_repo: &'a UniPath,
-        first_only: bool,
-    ) -> Vec<Result<Tendril, InvalidTendrilError>> {
-        let mode = match (self.dir_merge, self.link) {
-            (true, false) => TendrilMode::DirMerge,
-            (false, false) => TendrilMode::DirOverwrite,
-            (_, true) => TendrilMode::Link,
-        };
-
-        let remotes = match (first_only, self.remotes.is_empty()) {
-            (true, false) => vec![self.remotes[0].clone()],
-            (false, false) => self.remotes.clone(),
-            (_, true) => vec![],
-        };
-
-        let mut resolve_results = Vec::with_capacity(remotes.len());
-
-        for remote in remotes.into_iter() {
-            resolve_results.push(Tendril::new(
-                td_repo,
-                PathBuf::from(&self.local),
-                UniPath::from(PathBuf::from(remote)),
-                mode.clone(),
-            ));
-        }
-
-        resolve_results
+    ) -> Result<Tendril, InvalidTendrilError> {
+        Tendril::new(
+            td_repo,
+            PathBuf::from(&self.local),
+            UniPath::from(PathBuf::from(&self.remote)),
+            self.mode.clone(),
+        )
     }
-}
-
-fn one_or_many_to_vec<'de, D: Deserializer<'de>>(
-    deserializer: D,
-) -> Result<Vec<String>, D::Error> {
-    let one_or_many: OneOrMany<String> =
-        de::Deserialize::deserialize(deserializer)?;
-    Ok(one_or_many.into())
 }

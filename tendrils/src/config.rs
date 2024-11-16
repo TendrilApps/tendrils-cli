@@ -1,20 +1,87 @@
 use crate::ConfigType;
-use crate::enums::GetConfigError;
+use crate::enums::{GetConfigError, OneOrMany, TendrilMode};
 use crate::env_ext::get_home_dir;
 use crate::path_ext::UniPath;
-use crate::tendril::TendrilBundle;
-use serde::{Deserialize, Serialize};
+use crate::tendril::RawTendril;
+use serde::{de, Deserialize, Deserializer, Serialize};
 use std::path::PathBuf;
 
 #[cfg(test)]
 mod tests;
 
-/// Contains the configuration context for a Tendrils repo.
+/// Intermediate serialization type for a Tendrils repo configuration.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+struct SerdeConfig {
+    /// The tendrils that are defined in a Tendrils repo.
+    /// Using [`IndexMap`](indexmap::IndexMap) to maintain the
+    /// order of insertions when iterating over the map.
+    #[serde(default)]
+    pub tendrils: indexmap::IndexMap<String, OneOrMany<TendrilSet>>
+}
+
+/// Contains the configuration context for a Tendrils repo.
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct Config {
     /// The tendrils that are defined in a Tendrils repo.
-    #[serde(default)]
-    pub tendrils: Vec<TendrilBundle>
+    pub raw_tendrils: Vec<RawTendril>
+}
+
+impl From<SerdeConfig> for Config {
+    fn from(serde_cfg: SerdeConfig) -> Self {
+        let raw_tendrils = serde_cfg.tendrils.into_iter().map(|(k, v)| {
+            let remote_specs: Vec<TendrilSet> = v.into();
+
+            remote_specs.into_iter().map(move |spec| {
+                let mode = match (spec.dir_merge, spec.link) {
+                    (true, false) => TendrilMode::DirMerge,
+                    (false, false) => TendrilMode::DirOverwrite,
+                    (_, true) => TendrilMode::Link,
+                };
+
+                let local = k.clone();
+                let profiles = spec.profiles.clone();
+                spec.remotes.into_iter().map(move |r| -> RawTendril {
+                    RawTendril {
+                        local: local.clone(),
+                        remote: r.clone(),
+                        mode: mode.clone(),
+                        profiles: profiles.clone(),
+                    }
+                })
+            }).flatten()
+        }).flatten().collect();
+
+        Config {
+            raw_tendrils
+        }
+    }
+}
+
+#[cfg(any(test, feature = "_test_utils"))]
+impl From<Config> for SerdeConfig {
+    fn from(cfg: Config) -> Self {
+        use indexmap::IndexMap;
+
+        let mut tendril_map: IndexMap<String, OneOrMany<TendrilSet>> = indexmap::IndexMap::new();
+        for raw in cfg.raw_tendrils.into_iter() {
+            let local = raw.local.clone();
+
+            let added_sets: Vec<TendrilSet>;
+            // Subsequent inserts are overwriting the value if the keys clash
+            if tendril_map.contains_key(&local) {
+                let mut exist_sets: Vec<TendrilSet> = tendril_map.get(&local).unwrap().to_owned().into();
+                exist_sets.push(raw.into());
+                added_sets = exist_sets;
+            }
+            else {
+                added_sets = vec![raw.into()];
+            }
+
+            tendril_map.insert(local, added_sets.into());
+        }
+
+        SerdeConfig { tendrils: tendril_map }
+    }
 }
 
 /// Contains the global configuration context for Tendrils.
@@ -33,6 +100,66 @@ impl GlobalConfig {
     }
 }
 
+/// Intermediate serialization type representing a one-to-many set of tendrils.
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+struct TendrilSet {
+    #[serde(deserialize_with = "one_or_many_to_vec")]
+    pub remotes: Vec<String>,
+
+    /// `true` indicates that each tendril will have
+    /// [`crate::TendrilMode::DirMerge`]. `false` indicates
+    /// [`crate::TendrilMode::DirOverwrite`]. Note: this field
+    /// may be overriden depending on the value of `link`.
+    #[serde(rename = "dir-merge")]
+    #[serde(default)]
+    pub dir_merge: bool,
+
+    /// `true` indicates that each tendril will have
+    /// [`crate::TendrilMode::Link`], regardless of what the `dir_merge`
+    /// setting is. `false` indicates that the `dir_merge` setting will be
+    /// used.
+    #[serde(default)]
+    pub link: bool,
+
+    /// A list of profiles to which this tendril belongs. If empty,
+    /// this tendril is considered to be included in *all* profiles.
+    #[serde(default)]
+    #[serde(deserialize_with = "one_or_many_to_vec")]
+    pub profiles: Vec<String>,
+}
+
+#[cfg(any(test, feature = "_test_utils"))]
+impl From<RawTendril> for TendrilSet {
+    fn from(raw: RawTendril) -> Self {
+        let (dir_merge, link) = match raw.mode {
+            TendrilMode::DirMerge => (true, false),
+            TendrilMode::DirOverwrite => (false, false),
+            TendrilMode::Link => (false, true),
+        };
+
+        TendrilSet {
+            remotes: vec![raw.remote],
+            dir_merge,
+            link,
+            profiles: raw.profiles,
+        }
+    }
+}
+
+#[cfg(any(test, feature = "_test_utils"))]
+pub fn serialize_config(cfg: Config) -> String {
+    let serde_cfg: SerdeConfig = cfg.into();
+    serde_json::to_string(&serde_cfg).unwrap()
+}
+
+fn one_or_many_to_vec<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Vec<String>, D::Error> {
+    let one_or_many: OneOrMany<String> =
+        de::Deserialize::deserialize(deserializer)?;
+    Ok(one_or_many.into())
+}
+
 /// Parses the `tendrils.json` file in the given Tendrils repo and returns
 /// the configuration within.
 /// The tendril bundles are returned in the order they are defined in the file.
@@ -44,8 +171,8 @@ pub(crate) fn get_config(
 ) -> Result<Config, GetConfigError> {
     let config_file_path = td_repo.inner().join(".tendrils/tendrils.json");
     let config_file_contents = std::fs::read_to_string(config_file_path)?;
-    let config = parse_config(&config_file_contents)?;
-    Ok(config)
+    let serde_config = parse_config(&config_file_contents)?;
+    Ok(serde_config.into())
 }
 
 /// Parses the `~/.tendrils/global-config.json` file and returns the
@@ -77,10 +204,21 @@ pub(crate) fn get_global_config() -> Result<GlobalConfig, GetConfigError> {
 
 /// # Arguments
 /// - `json` - JSON object following the tendrils.json schema
-pub(crate) fn parse_config(
+fn parse_config(
     json: &str
 ) -> Result<Config, serde_json::Error> {
-    serde_json::from_str::<Config>(json)
+    match serde_json::from_str::<SerdeConfig>(json) {
+        Ok(raw) => Ok(raw.into()),
+        Err(e) => Err(e)
+    }
+}
+
+// Exposes the otherwise private function
+#[cfg(test)]
+pub fn parse_config_expose(
+    json: &str,
+) -> Result<Config, serde_json::Error> {
+    parse_config(json)
 }
 
 /// # Arguments

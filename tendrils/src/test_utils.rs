@@ -6,14 +6,14 @@ use crate::{
     InitError,
     PathExt,
     SetupError,
+    RawTendril,
     Tendril,
-    TendrilBundle,
     TendrilMode,
     TendrilReport,
     TendrilsApi,
     UniPath,
 };
-use crate::config::{Config, parse_config};
+use crate::config::Config;
 use crate::enums::GetConfigError;
 use std::env::var;
 use std::fs::{create_dir_all, read_to_string, write};
@@ -70,21 +70,6 @@ pub fn global_cfg_file() -> PathBuf {
 /// `default-repo-path` field
 pub fn default_repo_path_as_json(default_repo_path: &str) -> String {
     format!("{{\"default-repo-path\": \"{}\"}}", default_repo_path)
-}
-
-/// Exposes the otherwise private function
-    #[allow(private_interfaces)]
-pub fn parse_config_expose(
-    json: &str,
-) -> Result<Config, serde_json::Error> {
-    parse_config(json)
-}
-
-pub fn set_remotes(tendril: &mut TendrilBundle, remotes: &[PathBuf]) {
-    let path_strings: Vec<String> =
-        remotes.iter().map(|x| String::from(x.to_str().unwrap())).collect();
-
-    tendril.remotes = path_strings;
 }
 
 /// Returns "fo�o" where the third character is invalid UTF-8.
@@ -437,10 +422,14 @@ impl Setup {
         }
     }
 
-    pub fn file_tendril_bundle(&self) -> TendrilBundle {
-        let mut bundle = TendrilBundle::new("SomeApp/misc.txt");
-        bundle.remotes = vec![self.remote_file.to_string_lossy().to_string()];
-        bundle
+    pub fn file_tendril_raw(&self) -> RawTendril {
+        let raw = RawTendril {
+            local: "SomeApp/misc.txt".to_string(),
+            remote: self.remote_file.to_string_lossy().to_string(),
+            mode: TendrilMode::DirOverwrite,
+            profiles: vec![],
+        };
+        raw
     }
 
     #[allow(private_interfaces)]
@@ -499,10 +488,11 @@ impl Setup {
         create_dir_all(&self.dot_td_dir).unwrap();
     }
 
-    pub fn make_td_json_file(&self, tendrils: &[TendrilBundle]) {
+    pub fn make_td_json_file(&self, tendrils: &[RawTendril]) {
         self.make_dot_td_dir();
-        let config = Config { tendrils: tendrils.to_vec() };
-        let json = serde_json::to_string(&config).unwrap();
+        let json = crate::config::serialize_config(Config {
+            raw_tendrils: tendrils.to_vec(),
+        });
         write(&self.td_json_file, json).unwrap();
     }
 

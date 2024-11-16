@@ -1,4 +1,4 @@
-use crate::{ConfigType, GetConfigError, TendrilBundle};
+use crate::{ConfigType, GetConfigError, RawTendril};
 use crate::config::{Config, get_config};
 use crate::test_utils::{get_disposable_dir, Setup};
 use crate::tests::sample_tendrils::SampleTendrils;
@@ -62,7 +62,7 @@ fn empty_json_object_returns_empty_tendrils_list() {
 
     let actual = get_config(&setup.uni_td_repo());
 
-    assert_eq!(actual, Ok(Config { tendrils: vec![] }));
+    assert_eq!(actual, Ok(Config { raw_tendrils: vec![] }));
 }
 
 #[test]
@@ -76,14 +76,12 @@ fn valid_json_returns_tendrils_in_same_order_as_file() {
     setup.make_dot_td_dir();
     write(&setup.td_json_file, &json).unwrap();
 
-    let expected = vec![
-        SampleTendrils::tendril_1(),
-        SampleTendrils::tendril_4(),
-        SampleTendrils::tendril_2(),
-    ];
+    let mut expected = SampleTendrils::raw_tendrils_1();
+    expected.append(&mut SampleTendrils::raw_tendrils_4());
+    expected.append(&mut SampleTendrils::raw_tendrils_2());
 
-    let actual: Vec<TendrilBundle> =
-        get_config(&setup.uni_td_repo()).unwrap().tendrils;
+    let actual: Vec<RawTendril> =
+        get_config(&setup.uni_td_repo()).unwrap().raw_tendrils;
 
     assert_eq!(actual, expected);
 }
@@ -92,9 +90,9 @@ fn valid_json_returns_tendrils_in_same_order_as_file() {
 fn config_file_is_unchanged() {
     let setup = Setup::new();
     setup.make_dot_td_dir();
-    write(&setup.td_json_file, r#"{"tendrils": []}"#.to_string()).unwrap();
+    write(&setup.td_json_file, r#"{"tendrils": {}}"#.to_string()).unwrap();
 
     let _ = get_config(&setup.uni_td_repo()).unwrap();
 
-    assert_eq!(setup.td_json_file_contents(), r#"{"tendrils": []}"#);
+    assert_eq!(setup.td_json_file_contents(), r#"{"tendrils": {}}"#);
 }

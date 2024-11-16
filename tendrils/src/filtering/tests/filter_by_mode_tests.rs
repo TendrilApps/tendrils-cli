@@ -1,5 +1,5 @@
 use crate::filtering::filter_by_mode;
-use crate::{ActionMode, TendrilBundle};
+use crate::{ActionMode, RawTendril, TendrilMode};
 use rstest::rstest;
 
 #[rstest]
@@ -17,12 +17,12 @@ fn empty_tendril_list_returns_empty(#[case] action_mode: ActionMode) {
 
 #[test]
 fn link_action_only_includes_tendrils_with_link_true() {
-    let mut t1 = TendrilBundle::new("SomeLocal");
-    t1.link = false;                          
-    let mut t2 = TendrilBundle::new("SomeLocal");
-    t2.link = true;                           
-    let mut t3 = TendrilBundle::new("SomeLocal");
-    t3.link = false;
+    let mut t1 = RawTendril::new("SomeLocal");
+    t1.mode = TendrilMode::DirMerge;
+    let mut t2 = RawTendril::new("SomeLocal");
+    t2.mode = TendrilMode::Link;
+    let mut t3 = RawTendril::new("SomeLocal");
+    t3.mode = TendrilMode::DirOverwrite;
     let tendrils = vec![t1.clone(), t2.clone(), t3.clone()];
 
     let actual = filter_by_mode(tendrils, ActionMode::Link);
@@ -36,12 +36,12 @@ fn link_action_only_includes_tendrils_with_link_true() {
 fn non_link_action_only_includes_tendrils_with_link_false(
     #[case] action_mode: ActionMode,
 ) {
-    let mut t1 = TendrilBundle::new("SomeLocal");
-    t1.link = false;                          
-    let mut t2 = TendrilBundle::new("SomeLocal");
-    t2.link = true;                           
-    let mut t3 = TendrilBundle::new("SomeLocal");
-    t3.link = false;
+    let mut t1 = RawTendril::new("SomeLocal");
+    t1.mode = TendrilMode::DirMerge;
+    let mut t2 = RawTendril::new("SomeLocal");
+    t2.mode = TendrilMode::Link;
+    let mut t3 = RawTendril::new("SomeLocal");
+    t3.mode = TendrilMode::DirOverwrite;
     let tendrils = vec![t1.clone(), t2.clone(), t3.clone()];
 
     let actual = filter_by_mode(tendrils, action_mode);
@@ -51,12 +51,12 @@ fn non_link_action_only_includes_tendrils_with_link_false(
 
 #[test]
 fn out_action_includes_all() {
-    let mut t1 = TendrilBundle::new("SomeLocal");
-    t1.link = false;
-    let mut t2 = TendrilBundle::new("SomeLocal");
-    t2.link = true;
-    let mut t3 = TendrilBundle::new("SomeLocal");
-    t3.link = false;
+    let mut t1 = RawTendril::new("SomeLocal");
+    t1.mode = TendrilMode::DirMerge;
+    let mut t2 = RawTendril::new("SomeLocal");
+    t2.mode = TendrilMode::Link;
+    let mut t3 = RawTendril::new("SomeLocal");
+    t3.mode = TendrilMode::DirOverwrite;
     let tendrils = vec![t1.clone(), t2.clone(), t3.clone()];
 
     let actual = filter_by_mode(tendrils, ActionMode::Out);

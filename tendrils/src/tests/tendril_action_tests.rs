@@ -6,7 +6,6 @@ use crate::test_utils::{
     default_repo_path_as_json,
     global_cfg_file,
     Setup,
-    set_remotes,
     symlink_expose,
 };
 use crate::{
@@ -21,6 +20,7 @@ use crate::{
     SetupError,
     TendrilActionError,
     TendrilActionSuccess,
+    TendrilMode,
     TendrilReport,
     TendrilsActor,
     TendrilsApi,
@@ -29,7 +29,6 @@ use rstest::rstest;
 use serial_test::serial;
 use std::fs::write;
 use std::path::{MAIN_SEPARATOR_STR as SEP, PathBuf};
-use std::rc::Rc;
 
 #[rstest]
 fn empty_tendrils_list_returns_empty(
@@ -65,7 +64,7 @@ fn empty_filtered_tendrils_list_returns_empty(
 ) {
     let api = TendrilsActor {};
     let setup = Setup::new();
-    let tendril = setup.file_tendril_bundle();
+    let tendril = setup.file_tendril_raw();
     setup.make_td_json_file(&[tendril]);
     let mut filter = FilterSpec::new();
     let locals_filter = ["I don't exist".to_string()];
@@ -183,8 +182,10 @@ fn given_td_repo_is_none_default_td_repo_is_valid_uses_default_td_repo(
 ) {
     let api = TendrilsActor {};
     let setup = Setup::new();
-    let mut tendril = setup.file_tendril_bundle();
-    tendril.link = mode == ActionMode::Link;
+    let mut tendril = setup.file_tendril_raw();
+    if mode == ActionMode::Link {
+        tendril.mode = TendrilMode::Link;
+    }
     setup.make_td_json_file(&[tendril.clone()]);
     let json_path = setup.td_repo.to_string_lossy().replace("\\", "\\\\");
     setup.make_global_cfg_file(
@@ -204,7 +205,7 @@ fn given_td_repo_is_none_default_td_repo_is_valid_uses_default_td_repo(
     assert_eq!(
         actual,
         vec![TendrilReport {
-            orig_tendril: Rc::new(tendril.clone()),
+            raw_tendril: tendril.clone(),
             local: tendril.local.clone(),
             log: Ok(ActionLog::new(
                 None,
@@ -229,8 +230,10 @@ fn leading_tilde_or_env_vars_in_default_repo_path_are_resolved(
 ) {
     let api = TendrilsActor {};
     let setup = Setup::new();
-    let mut tendril = setup.file_tendril_bundle();
-    tendril.link = mode == ActionMode::Link;
+    let mut tendril = setup.file_tendril_raw();
+    if mode == ActionMode::Link {
+        tendril.mode = TendrilMode::Link;
+    }
     setup.make_td_json_file(&[tendril.clone()]);
     let exp_local_type;
     let exp_remote_type;
@@ -282,7 +285,7 @@ fn leading_tilde_or_env_vars_in_default_repo_path_are_resolved(
     assert_eq!(
         actual,
         vec![TendrilReport {
-            orig_tendril: Rc::new(tendril.clone()),
+            raw_tendril: tendril.clone(),
             local: tendril.local.clone(),
             log: Ok(ActionLog::new(
                 exp_local_type,
@@ -333,12 +336,14 @@ fn tendrils_are_filtered_before_action(
 ) {
     let api = TendrilsActor {};
     let setup = Setup::new();
-    let mut tendril = setup.file_tendril_bundle();
-    tendril.remotes.push(
-        setup.parent_dir.join("misc").to_string_lossy().to_string()
-    ); // Add folder
-    tendril.link = mode == ActionMode::Link;
-    setup.make_td_json_file(&[tendril.clone()]);
+    let mut t1 = setup.file_tendril_raw();
+    let mut t2 = t1.clone();
+    t2.remote = setup.parent_dir.join("misc").to_string_lossy().to_string();
+    if mode == ActionMode::Link {
+        t1.mode = TendrilMode::Link;
+        t2.mode = TendrilMode::Link;
+    }
+    setup.make_td_json_file(&[t1.clone(), t2.clone()]);
     let mut filter = FilterSpec::new();
     let remotes_filter = ["**/misc.txt".to_string()];
     filter.remotes = &remotes_filter;
@@ -352,11 +357,10 @@ fn tendrils_are_filtered_before_action(
     )
     .unwrap();
 
-    tendril.remotes.pop(); // Expect that names are filtered from the bundle
     assert_eq!(
         actual,
         vec![TendrilReport {
-            orig_tendril: Rc::new(tendril),
+            raw_tendril: t1,
             local: "SomeApp/misc.txt".to_string(),
             log: Ok(ActionLog::new(
                 None,
@@ -393,9 +397,11 @@ fn dry_run_does_not_modify(
         setup.make_remote_file();
     }
 
-    let mut tendril = setup.file_tendril_bundle();
-    tendril.link = mode == ActionMode::Link;
-    set_remotes(&mut tendril, &[setup.parent_dir.join("misc.txt")]);
+    let mut tendril = setup.file_tendril_raw();
+    if mode == ActionMode::Link {
+        tendril.mode = TendrilMode::Link;
+    }
+    tendril.remote = setup.parent_dir.join("misc.txt").to_string_lossy().to_string();
     setup.make_td_json_file(&[tendril]);
 
     let dry_run = true;
@@ -431,24 +437,24 @@ fn tendrils_are_filtered_by_mode(
     let api = TendrilsActor {};
     let setup = Setup::new();
 
-    let mut t1 = setup.file_tendril_bundle();
-    let mut t2 = setup.file_tendril_bundle();
-    let mut t3 = setup.file_tendril_bundle();
+    let mut t1 = setup.file_tendril_raw();
+    let mut t2 = setup.file_tendril_raw();
+    let mut t3 = setup.file_tendril_raw();
     t1.local = "misc1.txt".to_string();
     t2.local = "misc2.txt".to_string();
     t3.local = "misc3.txt".to_string();
-    t1.link = false;
-    t2.link = true;
-    t3.link = true;
-    set_remotes(&mut t1, &[setup.parent_dir.join("misc1.txt")]);
-    set_remotes(&mut t2, &[setup.parent_dir.join("misc2.txt")]);
-    set_remotes(&mut t3, &[setup.parent_dir.join("misc3.txt")]);
+    t1.mode = TendrilMode::DirOverwrite;
+    t2.mode = TendrilMode::Link;
+    t3.mode = TendrilMode::Link;
+    t1.remote = setup.parent_dir.join("misc1.txt").to_string_lossy().to_string();
+    t2.remote = setup.parent_dir.join("misc2.txt").to_string_lossy().to_string();
+    t3.remote = setup.parent_dir.join("misc3.txt").to_string_lossy().to_string();
     let io_err = Err(TendrilActionError::IoError {
         kind: std::io::ErrorKind::NotFound,
         loc: Location::Source
     });
     let t1_result = TendrilReport {
-        orig_tendril: Rc::new(t1.clone()),
+        raw_tendril: t1.clone(),
         local: "misc1.txt".to_string(),
         log: Ok(ActionLog::new(
             None,
@@ -458,7 +464,7 @@ fn tendrils_are_filtered_by_mode(
         )),
     };
     let t2_result = TendrilReport {
-        orig_tendril: Rc::new(t2.clone()),
+        raw_tendril: t2.clone(),
         local: "misc2.txt".to_string(),
         log: Ok(ActionLog::new(
             None,
@@ -468,7 +474,7 @@ fn tendrils_are_filtered_by_mode(
         )),
     };
     let t3_result = TendrilReport {
-        orig_tendril: Rc::new(t3.clone()),
+        raw_tendril: t3.clone(),
         local: "misc3.txt".to_string(),
         log: Ok(ActionLog::new(
             None,
@@ -515,24 +521,26 @@ fn tendrils_are_filtered_by_local(
     let api = TendrilsActor {};
     let setup = Setup::new();
 
-    let mut t1 = setup.file_tendril_bundle();
-    let mut t2 = setup.file_tendril_bundle();
-    let mut t3 = setup.file_tendril_bundle();
+    let mut t1 = setup.file_tendril_raw();
+    let mut t2 = setup.file_tendril_raw();
+    let mut t3 = setup.file_tendril_raw();
     t1.local = "App1/misc1.txt".to_string();
     t2.local = "App2/misc2.txt".to_string();
     t3.local = "App3/misc3.txt".to_string();
-    t1.link = mode == ActionMode::Link;
-    t2.link = mode == ActionMode::Link;
-    t3.link = mode == ActionMode::Link;
-    set_remotes(&mut t1, &[setup.parent_dir.join("misc1.txt")]);
-    set_remotes(&mut t2, &[setup.parent_dir.join("misc2.txt")]);
-    set_remotes(&mut t3, &[setup.parent_dir.join("misc3.txt")]);
+    if mode == ActionMode::Link {
+        t1.mode = TendrilMode::Link;
+        t2.mode = TendrilMode::Link;
+        t3.mode = TendrilMode::Link;
+    }
+    t1.remote = setup.parent_dir.join("misc1.txt").to_string_lossy().to_string();
+    t2.remote = setup.parent_dir.join("misc2.txt").to_string_lossy().to_string();
+    t3.remote = setup.parent_dir.join("misc3.txt").to_string_lossy().to_string();
     let io_err = Err(TendrilActionError::IoError {
         kind: std::io::ErrorKind::NotFound,
         loc: Location::Source
     });
     let t2_result = TendrilReport {
-        orig_tendril: Rc::new(t2.clone()),
+        raw_tendril: t2.clone(),
         local: "App2/misc2.txt".to_string(),
         log: Ok(ActionLog::new(
             None,
@@ -542,7 +550,7 @@ fn tendrils_are_filtered_by_local(
         )),
     };
     let t3_result = TendrilReport {
-        orig_tendril: Rc::new(t3.clone()),
+        raw_tendril: t3.clone(),
         local: "App3/misc3.txt".to_string(),
         log: Ok(ActionLog::new(
             None,
@@ -582,25 +590,27 @@ fn tendrils_are_filtered_by_remotes(
     let api = TendrilsActor {};
     let setup = Setup::new();
 
-    let mut t1 = setup.file_tendril_bundle();
-    let mut t2 = setup.file_tendril_bundle();
-    let mut t3 = setup.file_tendril_bundle();
+    let mut t1 = setup.file_tendril_raw();
+    let mut t2 = setup.file_tendril_raw();
+    let mut t3 = setup.file_tendril_raw();
     t1.local = "misc1.txt".to_string();
     t2.local = "misc2.txt".to_string();
     t3.local = "misc3.txt".to_string();
-    t1.remotes = vec!["r/1/misc1.txt".to_string()];
-    t2.remotes = vec!["r/2/misc2.txt".to_string()];
-    t3.remotes = vec!["r/3/misc3.txt".to_string()];
-    t1.link = mode == ActionMode::Link;
-    t2.link = mode == ActionMode::Link;
-    t3.link = mode == ActionMode::Link;
+    t1.remote = "r/1/misc1.txt".to_string();
+    t2.remote = "r/2/misc2.txt".to_string();
+    t3.remote = "r/3/misc3.txt".to_string();
+    if mode == ActionMode::Link {
+        t1.mode = TendrilMode::Link;
+        t2.mode = TendrilMode::Link;
+        t3.mode = TendrilMode::Link;
+    }
 
     let io_err = Err(TendrilActionError::IoError {
         kind: std::io::ErrorKind::NotFound,
         loc: Location::Source,
     });
     let t2_result = TendrilReport {
-        orig_tendril: Rc::new(t2.clone()),
+        raw_tendril: t2.clone(),
         local: "misc2.txt".to_string(),
         log: Ok(ActionLog::new(
             None,
@@ -610,7 +620,7 @@ fn tendrils_are_filtered_by_remotes(
         )),
     };
     let t3_result = TendrilReport {
-        orig_tendril: Rc::new(t3.clone()),
+        raw_tendril: t3.clone(),
         local: "misc3.txt".to_string(),
         log: Ok(ActionLog::new(
             None,
@@ -650,27 +660,29 @@ fn tendrils_are_filtered_by_profile(
     let api = TendrilsActor {};
     let setup = Setup::new();
 
-    let mut t1 = setup.file_tendril_bundle();
-    let mut t2 = setup.file_tendril_bundle();
-    let mut t3 = setup.file_tendril_bundle();
+    let mut t1 = setup.file_tendril_raw();
+    let mut t2 = setup.file_tendril_raw();
+    let mut t3 = setup.file_tendril_raw();
     t1.local = "misc1.txt".to_string();
     t2.local = "misc2.txt".to_string();
     t3.local = "misc3.txt".to_string();
-    t1.link = mode == ActionMode::Link;
-    t2.link = mode == ActionMode::Link;
-    t3.link = mode == ActionMode::Link;
+    if mode == ActionMode::Link {
+        t1.mode = TendrilMode::Link;
+        t2.mode = TendrilMode::Link;
+        t3.mode = TendrilMode::Link;
+    }
+    t1.remote = setup.parent_dir.join("misc1.txt").to_string_lossy().to_string();
+    t2.remote = setup.parent_dir.join("misc2.txt").to_string_lossy().to_string();
+    t3.remote = setup.parent_dir.join("misc3.txt").to_string_lossy().to_string();
     t1.profiles = vec!["ExcludeMe".to_string()];
     t2.profiles = vec!["p1".to_string()];
     t3.profiles = vec![];
-    set_remotes(&mut t1, &[setup.parent_dir.join("misc1.txt")]);
-    set_remotes(&mut t2, &[setup.parent_dir.join("misc2.txt")]);
-    set_remotes(&mut t3, &[setup.parent_dir.join("misc3.txt")]);
     let io_err = Err(TendrilActionError::IoError {
         kind: std::io::ErrorKind::NotFound,
         loc: Location::Source
     });
     let t2_result = TendrilReport {
-        orig_tendril: Rc::new(t2.clone()),
+        raw_tendril: t2.clone(),
         local: "misc2.txt".to_string(),
         log: Ok(ActionLog::new(
             None,
@@ -680,7 +692,7 @@ fn tendrils_are_filtered_by_profile(
         )),
     };
     let t3_result = TendrilReport {
-        orig_tendril: Rc::new(t3.clone()),
+        raw_tendril: t3.clone(),
         local: "misc3.txt".to_string(),
         log: Ok(ActionLog::new(
             None,

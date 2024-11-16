@@ -13,7 +13,6 @@ use crate::{
     TendrilsApi,
 };
 use rstest::rstest;
-use std::rc::Rc;
 
 #[rstest]
 fn empty_tendrils_list_returns_empty(
@@ -51,11 +50,10 @@ fn returns_result_after_each_operation(
     let setup = Setup::new();
     setup.make_local_file();
     setup.make_local_nested_file();
-    let mut bundle = setup.file_tendril_bundle();
-    bundle.remotes.push(
-        setup.remote_nested_file.to_string_lossy().to_string()
-    ); // Add another remote
-    setup.make_td_json_file(&[bundle.clone()]);
+    let t1 = setup.file_tendril_raw();
+    let mut t2 = t1.clone();
+    t2.remote = setup.remote_nested_file.to_string_lossy().to_string();
+    setup.make_td_json_file(&[t1.clone(), t2.clone()]);
     let filter = FilterSpec::new();
 
     let expected_success = match dry_run {
@@ -68,8 +66,8 @@ fn returns_result_after_each_operation(
         call_counter += 1;
         if call_counter == 1 {
             assert_eq!(r, TendrilReport {
-                orig_tendril: Rc::new(bundle.clone()),
-                local: bundle.local.clone(),
+                raw_tendril: t1.clone(),
+                local: t1.local.clone(),
                 log: Ok(ActionLog::new(
                     Some(FsoType::File),
                     None,
@@ -87,8 +85,8 @@ fn returns_result_after_each_operation(
         }
         else if call_counter == 2 {
             assert_eq!(r, TendrilReport {
-                orig_tendril: Rc::new(bundle.clone()),
-                local: bundle.local.clone(),
+                raw_tendril: t2.clone(),
+                local: t2.local.clone(),
                 log: Ok(ActionLog::new(
                     Some(FsoType::File),
                     None,

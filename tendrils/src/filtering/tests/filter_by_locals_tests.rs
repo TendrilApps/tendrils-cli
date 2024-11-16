@@ -6,7 +6,7 @@ use crate::filtering::tests::filter_tendrils_tests::{
     supported_asterisk_literals,
     supported_weird_values,
 };
-use crate::TendrilBundle;
+use crate::RawTendril;
 use rstest::rstest;
 use rstest_reuse::{self, apply};
 
@@ -20,12 +20,12 @@ fn empty_tendril_list_returns_empty(#[case] locals: &[String]) {
 }
 
 #[apply(string_filter_match_tests)]
-fn tendril_only_included_if_any_local_matches(
+fn tendril_only_included_if_local_matches_any(
     #[case] filters: &[String],
     #[case] exp_matches: &[&str],
 ) {
-    let t1 = TendrilBundle::new("v1");
-    let t2 = TendrilBundle::new("v2");
+    let t1 = RawTendril::new("v1");
+    let t2 = RawTendril::new("v2");
     let tendrils = vec![t1.clone(), t2.clone()];
 
     let actual = filter_by_locals(tendrils, &filters);
@@ -41,9 +41,9 @@ fn tendril_only_included_if_any_local_matches(
 }
 
 #[apply(string_filter_non_match_tests)]
-fn tendril_not_included_if_no_local_matches(#[case] filters: &[String]) {
-    let t1 = TendrilBundle::new("v1");
-    let t2 = TendrilBundle::new("v2");
+fn tendril_not_included_if_local_does_not_match_any(#[case] filters: &[String]) {
+    let t1 = RawTendril::new("v1");
+    let t2 = RawTendril::new("v2");
     let tendrils = vec![t1.clone(), t2.clone()];
 
     let actual = filter_by_locals(tendrils, filters);
@@ -52,9 +52,9 @@ fn tendril_not_included_if_no_local_matches(#[case] filters: &[String]) {
 }
 
 #[test]
-fn duplicate_filter_locals_only_returns_tendril_once() {
-    let t1 = TendrilBundle::new("l1");
-    let t2 = TendrilBundle::new("l2");
+fn duplicate_filter_only_returns_tendril_once() {
+    let t1 = RawTendril::new("l1");
+    let t2 = RawTendril::new("l2");
     let tendrils = vec![t1.clone(), t2.clone()];
     let filters = ["l1".to_string(), "l1".to_string(), "l1".to_string()];
 
@@ -64,9 +64,9 @@ fn duplicate_filter_locals_only_returns_tendril_once() {
 }
 
 #[test]
-fn duplicate_tendrils_returns_all_instances() {
-    let t1 = TendrilBundle::new("l1");
-    let t2 = TendrilBundle::new("l2");
+fn duplicate_matching_tendrils_returns_all_instances() {
+    let t1 = RawTendril::new("l1");
+    let t2 = RawTendril::new("l2");
     let tendrils = vec![t1.clone(), t1.clone(), t1.clone(), t2.clone()];
     let filters = ["l1".to_string()];
 
@@ -76,12 +76,12 @@ fn duplicate_tendrils_returns_all_instances() {
 }
 
 #[apply(supported_weird_values)]
-fn filter_supports_weird_locals(#[case] local: String) {
-    let t1 = TendrilBundle::new(&local);
-    let t2 = TendrilBundle::new("l2");
+fn filter_supports_weird_filter_values(#[case] value: String) {
+    let t1 = RawTendril::new(&value);
+    let t2 = RawTendril::new("l2");
     let tendrils = vec![t1.clone(), t2.clone()];
 
-    let filter = local.replace('\\', "\\\\");
+    let filter = value.replace('\\', "\\\\");
     let actual = filter_by_locals(tendrils, &[filter]);
 
     assert_eq!(actual, vec![t1]);
@@ -89,11 +89,11 @@ fn filter_supports_weird_locals(#[case] local: String) {
 
 #[apply(supported_asterisk_literals)]
 fn filter_supports_asterisk_literals(
-    #[case] local: String,
+    #[case] value: String,
     #[case] filter: String,
 ) {
-    let t1 = TendrilBundle::new(&local);
-    let t2 = TendrilBundle::new("l2");
+    let t1 = RawTendril::new(&value);
+    let t2 = RawTendril::new("l2");
     let tendrils = vec![t1.clone(), t2.clone()];
 
     let actual = filter_by_locals(tendrils, &[filter]);
@@ -103,8 +103,8 @@ fn filter_supports_asterisk_literals(
 
 #[test]
 fn empty_filters_list_returns_all_tendrils() {
-    let t1 = TendrilBundle::new("l1");
-    let t2 = TendrilBundle::new("l2");
+    let t1 = RawTendril::new("l1");
+    let t2 = RawTendril::new("l2");
     let tendrils = vec![t1.clone(), t2.clone()];
 
     let actual = filter_by_locals(tendrils.clone(), &[]);

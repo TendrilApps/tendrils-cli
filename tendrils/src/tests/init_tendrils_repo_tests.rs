@@ -1,9 +1,10 @@
-use crate::config::{Config, parse_config};
+use crate::config::{Config, parse_config_expose};
 use crate::test_utils::{global_cfg_dir, global_cfg_file, home_dir, Setup};
 use crate::{
     is_tendrils_repo,
     InitError,
-    TendrilBundle,
+    RawTendril,
+    TendrilMode,
     TendrilsActor,
     TendrilsApi,
     UniPath,
@@ -20,26 +21,58 @@ fn creates_dot_tendrils_dir_and_contents_in_empty_dir(#[case] force: bool) {
     let api = TendrilsActor {};
     let setup = Setup::new();
     setup.make_td_repo_dir();
-    let expected_t1 = TendrilBundle {
+    let expected_t1 = RawTendril {
         local: "SomeApp/SomeFile.ext".to_string(),
-        remotes: vec!["/path/to/SomeFile.ext".to_string()],
-        dir_merge: false,
-        link: false,
+        remote: "/path/to/SomeFile.ext".to_string(),
+        mode: TendrilMode::DirOverwrite,
         profiles: vec![],
     };
-    let expected_t2 = TendrilBundle {
+    let expected_t2 = RawTendril {
         local: "SomeApp2/SomeFolder".to_string(),
-        remotes: vec![
-            "/path/to/SomeFolder".to_string(),
-            "/another/path/to/SomeFolder".to_string(),
-            "~/path/to/DifferentName".to_string(),
-        ],
-        dir_merge: false,
-        link: true,
+        remote: "/path/to/SomeFolder".to_string(),
+        mode: TendrilMode::Link,
         profiles: vec!["home".to_string(), "work".to_string()],
     };
-    let expected_tendrils = vec![expected_t1, expected_t2];
-    let expected = Config { tendrils: expected_tendrils };
+    let expected_t3 = RawTendril {
+        local: "SomeApp2/SomeFolder".to_string(),
+        remote: "/path/to/DifferentName".to_string(),
+        mode: TendrilMode::Link,
+        profiles: vec!["home".to_string(), "work".to_string()],
+    };
+    let expected_t4 = RawTendril {
+        local: "SomeApp2/SomeFolder".to_string(),
+        remote: "~/path/in/home/dir/SomeFolder".to_string(),
+        mode: TendrilMode::Link,
+        profiles: vec!["home".to_string(), "work".to_string()],
+    };
+    let expected_t5 = RawTendril {
+        local: "SomeApp2/SomeFolder".to_string(),
+        remote: "/path/using/<MY-ENV-VAR>/SomeFolder".to_string(),
+        mode: TendrilMode::Link,
+        profiles: vec!["home".to_string(), "work".to_string()],
+    };
+    let expected_t6 = RawTendril {
+        local: "SomeApp3/file.txt".to_string(),
+        remote: "~/unix/specific/path/file.txt".to_string(),
+        mode: TendrilMode::Link,
+        profiles: vec!["unix".to_string()],
+    };
+    let expected_t7 = RawTendril {
+        local: "SomeApp3/file.txt".to_string(),
+        remote: "~/windows/specific/path/file.txt".to_string(),
+        mode: TendrilMode::DirOverwrite,
+        profiles: vec!["windows".to_string()],
+    };
+    let expected_tendrils = vec![
+        expected_t1,
+        expected_t2,
+        expected_t3,
+        expected_t4,
+        expected_t5,
+        expected_t6,
+        expected_t7,
+    ];
+    let expected = Config { raw_tendrils: expected_tendrils };
 
     let actual = api.init_tendrils_repo(&setup.uni_td_repo(), force);
 
@@ -277,7 +310,7 @@ fn dir_is_already_td_repo_returns_already_init_error_even_if_invalid_json(
     let json_content = "Invalid json content";
     write(&setup.td_json_file, json_content).unwrap();
     assert!(is_tendrils_repo(&setup.uni_td_repo()));
-    assert!(parse_config(json_content).is_err());
+    assert!(parse_config_expose(json_content).is_err());
 
     let actual = api.init_tendrils_repo(&setup.uni_td_repo(), force);
 

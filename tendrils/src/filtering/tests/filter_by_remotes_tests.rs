@@ -6,7 +6,7 @@ use crate::filtering::tests::filter_tendrils_tests::{
     supported_asterisk_literals,
     supported_weird_values,
 };
-use crate::TendrilBundle;
+use crate::RawTendril;
 use rstest::rstest;
 use rstest_reuse::{self, apply};
 
@@ -19,61 +19,36 @@ fn empty_tendril_list_returns_empty(#[case] filters: &[String]) {
     assert!(actual.is_empty())
 }
 
-#[apply(string_filter_empty_tests)]
-fn tendril_with_empty_remotes_list_not_included(#[case] filters: &[String]) {
-    let mut t1 = TendrilBundle::new("SomeLocal");
-    t1.remotes = vec![];
-    let mut t2 = TendrilBundle::new("SomeLocal");
-    t2.remotes = vec![];
-    let tendrils = vec![t1.clone(), t2.clone()];
-
-    let actual = filter_by_remotes(tendrils, filters);
-
-    assert!(actual.is_empty());
-}
-
 #[apply(string_filter_match_tests)]
-fn tendril_remote_only_included_if_it_matches_and_non_matching_remotes_are_omitted(
+fn tendril_remote_only_included_if_remote_matches_any(
     #[case] filters: &[String],
     #[case] exp_matches: &[&str],
 ) {
-    let mut t1 = TendrilBundle::new("SomeLocal");
-    t1.remotes = vec!["v1".to_string(), "v2".to_string()];
-    let tendrils = vec![t1.clone()];
+    let mut t1 = RawTendril::new("SomeLocal");
+    let mut t2 = RawTendril::new("SomeLocal");
+    t1.remote = "v1".to_string();
+    t2.remote = "v2".to_string();
+    
+    let tendrils = vec![t1.clone(), t2.clone()];
 
     let actual = filter_by_remotes(tendrils, &filters);
 
-    // Check that ONLY the expected matches are included in the
-    // returned remotes and that non-matching remotes were omitted
-    let mut expected = t1.clone();
-    expected.remotes = exp_matches.into_iter().map(|v| v.to_string()).collect();
-    assert_eq!(actual, vec![expected]);
-}
+    let expected = match exp_matches {
+        ["v1"] => vec![t1],
+        ["v2"] => vec![t2],
+        ["v1", "v2"] => vec![t1, t2],
+        _ => panic!(),
+    };
 
-#[test]
-fn remote_included_if_any_pattern_matches() {
-    let mut t1 = TendrilBundle::new("SomeLocal");
-    t1.remotes = vec!["r/1".to_string(), "r/2".to_string()];
-    let tendrils = vec![t1.clone()];
-    let filters = vec![
-        "I don't match".to_string(),
-        "me neither".to_string(),
-        "r/1".to_string(),
-    ];
-
-    let actual = filter_by_remotes(tendrils, &filters);
-
-    let mut expected = t1.clone();
-    expected.remotes = vec!["r/1".to_string()];
-    assert_eq!(actual, vec![expected]);
+    assert_eq!(actual, expected);
 }
 
 #[apply(string_filter_non_match_tests)]
-fn tendril_not_included_if_no_remote_matches(#[case] filters: &[String]) {
-    let mut t1 = TendrilBundle::new("SomeLocal");
-    t1.remotes = vec!["v1".to_string(), "v2".to_string()];
-    let mut t2 = TendrilBundle::new("SomeLocal");
-    t2.remotes = vec![];
+fn tendril_not_included_if_remote_does_not_match_any(#[case] filters: &[String]) {
+    let mut t1 = RawTendril::new("SomeLocal");
+    let mut t2 = RawTendril::new("SomeLocal");
+    t1.remote = "v1".to_string();
+    t2.remote = "v2".to_string();
     let tendrils = vec![t1.clone(), t2.clone()];
 
     let actual = filter_by_remotes(tendrils, filters);
@@ -82,13 +57,13 @@ fn tendril_not_included_if_no_remote_matches(#[case] filters: &[String]) {
 }
 
 #[test]
-fn duplicate_filter_remotes_only_returns_tendril_once() {
-    let mut t1 = TendrilBundle::new("SomeLocal");
-    t1.remotes = vec!["r/1".to_string()];
-    let mut t2 = TendrilBundle::new("SomeLocal");
-    t2.remotes = vec!["r/2".to_string()];
+fn duplicate_filter_only_returns_tendril_once() {
+    let mut t1 = RawTendril::new("SomeLocal");
+    let mut t2 = RawTendril::new("SomeLocal");
+    t1.remote = "r1".to_string();
+    t2.remote = "r2".to_string();
     let tendrils = vec![t1.clone(), t2.clone()];
-    let filters = ["r/1".to_string(), "r/1".to_string(), "r/1".to_string()];
+    let filters = ["r1".to_string(), "r1".to_string(), "r1".to_string()];
 
     let actual = filter_by_remotes(tendrils, &filters);
 
@@ -96,27 +71,13 @@ fn duplicate_filter_remotes_only_returns_tendril_once() {
 }
 
 #[test]
-fn duplicate_tendril_remotes_only_returns_tendril_once() {
-    let mut t1 = TendrilBundle::new("SomeLocal");
-    t1.remotes = vec!["r/1".to_string(), "r/1".to_string(), "r/1".to_string()];
-    let mut t2 = TendrilBundle::new("SomeLocal");
-    t2.remotes = vec!["r/2".to_string()];
-    let tendrils = vec![t1.clone(), t2.clone()];
-    let filters = ["r/1".to_string()];
-
-    let actual = filter_by_remotes(tendrils, &filters);
-
-    assert_eq!(actual, vec![t1]);
-}
-
-#[test]
-fn duplicate_tendrils_returns_all_instances() {
-    let mut t1 = TendrilBundle::new("SomeLocal");
-    t1.remotes = vec!["r/1".to_string()];
-    let mut t2 = TendrilBundle::new("SomeLocal");
-    t2.remotes = vec!["r/2".to_string()];
+fn duplicate_matching_tendrils_returns_all_instances() {
+    let mut t1 = RawTendril::new("SomeLocal");
+    let mut t2 = RawTendril::new("SomeLocal");
+    t1.remote = "r1".to_string();
+    t2.remote = "r2".to_string();
     let tendrils = vec![t1.clone(), t1.clone(), t1.clone(), t2.clone()];
-    let filters = ["r/1".to_string()];
+    let filters = ["r1".to_string()];
 
     let actual = filter_by_remotes(tendrils, &filters);
 
@@ -124,14 +85,14 @@ fn duplicate_tendrils_returns_all_instances() {
 }
 
 #[apply(supported_weird_values)]
-fn filter_supports_weird_remotes(#[case] remote: String) {
-    let mut t1 = TendrilBundle::new("SomeLocal");
-    t1.remotes = vec![remote.clone()];
-    let mut t2 = TendrilBundle::new("SomeLocal");
-    t2.remotes = vec!["r/2".to_string()];
+fn filter_supports_weird_filter_values(#[case] value: String) {
+    let mut t1 = RawTendril::new("SomeLocal");
+    let mut t2 = RawTendril::new("SomeLocal");
+    t1.remote = value.clone();
+    t2.remote = "r2".to_string();
     let tendrils = vec![t1.clone(), t2.clone()];
 
-    let filter = remote.replace('\\', "\\\\");
+    let filter = value.replace('\\', "\\\\");
     let actual = filter_by_remotes(tendrils, &[filter]);
 
     assert_eq!(actual, vec![t1]);
@@ -139,13 +100,13 @@ fn filter_supports_weird_remotes(#[case] remote: String) {
 
 #[apply(supported_asterisk_literals)]
 fn filter_supports_asterisk_literals(
-    #[case] remote: String,
+    #[case] value: String,
     #[case] filter: String,
 ) {
-    let mut t1 = TendrilBundle::new("SomeLocal");
-    t1.remotes = vec![remote];
-    let mut t2 = TendrilBundle::new("SomeLocal");
-    t2.remotes = vec!["r/2".to_string()];
+    let mut t1 = RawTendril::new("SomeLocal");
+    let mut t2 = RawTendril::new("SomeLocal");
+    t1.remote = value.clone();
+    t2.remote = "r2".to_string();
     let tendrils = vec![t1.clone(), t2.clone()];
 
     let actual = filter_by_remotes(tendrils, &[filter]);
@@ -155,10 +116,10 @@ fn filter_supports_asterisk_literals(
 
 #[test]
 fn empty_filters_list_returns_all_tendrils() {
-    let mut t1 = TendrilBundle::new("SomeLocal");
-    t1.remotes = vec!["r/1".to_string()];
-    let mut t2 = TendrilBundle::new("SomeLocal");
-    t2.remotes = vec!["r/2".to_string()];
+    let mut t1 = RawTendril::new("SomeLocal");
+    let mut t2 = RawTendril::new("SomeLocal");
+    t1.remote = "r1".to_string();
+    t2.remote = "r2".to_string();
     let tendrils = vec![t1.clone(), t2.clone()];
 
     let actual = filter_by_remotes(tendrils.clone(), &[]);

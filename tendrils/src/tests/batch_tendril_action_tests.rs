@@ -5,7 +5,6 @@ use crate::path_ext::UniPath;
 use crate::test_utils::{
     get_disposable_dir,
     is_empty,
-    set_remotes,
     Setup
 };
 use crate::{
@@ -14,10 +13,11 @@ use crate::{
     ActionMode,
     FsoType,
     Location,
+    RawTendril,
     TendrilActionError,
     TendrilActionSuccess,
-    TendrilBundle,
     TendrilLog,
+    TendrilMode,
     TendrilReport,
 };
 use fs_extra::file::read_to_string;
@@ -25,7 +25,6 @@ use rstest::rstest;
 use serial_test::serial;
 use std::fs::{create_dir_all, write};
 use std::path::PathBuf;
-use std::rc::Rc;
 use tempdir::TempDir;
 
 #[rstest]
@@ -55,10 +54,9 @@ fn returns_result_after_each_operation(
     let setup = Setup::new();
     setup.make_local_file();
     setup.make_local_nested_file();
-    let mut bundle = setup.file_tendril_bundle();
-    bundle.remotes.push(
-        setup.remote_nested_file.to_string_lossy().to_string()
-    ); // Add another remote
+    let t1 = setup.file_tendril_raw();
+    let mut t2 = t1.clone();
+    t2.remote = setup.remote_nested_file.to_string_lossy().to_string();
 
     let expected_success = match dry_run {
         true => Ok(TendrilActionSuccess::NewSkipped),
@@ -70,8 +68,8 @@ fn returns_result_after_each_operation(
         call_counter += 1;
         if call_counter == 1 {
             assert_eq!(r, TendrilReport {
-                orig_tendril: Rc::new(bundle.clone()),
-                local: bundle.local.clone(),
+                raw_tendril: t1.clone(),
+                local: t1.local.clone(),
                 log: Ok(ActionLog::new(
                     Some(FsoType::File),
                     None,
@@ -89,8 +87,8 @@ fn returns_result_after_each_operation(
         }
         else if call_counter == 2 {
             assert_eq!(r, TendrilReport {
-                orig_tendril: Rc::new(bundle.clone()),
-                local: bundle.local.clone(),
+                raw_tendril: t2.clone(),
+                local: t2.local.clone(),
                 log: Ok(ActionLog::new(
                     Some(FsoType::File),
                     None,
@@ -121,7 +119,7 @@ fn returns_result_after_each_operation(
         updater,
         ActionMode::Push,
         &UniPath::from(&setup.td_repo),
-        vec![bundle.clone()],
+        vec![t1.clone(), t2.clone()],
         dry_run,
         force,
     );
@@ -161,19 +159,18 @@ fn pull_returns_tendril_and_result_for_each_given(
         .unwrap();
 
     let mut given = vec![
-        TendrilBundle::new("App1/misc1.txt"),
-        TendrilBundle::new("App2/misc2.txt"),
-        TendrilBundle::new("App1/App1 Dir"),
-        TendrilBundle::new("App3/I don't exist"),
+        RawTendril::new("App1/misc1.txt"),
+        RawTendril::new("App2/misc2.txt"),
+        RawTendril::new("App2/misc2.txt"),
+        RawTendril::new("App1/App1 Dir"),
+        RawTendril::new("App3/I don't exist"),
     ];
 
-    set_remotes(&mut given[0], &[given_parent_dir_a.join("misc1.txt")]);
-    set_remotes(&mut given[1], &[
-        given_parent_dir_a.join("misc2.txt"),
-        given_parent_dir_b.join("misc2.txt"),
-    ]);
-    set_remotes(&mut given[2], &[given_parent_dir_a.join("App1 Dir")]);
-    set_remotes(&mut given[3], &[given_parent_dir_a.join("I don't exist")]);
+    given[0].remote = given_parent_dir_a.join("misc1.txt").to_string_lossy().to_string();
+    given[1].remote = given_parent_dir_a.join("misc2.txt").to_string_lossy().to_string();
+    given[2].remote = given_parent_dir_b.join("misc2.txt").to_string_lossy().to_string();
+    given[3].remote = given_parent_dir_a.join("App1 Dir").to_string_lossy().to_string();
+    given[4].remote = given_parent_dir_a.join("I don't exist").to_string_lossy().to_string();
 
     let expected_success = match dry_run {
         true => Ok(TendrilActionSuccess::NewSkipped),
@@ -181,7 +178,7 @@ fn pull_returns_tendril_and_result_for_each_given(
     };
     let expected = vec![
         TendrilReport {
-            orig_tendril: Rc::new(given[0].clone()),
+            raw_tendril: given[0].clone(),
             local: given[0].local.clone(),
             log: Ok(ActionLog::new(
                 None,
@@ -191,19 +188,36 @@ fn pull_returns_tendril_and_result_for_each_given(
             )),
         },
         TendrilReport {
-            orig_tendril: Rc::new(given[1].clone()),
+            raw_tendril: given[1].clone(),
             local: given[1].local.clone(),
             log: Ok(ActionLog::new(
                 None,
                 Some(FsoType::File),
-                remote_app2_file_a,
+                remote_app2_file_a.clone(),
                 expected_success.clone(),
             )),
         },
-        // The second path should not be considered since this is a pull action
+        // TODO: This should eventually not be included once the most recently modified
+        // version is checked
         TendrilReport {
-            orig_tendril: Rc::new(given[2].clone()),
+            raw_tendril: given[2].clone(),
             local: given[2].local.clone(),
+            log: Ok(ActionLog::new(
+                match dry_run {
+                    true => None,
+                    false => Some(FsoType::File),
+                },
+                Some(FsoType::File),
+                remote_app2_file_b,
+                match dry_run {
+                    true => Ok(TendrilActionSuccess::NewSkipped),
+                    false => Ok(TendrilActionSuccess::Overwrite),
+                }
+            )),
+        },
+        TendrilReport {
+            raw_tendril: given[3].clone(),
+            local: given[3].local.clone(),
             log: Ok(ActionLog::new(
                 None,
                 Some(FsoType::Dir),
@@ -212,8 +226,8 @@ fn pull_returns_tendril_and_result_for_each_given(
             )),
         },
         TendrilReport {
-            orig_tendril: Rc::new(given[3].clone()),
-            local: given[3].local.clone(),
+            raw_tendril: given[4].clone(),
+            local: given[4].local.clone(),
             log: Ok(ActionLog::new(
                 None,
                 None,
@@ -253,7 +267,8 @@ fn pull_returns_tendril_and_result_for_each_given(
 
         assert_eq!(local_app1_file_contents, "Remote app 1 file contents");
         assert!(local_app1_dir.exists());
-        assert_eq!(local_app2_file_contents, "Remote app 2 file a contents");
+        // TODO: This should eventually only be the mode recently modified file's contents
+        assert_eq!(local_app2_file_contents, "Remote app 2 file b contents");
         assert_eq!(
             local_app1_nested_file_contents,
             "Remote app 1 nested file contents"
@@ -292,19 +307,18 @@ fn push_returns_tendril_and_result_for_each_given(
     write(&local_app1_nested_file, "Local app 1 nested file contents").unwrap();
 
     let mut given = vec![
-        TendrilBundle::new("App1/misc1.txt"),
-        TendrilBundle::new("App2/misc2.txt"),
-        TendrilBundle::new("App1/App1 Dir"),
-        TendrilBundle::new("App3/I don't exist"),
+        RawTendril::new("App1/misc1.txt"),
+        RawTendril::new("App2/misc2.txt"),
+        RawTendril::new("App2/misc2.txt"),
+        RawTendril::new("App1/App1 Dir"),
+        RawTendril::new("App3/I don't exist"),
     ];
 
-    set_remotes(&mut given[0], &[given_parent_dir_a.join("misc1.txt")]);
-    set_remotes(&mut given[1], &[
-        given_parent_dir_a.join("misc2.txt"),
-        given_parent_dir_b.join("misc2.txt"),
-    ]);
-    set_remotes(&mut given[2], &[given_parent_dir_a.join("App1 Dir")]);
-    set_remotes(&mut given[3], &[given_parent_dir_a.join("I don't exist")]);
+    given[0].remote = given_parent_dir_a.join("misc1.txt").to_string_lossy().to_string();
+    given[1].remote = given_parent_dir_a.join("misc2.txt").to_string_lossy().to_string();
+    given[2].remote = given_parent_dir_b.join("misc2.txt").to_string_lossy().to_string();
+    given[3].remote = given_parent_dir_a.join("App1 Dir").to_string_lossy().to_string();
+    given[4].remote = given_parent_dir_a.join("I don't exist").to_string_lossy().to_string();
 
     let expected_success = match dry_run {
         true => Ok(TendrilActionSuccess::NewSkipped),
@@ -312,7 +326,7 @@ fn push_returns_tendril_and_result_for_each_given(
     };
     let expected = vec![
         TendrilReport {
-            orig_tendril: Rc::new(given[0].clone()),
+            raw_tendril: given[0].clone(),
             local: given[0].local.clone(),
             log: Ok(ActionLog::new(
                 Some(FsoType::File),
@@ -322,7 +336,7 @@ fn push_returns_tendril_and_result_for_each_given(
             )),
         },
         TendrilReport {
-            orig_tendril: Rc::new(given[1].clone()),
+            raw_tendril: given[1].clone(),
             local: given[1].local.clone(),
             log: Ok(ActionLog::new(
                 Some(FsoType::File),
@@ -332,8 +346,8 @@ fn push_returns_tendril_and_result_for_each_given(
             )),
         },
         TendrilReport {
-            orig_tendril: Rc::new(given[1].clone()),
-            local: given[1].local.clone(),
+            raw_tendril: given[2].clone(),
+            local: given[2].local.clone(),
             log: Ok(ActionLog::new(
                 Some(FsoType::File),
                 None,
@@ -342,8 +356,8 @@ fn push_returns_tendril_and_result_for_each_given(
             )),
         },
         TendrilReport {
-            orig_tendril: Rc::new(given[2].clone()),
-            local: given[2].local.clone(),
+            raw_tendril: given[3].clone(),
+            local: given[3].local.clone(),
             log: Ok(ActionLog::new(
                 Some(FsoType::Dir),
                 None,
@@ -352,8 +366,8 @@ fn push_returns_tendril_and_result_for_each_given(
             )),
         },
         TendrilReport {
-            orig_tendril: Rc::new(given[3].clone()),
-            local: given[3].local.clone(),
+            raw_tendril: given[4].clone(),
+            local: given[4].local.clone(),
             log: Ok(ActionLog::new(
                 None,
                 None,
@@ -440,24 +454,24 @@ fn link_returns_tendril_and_result_for_each_given(
     write(&local_app1_nested_file, "Local app 1 nested file contents").unwrap();
 
     let mut given = vec![
-        TendrilBundle::new("App1/misc1.txt"),
-        TendrilBundle::new("App2/misc2.txt"),
-        TendrilBundle::new("App1/App1 Dir"),
-        TendrilBundle::new("App3/I don't exist"),
+        RawTendril::new("App1/misc1.txt"),
+        RawTendril::new("App2/misc2.txt"),
+        RawTendril::new("App2/misc2.txt"),
+        RawTendril::new("App1/App1 Dir"),
+        RawTendril::new("App3/I don't exist"),
     ];
 
-    set_remotes(&mut given[0], &[given_parent_dir_a.join("misc1.txt")]);
-    set_remotes(&mut given[1], &[
-        given_parent_dir_a.join("misc2.txt"),
-        given_parent_dir_b.join("misc2.txt"),
-    ]);
-    set_remotes(&mut given[2], &[given_parent_dir_a.join("App1 Dir")]);
-    set_remotes(&mut given[3], &[given_parent_dir_a.join("I don't exist")]);
+    given[0].remote = given_parent_dir_a.join("misc1.txt").to_string_lossy().to_string();
+    given[1].remote = given_parent_dir_a.join("misc2.txt").to_string_lossy().to_string();
+    given[2].remote = given_parent_dir_b.join("misc2.txt").to_string_lossy().to_string();
+    given[3].remote = given_parent_dir_a.join("App1 Dir").to_string_lossy().to_string();
+    given[4].remote = given_parent_dir_a.join("I don't exist").to_string_lossy().to_string();
 
-    given[0].link = true;
-    given[1].link = true;
-    given[2].link = true;
-    given[3].link = true;
+    given[0].mode = TendrilMode::Link;
+    given[1].mode = TendrilMode::Link;
+    given[2].mode = TendrilMode::Link;
+    given[3].mode = TendrilMode::Link;
+    given[4].mode = TendrilMode::Link;
 
     let expected_success = match dry_run {
         true => Ok(TendrilActionSuccess::NewSkipped),
@@ -465,7 +479,7 @@ fn link_returns_tendril_and_result_for_each_given(
     };
     let expected = vec![
         TendrilReport {
-            orig_tendril: Rc::new(given[0].clone()),
+            raw_tendril: given[0].clone(),
             local: given[0].local.clone(),
             log: Ok(ActionLog::new(
                 Some(FsoType::File),
@@ -475,7 +489,7 @@ fn link_returns_tendril_and_result_for_each_given(
             )),
         },
         TendrilReport {
-            orig_tendril: Rc::new(given[1].clone()),
+            raw_tendril: given[1].clone(),
             local: given[1].local.clone(),
             log: Ok(ActionLog::new(
                 Some(FsoType::File),
@@ -485,8 +499,8 @@ fn link_returns_tendril_and_result_for_each_given(
             )),
         },
         TendrilReport {
-            orig_tendril: Rc::new(given[1].clone()),
-            local: given[1].local.clone(),
+            raw_tendril: given[2].clone(),
+            local: given[2].local.clone(),
             log: Ok(ActionLog::new(
                 Some(FsoType::File),
                 None,
@@ -495,8 +509,8 @@ fn link_returns_tendril_and_result_for_each_given(
             )),
         },
         TendrilReport {
-            orig_tendril: Rc::new(given[2].clone()),
-            local: given[2].local.clone(),
+            raw_tendril: given[3].clone(),
+            local: given[3].local.clone(),
             log: Ok(ActionLog::new(
                 Some(FsoType::Dir),
                 None,
@@ -505,8 +519,8 @@ fn link_returns_tendril_and_result_for_each_given(
             )),
         },
         TendrilReport {
-            orig_tendril: Rc::new(given[3].clone()),
-            local: given[3].local.clone(),
+            raw_tendril: given[4].clone(),
+            local: given[4].local.clone(),
             log: Ok(ActionLog::new(
                 None,
                 None,
@@ -593,24 +607,25 @@ fn out_returns_tendril_and_result_for_each_given_link_or_push_style(
     write(&local_app1_nested_file, "Local app 1 nested file contents").unwrap();
 
     let mut given = vec![
-        TendrilBundle::new("App1/misc1.txt"),
-        TendrilBundle::new("App2/misc2.txt"),
-        TendrilBundle::new("App1/App1 Dir"),
-        TendrilBundle::new("App3/I don't exist"),
+        RawTendril::new("App1/misc1.txt"),
+        RawTendril::new("App2/misc2.txt"),
+        RawTendril::new("App2/misc2.txt"),
+        RawTendril::new("App1/App1 Dir"),
+        RawTendril::new("App3/I don't exist"),
     ];
 
-    set_remotes(&mut given[0], &[given_parent_dir_a.join("misc1.txt")]);
-    set_remotes(&mut given[1], &[
-        given_parent_dir_a.join("misc2.txt"),
-        given_parent_dir_b.join("misc2.txt"),
-    ]);
-    set_remotes(&mut given[2], &[given_parent_dir_a.join("App1 Dir")]);
-    set_remotes(&mut given[3], &[given_parent_dir_a.join("I don't exist")]);
+    given[0].remote = given_parent_dir_a.join("misc1.txt").to_string_lossy().to_string();
+    given[1].remote = given_parent_dir_a.join("misc2.txt").to_string_lossy().to_string();
+    given[2].remote = given_parent_dir_b.join("misc2.txt").to_string_lossy().to_string();
+    given[3].remote = given_parent_dir_a.join("App1 Dir").to_string_lossy().to_string();
+    given[4].remote = given_parent_dir_a.join("I don't exist").to_string_lossy().to_string();
 
-    given[0].link = true;
-    given[1].link = false;
-    given[2].link = true;
-    given[3].link = false;
+    given[0].mode = TendrilMode::Link;
+    given[1].mode = TendrilMode::DirOverwrite;
+    given[2].mode = TendrilMode::Link;
+    given[3].mode = TendrilMode::DirMerge;
+    given[4].mode = TendrilMode::DirOverwrite;
+
 
     let expected_success = match dry_run {
         true => Ok(TendrilActionSuccess::NewSkipped),
@@ -618,7 +633,7 @@ fn out_returns_tendril_and_result_for_each_given_link_or_push_style(
     };
     let expected = vec![
         TendrilReport {
-            orig_tendril: Rc::new(given[0].clone()),
+            raw_tendril: given[0].clone(),
             local: given[0].local.clone(),
             log: Ok(ActionLog::new(
                 Some(FsoType::File),
@@ -628,7 +643,7 @@ fn out_returns_tendril_and_result_for_each_given_link_or_push_style(
             )),
         },
         TendrilReport {
-            orig_tendril: Rc::new(given[1].clone()),
+            raw_tendril: given[1].clone(),
             local: given[1].local.clone(),
             log: Ok(ActionLog::new(
                 Some(FsoType::File),
@@ -638,8 +653,8 @@ fn out_returns_tendril_and_result_for_each_given_link_or_push_style(
             )),
         },
         TendrilReport {
-            orig_tendril: Rc::new(given[1].clone()),
-            local: given[1].local.clone(),
+            raw_tendril: given[2].clone(),
+            local: given[2].local.clone(),
             log: Ok(ActionLog::new(
                 Some(FsoType::File),
                 None,
@@ -648,8 +663,8 @@ fn out_returns_tendril_and_result_for_each_given_link_or_push_style(
             )),
         },
         TendrilReport {
-            orig_tendril: Rc::new(given[2].clone()),
-            local: given[2].local.clone(),
+            raw_tendril: given[3].clone(),
+            local: given[3].local.clone(),
             log: Ok(ActionLog::new(
                 Some(FsoType::Dir),
                 None,
@@ -658,8 +673,8 @@ fn out_returns_tendril_and_result_for_each_given_link_or_push_style(
             )),
         },
         TendrilReport {
-            orig_tendril: Rc::new(given[3].clone()),
-            local: given[3].local.clone(),
+            raw_tendril: given[4].clone(),
+            local: given[4].local.clone(),
             log: Ok(ActionLog::new(
                 None,
                 None,
@@ -710,8 +725,8 @@ fn out_returns_tendril_and_result_for_each_given_link_or_push_style(
         );
         assert!(remote_app1_file.is_symlink());
         assert!(!remote_app2_file_a.is_symlink());
-        assert!(!remote_app2_file_b.is_symlink());
-        assert!(remote_app1_dir.is_symlink());
+        assert!(remote_app2_file_b.is_symlink());
+        assert!(!remote_app1_dir.is_symlink());
     }
 }
 
@@ -725,9 +740,11 @@ fn remote_path_vars_are_resolved(
 ) {
     let setup = Setup::new();
     setup.make_td_repo_dir();
-    let mut tendril = setup.file_tendril_bundle();
-    tendril.link = mode == ActionMode::Link;
-    set_remotes(&mut tendril, &[PathBuf::from("~/I_do_not_exist/<var>/misc.txt")]);
+    let mut tendril = setup.file_tendril_raw();
+    if mode == ActionMode::Link {
+        tendril.mode = TendrilMode::Link;
+    }
+    tendril.remote = "~/I_do_not_exist/<var>/misc.txt".to_string();
     let tendrils = vec![tendril.clone()];
     std::env::set_var("HOME", "My/Home");
     std::env::set_var("var", "value");
@@ -737,7 +754,7 @@ fn remote_path_vars_are_resolved(
         "{SEP}My{SEP}Home{SEP}I_do_not_exist{SEP}value{SEP}misc.txt"
     );
     let expected = vec![TendrilReport {
-        orig_tendril: Rc::new(tendril),
+        raw_tendril: tendril,
         local: "SomeApp/misc.txt".to_string(),
         log: Ok(ActionLog::new(
             None,

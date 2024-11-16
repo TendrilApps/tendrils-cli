@@ -30,10 +30,11 @@ use tendrils::{
     GetTendrilsRepoError,
     InitError,
     Location,
+    RawTendril,
     SetupError,
     TendrilActionError,
     TendrilActionSuccess,
-    TendrilBundle,
+    TendrilMode,
     TendrilReport,
     TendrilsActor,
 };
@@ -970,14 +971,14 @@ fn tendril_action_prints_table_in_specific_format(
 ) {
     let mut api = MockTendrilsApi::new();
     let given_dir = PathBuf::from("/SomeGivenDir");
-    let link = mode == ActionMode::Link;
-    let orig_tendril = std::rc::Rc::new(TendrilBundle {
-        local: "SomeApp/misc.txt".to_string(),
-        remotes: vec!["r1/misc.txt".to_string(), "r2/misc.txt".to_string()],
-        profiles: vec![],
-        link,
-        dir_merge: false,
-    });
+    let mut t1 = RawTendril::new("SomeApp/misc.txt");
+    let mut t2 = RawTendril::new("SomeApp/misc.txt");
+    t1.remote = "r1/misc.txt".to_string();
+    t2.remote = "r2/misc.txt".to_string();
+    if mode == ActionMode::Link {
+        t1.mode = TendrilMode::Link;
+        t2.mode = TendrilMode::Link;
+    }
     let ok_result = Ok(TendrilActionSuccess::New);
     let err_result = Err(TendrilActionError::IoError {
         kind: std::io::ErrorKind::NotFound,
@@ -992,7 +993,7 @@ fn tendril_action_prints_table_in_specific_format(
     api.ta_exp_force = force;
     api.ta_const_rt = Ok(vec![
         TendrilReport {
-            orig_tendril: orig_tendril.clone(),
+            raw_tendril: t1.clone(),
             local: "SomeApp/misc.txt".to_string(),
             log: Ok(ActionLog::new(
                 Some(FsoType::File),
@@ -1002,7 +1003,7 @@ fn tendril_action_prints_table_in_specific_format(
             )),
         },
         TendrilReport {
-            orig_tendril: orig_tendril.clone(),
+            raw_tendril: t2.clone(),
             local: "SomeApp/misc.txt".to_string(),
             log: Ok(ActionLog::new(
                 Some(FsoType::File),
@@ -1077,14 +1078,17 @@ fn tendril_action_if_all_pass_they_are_totalled_and_returns_ok(
 ) {
     let mut api = MockTendrilsApi::new();
     let given_dir = PathBuf::from("/SomeGivenDir");
-    let link = mode == ActionMode::Link;
-    let orig_tendril = std::rc::Rc::new(TendrilBundle {
-        local: "misc.txt".to_string(),
-        remotes: vec!["r1".to_string(), "r2".to_string(), "r3".to_string()],
-        profiles: vec![],
-        link,
-        dir_merge: false,
-    });
+    let mut t1 = RawTendril::new("SomeApp/misc.txt");
+    let mut t2 = RawTendril::new("SomeApp/misc.txt");
+    let mut t3 = RawTendril::new("SomeApp/misc.txt");
+    t1.remote = "r1".to_string();
+    t2.remote = "r2".to_string();
+    t3.remote = "r3".to_string();
+    if mode == ActionMode::Link {
+        t1.mode = TendrilMode::Link;
+        t2.mode = TendrilMode::Link;
+        t3.mode = TendrilMode::Link;
+    }
     let ok_result = Ok(TendrilActionSuccess::New);
 
     api.ta_exp_mode = mode.clone();
@@ -1095,7 +1099,7 @@ fn tendril_action_if_all_pass_they_are_totalled_and_returns_ok(
     api.ta_exp_force = force;
     api.ta_const_rt = Ok(vec![
         TendrilReport {
-            orig_tendril: orig_tendril.clone(),
+            raw_tendril: t1.clone(),
             local: "misc.txt".to_string(),
             log: Ok(ActionLog::new(
                 Some(FsoType::File),
@@ -1105,7 +1109,7 @@ fn tendril_action_if_all_pass_they_are_totalled_and_returns_ok(
             )),
         },
         TendrilReport {
-            orig_tendril: orig_tendril.clone(),
+            raw_tendril: t2.clone(),
             local: "misc.txt".to_string(),
             log: Ok(ActionLog::new(
                 None,
@@ -1115,7 +1119,7 @@ fn tendril_action_if_all_pass_they_are_totalled_and_returns_ok(
             )),
         },
         TendrilReport {
-            orig_tendril: orig_tendril.clone(),
+            raw_tendril: t3.clone(),
             local: "misc.txt".to_string(),
             log: Ok(ActionLog::new(
                 Some(FsoType::Dir),
@@ -1163,14 +1167,17 @@ fn tendril_action_if_any_fail_they_are_totalled_and_returns_exit_code(
 ) {
     let mut api = MockTendrilsApi::new();
     let given_dir = PathBuf::from("/SomeGivenDir");
-    let link = mode == ActionMode::Link;
-    let orig_tendril = std::rc::Rc::new(TendrilBundle {
-        local: "misc.txt".to_string(),
-        remotes: vec!["r1".to_string(), "r2".to_string(), "r3".to_string()],
-        profiles: vec![],
-        link,
-        dir_merge: false,
-    });
+    let mut t1 = RawTendril::new("SomeApp/misc.txt");
+    let mut t2 = RawTendril::new("SomeApp/misc.txt");
+    let mut t3 = RawTendril::new("SomeApp/misc.txt");
+    t1.remote = "r1".to_string();
+    t2.remote = "r2".to_string();
+    t3.remote = "r3".to_string();
+    if mode == ActionMode::Link {
+        t1.mode = TendrilMode::Link;
+        t2.mode = TendrilMode::Link;
+        t3.mode = TendrilMode::Link;
+    }
     let ok_result = Ok(TendrilActionSuccess::New);
     let err_result = Err(TendrilActionError::IoError {
         kind: std::io::ErrorKind::NotFound,
@@ -1185,7 +1192,7 @@ fn tendril_action_if_any_fail_they_are_totalled_and_returns_exit_code(
     api.ta_exp_force = force;
     api.ta_const_rt = Ok(vec![
         TendrilReport {
-            orig_tendril: orig_tendril.clone(),
+            raw_tendril: t1.clone(),
             local: "misc.txt".to_string(),
             log: Ok(ActionLog::new(
                 Some(FsoType::File),
@@ -1195,7 +1202,7 @@ fn tendril_action_if_any_fail_they_are_totalled_and_returns_exit_code(
             )),
         },
         TendrilReport {
-            orig_tendril: orig_tendril.clone(),
+            raw_tendril: t2.clone(),
             local: "misc.txt".to_string(),
             log: Ok(ActionLog::new(
                 None,
@@ -1205,7 +1212,7 @@ fn tendril_action_if_any_fail_they_are_totalled_and_returns_exit_code(
             )),
         },
         TendrilReport {
-            orig_tendril: orig_tendril.clone(),
+            raw_tendril: t3.clone(),
             local: "misc.txt".to_string(),
             log: Ok(ActionLog::new(
                 Some(FsoType::Dir),
@@ -1253,31 +1260,36 @@ fn tendril_action_order_of_reports_is_unchanged(
 ) {
     let mut api = MockTendrilsApi::new();
     let given_dir = PathBuf::from("/SomeGivenDir");
-    let link = mode == ActionMode::Link;
-    let orig_tendril_1 = std::rc::Rc::new(TendrilBundle {
-        local: "l1".to_string(),
-        // Non alphabetical order
-        remotes: vec!["r1_2".to_string(), "r1_1".to_string(), "r1_3".to_string()],
-        profiles: vec![],
-        link,
-        dir_merge: false,
-    });
-    let orig_tendril_2 = std::rc::Rc::new(TendrilBundle {
-        local: "l2".to_string(),
-        // Non alphabetical order
-        remotes: vec!["r2_3".to_string(), "r2_2".to_string(), "r2_1".to_string()],
-        profiles: vec![],
-        link,
-        dir_merge: false,
-    });
-    let orig_tendril_3 = std::rc::Rc::new(TendrilBundle {
-        local: "l3".to_string(),
-        // Non alphabetical order
-        remotes: vec!["r3_3".to_string(), "r3_1".to_string(), "r3_2".to_string()],
-        profiles: vec![],
-        link,
-        dir_merge: false,
-    });
+    let mut t1_1 = RawTendril::new("l1");
+    let mut t1_2 = RawTendril::new("l1");
+    let mut t1_3 = RawTendril::new("l1");
+    let mut t2_1 = RawTendril::new("l2");
+    let mut t2_2 = RawTendril::new("l2");
+    let mut t2_3 = RawTendril::new("l2");
+    let mut t3_1 = RawTendril::new("l3");
+    let mut t3_2 = RawTendril::new("l3");
+    let mut t3_3 = RawTendril::new("l3");
+    t1_1.remote = "r1_1".to_string();
+    t1_2.remote = "r1_2".to_string();
+    t1_3.remote = "r1_3".to_string();
+    t2_1.remote = "r2_1".to_string();
+    t2_2.remote = "r2_2".to_string();
+    t2_3.remote = "r2_3".to_string();
+    t3_1.remote = "r3_1".to_string();
+    t3_2.remote = "r3_2".to_string();
+    t3_3.remote = "r3_3".to_string();
+
+    if mode == ActionMode::Link {
+        t1_1.mode = TendrilMode::Link;
+        t1_2.mode = TendrilMode::Link;
+        t1_3.mode = TendrilMode::Link;
+        t2_1.mode = TendrilMode::Link;
+        t2_2.mode = TendrilMode::Link;
+        t2_3.mode = TendrilMode::Link;
+        t3_1.mode = TendrilMode::Link;
+        t3_2.mode = TendrilMode::Link;
+        t3_3.mode = TendrilMode::Link;
+    }
     let result = Err(TendrilActionError::IoError {
         kind: std::io::ErrorKind::NotFound,
         loc: Location::Source,
@@ -1291,7 +1303,7 @@ fn tendril_action_order_of_reports_is_unchanged(
     api.ta_exp_force = force;
     api.ta_const_rt = Ok(vec![
         TendrilReport {
-            orig_tendril: orig_tendril_2.clone(),
+            raw_tendril: t2_3.clone(),
             local: "l2".to_string(),
             log: Ok(ActionLog::new(
                 None,
@@ -1301,7 +1313,7 @@ fn tendril_action_order_of_reports_is_unchanged(
             )),
         },
         TendrilReport {
-            orig_tendril: orig_tendril_2.clone(),
+            raw_tendril: t2_2.clone(),
             local: "l2".to_string(),
             log: Ok(ActionLog::new(
                 None,
@@ -1311,7 +1323,7 @@ fn tendril_action_order_of_reports_is_unchanged(
             )),
         },
         TendrilReport {
-            orig_tendril: orig_tendril_2.clone(),
+            raw_tendril: t2_1.clone(),
             local: "l2".to_string(),
             log: Ok(ActionLog::new(
                 None,
@@ -1321,7 +1333,7 @@ fn tendril_action_order_of_reports_is_unchanged(
             )),
         },
         TendrilReport {
-            orig_tendril: orig_tendril_1.clone(),
+            raw_tendril: t1_2.clone(),
             local: "l1".to_string(),
             log: Ok(ActionLog::new(
                 None,
@@ -1331,7 +1343,7 @@ fn tendril_action_order_of_reports_is_unchanged(
             )),
         },
         TendrilReport {
-            orig_tendril: orig_tendril_1.clone(),
+            raw_tendril: t1_1.clone(),
             local: "l1".to_string(),
             log: Ok(ActionLog::new(
                 None,
@@ -1341,7 +1353,7 @@ fn tendril_action_order_of_reports_is_unchanged(
             )),
         },
         TendrilReport {
-            orig_tendril: orig_tendril_1.clone(),
+            raw_tendril: t1_3.clone(),
             local: "l1".to_string(),
             log: Ok(ActionLog::new(
                 None,
@@ -1351,7 +1363,7 @@ fn tendril_action_order_of_reports_is_unchanged(
             )),
         },
         TendrilReport {
-            orig_tendril: orig_tendril_3.clone(),
+            raw_tendril: t3_3.clone(),
             local: "l3".to_string(),
             log: Ok(ActionLog::new(
                 None,
@@ -1361,7 +1373,7 @@ fn tendril_action_order_of_reports_is_unchanged(
             )),
         },
         TendrilReport {
-            orig_tendril: orig_tendril_3.clone(),
+            raw_tendril: t3_3.clone(),
             local: "l3".to_string(),
             log: Ok(ActionLog::new(
                 None,
@@ -1371,7 +1383,7 @@ fn tendril_action_order_of_reports_is_unchanged(
             )),
         },
         TendrilReport {
-            orig_tendril: orig_tendril_3.clone(),
+            raw_tendril: t3_2.clone(),
             local: "l3".to_string(),
             log: Ok(ActionLog::new(
                 None,

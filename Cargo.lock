@@ -342,6 +342,7 @@ checksum = "168fb715dda47215e360912c096649d23d58bf392ac62f73919e831745e40f26"
 dependencies = [
  "equivalent",
  "hashbrown",
+ "serde",
 ]
 
 [[package]]
@@ -877,6 +878,7 @@ version = "0.0.1"
 dependencies = [
  "fs_extra",
  "glob-match",
+ "indexmap",
  "is-root",
  "rstest",
  "rstest_reuse",

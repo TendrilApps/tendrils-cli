@@ -1,5 +1,5 @@
 use crate::{TendrilsActor, TendrilsApi};
-use crate::config::parse_config;
+use crate::config::parse_config_expose;
 use crate::test_utils::{get_disposable_dir, global_cfg_dir, home_dir, Setup};
 use serial_test::serial;
 use std::fs::{create_dir_all, write};
@@ -37,9 +37,9 @@ fn valid_tendrils_json_in_top_level_returns_false() {
     let api = TendrilsActor {};
     let td_dir = TempDir::new_in(get_disposable_dir(), "Temp").unwrap();
     let td_json_file = td_dir.path().join("tendrils.json");
-    let json = r#"{"tendrils": []}"#;
+    let json = r#"{"tendrils": {}}"#;
     write(td_json_file, json).unwrap();
-    assert!(parse_config(json).is_ok());
+    assert!(parse_config_expose(json).is_ok());
 
     assert!(!api.is_tendrils_repo(&td_dir.path().into()));
 }
@@ -73,7 +73,7 @@ fn invalid_tendrils_json_file_returns_true() {
     let json = "I'm not json";
     create_dir_all(&dot_tendrils_dir).unwrap();
     write(td_json_file, json).unwrap();
-    assert!(parse_config(json).is_err());
+    assert!(parse_config_expose(json).is_err());
 
     assert!(api.is_tendrils_repo(&td_dir.path().into()));
 }
@@ -84,10 +84,10 @@ fn valid_tendrils_json_file_returns_true() {
     let td_dir = TempDir::new_in(get_disposable_dir(), "Temp").unwrap();
     let dot_tendrils_dir = td_dir.path().join(".tendrils");
     let td_json_file = dot_tendrils_dir.join("tendrils.json");
-    let json = r#"{"tendrils": []}"#;
+    let json = r#"{"tendrils": {}}"#;
     create_dir_all(&dot_tendrils_dir).unwrap();
     write(td_json_file, json).unwrap();
-    assert!(parse_config(json).is_ok());
+    assert!(parse_config_expose(json).is_ok());
 
     assert!(api.is_tendrils_repo(&td_dir.path().into()));
 }
