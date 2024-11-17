@@ -1,6 +1,7 @@
 //! Contains tests specific to link actions.
 //! See also [`crate::tests::common_action_tests`].
 
+use crate::path_ext::{PathExt, UniPath};
 use crate::test_utils::{
     set_ra,
     symlink_expose,
@@ -18,6 +19,7 @@ use crate::{
 };
 use rstest::rstest;
 use std::fs::{create_dir_all, metadata, set_permissions};
+use std::path::{Path, PathBuf};
 
 /// See also [`crate::tests::common_action_tests::remote_is_unchanged`] for
 /// `dry_run` case
@@ -366,6 +368,61 @@ fn existing_symlinks_at_remote_are_overwritten(#[case] force: bool) {
     assert_eq!(
         setup.remote_nested_file_contents(),
         "Local nested file contents"
+    );
+}
+
+#[rstest]
+#[cfg_attr(windows, ignore)] // The Windows syscall reduces these paths
+fn symlink_uses_repo_path_exactly_as_given(
+    #[values(true, false)] force: bool,
+    #[values(true, false)] remote_exists: bool,
+) {
+    let setup = Setup::new();
+    setup.make_local_file();
+
+    // Repo path with redundant components
+    let given_repo_path = UniPath::from(
+        setup.temp_dir.path().join_raw(Path::new("./././TendrilsRepo/../TendrilsRepo"))
+    );
+    let tendril = Tendril::new_expose(
+        given_repo_path,
+        PathBuf::from("SomeApp/misc.txt"),
+        setup.remote_file.clone().into(),
+        TendrilMode::Link,
+    ).unwrap();
+
+    let exp_remote_type;
+    let exp_success;
+    if remote_exists {
+        setup.make_target_file();
+        symlink_expose(&setup.remote_file, &setup.target_file, false, true)
+            .unwrap();
+
+        exp_remote_type = Some(FsoType::SymFile);
+        exp_success = Ok(TendrilActionSuccess::Overwrite);
+    }
+    else {
+        exp_remote_type = None;
+        exp_success = Ok(TendrilActionSuccess::New);
+    }
+
+    let actual = link_tendril(&tendril, false, force);
+
+    assert_eq!(
+        actual,
+        ActionLog::new(
+            Some(FsoType::File),
+            exp_remote_type,
+            setup.remote_file.clone(),
+            exp_success,
+        )
+    );
+
+    assert_eq!(
+        std::fs::read_link(setup.remote_file).unwrap(),
+        setup.temp_dir.path().join_raw(
+            Path::new("./././TendrilsRepo/../TendrilsRepo/SomeApp/misc.txt")
+        )
     );
 }
 
