@@ -298,12 +298,24 @@ fn remote_preserves_non_utf8() {
 }
 
 #[rstest]
-#[case("/path/misc", "/path")] // Is repo
-#[case("/path/misc/TdRepo", "/path")] // Ancestor to repo
-#[case("/TdRepo", "/TdRepo")] // Direct child of repo
-#[case("/TdRepo", "/TdRepo/nested")] // Nested child of repo
-#[case("", "/anything")] // Nested child of repo
-#[case("/", "/anything")] // Nested child of repo
+#[case("", "/anything")]
+#[case("/", "/anything")]
+#[case("/path/repo", "/path")]
+#[case("/path/repo", "/path/repo")]
+#[case("/path/repo", "/path/repo/misc.txt")]
+#[case("/path/repo", "/path/repo/nested/misc.txt")]
+#[case("/path/repo", "/path/repo/.")]
+#[case("/path/repo", "/path/repo/../repo")]
+#[case("/path/repo", "/path/repo/nested/..")]
+#[case("/path/repo", "./path/repo")]
+#[case("/path/repo", "./path/repo/misc.txt")]
+#[case("/path/repo/.", "/path/repo")]
+#[case("/path/repo/../repo", "/path/repo")]
+#[case("/path/repo/nested/..", "/path/repo")]
+#[case("/path/./repo", "/path/repo")]
+// Not detected properly
+// #[case("/path/repo", "../path/repo")]
+// #[case("/otherpath/../path/repo", "/path/repo")]
 fn recursive_remote_returns_recursion_error(
     #[case] td_repo: PathBuf,
     #[case] remote: PathBuf,
@@ -321,7 +333,7 @@ fn recursive_remote_returns_recursion_error(
 #[test]
 fn remote_is_sibling_to_given_td_repo_proceeds_normally() {
     let actual = Tendril::new(
-        UniPath::from(Path::new("/path/TdRepo")),
+        UniPath::from(Path::new("/path/repo")),
         "SomeLocal".into(),
         UniPath::from(Path::new("/path/misc.txt")),
         TendrilMode::DirOverwrite,
