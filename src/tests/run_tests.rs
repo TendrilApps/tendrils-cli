@@ -60,7 +60,7 @@ fn build_action_subcommand(
     force: bool,
     locals: Vec<String>,
     remotes: Vec<String>,
-    profiles: Vec<String>,
+    profiles: Option<Vec<String>>,
 ) -> TendrilsSubcommands {
     let action_args = ActionArgs { path, dry_run, force };
     let filter_args = FilterArgs { locals, remotes, profiles };
@@ -167,7 +167,7 @@ fn init_no_path_given_uses_current_dir(#[case] force: bool) {
     assert_eq!(actual_exit_code, Ok(()));
     assert_eq!(
         writer.all_output,
-        format!("Created a Tendrils repo at: {}\n", cd.to_string_lossy())
+        format!("Created a Tendrils repo at: \"{}\"\n", cd.to_string_lossy())
     );
 
     // Cleanup
@@ -207,7 +207,7 @@ fn init_path_given_valid_uses_given_path_and_ignores_valid_current_dir(
     assert_eq!(
         writer.all_output,
         format!(
-            "Created a Tendrils repo at: {}\n",
+            "Created a Tendrils repo at: \"{}\"\n",
             &format!("{SEP}SomeGivenDir")
         )
     );
@@ -251,7 +251,7 @@ fn init_path_given_valid_uses_given_path_and_ignores_missing_current_dir(
     assert_eq!(
         writer.all_output,
         format!(
-            "Created a Tendrils repo at: {}\n",
+            "Created a Tendrils repo at: \"{}\"\n",
             given_dir.to_string_lossy()
         )
     );
@@ -319,7 +319,7 @@ fn init_non_empty_dir_prints_error_message_unless_forced(#[case] force: bool) {
         assert_eq!(
             writer.all_output,
             format!(
-                "Created a Tendrils repo at: {SEP}SomeGivenDir\n"
+                "Created a Tendrils repo at: \"{SEP}SomeGivenDir\"\n"
             )
         );
     }
@@ -600,7 +600,7 @@ fn tendril_action_no_path_given_and_no_cd_prints_message(
         force,
         vec![],
         vec![],
-        vec![],
+        None,
     );
     let args = TendrilCliArgs { tendrils_command };
 
@@ -655,7 +655,7 @@ fn tendril_action_given_path_is_not_tendrils_repo_but_cd_is_should_print_message
         force,
         vec![],
         vec![],
-        vec![],
+        None,
     );
     let args = TendrilCliArgs { tendrils_command };
 
@@ -708,7 +708,7 @@ fn tendril_action_given_path_and_cd_are_both_tendrils_repos_uses_given_path(
         force,
         vec![],
         vec![],
-        vec![],
+        None,
     );
     let args = TendrilCliArgs { tendrils_command };
 
@@ -763,7 +763,7 @@ fn tendril_action_given_path_is_relative_prepends_with_cd(
         force,
         vec![],
         vec![],
-        vec![],
+        None,
     );
     let args = TendrilCliArgs { tendrils_command };
 
@@ -814,7 +814,7 @@ fn tendril_action_given_path_is_relative_and_cd_doesnt_exist_prepends_with_dir_s
         force,
         vec![],
         vec![],
-        vec![],
+        None,
     );
     let args = TendrilCliArgs { tendrils_command };
 
@@ -856,7 +856,7 @@ fn tendril_action_given_path_is_relative_but_resolves_to_abs_should_not_prepend_
         force,
         vec![],
         vec![],
-        vec![],
+        None,
     );
     let args = TendrilCliArgs { tendrils_command };
 
@@ -905,7 +905,7 @@ fn tendril_action_given_path_is_relative_but_resolves_to_abs_and_cd_doesnt_exist
         force,
         vec![],
         vec![],
-        vec![],
+        None,
     );
     let args = TendrilCliArgs { tendrils_command };
 
@@ -946,7 +946,7 @@ fn tendril_action_prints_returned_resolved_path_when_invalid_td_repo(
         force,
         vec![],
         vec![],
-        vec![],
+        None,
     );
     let args = TendrilCliArgs { tendrils_command };
 
@@ -1023,7 +1023,7 @@ fn tendril_action_prints_table_in_specific_format(
         force,
         vec![],
         vec![],
-        vec![],
+        None,
     );
     let args = TendrilCliArgs { tendrils_command };
 
@@ -1139,7 +1139,7 @@ fn tendril_action_if_all_pass_they_are_totalled_and_returns_ok(
         force,
         vec![],
         vec![],
-        vec![],
+        None,
     );
     let args = TendrilCliArgs { tendrils_command };
 
@@ -1232,7 +1232,7 @@ fn tendril_action_if_any_fail_they_are_totalled_and_returns_exit_code(
         force,
         vec![],
         vec![],
-        vec![],
+        None,
     );
     let args = TendrilCliArgs { tendrils_command };
 
@@ -1403,7 +1403,7 @@ fn tendril_action_order_of_reports_is_unchanged(
         force,
         vec![],
         vec![],
-        vec![],
+        None,
     );
     let args = TendrilCliArgs { tendrils_command };
 
@@ -1443,12 +1443,12 @@ fn tendril_action_filters_are_passed_properly(
     let given_dir = PathBuf::from("/SomeGivenDir");
     let locals_filter = vec!["l1".to_string(), "l2".to_string()];
     let remotes_filter = vec!["r1".to_string(), "r2".to_string()];
-    let profiles_filter = vec!["p1".to_string(), "p2".to_string()];
+    let profiles_filter = Some(vec!["p1".to_string(), "p2".to_string()]);
     let filter = FilterSpec {
         mode: Some(mode.clone()),
-        locals: &locals_filter.clone(),
-        remotes: &remotes_filter.clone(),
-        profiles: &profiles_filter.clone(),
+        locals: locals_filter.clone(),
+        remotes: remotes_filter.clone(),
+        profiles: profiles_filter.clone(),
     };
 
     // These assertions occur in the mock run call
@@ -1507,7 +1507,7 @@ fn tendril_action_empty_reports_list_prints_message(
         force,
         vec![],
         vec![],
-        vec![],
+        None,
     );
     let args = TendrilCliArgs { tendrils_command };
 

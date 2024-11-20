@@ -56,6 +56,7 @@ fn run(
             init(path, force, api, writer)
         }
         TendrilsSubcommands::Path => path(api, writer),
+        TendrilsSubcommands::Profiles => profiles(api, writer),
         TendrilsSubcommands::Pull { action_args, filter_args } => {
             tendril_action_subcommand(
                 ActionMode::Pull,
@@ -134,7 +135,7 @@ fn init(
     match api.init_tendrils_repo(&td_repo, force) {
         Ok(()) => {
             writer.writeln(&format!(
-                "Created a Tendrils repo at: {}",
+                "Created a Tendrils repo at: \"{}\"",
                 &td_repo.inner().to_string_lossy()
             ));
         }
@@ -179,6 +180,23 @@ fn path(api: &impl TendrilsApi, writer: &mut impl Writer) -> Result<(), i32> {
 
 /// Returns, but does not set, the suggested exit code in case of error.
 /// It is up to the calling function to handle exiting with this code.
+fn profiles(api: &impl TendrilsApi, writer: &mut impl Writer) -> Result<(), i32> {
+    match api.get_default_profiles() {
+        Ok(Some(v)) => {
+            let display = v.join("\n");
+            writer.writeln(&display);
+            Ok(())
+        }
+        Ok(None) => Ok(()),
+        Err(e) => {
+            writer.writeln(&format!("{ERR_PREFIX}: {}", e.to_string()));
+            Err(exitcode::DATAERR)
+        }
+    }
+}
+
+/// Returns, but does not set, the suggested exit code in case of error.
+/// It is up to the calling function to handle exiting with this code.
 fn tendril_action_subcommand(
     mode: ActionMode,
     action_args: ActionArgs,
@@ -210,13 +228,7 @@ fn tendril_action_subcommand(
         },
     };
 
-    let filter = FilterSpec {
-        mode: Some(mode.clone()),
-        locals: &filter_args.locals,
-        remotes: &filter_args.remotes,
-        profiles: &filter_args.profiles,
-    };
-
+    let filter = filter_args.to_spec(&mode);
     let batch_result = api.tendril_action(
         mode,
         td_repo.as_ref().map(|p| p),
@@ -255,5 +267,16 @@ fn setup_err_to_exit_code(err: SetupError) -> i32 {
             exitcode::DATAERR
         }
         SetupError::NoValidTendrilsRepo { .. } => exitcode::NOINPUT,
+    }
+}
+
+impl FilterArgs {
+    fn to_spec(self, mode: &ActionMode) -> FilterSpec {
+        FilterSpec {
+            mode: Some(mode.clone()),
+            locals: self.locals,
+            remotes: self.remotes,
+            profiles: self.profiles,
+        }
     }
 }

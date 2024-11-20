@@ -202,6 +202,8 @@ pub struct MockTendrilsApi<'a> {
     pub is_tendrils_repo_fn: Option<Box<dyn Fn(&UniPath) -> bool>>,
     pub get_default_repo_const_rt: Result<Option<PathBuf>, GetConfigError>,
     pub get_default_repo_fn: Option<Box<dyn Fn() -> Result<Option<PathBuf>, GetConfigError>>>,
+    pub get_default_profiles_const_rt: Result<Option<Vec<String>>, GetConfigError>,
+    pub get_default_profiles_fn: Option<Box<dyn Fn() -> Result<Option<Vec<String>>, GetConfigError>>>,
     pub tau_const_updater_rts: Vec<TendrilReport<ActionLog>>,
     pub tau_const_rt: Result<(), SetupError>,
     pub ta_const_rt: Result<Vec<TendrilReport<ActionLog>>, SetupError>,
@@ -219,7 +221,7 @@ pub struct MockTendrilsApi<'a> {
     >,
     pub ta_exp_mode: ActionMode,
     pub ta_exp_path: Option<&'a Path>,
-    pub ta_exp_filter: FilterSpec<'a>,
+    pub ta_exp_filter: FilterSpec,
     pub ta_exp_dry_run: bool,
     pub ta_exp_force: bool,
 }
@@ -235,6 +237,8 @@ impl<'a> MockTendrilsApi<'a> {
             is_tendrils_repo_fn: None,
             get_default_repo_const_rt: Ok(None),
             get_default_repo_fn: None,
+            get_default_profiles_const_rt: Ok(None),
+            get_default_profiles_fn: None,
             tau_const_updater_rts: vec![],
             tau_const_rt: Ok(()),
             ta_const_rt: Ok(vec![]),
@@ -280,6 +284,15 @@ impl TendrilsApi for MockTendrilsApi<'_> {
         }
         else {
             self.get_default_repo_const_rt.clone()
+        }
+    }
+
+    fn get_default_profiles(&self) -> Result<Option<Vec<String>>, GetConfigError> {
+        if let Some(f) = self.get_default_profiles_fn.as_ref() {
+            f()
+        }
+        else {
+            self.get_default_profiles_const_rt.clone()
         }
     }
 

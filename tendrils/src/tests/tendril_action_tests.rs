@@ -67,8 +67,8 @@ fn empty_filtered_tendrils_list_returns_empty(
     let tendril = setup.file_tendril_raw();
     setup.make_td_json_file(&[tendril]);
     let mut filter = FilterSpec::new();
-    let locals_filter = ["I don't exist".to_string()];
-    filter.locals = &locals_filter;
+    let locals_filter = vec!["I don't exist".to_string()];
+    filter.locals = locals_filter;
 
     let actual = api.tendril_action(
         mode,
@@ -345,8 +345,8 @@ fn tendrils_are_filtered_before_action(
     }
     setup.make_td_json_file(&[t1.clone(), t2.clone()]);
     let mut filter = FilterSpec::new();
-    let remotes_filter = ["**/misc.txt".to_string()];
-    filter.remotes = &remotes_filter;
+    let remotes_filter = vec!["**/misc.txt".to_string()];
+    filter.remotes = remotes_filter;
 
     let actual = api.tendril_action(
         mode,
@@ -563,7 +563,7 @@ fn tendrils_are_filtered_by_local(
     setup.make_td_json_file(&[t1.clone(), t2.clone(), t3.clone()]);
     let locals_filter = vec!["App2**".to_string(), "App3**".to_string()];
     let mut filter = FilterSpec::new();
-    filter.locals = &locals_filter;
+    filter.locals = locals_filter;
 
     let actual = api.tendril_action(
         mode.clone(),
@@ -633,7 +633,7 @@ fn tendrils_are_filtered_by_remotes(
     setup.make_td_json_file(&[t1.clone(), t2.clone(), t3.clone()]);
     let remotes_filter = vec!["r/2**".to_string(), "r/3**".to_string()];
     let mut filter = FilterSpec::new();
-    filter.remotes = &remotes_filter;
+    filter.remotes = remotes_filter;
 
     let actual = api.tendril_action(
         mode.clone(),
@@ -703,9 +703,9 @@ fn tendrils_are_filtered_by_profile(
     };
 
     setup.make_td_json_file(&[t1.clone(), t2.clone(), t3.clone()]);
-    let profiles_filter = vec!["p1".to_string(), "p2".to_string()];
+    let profiles_filter = Some(vec!["p1".to_string(), "p2".to_string()]);
     let mut filter = FilterSpec::new();
-    filter.profiles = &profiles_filter;
+    filter.profiles = profiles_filter;
 
     let actual = api.tendril_action(
         mode.clone(),

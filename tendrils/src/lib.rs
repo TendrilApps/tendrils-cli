@@ -3,6 +3,7 @@
 
 mod config;
 mod enums;
+use config::LazyCachedGlobalConfig;
 pub use enums::{
     ActionMode,
     ConfigType,
@@ -46,10 +47,16 @@ pub mod test_utils;
 pub trait TendrilsApi {
     /// Returns the `default-repo-path` value stored in
     /// `~/.tendrils/global-config.json` or any [errors](GetConfigError) that
-    /// occur. Returns `None` if the value is blank or absent, or if the file
-    /// does not exist. Note: This does *not* check whether the folder
+    /// occur. Returns `None` if the value is blank or absent, or if the config
+    /// file does not exist. Note: This does *not* check whether the folder
     /// [is a tendrils repo](`TendrilsApi::is_tendrils_repo`).
     fn get_default_repo_path(&self) -> Result<Option<PathBuf>, GetConfigError>;
+
+    /// Returns the `default-profiles` stored in
+    /// `~/.tendrils/global-config.json` or any [errors](GetConfigError) that
+    /// occur. Returns `None` if the value is blank or absent, or if the config
+    /// file does not exist.
+    fn get_default_profiles(&self) -> Result<Option<Vec<String>>, GetConfigError>;
 
     /// Initializes a Tendrils repo with a `.tendrils` folder and a
     /// pre-populated `tendrils.json` file. This will fail if the folder is
@@ -145,6 +152,10 @@ impl TendrilsApi for TendrilsActor {
         Ok(config::get_global_config()?.default_repo_path)
     }
 
+    fn get_default_profiles(&self) -> Result<Option<Vec<String>>, GetConfigError> {
+        Ok(config::get_global_config()?.default_profiles)
+    }
+
     fn init_tendrils_repo(&self, dir: &UniPath, force: bool) -> Result<(), InitError> {
         if !dir.inner().exists() {
             return Err(InitError::IoError { kind: std::io::ErrorKind::NotFound });
@@ -177,11 +188,13 @@ impl TendrilsApi for TendrilsActor {
         dry_run: bool,
         force: bool,
     ) -> Result<(), SetupError> {
-        let td_repo= get_tendrils_repo(td_repo)?;
+        let mut global_cfg = LazyCachedGlobalConfig::new();
+        let td_repo= get_tendrils_repo(td_repo, &mut global_cfg)?;
         let config = config::get_config(&td_repo)?;
         let all_tendrils = config.raw_tendrils;
 
-        let filtered_tendrils = filter_tendrils(all_tendrils, filter);
+        let filtered_tendrils =
+            filter_tendrils(all_tendrils, filter, &mut global_cfg);
         if mode == ActionMode::Link && !filtered_tendrils.is_empty() && !can_symlink() {
             return Err(SetupError::CannotSymlink);
         }
@@ -452,9 +465,10 @@ fn is_rofs_err(e_kind: &std::io::ErrorKind) -> bool {
 ///     - If it is not set,
 /// [`GetTendrilsRepoError::DefaultNotSet`] is returned.
 // TODO: Recursively look through all parent folders before
-// checking environment variable
+// checking global config?
 fn get_tendrils_repo(
     starting_path: Option<&UniPath>,
+    global_cfg: &mut LazyCachedGlobalConfig,
 ) -> Result<UniPath, GetTendrilsRepoError> {
     match starting_path {
         Some(v) => {
@@ -467,7 +481,7 @@ fn get_tendrils_repo(
                 })
             }
         }
-        None => match config::get_global_config()?.default_repo_path {
+        None => match global_cfg.eval()?.default_repo_path {
             Some(v) => {
                 let u_path = UniPath::from(v);
                 if is_tendrils_repo(&u_path) {

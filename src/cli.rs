@@ -41,9 +41,6 @@ pub(crate) enum TendrilsSubcommands {
         path: Option<String>,
     },
 
-    /// Gets the Tendrils default repo path if it is defined
-    Path,
-
     /// Copies tendrils from their various locations to the Tendrils repo
     Pull {
         #[clap(flatten)]
@@ -80,6 +77,12 @@ pub(crate) enum TendrilsSubcommands {
         #[clap(flatten)]
         filter_args: FilterArgs,
     },
+
+    /// Gets the default Tendrils repo path if it is defined
+    Path,
+
+    /// Gets the default Tendrils profiles if they are defined
+    Profiles,
 }
 
 #[derive(Subcommand, Clone, Debug, Eq, PartialEq)]
@@ -119,7 +122,7 @@ pub(crate) struct FilterArgs {
 
     /// Explicitly sets the list of profiles to filter for. Globs accepted.
     #[arg(short, long, num_args = ..)]
-    pub profiles: Vec<String>,
+    pub profiles: Option<Vec<String>>,
 }
 
 // Note: For ansi styling to render properly with 'tabled' tables,

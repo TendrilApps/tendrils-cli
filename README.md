@@ -57,7 +57,8 @@ td init
 - The master copies are stored here
 - Any folder with a `.tendrils` subfolder containing a [`tendrils.json`](#tendrilsjson) file is considered a Tendrils repo
     - Similar to how a Git repo has a `.git` folder at its top level
-- Items are structured according to their [`local`](#tendrilsjson-schema) path
+- Items are structured according to their [local path](#local-path)
+- See [specifying a tendrils repo](#specifying-the-tendrils-repo)
 
 ## Version Control & Synchronization
 - Tendrils itself does not have versioning or synchronization functionality, but the Tendrils repo is often placed inside a synchronized folder such as OneDrive, or under a version control system like Git
@@ -75,6 +76,8 @@ td init
 # `tendrils.json`
 - Specifies all of the files and directories to be considered as tendrils
 - Stored in the `.tendrils` folder inside a [Tendrils repo](#tendrils-repo)
+    - `.tendrils/tendrils.json`
+- See also [`global-config.json](#global-configjson)
 
 ## `tendrils.json` Schema
 - The json schema is intended to be flexible and to allow defining multiple tendrils in a compact form
@@ -198,7 +201,7 @@ td init
 - There are several actions for working with tendrils 
 - `td` is the CLI tool that performs these commands
 - Each action must be called from or pointed to a [Tendrils repo](#tendrils-repo)
-    - See [specifying a Tendrils repo](#specifying-the-tendrils-repo)
+    - See [Specifying the Tendrils Repo](#specifying-the-tendrils-repo)
 
 ## Pulling
 - Copies tendrils from their locations on the computer to the [Tendrils repo](#tendrils-repo)
@@ -305,6 +308,7 @@ td push -p ~/Library/SomeApp/config.json **/*OneDrive*/**
 td push -P home mac
 ```
 - Will include any tendrils with the `home` or `mac` profile, and any that don't have a profile
+- When this argument is not provided, the [default profiles](#default-profiles) are used
 
 # Path Resolving
 - Paths will be resolved in the following order:
@@ -368,24 +372,28 @@ td push --path ~/MyRepo
 | `/Users/MyUser/MyRepo` | `/Users/MyUser/MyRepo` |
 | `/Users/MyUser/MyRepo` | `/Users/MyUser/MyRepo/misc.txt` |
 
-# Configuration
-- Global configuration files are stored in the `~/.tendrils` folder
-
-## `global-config.json` File
-- `~/.tendrils/global-config.json`
+# `global-config.json`
 - Contains default configuration values that are applied to actions in any [Tendrils repos](#tendrils-repo) unless otherwise specified
+- Stored in the `~/.tendrils` folder
+    - `~/.tendrils/global-config.json`
 - This file is not usually version controlled as the configurations are mostly specific to the local computer
+- See also [`tendrils.json](#tendrilsjson)
 
 ### `global-config.json` Schema
 ```json
 {
-    "default-repo-path": "path/to/default/repo"
+    "default-repo-path": "path/to/default/repo",
+    "default-profiles": ["common", "laptop"]
 }
 ```
 
 #### `default-repo-path`
-- Used to [specify](#specifying-the-tendrils-repo) the default tendrils repo if it is not otherwise provided
+- The default [tendrils repo path](#specifying-the-tendrils-repo) if it is not otherwise provided
 - Should be an absolute path, otherwise it will be [converted to one](#relative-paths)
+
+#### `default-profiles`
+- List of the default [profiles filter](#filtering-by-profile) if it is not otherwise provided
+- Set this to the profiles specific to this host to prevent having to type them on every [action](#tendril-actions)
 
 # Developer Notes
 - Prior to development, run the [`setup-tendrils.sh`](./dev/setup-tendrils.sh) script

@@ -10,6 +10,7 @@ use std::path::PathBuf;
 
 const EMPTY_CONFIG: GlobalConfig = GlobalConfig {
     default_repo_path: None,
+    default_profiles: None,
 };
 
 #[test]
@@ -100,7 +101,7 @@ fn no_read_access_to_config_file_returns_io_permission_error() {
 fn valid_json_returns_config_values() {
     let setup = Setup::new();
     setup.make_global_cfg_file(
-        r#"{"default-repo-path": "Some/Path"}"#.to_string()
+        r#"{"default-repo-path": "Some/Path", "default-profiles": ["p1"]}"#.to_string()
     );
 
     let actual = get_global_config();
@@ -109,6 +110,7 @@ fn valid_json_returns_config_values() {
         actual,
         Ok(GlobalConfig {
             default_repo_path: Some(PathBuf::from("Some/Path")),
+            default_profiles: Some(vec!["p1".to_string()]),
         }),
     );
 }

@@ -1,5 +1,6 @@
-use crate::filtering::{filter_tendrils, FilterSpec};
 use crate::{ActionMode, RawTendril, TendrilMode};
+use crate::config::LazyCachedGlobalConfig;
+use crate::filtering::{filter_tendrils, FilterSpec};
 use rstest_reuse::{self, template};
 
 #[template]
@@ -105,12 +106,13 @@ fn empty_tendril_list_returns_empty() {
     let tendrils = vec![];
     let filter = FilterSpec {
         mode: None,
-        locals: &[],
-        remotes: &[],
-        profiles: &[],
+        locals: vec![],
+        remotes: vec![],
+        profiles: None,
     };
+    let mut cfg = LazyCachedGlobalConfig::mock_w_parse_err();
 
-    let actual = filter_tendrils(tendrils, filter);
+    let actual = filter_tendrils(tendrils, filter, &mut cfg);
 
     assert!(actual.is_empty())
 }
@@ -120,12 +122,13 @@ fn mode_filter_is_none_does_not_filter_by_mode() {
     let tendrils = samples();
     let filter = FilterSpec {
         mode: None,
-        locals: &["l0".to_string(), "l1".to_string(), "l2".to_string()],
-        remotes: &["r0".to_string(), "r1".to_string(), "r2".to_string()],
-        profiles: &["p1".to_string(), "p2".to_string()],
+        locals: vec!["l0".to_string(), "l1".to_string(), "l2".to_string()],
+        remotes: vec!["r0".to_string(), "r1".to_string(), "r2".to_string()],
+        profiles: Some(vec!["p1".to_string(), "p2".to_string()]),
     };
+    let mut cfg = LazyCachedGlobalConfig::mock_w_parse_err();
 
-    let actual = filter_tendrils(tendrils.clone(), filter);
+    let actual = filter_tendrils(tendrils.clone(), filter, &mut cfg);
 
     assert_eq!(actual, vec![
         tendrils[0].clone(), // Push/pull mode
@@ -139,12 +142,13 @@ fn locals_filter_is_empty_does_not_filter_by_locals() {
     let tendrils = samples();
     let filter = FilterSpec {
         mode: Some(ActionMode::Pull),
-        locals: &[],
-        remotes: &["r0".to_string(), "r1".to_string(), "r3".to_string()],
-        profiles: &["p1".to_string(), "p3".to_string()],
+        locals: vec![],
+        remotes: vec!["r0".to_string(), "r1".to_string(), "r3".to_string()],
+        profiles: Some(vec!["p1".to_string(), "p3".to_string()]),
     };
+    let mut cfg = LazyCachedGlobalConfig::mock_w_parse_err();
 
-    let actual = filter_tendrils(tendrils.clone(), filter);
+    let actual = filter_tendrils(tendrils.clone(), filter, &mut cfg);
 
     assert_eq!(actual, vec![
         tendrils[0].clone(),
@@ -158,12 +162,13 @@ fn parent_filter_is_empty_does_not_filter_by_parent() {
     let tendrils = samples();
     let filter = FilterSpec {
         mode: Some(ActionMode::Pull),
-        locals: &["l0".to_string(), "l1".to_string(), "l3".to_string()],
-        remotes: &[],
-        profiles: &["p1".to_string(), "p3".to_string()],
+        locals: vec!["l0".to_string(), "l1".to_string(), "l3".to_string()],
+        remotes: vec![],
+        profiles: Some(vec!["p1".to_string(), "p3".to_string()]),
     };
+    let mut cfg = LazyCachedGlobalConfig::mock_w_parse_err();
 
-    let actual = filter_tendrils(tendrils.clone(), filter);
+    let actual = filter_tendrils(tendrils.clone(), filter, &mut cfg);
 
     assert_eq!(actual, vec![
         tendrils[0].clone(),
@@ -177,12 +182,13 @@ fn profile_filter_is_empty_does_not_filter_by_profile() {
     let tendrils = samples();
     let filter = FilterSpec {
         mode: Some(ActionMode::Pull),
-        locals: &["l0".to_string(), "l1".to_string(), "l3".to_string()],
-        remotes: &["r0".to_string(), "r1".to_string(), "r3".to_string()],
-        profiles: &[],
+        locals: vec!["l0".to_string(), "l1".to_string(), "l3".to_string()],
+        remotes: vec!["r0".to_string(), "r1".to_string(), "r3".to_string()],
+        profiles: Some(vec![]),
     };
+    let mut cfg = LazyCachedGlobalConfig::mock_w_parse_err();
 
-    let actual = filter_tendrils(tendrils.clone(), filter);
+    let actual = filter_tendrils(tendrils.clone(), filter, &mut cfg);
 
     assert_eq!(actual, vec![
         tendrils[0].clone(),
@@ -198,28 +204,29 @@ fn all_filters_are_cumulative() {
     let tendrils = samples();
     let filter = FilterSpec {
         mode: Some(ActionMode::Pull), // Eliminates t2
-        locals: &[
+        locals: vec![
             "l2".to_string(),
             "l3".to_string(),
             "l4".to_string(),
             "l5".to_string(),
         ], // Eliminates t0 & t1
-        remotes: &[
+        remotes: vec![
             "r0".to_string(),
             "r1".to_string(),
             "r3".to_string(),
             "r4".to_string(),
         ], // Eliminates t2 & t5
-        profiles: &[
+        profiles: Some(vec![
             // t0 is included in all profiles
             "p1".to_string(),
             "p2".to_string(),
             "p3".to_string(),
             "p5".to_string(),
-        ], // Eliminates t4
+        ]), // Eliminates t4
     };
+    let mut cfg = LazyCachedGlobalConfig::mock_w_parse_err();
 
-    let actual = filter_tendrils(tendrils.clone(), filter);
+    let actual = filter_tendrils(tendrils.clone(), filter, &mut cfg);
 
     assert_eq!(actual, vec![tendrils[3].clone()]);
 }

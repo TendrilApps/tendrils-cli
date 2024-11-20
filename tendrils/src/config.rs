@@ -90,13 +90,53 @@ pub(crate) struct GlobalConfig {
     /// The path to the default Tendrils repo.
     #[serde(rename = "default-repo-path")]
     pub default_repo_path: Option<PathBuf>,
+
+    /// The default profiles to be used on this host.
+    #[serde(rename = "default-profiles")]
+    pub default_profiles: Option<Vec<String>>,
 }
 
 impl GlobalConfig {
     fn new() -> GlobalConfig {
         GlobalConfig {
             default_repo_path: None,
+            default_profiles: None,
         }
+    }
+}
+
+pub struct LazyCachedGlobalConfig {
+    cached_cfg: Option<Result<GlobalConfig, GetConfigError>>
+}
+
+impl LazyCachedGlobalConfig {
+    pub fn new() -> LazyCachedGlobalConfig {
+        LazyCachedGlobalConfig {
+            cached_cfg: None,
+        }
+    }
+
+    pub fn eval(&mut self) -> Result<GlobalConfig, GetConfigError> {
+        match &self.cached_cfg {
+            Some(v) => v.clone(),
+            None => {
+                let global_cfg = get_global_config();
+                self.cached_cfg = Some(global_cfg.clone());
+                global_cfg
+            },
+        }
+    }
+
+    /// Allows mocking the return value during tests.
+    #[cfg(test)]
+    pub fn mock_w_parse_err() -> LazyCachedGlobalConfig {
+        let mut cfg = Self::new();
+        cfg.cached_cfg = Some(Err(GetConfigError::ParseError {
+            cfg_type: ConfigType::Global,
+            msg: String::from("MOCK VALUE"),
+        }));
+
+        cfg
     }
 }
 
