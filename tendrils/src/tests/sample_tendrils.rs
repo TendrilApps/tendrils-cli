@@ -9,7 +9,7 @@ impl SampleTendrils {
             RawTendril {
                 local: "settings.json".to_string(),
                 remote: "C:\\Users\\MyName\\AppData\\settings.json".to_string(),
-                mode: TendrilMode::DirOverwrite,
+                mode: TendrilMode::Overwrite,
                 profiles: vec![],
             }
         ]
@@ -32,7 +32,7 @@ impl SampleTendrils {
             RawTendril {
                 local: "SomeApp2/settings2.json".to_string(),
                 remote: "some/remote/path/settings2.json".to_string(),
-                mode: TendrilMode::DirMerge,
+                mode: TendrilMode::Merge,
                 profiles: vec!["win".to_string()],
             }
         ]
@@ -74,7 +74,7 @@ impl SampleTendrils {
             RawTendril {
                 local: "SomeApp/localName.txt".to_string(),
                 remote: "some/remote/path4/remoteName.txt".to_string(),
-                mode: TendrilMode::DirOverwrite,
+                mode: TendrilMode::Overwrite,
                 profiles: vec!["mac".to_string(), "win".to_string()],
             }
         ]
@@ -95,7 +95,7 @@ impl SampleTendrils {
             RawTendril {
                 local: "misc.txt".to_string(),
                 remote: "some/remote/path5/misc.txt".to_string(),
-                mode: TendrilMode::DirOverwrite,
+                mode: TendrilMode::Overwrite,
                 profiles: vec!["mac".to_string()],
             }
         ]
@@ -116,13 +116,13 @@ impl SampleTendrils {
             RawTendril {
                 local: "SomeApp/misc.txt".to_string(),
                 remote: "some/remote/path6a/misc1.txt".to_string(),
-                mode: TendrilMode::DirOverwrite,
+                mode: TendrilMode::Overwrite,
                 profiles: vec!["mac".to_string(), "win".to_string()],
             },
             RawTendril {
                 local: "SomeApp/misc.txt".to_string(),
                 remote: "some/remote/path6b/misc2.txt".to_string(),
-                mode: TendrilMode::DirOverwrite,
+                mode: TendrilMode::Overwrite,
                 profiles: vec!["mac".to_string(), "win".to_string()],
             }            
         ]
@@ -144,7 +144,7 @@ impl SampleTendrils {
             RawTendril {
                 local: "host-specific.txt".to_string(),
                 remote: "~/host1/specific/path/host1.txt".to_string(),
-                mode: TendrilMode::DirOverwrite,
+                mode: TendrilMode::Overwrite,
                 profiles: vec!["host1".to_string()],
             },
             RawTendril {

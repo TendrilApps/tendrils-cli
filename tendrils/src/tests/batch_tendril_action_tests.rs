@@ -621,10 +621,10 @@ fn out_returns_tendril_and_result_for_each_given_link_or_push_style(
     given[4].remote = given_parent_dir_a.join("I don't exist").to_string_lossy().to_string();
 
     given[0].mode = TendrilMode::Link;
-    given[1].mode = TendrilMode::DirOverwrite;
+    given[1].mode = TendrilMode::Overwrite;
     given[2].mode = TendrilMode::Link;
-    given[3].mode = TendrilMode::DirMerge;
-    given[4].mode = TendrilMode::DirOverwrite;
+    given[3].mode = TendrilMode::Merge;
+    given[4].mode = TendrilMode::Overwrite;
 
 
     let expected_success = match dry_run {

@@ -444,7 +444,7 @@ impl Setup {
         let raw = RawTendril {
             local: "SomeApp/misc.txt".to_string(),
             remote: self.remote_file.to_string_lossy().to_string(),
-            mode: TendrilMode::DirOverwrite,
+            mode: TendrilMode::Overwrite,
             profiles: vec![],
         };
         raw
@@ -456,7 +456,7 @@ impl Setup {
             self.uni_td_repo(),
             PathBuf::from("SomeApp/misc.txt"),
             self.parent_dir.join("misc.txt").into(),
-            TendrilMode::DirOverwrite,
+            TendrilMode::Overwrite,
         )
         .unwrap()
     }
@@ -467,7 +467,7 @@ impl Setup {
             self.uni_td_repo(),
             PathBuf::from("SomeApp/misc"),
             self.parent_dir.join("misc").into(),
-            TendrilMode::DirOverwrite,
+            TendrilMode::Overwrite,
         )
         .unwrap()
     }
@@ -478,7 +478,7 @@ impl Setup {
             self.uni_td_repo(),
             PathBuf::from("SomeApp/SubDir/misc.txt"),
             self.parent_dir.join("SubDir/misc.txt").into(),
-            TendrilMode::DirOverwrite,
+            TendrilMode::Overwrite,
         )
         .unwrap()
     }
@@ -489,7 +489,7 @@ impl Setup {
             self.uni_td_repo(),
             PathBuf::from("SomeApp/SubDir/misc"),
             self.parent_dir.join("SubDir/misc").into(),
-            TendrilMode::DirOverwrite,
+            TendrilMode::Overwrite,
         )
         .unwrap()
     }

@@ -371,18 +371,18 @@ pub enum FsoType {
 
 /// Indicates the behaviour of this tendril, and determines whether it is
 /// a push/pull style, or a link style tendril.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub enum TendrilMode {
     /// Overwrite any files/folders that are present in both the source and
     /// destination, but keep anything in the destination folder that is not
     /// in the source folder. This only applies to folder tendrils.
     /// Tendrils with this mode are considered push/pull.
-    DirMerge,
+    Merge,
 
     /// Completely overwrite the destination folder with the contents of
     /// the source folder. This only applies to folder tendrils.
     /// Tendrils with this mode are considered push/pull.
-    DirOverwrite,
+    Overwrite,
 
     /// Create a symlink at the remote location that points to local
     /// file/folder.

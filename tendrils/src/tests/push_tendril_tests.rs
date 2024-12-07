@@ -337,8 +337,8 @@ fn local_doesnt_exist_returns_io_error_not_found(
 
 // AKA `source_is_file_and_dest_is_dir`
 #[rstest]
-#[case(TendrilMode::DirMerge)]
-#[case(TendrilMode::DirOverwrite)]
+#[case(TendrilMode::Merge)]
+#[case(TendrilMode::Overwrite)]
 fn local_is_file_and_remote_is_dir_returns_type_mismatch_error_unless_forced(
     #[case] mode: TendrilMode,
     #[values(true, false)] dry_run: bool,
@@ -383,8 +383,8 @@ fn local_is_file_and_remote_is_dir_returns_type_mismatch_error_unless_forced(
 
 // AKA `source_is_dir_and_dest_is_file`
 #[rstest]
-#[case(TendrilMode::DirMerge)]
-#[case(TendrilMode::DirOverwrite)]
+#[case(TendrilMode::Merge)]
+#[case(TendrilMode::Overwrite)]
 fn local_is_dir_and_remote_is_file_returns_type_mismatch_error_unless_forced(
     #[case] mode: TendrilMode,
     #[values(true, false)] dry_run: bool,
@@ -434,8 +434,8 @@ fn local_is_dir_and_remote_is_file_returns_type_mismatch_error_unless_forced(
 }
 
 #[rstest]
-#[case(TendrilMode::DirMerge)]
-#[case(TendrilMode::DirOverwrite)]
+#[case(TendrilMode::Merge)]
+#[case(TendrilMode::Overwrite)]
 fn file_tendril_overwrites_remote_file_regardless_of_dir_merge_mode(
     #[case] mode: TendrilMode,
     #[values(true, false)] force: bool,
@@ -481,7 +481,7 @@ fn dir_overwrite_w_dir_tendril_replaces_remote_dir_recursively(
     write(&remote_extra_2nested_file, "I'm not in the local dir").unwrap();
 
     let mut tendril = setup.dir_tendril();
-    tendril.mode = TendrilMode::DirOverwrite;
+    tendril.mode = TendrilMode::Overwrite;
 
     let actual = push_tendril(&tendril, false, force);
 
@@ -522,7 +522,7 @@ fn dir_merge_w_dir_tendril_merges_w_local_dir_recursively(#[case] force: bool) {
     write(&remote_extra_2nested_file, "I'm not in the local dir").unwrap();
 
     let mut tendril = setup.dir_tendril();
-    tendril.mode = TendrilMode::DirMerge;
+    tendril.mode = TendrilMode::Merge;
 
     let actual = push_tendril(&tendril, false, force);
 
@@ -567,7 +567,7 @@ fn dir_overwrite_w_subdir_dir_tendril_replaces_remote_dir_recursively(
     write(&remote_extra_2nested_file, "I'm not in the local dir").unwrap();
 
     let mut tendril = setup.subdir_dir_tendril();
-    tendril.mode = TendrilMode::DirOverwrite;
+    tendril.mode = TendrilMode::Overwrite;
 
     let actual = push_tendril(&tendril, false, force);
 
@@ -610,7 +610,7 @@ fn dir_merge_w_subdir_dir_tendril_merges_w_local_dir_recursively(
     write(&remote_extra_2nested_file, "I'm not in the local dir").unwrap();
 
     let mut tendril = setup.subdir_dir_tendril();
-    tendril.mode = TendrilMode::DirMerge;
+    tendril.mode = TendrilMode::Merge;
 
     let actual = push_tendril(&tendril, false, force);
 
@@ -650,7 +650,7 @@ fn no_read_access_from_local_file_returns_io_error_permission_denied_unless_dry_
         setup.uni_td_repo(),
         "SomeApp/nra.txt".into(),
         setup.remote_nra_file.clone().into(),
-        TendrilMode::DirOverwrite,
+        TendrilMode::Overwrite,
     )
     .unwrap();
 
@@ -693,7 +693,7 @@ fn no_read_access_from_local_dir_returns_io_error_permission_denied_unless_dry_r
         setup.uni_td_repo(),
         "SomeApp/nra".into(),
         setup.remote_nra_dir.clone().into(),
-        TendrilMode::DirOverwrite,
+        TendrilMode::Overwrite,
     )
     .unwrap();
 

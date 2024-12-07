@@ -74,11 +74,11 @@ fn supported_asterisk_literals(#[case] value: &str, #[case] filter: &str) {}
 
 fn samples() -> Vec<RawTendril> {
     let mut t0 = RawTendril::new("l0");
-    t0.mode = TendrilMode::DirOverwrite;
+    t0.mode = TendrilMode::Overwrite;
     t0.remote = "r0".to_string();
     t0.profiles = vec![];
     let mut t1 = RawTendril::new("l1");
-    t0.mode = TendrilMode::DirOverwrite;
+    t0.mode = TendrilMode::Overwrite;
     t1.remote = "r1".to_string();
     t1.profiles = vec!["p1".to_string()];
     let mut t2 = RawTendril::new("l2");
@@ -86,15 +86,15 @@ fn samples() -> Vec<RawTendril> {
     t2.remote = "r2".to_string();
     t2.profiles = vec!["p2".to_string()];
     let mut t3 = RawTendril::new("l3");
-    t0.mode = TendrilMode::DirOverwrite;
+    t0.mode = TendrilMode::Overwrite;
     t3.remote = "r3".to_string();
     t3.profiles = vec!["p3".to_string()];
     let mut t4 = RawTendril::new("l4");
-    t0.mode = TendrilMode::DirOverwrite;
+    t0.mode = TendrilMode::Overwrite;
     t4.remote = "r4".to_string();
     t4.profiles = vec!["p4".to_string()];
     let mut t5 = RawTendril::new("l5");
-    t0.mode = TendrilMode::DirOverwrite;
+    t0.mode = TendrilMode::Overwrite;
     t5.remote = "r5".to_string();
     t5.profiles = vec!["p5".to_string()];
 

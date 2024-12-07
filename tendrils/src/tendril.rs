@@ -131,7 +131,7 @@ impl RawTendril {
         RawTendril {
             local: local.to_string(),
             remote: "".to_string(),
-            mode: TendrilMode::DirOverwrite,
+            mode: TendrilMode::Overwrite,
             profiles: vec![],
         }
     }

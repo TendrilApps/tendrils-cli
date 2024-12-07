@@ -95,7 +95,7 @@ fn json_missing_dir_merge_defaults_to_false() {
     let given =
         SampleTendrils::build_tendrils_json(&[partial_tendril_json]);
     let expected = SampleTendrils::raw_tendrils_1();
-    assert_eq!(expected[0].mode, TendrilMode::DirOverwrite);
+    assert_eq!(expected[0].mode, TendrilMode::Overwrite);
 
     let actual = parse_config(&given).unwrap().raw_tendrils;
 
@@ -112,7 +112,7 @@ fn json_missing_link_defaults_to_false() {
     let given =
         SampleTendrils::build_tendrils_json(&[partial_tendril_json]);
     let expected = SampleTendrils::raw_tendrils_1();
-    assert_eq!(expected[0].mode, TendrilMode::DirOverwrite);
+    assert_eq!(expected[0].mode, TendrilMode::Overwrite);
 
     let actual = parse_config(&given).unwrap().raw_tendrils;
 

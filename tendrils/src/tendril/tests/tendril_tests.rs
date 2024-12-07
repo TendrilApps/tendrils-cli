@@ -126,7 +126,7 @@ fn local_is_invalid_returns_invalid_local_error(#[case] local: PathBuf) {
         &UniPath::from(Path::new("/Repo")),
         local,
         PathBuf::from("SomePath").into(),
-        TendrilMode::DirOverwrite,
+        TendrilMode::Overwrite,
     )
     .unwrap_err();
 
@@ -139,7 +139,7 @@ fn local_is_valid_returns_ok(#[case] local: PathBuf) {
         &UniPath::from(Path::new("/Repo")),
         local,
         PathBuf::from("SomePath").into(),
-        TendrilMode::DirOverwrite,
+        TendrilMode::Overwrite,
     )
     .unwrap();
 }
@@ -157,7 +157,7 @@ fn remote_is_valid_returns_ok_or_recursive(#[case] remote: &str) {
         &UniPath::from(Path::new("/Repo")),
         "SomeLocal".into(),
         PathBuf::from(remote).into(),
-        TendrilMode::DirOverwrite,
+        TendrilMode::Overwrite,
     );
 
     assert!(matches!(actual, Ok(_) | Err(InvalidTendrilError::Recursion)));
@@ -213,7 +213,7 @@ fn appends_local_to_td_repo_replacing_dir_seps_on_windows(
         &UniPath::from(td_repo),
         local,
         PathBuf::from("Remote").into(),
-        TendrilMode::DirOverwrite,
+        TendrilMode::Overwrite,
     )
     .unwrap();
 
@@ -231,7 +231,7 @@ fn local_does_not_resolve_vars() {
         &UniPath::from(Path::new("/Repo")),
         "<var>/<var>.txt".into(),
         PathBuf::from("Remote").into(),
-        TendrilMode::DirOverwrite,
+        TendrilMode::Overwrite,
     )
     .unwrap();
 
@@ -249,7 +249,7 @@ fn remote_resolves_any_vars() {
         &UniPath::from(Path::new("/Repo")),
         "SomeLocal".into(),
         PathBuf::from("<var>/<var>.txt").into(),
-        TendrilMode::DirOverwrite,
+        TendrilMode::Overwrite,
     )
     .unwrap();
 
@@ -267,7 +267,7 @@ fn local_preserves_non_utf8() {
         &UniPath::from(Path::new("/Repo")),
         PathBuf::from(non_utf_8_text()),
         PathBuf::from("Remote").into(),
-        TendrilMode::DirOverwrite,
+        TendrilMode::Overwrite,
     )
     .unwrap();
     let mut expected_str = std::ffi::OsString::from(SEP_STR);
@@ -286,7 +286,7 @@ fn remote_preserves_non_utf8() {
         &UniPath::from(Path::new("/Repo")),
         "SomeLocal".into(),
         PathBuf::from(non_utf_8_text()).into(),
-        TendrilMode::DirOverwrite,
+        TendrilMode::Overwrite,
     )
     .unwrap();
     let mut expected_str = std::ffi::OsString::from(SEP_STR);
@@ -324,7 +324,7 @@ fn recursive_remote_returns_recursion_error(
         UniPath::from(td_repo),
         "SomeLocal".into(),
         UniPath::from(remote),
-        TendrilMode::DirOverwrite,
+        TendrilMode::Overwrite,
     );
 
     assert_eq!(actual, Err(InvalidTendrilError::Recursion));
@@ -336,7 +336,7 @@ fn remote_is_sibling_to_given_td_repo_proceeds_normally() {
         UniPath::from(Path::new("/path/repo")),
         "SomeLocal".into(),
         UniPath::from(Path::new("/path/misc.txt")),
-        TendrilMode::DirOverwrite,
+        TendrilMode::Overwrite,
     );
 
     assert!(actual.is_ok());

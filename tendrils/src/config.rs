@@ -32,11 +32,7 @@ impl From<SerdeConfig> for Config {
             let remote_specs: Vec<TendrilSet> = v.into();
 
             remote_specs.into_iter().map(move |spec| {
-                let mode = match (spec.dir_merge, spec.link) {
-                    (true, false) => TendrilMode::DirMerge,
-                    (false, false) => TendrilMode::DirOverwrite,
-                    (_, true) => TendrilMode::Link,
-                };
+                let mode = spec.mode.clone();
 
                 let local = k.clone();
                 let profiles = spec.profiles.clone();
@@ -146,20 +142,7 @@ struct TendrilSet {
     #[serde(deserialize_with = "one_or_many_to_vec")]
     pub remotes: Vec<String>,
 
-    /// `true` indicates that each tendril will have
-    /// [`crate::TendrilMode::DirMerge`]. `false` indicates
-    /// [`crate::TendrilMode::DirOverwrite`]. Note: this field
-    /// may be overriden depending on the value of `link`.
-    #[serde(rename = "dir-merge")]
-    #[serde(default)]
-    pub dir_merge: bool,
-
-    /// `true` indicates that each tendril will have
-    /// [`crate::TendrilMode::Link`], regardless of what the `dir_merge`
-    /// setting is. `false` indicates that the `dir_merge` setting will be
-    /// used.
-    #[serde(default)]
-    pub link: bool,
+    pub mode: TendrilMode,
 
     /// A list of profiles to which this tendril belongs. If empty,
     /// this tendril is considered to be included in *all* profiles.
@@ -171,16 +154,9 @@ struct TendrilSet {
 #[cfg(any(test, feature = "_test_utils"))]
 impl From<RawTendril> for TendrilSet {
     fn from(raw: RawTendril) -> Self {
-        let (dir_merge, link) = match raw.mode {
-            TendrilMode::DirMerge => (true, false),
-            TendrilMode::DirOverwrite => (false, false),
-            TendrilMode::Link => (false, true),
-        };
-
         TendrilSet {
             remotes: vec![raw.remote],
-            dir_merge,
-            link,
+            mode: raw.mode,
             profiles: raw.profiles,
         }
     }

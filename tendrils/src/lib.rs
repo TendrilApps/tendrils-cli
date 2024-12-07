@@ -571,7 +571,7 @@ fn pull_tendril(
         return log;
     }
 
-    let dir_merge = tendril.mode == TendrilMode::DirMerge;
+    let dir_merge = tendril.mode == TendrilMode::Merge;
     log.result = copy_fso(
         log.resolved_path(),
         log.remote_type(),
@@ -604,7 +604,7 @@ fn push_tendril(
         return log;
     }
 
-    let dir_merge = tendril.mode == TendrilMode::DirMerge;
+    let dir_merge = tendril.mode == TendrilMode::Merge;
     log.result = copy_fso(
         &source,
         log.local_type(),

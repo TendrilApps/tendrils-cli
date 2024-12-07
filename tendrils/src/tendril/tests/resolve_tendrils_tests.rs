@@ -33,7 +33,7 @@ fn vars_and_leading_tilde_in_remote_path_are_resolved(
         &td_repo,
         "SomeLocal".into(),
         expected_remote.into(),
-        TendrilMode::DirOverwrite,
+        TendrilMode::Overwrite,
     )
     .unwrap();
 
@@ -52,7 +52,7 @@ fn var_in_remote_path_doesnt_exist_returns_raw_path() {
         &td_repo,
         "SomeLocal".into(),
         PathBuf::from("<I_do_not_exist>").into(),
-        TendrilMode::DirOverwrite,
+        TendrilMode::Overwrite,
     )
     .unwrap();
 
@@ -75,7 +75,7 @@ fn leading_tilde_in_remote_path_tilde_value_doesnt_exist_returns_raw_path() {
         &td_repo,
         "SomeLocal".into(),
         PathBuf::from("~/SomeRemotePath").into(),
-        TendrilMode::DirOverwrite,
+        TendrilMode::Overwrite,
     )
     .unwrap();
 
@@ -85,8 +85,8 @@ fn leading_tilde_in_remote_path_tilde_value_doesnt_exist_returns_raw_path() {
 }
 
 #[rstest]
-#[case(TendrilMode::DirMerge)]
-#[case(TendrilMode::DirOverwrite)]
+#[case(TendrilMode::Merge)]
+#[case(TendrilMode::Overwrite)]
 #[case(TendrilMode::Link)]
 fn resolves_tendril_mode_properly(
     #[case] expected_mode: TendrilMode,

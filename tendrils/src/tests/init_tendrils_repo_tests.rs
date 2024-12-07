@@ -29,7 +29,7 @@ fn creates_dot_tendrils_dir_and_contents_in_empty_dir(#[case] force: bool) {
     let expected_t1 = RawTendril {
         local: "SomeApp/SomeFile.ext".to_string(),
         remote: "/path/to/SomeFile.ext".to_string(),
-        mode: TendrilMode::DirOverwrite,
+        mode: TendrilMode::Overwrite,
         profiles: vec![],
     };
     let expected_t2 = RawTendril {
@@ -65,7 +65,7 @@ fn creates_dot_tendrils_dir_and_contents_in_empty_dir(#[case] force: bool) {
     let expected_t7 = RawTendril {
         local: "SomeApp3/file.txt".to_string(),
         remote: "~/windows/specific/path/file.txt".to_string(),
-        mode: TendrilMode::DirOverwrite,
+        mode: TendrilMode::Overwrite,
         profiles: vec!["windows".to_string()],
     };
     let expected_tendrils = vec![

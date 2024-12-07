@@ -443,7 +443,7 @@ fn tendrils_are_filtered_by_mode(
     t1.local = "misc1.txt".to_string();
     t2.local = "misc2.txt".to_string();
     t3.local = "misc3.txt".to_string();
-    t1.mode = TendrilMode::DirOverwrite;
+    t1.mode = TendrilMode::Overwrite;
     t2.mode = TendrilMode::Link;
     t3.mode = TendrilMode::Link;
     t1.remote = setup.parent_dir.join("misc1.txt").to_string_lossy().to_string();
