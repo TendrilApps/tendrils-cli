@@ -275,7 +275,7 @@ fn copy_fso(
         _ => {}
     }
     match from_type {
-        Some(FsoType::Dir | FsoType::SymDir) => {
+        Some(FsoType::Dir | FsoType::SymDir | FsoType::BrokenSym) => {
             prepare_dest(to, dir_merge)?;
 
             to = to.parent().unwrap_or(to);
@@ -358,53 +358,27 @@ fn check_copy_types(
     dest: &Option<FsoType>,
     force: bool,
 ) -> Result<(), TendrilActionError> {
-    match (source, dest, force) {
-        (None, _, _) => Err(TendrilActionError::IoError {
+    match (source, dest) {
+        (None | Some(FsoType::BrokenSym), _) => Err(TendrilActionError::IoError {
             kind: std::io::ErrorKind::NotFound,
             loc: Location::Source,
         }),
-        (Some(FsoType::Dir), Some(FsoType::File), false) => {
-            Err(TendrilActionError::TypeMismatch {
-                loc: Location::Dest,
-                mistype: FsoType::File,
-            })
-        }
-        (Some(FsoType::File), Some(FsoType::Dir), false) => {
-            Err(TendrilActionError::TypeMismatch {
-                loc: Location::Dest,
-                mistype: FsoType::Dir,
-            })
-        }
-        (_, Some(FsoType::SymFile), false) => {
-            Err(TendrilActionError::TypeMismatch {
-                loc: Location::Dest,
-                mistype: FsoType::SymFile,
-            })
-        }
-        (_, Some(FsoType::SymDir), false) => {
-            Err(TendrilActionError::TypeMismatch {
-                loc: Location::Dest,
-                mistype: FsoType::SymDir,
-            })
-        }
-        (Some(FsoType::SymFile), _, false) => {
-            Err(TendrilActionError::TypeMismatch {
-                loc: Location::Source,
-                mistype: FsoType::SymFile,
-            })
-        }
-        (Some(FsoType::SymDir), _, false) => {
-            Err(TendrilActionError::TypeMismatch {
-                loc: Location::Source,
-                mistype: FsoType::SymDir,
-            })
-        }
-        _ => Ok(()),
+        (_, _) if force => Ok(()),
+        (Some(s), _) if s.is_symlink() => Err(TendrilActionError::TypeMismatch {
+            loc: Location::Source,
+            mistype: s.to_owned(),
+        }),
+        (Some(s), Some(d)) if s != d => Err(TendrilActionError::TypeMismatch {
+            loc: Location::Dest,
+            mistype: d.to_owned(),
+        }),
+        (Some(_), _) => Ok(()),
     }
 }
 
 /// Prepares the destination before copying a file system object
 /// to it
+// TODO: Pass in the already known dest type to reduce system calls?
 fn prepare_dest(
     dest: &Path,
     dir_merge: bool,
@@ -425,6 +399,10 @@ fn prepare_dest(
             });
         }
     }
+    else if dest.is_symlink() {
+        // Broken symlink
+        remove_symlink(&dest)?
+    }
 
     match create_dir_all(dest.parent().unwrap_or(dest)) {
         Err(e) => Err(TendrilActionError::IoError {
@@ -433,6 +411,24 @@ fn prepare_dest(
         }),
         _ => Ok(()),
     }
+}
+
+fn remove_symlink(path: &Path) -> Result<(), std::io::Error> {
+    // Since there's no easy way to determine the type of a broken symlink,
+    // just try deleting it as a file then fall back to deleting it as a
+    // directory.
+    // Another potential option:
+    // https://gitlab.com/chris-morgan/symlink/-/blob/master/src/windows/mod.rs?ref_type=heads
+    #[cfg(windows)]
+    if remove_file(path).is_err() {
+        remove_dir_all(path)
+    }
+    else {
+        Ok(())
+    }
+
+    #[cfg(not(windows))]
+    remove_file(&path)
 }
 
 fn which_copy_perm_failed(to: &Path) -> Location {
@@ -518,7 +514,26 @@ fn link_tendril(
     }
 
     let local_type;
-    if log.local_type().is_none() {
+    if log.local_type().is_none()
+        || log.local_type() == &Some(FsoType::BrokenSym) {
+        if log.local_type() == &Some(FsoType::BrokenSym) {
+            if force {
+                if !dry_run {
+                    if let Err(e) = remove_symlink(&target) {
+                        log.result = Err(e.into());
+                        return log;
+                    }
+                }
+            }
+            else {
+                log.result = Err(TendrilActionError::TypeMismatch {
+                    mistype: FsoType::BrokenSym,
+                    loc: Location::Source
+                });
+                return log;
+            }
+        }
+
         // Local does not exist - copy it first
         if let Err(e) = copy_fso(
             log.resolved_path(),
@@ -682,6 +697,9 @@ fn symlink(
         (true, None) => return Ok(TendrilActionSuccess::NewSkipped),
         (false, Some(FsoType::File | FsoType::SymFile)) => {
             remove_file(create_at)
+        }
+        (false, Some(FsoType::BrokenSym)) => {
+            remove_symlink(create_at)
         }
         (false, Some(FsoType::Dir | FsoType::SymDir)) => {
             remove_dir_all(create_at)

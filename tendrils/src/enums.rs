@@ -297,7 +297,7 @@ impl From<std::io::ErrorKind> for TendrilActionError {
 impl ToString for TendrilActionError {
     fn to_string(&self) -> String {
         use std::io::ErrorKind::NotFound;
-        use FsoType::{Dir, File, SymDir, SymFile};
+        use FsoType::{Dir, File, SymDir, SymFile, BrokenSym};
         use Location::{Dest, Source, Unknown};
         match self {
             TendrilActionError::IoError { kind: NotFound, loc: Source } => {
@@ -329,7 +329,7 @@ impl ToString for TendrilActionError {
             }
             TendrilActionError::TypeMismatch {
                 loc: Source,
-                mistype: SymFile | SymDir,
+                mistype: SymFile | SymDir | BrokenSym,
             } => String::from("Unexpected symlink at source"),
             TendrilActionError::TypeMismatch { loc: Dest, mistype: File } => {
                 String::from("Unexpected file at destination")
@@ -339,7 +339,7 @@ impl ToString for TendrilActionError {
             }
             TendrilActionError::TypeMismatch {
                 loc: Dest,
-                mistype: SymFile | SymDir,
+                mistype: SymFile | SymDir | BrokenSym,
             } => String::from("Unexpected symlink at destination"),
             TendrilActionError::TypeMismatch { loc: Unknown, mistype: _ } => {
                 String::from("Unexpected file system object")
@@ -367,6 +367,16 @@ pub enum FsoType {
     SymFile,
     /// A symlink to a directory
     SymDir,
+    /// A symlink who's target does not exist or is not available.
+    BrokenSym,
+}
+
+impl FsoType {
+    pub fn is_symlink(&self) -> bool {
+        self == &FsoType::SymFile
+        || self == &FsoType::SymDir
+        || self == &FsoType::BrokenSym
+    }
 }
 
 /// Indicates the behaviour of this tendril, and determines whether it is
