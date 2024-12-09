@@ -276,7 +276,7 @@ fn copy_fso(
     }
     match from_type {
         Some(FsoType::Dir | FsoType::SymDir | FsoType::BrokenSym) => {
-            prepare_dest(to, dir_merge)?;
+            prepare_dest(to, to_type, dir_merge)?;
 
             to = to.parent().unwrap_or(to);
 
@@ -313,7 +313,7 @@ fn copy_fso(
             }
         }
         Some(FsoType::File | FsoType::SymFile) => {
-            prepare_dest(to, false)?;
+            prepare_dest(to, to_type, false)?;
 
             match (std::fs::copy(from, to), to_existed) {
                 (Ok(_v), true) => Ok(TendrilActionSuccess::Overwrite),
@@ -378,31 +378,31 @@ fn check_copy_types(
 
 /// Prepares the destination before copying a file system object
 /// to it
-// TODO: Pass in the already known dest type to reduce system calls?
 fn prepare_dest(
     dest: &Path,
+    dest_type: &Option<FsoType>,
     dir_merge: bool,
 ) -> Result<(), TendrilActionError> {
-    if !dir_merge && dest.is_dir() {
-        if let Err(e) = remove_dir_all(dest) {
-            return Err(TendrilActionError::IoError {
-                kind: e.kind(),
-                loc: Location::Dest,
-            });
+    match (dest_type, dir_merge) {
+        (Some(d), false) if d.is_dir() => {
+            if let Err(e) = remove_dir_all(dest) {
+                return Err(TendrilActionError::IoError {
+                    kind: e.kind(),
+                    loc: Location::Dest,
+                });
+            }
         }
-    }
-    else if dest.is_file() {
-        if let Err(e) = remove_file(dest) {
-            return Err(TendrilActionError::IoError {
-                kind: e.kind(),
-                loc: Location::Dest,
-            });
+        (Some(d), _) if d.is_file() => {
+            if let Err(e) = remove_file(dest) {
+                return Err(TendrilActionError::IoError {
+                    kind: e.kind(),
+                    loc: Location::Dest,
+                });
+            }
         }
-    }
-    else if dest.is_symlink() {
-        // Broken symlink
-        remove_symlink(&dest)?
-    }
+        (Some(FsoType::BrokenSym), _) => remove_symlink(&dest)?,
+        (_, _) => {},
+    };
 
     match create_dir_all(dest.parent().unwrap_or(dest)) {
         Err(e) => Err(TendrilActionError::IoError {

@@ -372,6 +372,14 @@ pub enum FsoType {
 }
 
 impl FsoType {
+    pub fn is_file(&self) -> bool {
+        self == &FsoType::File || self == &FsoType::SymFile
+    }
+
+    pub fn is_dir(&self) -> bool {
+        self == &FsoType::Dir || self == &FsoType::SymDir
+    }
+
     pub fn is_symlink(&self) -> bool {
         self == &FsoType::SymFile
         || self == &FsoType::SymDir
