@@ -103,6 +103,9 @@ impl PathExt for Path {
                 Some(FsoType::Dir)
             }
         }
+        else if self.is_symlink() {
+            Some(FsoType::BrokenSym)
+        }
         else {
             None
         }
