@@ -12,6 +12,7 @@ use crate::{
     TendrilReport,
     TendrilsApi,
     UniPath,
+    UpdateHandler,
 };
 use crate::config::Config;
 use crate::enums::GetConfigError;
@@ -204,7 +205,9 @@ pub struct MockTendrilsApi<'a> {
     pub get_default_repo_fn: Option<Box<dyn Fn() -> Result<Option<PathBuf>, GetConfigError>>>,
     pub get_default_profiles_const_rt: Result<Option<Vec<String>>, GetConfigError>,
     pub get_default_profiles_fn: Option<Box<dyn Fn() -> Result<Option<Vec<String>>, GetConfigError>>>,
-    pub tau_const_updater_rts: Vec<TendrilReport<ActionLog>>,
+    pub tau_const_count_updater_rt: i32,
+    pub tau_const_before_updater_rts: Vec<RawTendril>,
+    pub tau_const_after_updater_rts: Vec<TendrilReport<ActionLog>>,
     pub tau_const_rt: Result<(), SetupError>,
     pub ta_const_rt: Result<Vec<TendrilReport<ActionLog>>, SetupError>,
     pub ta_fn: Option<
@@ -239,7 +242,9 @@ impl<'a> MockTendrilsApi<'a> {
             get_default_repo_fn: None,
             get_default_profiles_const_rt: Ok(None),
             get_default_profiles_fn: None,
-            tau_const_updater_rts: vec![],
+            tau_const_count_updater_rt: 0,
+            tau_const_before_updater_rts: vec![],
+            tau_const_after_updater_rts: vec![],
             tau_const_rt: Ok(()),
             ta_const_rt: Ok(vec![]),
             ta_fn: None,
@@ -296,20 +301,55 @@ impl TendrilsApi for MockTendrilsApi<'_> {
         }
     }
 
-    fn tendril_action_updating<F: FnMut(TendrilReport<ActionLog>)>(
+    fn tendril_action_updating<U>(
         &self,
-        mut update_fn: F,
-        _: ActionMode,
-        _: Option<&UniPath>,
-        _: FilterSpec,
-        _: bool,
-        _: bool,
-    ) -> Result<(), SetupError> {
-        for update_rt in self.tau_const_updater_rts.iter() {
-            update_fn(update_rt.clone());
+        mut updater: U,
+        mode: ActionMode,
+        td_repo: Option<&UniPath>,
+        filter: FilterSpec,
+        dry_run: bool,
+        force: bool,
+    ) -> Result<(), SetupError> 
+    where
+        U: UpdateHandler<ActionLog>
+    {
+        if self.tau_const_rt.is_err() {
+            return self.tau_const_rt.clone();
         }
 
-        self.tau_const_rt.clone()
+        assert_eq!(mode, self.ta_exp_mode);
+        assert_eq!(filter, self.ta_exp_filter);
+        assert_eq!(dry_run, self.ta_exp_dry_run);
+        assert_eq!(force, self.ta_exp_force);
+        if let Some(p) = td_repo {
+            assert_eq!(p.inner(), self.ta_exp_path.unwrap());
+        }
+        else {
+            assert_eq!(None, self.ta_exp_path);
+        }
+        assert_eq!(
+            self.tau_const_count_updater_rt,
+            self.tau_const_before_updater_rts.len() as i32,
+            "Incorrect number of returns for 'before' callbacks",
+        );
+        assert_eq!(
+            self.tau_const_count_updater_rt,
+            self.tau_const_after_updater_rts.len() as i32,
+            "Incorrect number of returns for 'after' callbacks",
+        );
+
+        updater.count(self.tau_const_count_updater_rt);
+        for i in 0..self.tau_const_count_updater_rt {
+            updater.before(self.tau_const_before_updater_rts[i as usize].clone());
+
+            // =========================
+            // Action would be done here
+            // =========================
+
+            updater.after(self.tau_const_after_updater_rts[i as usize].clone());
+        }
+
+        Ok(())
     }
 
     fn tendril_action(

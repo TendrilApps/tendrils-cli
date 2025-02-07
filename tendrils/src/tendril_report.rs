@@ -5,6 +5,7 @@ use crate::{
     TendrilActionError,
     TendrilActionSuccess,
 };
+use std::marker::PhantomData;
 use std::path::PathBuf;
 
 /// Generic report format for any operation on a [`RawTendril`]
@@ -12,6 +13,8 @@ use std::path::PathBuf;
 pub struct TendrilReport<T: TendrilLog> {
     /// The original tendril bundle that this tendril was expanded from.
     pub raw_tendril: RawTendril,
+
+    // TODO: `local` no longer needed if `raw_tendril` is here?
     /// The tendril's relative local path.
     pub local: String,
     /// Result containing the log from the operation, provided
@@ -68,5 +71,85 @@ impl TendrilLog for ActionLog {
 
     fn resolved_path(&self) -> &PathBuf {
         &self.resolved_path
+    }
+}
+
+/// Contains various updater functions for live feedback during a tendrils
+/// command.
+pub trait UpdateHandler<L>
+where
+    L: TendrilLog
+{
+    /// Accepts `value` indicating the total count
+    /// of all raw tendrils that will be processed.
+    fn count(&mut self, value: i32);
+
+    /// Accepts `raw` indicating the tendril that will be processed.
+    /// This is called *before* processing.
+    fn before(&mut self, raw: RawTendril);
+
+    /// Accepts `report` containing the result of the operation.
+    /// This is called *after* processing.
+    fn after(&mut self, report: TendrilReport<L>);
+}
+
+/// Accepts callbacks to be called by the [`UpdateHandler`] methods.
+pub struct CallbackUpdater<A, B, C, L>
+where
+    A: FnMut(TendrilReport<L>),
+    B: FnMut(RawTendril),
+    C: FnMut(i32),
+    L: TendrilLog,
+{
+    pub count: C,
+    pub before: B,
+    pub after: A,
+    _marker: PhantomData<L>,
+}
+
+impl<A, B, C, L> CallbackUpdater<A, B, C, L>
+where
+    A: FnMut(TendrilReport<L>),
+    B: FnMut(RawTendril),
+    C: FnMut(i32),
+    L: TendrilLog,
+{
+    pub fn new(count: C, before: B, after: A) -> CallbackUpdater<A, B, C, L> {
+        CallbackUpdater {
+            count,
+            before,
+            after,
+            _marker: PhantomData,
+        }
+    }
+
+    #[cfg(test)]
+    pub fn default() -> CallbackUpdater<impl FnMut(TendrilReport<L>), impl FnMut(RawTendril), impl FnMut(i32), L> {
+        CallbackUpdater {
+            count: |_| {},
+            before: |_| {},
+            after: |_| {},
+            _marker: PhantomData,
+        }
+    }
+}
+
+impl<A, B, C, L> UpdateHandler<L> for CallbackUpdater<A, B, C, L>
+where
+    A: FnMut(TendrilReport<L>),
+    B: FnMut(RawTendril),
+    C: FnMut(i32),
+    L: TendrilLog,
+{
+    fn count(&mut self, total: i32) {
+        (self.count)(total)
+    }
+
+    fn before(&mut self, raw: RawTendril) {
+        (self.before)(raw)
+    }
+
+    fn after(&mut self, report: TendrilReport<L>) {
+        (self.after)(report)
     }
 }

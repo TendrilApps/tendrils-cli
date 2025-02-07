@@ -11,6 +11,7 @@ use crate::{
     batch_tendril_action,
     ActionLog,
     ActionMode,
+    CallbackUpdater,
     FsoType,
     Location,
     RawTendril,
@@ -37,12 +38,36 @@ fn given_empty_list_returns_empty(
     let temp_parent_dir =
         TempDir::new_in(get_disposable_dir(), "ParentDir").unwrap();
     let given_td_repo = temp_parent_dir.path().join("TendrilsRepo").into();
-    let mut actual = vec![];
-    let updater = |r| actual.push(r);
+
+    let mut count_call_counter = 0;
+    let mut before_call_counter = 0;
+    let mut after_call_counter = 0;
+    let mut count_actual = -1;
+    let mut before_actual = vec![];
+    let mut after_actual = vec![];
+    let count_fn = |c| {
+        count_call_counter += 1;
+        count_actual = c;
+    };
+    let before_fn = |raw| {
+        before_call_counter += 1;
+        before_actual.push(raw);
+    };
+    let after_fn = |report| {
+        after_call_counter += 1;
+        after_actual.push(report);
+    };
+    let updater =
+        CallbackUpdater::<_, _, _, ActionLog>::new(count_fn, before_fn, after_fn);
 
     batch_tendril_action(updater, mode, &given_td_repo, vec![], dry_run, force);
 
-    assert!(actual.is_empty());
+    assert_eq!(count_call_counter, 1);
+    assert_eq!(before_call_counter, 0);
+    assert_eq!(after_call_counter, 0);
+    assert_eq!(count_actual, 0);
+    assert!(before_actual.is_empty());
+    assert!(after_actual.is_empty());
     assert!(is_empty(given_td_repo.inner()))
 }
 
@@ -62,11 +87,31 @@ fn returns_result_after_each_operation(
         true => Ok(TendrilActionSuccess::NewSkipped),
         false => Ok(TendrilActionSuccess::New),
     };
-    let mut call_counter = 0;
-    let mut actual = vec![];
-    let updater = |r| {
-        call_counter += 1;
-        if call_counter == 1 {
+    let mut count_call_counter = 0;
+    let mut before_call_counter = 0;
+    let mut after_call_counter = 0;
+    let mut count_actual = -1;
+    let mut before_actual = vec![];
+    let mut after_actual = vec![];
+    let count_fn = |c| {
+        count_call_counter += 1;
+        count_actual = c;
+        assert_eq!(count_actual, 2);
+    };
+    let before_fn = |raw| {
+        before_call_counter += 1;
+        if before_call_counter == 1 {
+            assert_eq!(raw, t1);
+        }
+        else {
+            assert_eq!(raw, t2);
+        }
+
+        before_actual.push(raw);
+    };
+    let after_fn = |r| {
+        after_call_counter += 1;
+        if after_call_counter == 1 {
             assert_eq!(r, TendrilReport {
                 raw_tendril: t1.clone(),
                 local: t1.local.clone(),
@@ -85,7 +130,7 @@ fn returns_result_after_each_operation(
             }
             assert!(!setup.remote_dir.exists())
         }
-        else if call_counter == 2 {
+        else if after_call_counter == 2 {
             assert_eq!(r, TendrilReport {
                 raw_tendril: t2.clone(),
                 local: t2.local.clone(),
@@ -112,8 +157,10 @@ fn returns_result_after_each_operation(
             panic!("Updater was called too many times");
         }
 
-        actual.push(r);
+        after_actual.push(r);
     };
+    let updater =
+        CallbackUpdater::<_, _, _, ActionLog>::new(count_fn, before_fn, after_fn);
 
     batch_tendril_action(
         updater,
@@ -124,7 +171,9 @@ fn returns_result_after_each_operation(
         force,
     );
 
-    assert_eq!(call_counter, 2);
+    assert_eq!(count_call_counter, 1);
+    assert_eq!(before_call_counter, 2);
+    assert_eq!(after_call_counter, 2);
 }
 
 #[rstest]
@@ -239,8 +288,15 @@ fn pull_returns_tendril_and_result_for_each_given(
             )),
         },
     ];
-    let mut actual = vec![];
-    let updater = |r| actual.push(r);
+
+    let mut count_actual = -1;
+    let mut before_actual = vec![];
+    let mut after_actual = vec![];
+    let count_fn = |c| count_actual = c;
+    let before_fn = |raw| before_actual.push(raw);
+    let after_fn = |report| after_actual.push(report);
+    let updater =
+        CallbackUpdater::<_, _, _, ActionLog>::new(count_fn, before_fn, after_fn);
 
     batch_tendril_action(
         updater,
@@ -251,7 +307,7 @@ fn pull_returns_tendril_and_result_for_each_given(
         force
     );
 
-    assert_eq!(actual, expected);
+    assert_eq!(after_actual, expected);
 
     if dry_run {
         assert!(!local_app1_file.exists());
@@ -267,7 +323,7 @@ fn pull_returns_tendril_and_result_for_each_given(
 
         assert_eq!(local_app1_file_contents, "Remote app 1 file contents");
         assert!(local_app1_dir.exists());
-        // TODO: This should eventually only be the mode recently modified file's contents
+        // TODO: This should eventually only be the most recently modified file's contents
         assert_eq!(local_app2_file_contents, "Remote app 2 file b contents");
         assert_eq!(
             local_app1_nested_file_contents,
@@ -379,8 +435,15 @@ fn push_returns_tendril_and_result_for_each_given(
             )),
         },
     ];
-    let mut actual = vec![];
-    let updater = |r| actual.push(r);
+
+    let mut count_actual = -1;
+    let mut before_actual = vec![];
+    let mut after_actual = vec![];
+    let count_fn = |c| count_actual = c;
+    let before_fn = |raw| before_actual.push(raw);
+    let after_fn = |report| after_actual.push(report);
+    let updater =
+        CallbackUpdater::<_, _, _, ActionLog>::new(count_fn, before_fn, after_fn);
 
     batch_tendril_action(
         updater,
@@ -391,7 +454,7 @@ fn push_returns_tendril_and_result_for_each_given(
         force,
     );
 
-    assert_eq!(actual, expected);
+    assert_eq!(after_actual, expected);
 
     if dry_run {
         assert!(!remote_app1_file.exists());
@@ -532,8 +595,15 @@ fn link_returns_tendril_and_result_for_each_given(
             )),
         },
     ];
-    let mut actual = vec![];
-    let updater = |r| actual.push(r);
+
+    let mut count_actual = -1;
+    let mut before_actual = vec![];
+    let mut after_actual = vec![];
+    let count_fn = |c| count_actual = c;
+    let before_fn = |raw| before_actual.push(raw);
+    let after_fn = |report| after_actual.push(report);
+    let updater =
+        CallbackUpdater::<_, _, _, ActionLog>::new(count_fn, before_fn, after_fn);
 
     batch_tendril_action(
         updater,
@@ -544,7 +614,7 @@ fn link_returns_tendril_and_result_for_each_given(
         force,
     );
 
-    assert_eq!(actual, expected);
+    assert_eq!(after_actual, expected);
 
     if dry_run {
         assert!(!remote_app1_file.exists());
@@ -626,7 +696,6 @@ fn out_returns_tendril_and_result_for_each_given_link_or_push_style(
     given[3].mode = TendrilMode::DirMerge;
     given[4].mode = TendrilMode::DirOverwrite;
 
-
     let expected_success = match dry_run {
         true => Ok(TendrilActionSuccess::NewSkipped),
         false => Ok(TendrilActionSuccess::New),
@@ -686,8 +755,15 @@ fn out_returns_tendril_and_result_for_each_given_link_or_push_style(
             )),
         },
     ];
-    let mut actual = vec![];
-    let updater = |r| actual.push(r);
+
+    let mut count_actual = -1;
+    let mut before_actual = vec![];
+    let mut after_actual = vec![];
+    let count_fn = |c| count_actual = c;
+    let before_fn = |raw| before_actual.push(raw);
+    let after_fn = |report| after_actual.push(report);
+    let updater =
+        CallbackUpdater::<_, _, _, ActionLog>::new(count_fn, before_fn, after_fn);
 
     batch_tendril_action(
         updater,
@@ -698,7 +774,7 @@ fn out_returns_tendril_and_result_for_each_given_link_or_push_style(
         force,
     );
 
-    assert_eq!(actual, expected);
+    assert_eq!(after_actual, expected);
 
     if dry_run {
         assert!(!remote_app1_file.exists());
@@ -767,8 +843,14 @@ fn remote_path_vars_are_resolved(
         )),
     }];
 
-    let mut actual = vec![];
-    let updater = |r| actual.push(r);
+    let mut count_actual = -1;
+    let mut before_actual = vec![];
+    let mut after_actual = vec![];
+    let count_fn = |c| count_actual = c;
+    let before_fn = |raw| before_actual.push(raw);
+    let after_fn = |report| after_actual.push(report);
+    let updater =
+        CallbackUpdater::<_, _, _, ActionLog>::new(count_fn, before_fn, after_fn);
 
     batch_tendril_action(
         updater,
@@ -779,11 +861,11 @@ fn remote_path_vars_are_resolved(
         force,
     );
 
-    let actual_result_path = &actual[0].log.as_ref().unwrap().resolved_path();
+    let actual_result_path = &after_actual[0].log.as_ref().unwrap().resolved_path();
 
     let actual_resolved_path_str = actual_result_path.to_string_lossy();
     assert_eq!(actual_resolved_path_str.into_owned(), expected_resolved_path);
-    assert_eq!(actual, expected);
+    assert_eq!(after_actual, expected);
 }
 
 // TODO: Test when the second tendril is a parent/child to the first tendril

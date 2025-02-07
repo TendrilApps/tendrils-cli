@@ -5,6 +5,7 @@ use crate::test_utils::Setup;
 use crate::{
     ActionLog,
     ActionMode,
+    CallbackUpdater,
     FilterSpec,
     FsoType,
     TendrilActionSuccess,
@@ -24,9 +25,16 @@ fn empty_tendrils_list_returns_empty(
     let api = TendrilsActor {};
     let setup = Setup::new();
     setup.make_td_json_file(&[]);
-    let mut actual = vec![];
-    let updater = |r| actual.push(r);
     let filter = FilterSpec::new();
+
+    let mut count_actual = -1;
+    let mut before_actual = vec![];
+    let mut after_actual = vec![];
+    let count_fn = |c| count_actual = c;
+    let before_fn = |raw| before_actual.push(raw);
+    let after_fn = |report| after_actual.push(report);
+    let updater =
+        CallbackUpdater::<_, _, _, ActionLog>::new(count_fn, before_fn, after_fn);
 
     api.tendril_action_updating(
         updater,
@@ -37,7 +45,9 @@ fn empty_tendrils_list_returns_empty(
         force)
         .unwrap();
 
-    assert!(actual.is_empty());
+    assert_eq!(count_actual, 0);
+    assert!(before_actual.is_empty());
+    assert!(after_actual.is_empty());
     assert!(!setup.local_file.exists())
 }
 
@@ -60,12 +70,27 @@ fn returns_result_after_each_operation(
         true => Ok(TendrilActionSuccess::NewSkipped),
         false => Ok(TendrilActionSuccess::New),
     };
-    let mut call_counter = 0;
-    let mut actual = vec![];
-    let updater = |r| {
-        call_counter += 1;
-        if call_counter == 1 {
-            assert_eq!(r, TendrilReport {
+
+    let mut count_actual = -1;
+    let mut before_actual = vec![];
+    let mut after_actual = vec![];
+    let mut after_call_counter = 0;
+    let mut before_call_counter = 0;
+    let count_fn = |c| count_actual = c;
+    let before_fn = |raw| {
+        before_call_counter += 1;
+        if before_call_counter == 1 {
+            assert_eq!(raw, t1);
+        }
+        else {
+            assert_eq!(raw, t2);
+        }
+        before_actual.push(raw);
+    };
+    let after_fn = |report| {
+        after_call_counter += 1;
+        if after_call_counter == 1 {
+            assert_eq!(report, TendrilReport {
                 raw_tendril: t1.clone(),
                 local: t1.local.clone(),
                 log: Ok(ActionLog::new(
@@ -83,8 +108,8 @@ fn returns_result_after_each_operation(
             }
             assert!(!setup.remote_dir.exists())
         }
-        else if call_counter == 2 {
-            assert_eq!(r, TendrilReport {
+        else if after_call_counter == 2 {
+            assert_eq!(report, TendrilReport {
                 raw_tendril: t2.clone(),
                 local: t2.local.clone(),
                 log: Ok(ActionLog::new(
@@ -110,8 +135,10 @@ fn returns_result_after_each_operation(
             panic!("Updater was called too many times");
         }
 
-        actual.push(r);
+        after_actual.push(report);
     };
+    let updater =
+        CallbackUpdater::<_, _, _, ActionLog>::new(count_fn, before_fn, after_fn);
 
     api.tendril_action_updating(
         updater,
@@ -122,6 +149,4 @@ fn returns_result_after_each_operation(
         force,
     )
     .unwrap();
-
-    assert_eq!(call_counter, 2);
 }

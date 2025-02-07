@@ -125,6 +125,8 @@ pub(crate) struct FilterArgs {
     pub profiles: Option<Vec<String>>,
 }
 
+pub(crate) const CLEAR_LINE: &str = "r\x1b[2K\x1b[0G";
+
 // Note: For ansi styling to render properly with 'tabled' tables,
 // its 'ansi' feature must be enabled
 pub(crate) fn ansi_style(

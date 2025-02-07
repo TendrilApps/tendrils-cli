@@ -14,10 +14,13 @@ use cli::{
 };
 use std::path::Path;
 use tendrils::{
+    ActionLog,
     ActionMode,
+    CallbackUpdater,
     FilterSpec,
     GetConfigError,
     InitError,
+    RawTendril,
     SetupError,
     TendrilsActor,
     TendrilsApi,
@@ -229,7 +232,40 @@ fn tendril_action_subcommand(
     };
 
     let filter = filter_args.to_spec(&mode);
-    let batch_result = api.tendril_action(
+    let mut reports = vec![];
+
+    // Create locks on share resources between the callback functions
+    let total_lock = std::sync::RwLock::new(0);
+    let completed_lock = std::sync::RwLock::new(0);
+    let writer_lock = std::sync::RwLock::new(writer);
+
+    let count_fn = |c: i32| {
+        // Unwrap should never panic as long as back-end is single threaded
+        let mut total = total_lock.write().unwrap();
+        *total = c
+    };
+
+    let before_fn = |t: RawTendril| {
+        let completed = *completed_lock.read().unwrap();
+        let total = *total_lock.read().unwrap();
+        let mut writer = writer_lock.write().unwrap();
+        (*writer).ewrite(&format!("Processing [{}/{}]: {}", completed + 1, total, t.remote));
+
+        // Flush to ensure immediate output
+        use std::io::Write;
+        let _ = std::io::stdout().flush();
+    };
+    let after_fn = |r| {
+        let mut completed = completed_lock.write().unwrap();
+        let mut writer = writer_lock.write().unwrap();
+        (*writer).ewrite(cli::CLEAR_LINE);
+        reports.push(r);
+        *completed += 1;
+    };
+    let updater = CallbackUpdater::<_, _, _, ActionLog>::new(count_fn, before_fn, after_fn);
+
+    let batch_result = api.tendril_action_updating(
+        updater,
         mode,
         td_repo.as_ref().map(|p| p),
         filter,
@@ -237,12 +273,14 @@ fn tendril_action_subcommand(
         action_args.force,
     );
 
+    // Remove locking wrapper
+    let writer= writer_lock.into_inner().unwrap();
     let action_reports = match batch_result {
         Err(e) => {
             writer.writeln(&format!("{ERR_PREFIX}: {}", e.to_string()));
             return Err(setup_err_to_exit_code(e));
         }
-        Ok(v) => v,
+        Ok(()) => reports,
     };
 
     print_reports(&action_reports, writer);

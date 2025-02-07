@@ -2,6 +2,7 @@ use crate::cli::{
     ansi_hyperlink,
     AboutSubcommands,
     ActionArgs,
+    CLEAR_LINE,
     FilterArgs,
     TendrilCliArgs,
     TendrilsSubcommands,
@@ -19,6 +20,7 @@ use serial_test::serial;
 use std::fs::create_dir_all;
 use std::path::PathBuf;
 use std::path::MAIN_SEPARATOR_STR as SEP;
+use std::vec;
 use tendrils::test_utils::{get_disposable_dir, MockTendrilsApi};
 use tendrils::{
     ActionLog,
@@ -39,17 +41,46 @@ use tendrils::{
     TendrilsActor,
 };
 
+#[derive(Clone)]
 struct MockWriter {
     all_output: String,
+    std_out: String,
+    std_err: String,
 }
 
 impl MockWriter {
     fn new() -> MockWriter {
-        MockWriter { all_output: "".to_string() }
+        MockWriter {
+            all_output: "".to_string(),
+            std_out: "".to_string(),
+            std_err: "".to_string(),
+        }
     }
 
     fn all_output_lines(&self) -> Vec<String> {
         self.all_output.lines().map(String::from).collect()
+    }
+
+    fn std_out_lines(&self) -> Vec<String> {
+        self.std_out.lines().map(String::from).collect()
+    }
+
+    fn std_err_lines(&self) -> Vec<String> {
+        self.std_err.lines().map(String::from).collect()
+    }
+}
+
+impl Writer for MockWriter {
+    fn writeln(&mut self, text: &str) {
+        self.all_output.push_str(text);
+        self.all_output.push('\n');
+        self.std_out.push_str(text);
+        self.std_out.push('\n');
+    }
+
+    fn ewrite(&mut self, text: &str) {
+        self.all_output.push_str(text);
+        self.std_err.push_str(text);
     }
 }
 
@@ -78,13 +109,6 @@ fn build_action_subcommand(
         ActionMode::Out => {
             TendrilsSubcommands::Out { action_args, filter_args }
         }
-    }
-}
-
-impl Writer for MockWriter {
-    fn writeln(&mut self, text: &str) {
-        self.all_output.push_str(text);
-        self.all_output.push('\n');
     }
 }
 
@@ -643,7 +667,7 @@ fn tendril_action_given_path_is_not_tendrils_repo_but_cd_is_should_print_message
     api.ta_exp_filter.mode = Some(mode.clone());
     api.ta_exp_dry_run = dry_run;
     api.ta_exp_force = force;
-    api.ta_const_rt = Err(SetupError::NoValidTendrilsRepo(
+    api.tau_const_rt = Err(SetupError::NoValidTendrilsRepo(
         GetTendrilsRepoError::GivenInvalid { path: given_dir.clone() },
     ));
 
@@ -695,7 +719,7 @@ fn tendril_action_given_path_and_cd_are_both_tendrils_repos_uses_given_path(
     api.ta_exp_filter.mode = Some(mode.clone());
     api.ta_exp_dry_run = dry_run;
     api.ta_exp_force = force;
-    api.ta_const_rt = Err(SetupError::ConfigError(GetConfigError::ParseError {
+    api.tau_const_rt = Err(SetupError::ConfigError(GetConfigError::ParseError {
         cfg_type: ConfigType::Repo,
         msg: "Some parse error msg".to_string(),
     }));
@@ -751,7 +775,7 @@ fn tendril_action_given_path_is_relative_prepends_with_cd(
     api.ta_exp_filter.mode = Some(mode.clone());
     api.ta_exp_dry_run = dry_run;
     api.ta_exp_force = force;
-    api.ta_const_rt = Err(SetupError::ConfigError(GetConfigError::ParseError {
+    api.tau_const_rt = Err(SetupError::ConfigError(GetConfigError::ParseError {
         cfg_type: ConfigType::Repo,
         msg: "Some parse error msg".to_string(),
     }));
@@ -802,7 +826,7 @@ fn tendril_action_given_path_is_relative_and_cd_doesnt_exist_prepends_with_dir_s
     api.ta_exp_filter.mode = Some(mode.clone());
     api.ta_exp_dry_run = dry_run;
     api.ta_exp_force = force;
-    api.ta_const_rt = Err(SetupError::ConfigError(GetConfigError::ParseError {
+    api.tau_const_rt = Err(SetupError::ConfigError(GetConfigError::ParseError {
         cfg_type: ConfigType::Repo,
         msg: "Some parse error msg".to_string(),
     }));
@@ -844,7 +868,7 @@ fn tendril_action_given_path_is_relative_but_resolves_to_abs_should_not_prepend_
     api.ta_exp_filter.mode = Some(mode.clone());
     api.ta_exp_dry_run = dry_run;
     api.ta_exp_force = force;
-    api.ta_const_rt = Err(SetupError::ConfigError(GetConfigError::ParseError {
+    api.tau_const_rt = Err(SetupError::ConfigError(GetConfigError::ParseError {
         cfg_type: ConfigType::Repo,
         msg: "Some parse error msg".to_string(),
     }));
@@ -893,7 +917,7 @@ fn tendril_action_given_path_is_relative_but_resolves_to_abs_and_cd_doesnt_exist
     api.ta_exp_filter.mode = Some(mode.clone());
     api.ta_exp_dry_run = dry_run;
     api.ta_exp_force = force;
-    api.ta_const_rt = Err(SetupError::ConfigError(GetConfigError::ParseError {
+    api.tau_const_rt = Err(SetupError::ConfigError(GetConfigError::ParseError {
         cfg_type: ConfigType::Repo,
         msg: "Some parse error msg".to_string(),
     }));
@@ -932,7 +956,7 @@ fn tendril_action_prints_returned_resolved_path_when_invalid_td_repo(
     api.ta_exp_filter.mode = Some(mode.clone());
     api.ta_exp_dry_run = dry_run;
     api.ta_exp_force = force;
-    api.ta_const_rt = Err(SetupError::NoValidTendrilsRepo(
+    api.tau_const_rt = Err(SetupError::NoValidTendrilsRepo(
         GetTendrilsRepoError::GivenInvalid {
             path: PathBuf::from("/Resolved/Returned/Path"),
         },
@@ -964,7 +988,7 @@ fn tendril_action_prints_returned_resolved_path_when_invalid_td_repo(
 #[case(ActionMode::Push)]
 #[case(ActionMode::Link)]
 #[case(ActionMode::Out)]
-fn tendril_action_prints_table_in_specific_format(
+fn tendril_action_prints_progress_to_stderr_and_table_to_stdout(
     #[case] mode: ActionMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
@@ -991,7 +1015,9 @@ fn tendril_action_prints_table_in_specific_format(
     api.ta_exp_filter.mode = Some(mode.clone());
     api.ta_exp_dry_run = dry_run;
     api.ta_exp_force = force;
-    api.ta_const_rt = Ok(vec![
+    api.tau_const_count_updater_rt = 2;
+    api.tau_const_before_updater_rts = vec![t1.clone(), t2.clone()];
+    api.tau_const_after_updater_rts = vec![
         TendrilReport {
             raw_tendril: t1.clone(),
             local: "SomeApp/misc.txt".to_string(),
@@ -1012,7 +1038,7 @@ fn tendril_action_prints_table_in_specific_format(
                 err_result,
             )),
         },
-    ]);
+    ];
 
     let mut writer = MockWriter::new();
     let path = Some(given_dir.to_str().unwrap().to_string());
@@ -1029,6 +1055,14 @@ fn tendril_action_prints_table_in_specific_format(
 
     let _ = run(args, &api, &mut writer);
 
+    // Update this example progress updater as format changes in the future
+    // Processing [1/2]: r1/misc.txt (then line is cleared and overwritten)
+    // Processing [2/2]: r1/misc.txt (then line is cleared and overwritten)
+    let mut exp_std_err_lines = vec![format!(
+        "Processing [1/2]: r1/misc.txt{CLEAR_LINE}\
+        Processing [2/2]: r2/misc.txt{CLEAR_LINE}"
+    )];
+
     // Update this example table as format changes in the future
     // ╭──────────────────┬─────────────┬──────────────────╮
     // │ Local            │ Remote      │ Report           │
@@ -1039,7 +1073,7 @@ fn tendril_action_prints_table_in_specific_format(
     // ╰──────────────────┴─────────────┴──────────────────╯
     let exp_link_n1 = ansi_hyperlink("r1/misc.txt", "r1/misc.txt");
     let exp_link_n2 = ansi_hyperlink("r2/misc.txt", "r2/misc.txt");
-    let exp_output_lines = vec![
+    let exp_std_out_lines = vec![
         "╭──────────────────┬─────────────┬──────────────────╮".to_string(),
         format!(
             "│ {color_bright_green}{style_underline}Local{color_reset}{style_reset}            \
@@ -1055,15 +1089,34 @@ fn tendril_action_prints_table_in_specific_format(
             "│ SomeApp/misc.txt │ {exp_link_n2} │ {color_bright_red}Source not found{color_reset} │"
         ),
         "╰──────────────────┴─────────────┴──────────────────╯".to_string(),
+        format!("Total: 2, Successful: {color_bright_green}1{color_reset}, Failed: {color_bright_red}1{color_reset}"),
     ];
 
-    for (i, exp_line) in exp_output_lines.into_iter().enumerate() {
+    for (i, exp_line) in exp_std_err_lines.iter().enumerate() {
         assert_eq!(
-            writer.all_output_lines()[i],
+            &writer.std_err_lines()[i],
             exp_line,
-            "Failed on line: {i}"
+            "Failed on line: {}",
+            i + 1,
         );
     }
+    for (i, exp_line) in exp_std_out_lines.iter().enumerate() {
+        assert_eq!(
+            &writer.std_out_lines()[i],
+            exp_line,
+            "Failed on line: {}",
+            i + 1,
+        );
+    }
+
+    // Expect first line of stdout to be on the same line as the stderr that
+    // was cleared.
+    exp_std_err_lines[0].push_str(&exp_std_out_lines[0]);
+    exp_std_err_lines.append(&mut exp_std_out_lines[1..].to_vec());
+
+
+    let exp_all_output_lines = exp_std_err_lines;
+    assert_eq!(writer.all_output_lines(), exp_all_output_lines);
 }
 
 #[rstest]
@@ -1097,7 +1150,9 @@ fn tendril_action_if_all_pass_they_are_totalled_and_returns_ok(
     api.ta_exp_filter.mode = Some(mode.clone());
     api.ta_exp_dry_run = dry_run;
     api.ta_exp_force = force;
-    api.ta_const_rt = Ok(vec![
+    api.tau_const_count_updater_rt = 3;
+    api.tau_const_before_updater_rts = vec![t1.clone(), t2.clone(), t3.clone()];
+    api.tau_const_after_updater_rts = vec![
         TendrilReport {
             raw_tendril: t1.clone(),
             local: "misc.txt".to_string(),
@@ -1128,7 +1183,7 @@ fn tendril_action_if_all_pass_they_are_totalled_and_returns_ok(
                 ok_result,
             )),
         },
-    ]);
+    ];
 
     let mut writer = MockWriter::new();
     let path = Some(given_dir.to_str().unwrap().to_string());
@@ -1190,7 +1245,13 @@ fn tendril_action_if_any_fail_they_are_totalled_and_returns_exit_code(
     api.ta_exp_filter.mode = Some(mode.clone());
     api.ta_exp_dry_run = dry_run;
     api.ta_exp_force = force;
-    api.ta_const_rt = Ok(vec![
+    api.tau_const_count_updater_rt = 3;
+    api.tau_const_before_updater_rts = vec![
+        t1.clone(),
+        t2.clone(),
+        t3.clone(),
+    ];
+    api.tau_const_after_updater_rts = vec![
         TendrilReport {
             raw_tendril: t1.clone(),
             local: "misc.txt".to_string(),
@@ -1221,7 +1282,7 @@ fn tendril_action_if_any_fail_they_are_totalled_and_returns_exit_code(
                 ok_result,
             )),
         },
-    ]);
+    ];
 
     let mut writer = MockWriter::new();
     let path = Some(given_dir.to_str().unwrap().to_string());
@@ -1301,7 +1362,19 @@ fn tendril_action_order_of_reports_is_unchanged(
     api.ta_exp_filter.mode = Some(mode.clone());
     api.ta_exp_dry_run = dry_run;
     api.ta_exp_force = force;
-    api.ta_const_rt = Ok(vec![
+    api.tau_const_count_updater_rt = 9;
+    api.tau_const_before_updater_rts = vec![
+        t1_1.clone(),
+        t1_2.clone(),
+        t1_3.clone(),
+        t2_1.clone(),
+        t2_2.clone(),
+        t2_3.clone(),
+        t3_1.clone(),
+        t3_2.clone(),
+        t3_3.clone(),
+    ];
+    api.tau_const_after_updater_rts = vec![
         TendrilReport {
             raw_tendril: t2_3.clone(),
             local: "l2".to_string(),
@@ -1392,7 +1465,7 @@ fn tendril_action_order_of_reports_is_unchanged(
                 result.clone(),
             )),
         },
-    ]);
+    ];
 
     let mut writer = MockWriter::new();
     let path = Some(given_dir.to_str().unwrap().to_string());
@@ -1457,7 +1530,6 @@ fn tendril_action_filters_are_passed_properly(
     api.ta_exp_filter = filter;
     api.ta_exp_dry_run = dry_run;
     api.ta_exp_force = force;
-    api.ta_const_rt = Ok(vec![]);
 
     let mut writer = MockWriter::new();
     let path = Some(given_dir.to_str().unwrap().to_string());

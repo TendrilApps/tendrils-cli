@@ -32,7 +32,13 @@ mod tendril;
 use tendril::Tendril;
 pub use tendril::RawTendril;
 mod tendril_report;
-pub use tendril_report::{ActionLog, TendrilLog, TendrilReport};
+pub use tendril_report::{
+    ActionLog,
+    CallbackUpdater,
+    TendrilLog,
+    TendrilReport,
+    UpdateHandler
+};
 
 #[cfg(test)]
 mod tests;
@@ -79,7 +85,7 @@ pub trait TendrilsApi {
     /// performs the action on each tendril that matches the
     /// filter.
     ///
-    /// The order of the actions maintains the order of the [`UPDATE ME`] tendril bundles found in
+    /// The order of the actions maintains the order of the [`RawTendril`]s found in
     /// the `tendrils.json`, but each one is expanded into individual tendrils firstly by
     /// each of its `names`, then by each of its `parents`. For example, for a
     /// list of two tendril bundles [t1, t2], each having multiple names [n1, n2] and
@@ -94,9 +100,8 @@ pub trait TendrilsApi {
     /// - t2_n2_p2
     ///
     /// # Arguments
-    /// - `update_fn` - Updater function that will be passed the most recent
-    /// report as each action is completed. This allows the calling function to
-    /// receive updates as progress is made.
+    /// - `updater` - [`UpdateHandler`] to provide synchronous progress updates
+    /// to the caller.
     /// - `mode` - The action mode to be performed.
     /// - `td_repo` - The Tendrils repo to perform the actions on. If given
     /// `None`, the [default repo](`TendrilsApi::get_default_repo_path`) will be checked for a
@@ -123,15 +128,18 @@ pub trait TendrilsApi {
     /// A [`TendrilReport`] containing an [`ActionLog`] for each tendril action.
     /// Returns a [`SetupError`] if there are any issues in setting up the
     /// batch of actions.
-    fn tendril_action_updating<F: FnMut(TendrilReport<ActionLog>)>(
+    fn tendril_action_updating<U> (
         &self,
-        update_fn: F,
+        updater: U,
         mode: ActionMode,
         td_repo: Option<&UniPath>,
         filter: FilterSpec,
         dry_run: bool,
         force: bool,
-    ) -> Result<(), SetupError>; 
+    )
+    -> Result<(), SetupError>
+    where
+        U: UpdateHandler<ActionLog>;
 
     /// Same behaviour as [`tendril_action_updating`](`TendrilsApi::tendril_action_updating`) except reports are only
     /// returned once all actions have completed.
@@ -179,15 +187,18 @@ impl TendrilsApi for TendrilsActor {
         is_tendrils_repo(dir)
     }
 
-    fn tendril_action_updating<F: FnMut(TendrilReport<ActionLog>)>(
+    fn tendril_action_updating<U>(
         &self,
-        update_fn: F,
+        updater: U,
         mode: ActionMode,
         td_repo: Option<&UniPath>,
         filter: FilterSpec,
         dry_run: bool,
         force: bool,
-    ) -> Result<(), SetupError> {
+    ) -> Result<(), SetupError>
+    where
+        U: UpdateHandler<ActionLog>,
+    {
         let mut global_cfg = LazyCachedGlobalConfig::new();
         let td_repo= get_tendrils_repo(td_repo, &mut global_cfg)?;
         let config = config::get_config(&td_repo)?;
@@ -199,7 +210,7 @@ impl TendrilsApi for TendrilsActor {
             return Err(SetupError::CannotSymlink);
         }
 
-        batch_tendril_action(update_fn, mode, &td_repo, filtered_tendrils, dry_run, force);
+        batch_tendril_action(updater, mode, &td_repo, filtered_tendrils, dry_run, force);
         Ok(())
     }
 
@@ -212,7 +223,14 @@ impl TendrilsApi for TendrilsActor {
         force: bool,
     ) -> Result<Vec<TendrilReport<ActionLog>>, SetupError> {
         let mut reports = vec![];
-        let updater = |r| reports.push(r);
+        let count_fn = |_| {};
+        let before_action_fn = |_| {};
+        let after_action_fn = |r| reports.push(r);
+        let updater = CallbackUpdater::<_, _, _, ActionLog>::new(
+            count_fn,
+            before_action_fn,
+            after_action_fn,
+        );
 
         self.tendril_action_updating(updater, mode, td_repo, filter, dry_run, force)?;
         Ok(reports)
@@ -767,18 +785,26 @@ fn symlink_win(
     Ok(())
 }
 
-fn batch_tendril_action<F: FnMut(TendrilReport<ActionLog>)>(
-    mut update_fn: F,
+fn batch_tendril_action<U>(
+    mut updater: U,
     mode: ActionMode,
     td_repo: &UniPath,
     raw_tendrils: Vec<RawTendril>,
     dry_run: bool,
     force: bool,
-) {
+)
+where
+    U: UpdateHandler<ActionLog>,
+{
     let can_symlink =
         (mode == ActionMode::Link || mode == ActionMode::Out) && can_symlink();
+    
+    updater.count(raw_tendrils.len() as i32);
 
     for raw_tendril in raw_tendrils.into_iter() {
+        // TODO: Don't clone here - if `raw_tendril` is separate from the
+        // `TendrilReport` this additional instance will not be required
+        updater.before(raw_tendril.clone());
         let tendril = raw_tendril.resolve(td_repo);
 
         let log = match (tendril, &mode, can_symlink) {
@@ -821,6 +847,6 @@ fn batch_tendril_action<F: FnMut(TendrilReport<ActionLog>)>(
             log,
         };
 
-        update_fn(report);
+        updater.after(report);
     }
 }
