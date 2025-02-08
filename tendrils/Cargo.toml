@@ -11,6 +11,10 @@ edition = "2018"
 # this workspace and should not be depended on otherwise
 _test_utils = ["dep:tempdir"]
 
+# A set of tests that requires admin priviledges to pass.
+# This should only be run in the dedicated testing container.
+_admin_tests = []
+
 [dependencies]
 fs_extra = "1.3.0"
 # Chose glob-match over globset due to having no dependencies

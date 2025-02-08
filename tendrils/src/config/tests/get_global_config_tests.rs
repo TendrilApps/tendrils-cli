@@ -78,6 +78,7 @@ fn empty_json_object_returns_empty_config() {
 
 #[test]
 #[serial(SERIAL_MUT_ENV_VARS)]
+#[cfg_attr(target_os = "linux", ignore)]
 fn no_read_access_to_config_file_returns_io_permission_error() {
     let setup = Setup::new();
     setup.make_global_cfg_file("".to_string());

@@ -27,6 +27,7 @@ td about
 ## Supported Platforms
 - Mac
 - Windows
+- Linux
 
 ## Installation
 - Currently, Tendrils is only distributed through source code and must be built using the Cargo toolchain
@@ -401,3 +402,7 @@ td push --path ~/MyRepo
     - Running the terminal as administrator will allow these tests to pass
     - Enabling developer mode will allow these tests to pass without running as administrator
         - Developer mode enables creating symlinks without admin rights
+- A [Dockerfile](./Dockerfile) is provided for testing on Linux
+    - Certain tests have effects outside of the source code folder, so these will only run within this container to avoid cluttering the user's system
+        - These must be run with the `_admin_tests` feature enabled
+    - The rest of the test suite can be run on Linux normally (either inside or outside of a container)

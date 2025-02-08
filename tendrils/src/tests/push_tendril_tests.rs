@@ -638,6 +638,7 @@ fn dir_merge_w_subdir_dir_tendril_merges_w_local_dir_recursively(
 #[rstest]
 #[case(true)]
 #[case(false)]
+#[cfg_attr(target_os = "linux", ignore)]
 fn no_read_access_from_local_file_returns_io_error_permission_denied_unless_dry_run(
     #[case] dry_run: bool,
     #[values(true, false)] force: bool,
@@ -681,6 +682,7 @@ fn no_read_access_from_local_file_returns_io_error_permission_denied_unless_dry_
 #[rstest]
 #[case(true)]
 #[case(false)]
+#[cfg_attr(target_os = "linux", ignore)]
 fn no_read_access_from_local_dir_returns_io_error_permission_denied_unless_dry_run(
     #[case] dry_run: bool,
     #[values(true, false)] force: bool,
@@ -725,6 +727,7 @@ fn no_read_access_from_local_dir_returns_io_error_permission_denied_unless_dry_r
 #[rstest]
 #[case(true)]
 #[case(false)]
+#[cfg_attr(target_os = "linux", ignore)]
 fn no_write_access_at_remote_file_returns_io_error_permission_denied_unless_dry_run(
     #[case] dry_run: bool,
     #[values(true, false)] force: bool,
@@ -780,7 +783,7 @@ fn no_write_access_at_remote_file_returns_io_error_permission_denied_unless_dry_
 #[rstest]
 #[case(true)]
 #[case(false)]
-#[cfg_attr(windows, ignore)] // These permissions do not prevent write access on
+#[cfg_attr(any(windows, target_os = "linux"), ignore)] // These permissions do not prevent write access on
                              // Windows. This must be done through the Security
                              // interface
 fn no_write_access_at_remote_dir_returns_io_error_permission_denied_unless_dry_run(

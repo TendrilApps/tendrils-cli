@@ -1,6 +1,1 @@
-# production
-target
-tests/samples/NoReadAccess/
-
-# misc
-**/.DS_Store
+target*
