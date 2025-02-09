@@ -11,8 +11,8 @@ mod tests;
 /// list of tendrils.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct FilterSpec {
-    /// Matches only link style tendrils if the action mode is `Link`,
-    /// otherwise it matches only the push/pull style tendrils. If
+    /// Matches only link-type tendrils if the action mode is `Link`,
+    /// otherwise it matches only the copy-type tendrils. If
     /// `None`, or [`ActionMode::Out`] all tendrils will match.
     pub mode: Option<ActionMode>,
 

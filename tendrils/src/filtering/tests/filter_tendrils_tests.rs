@@ -131,9 +131,9 @@ fn mode_filter_is_none_does_not_filter_by_mode() {
     let actual = filter_tendrils(tendrils.clone(), filter, &mut cfg);
 
     assert_eq!(actual, vec![
-        tendrils[0].clone(), // Push/pull mode
-        tendrils[1].clone(), // Push/pull mode
-        tendrils[2].clone(), // Link mode
+        tendrils[0].clone(), // Copy type
+        tendrils[1].clone(), // Copy type
+        tendrils[2].clone(), // Link type
     ]);
 }
 

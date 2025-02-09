@@ -265,8 +265,8 @@ pub enum TendrilActionError {
     },
 
     /// The tendril mode does not match the attempted action, such as:
-    /// - Attempting to pull a link tendril
-    /// - Attempting to link a push/pull tendril
+    /// - Attempting to pull a link-type tendril
+    /// - Attempting to link a copy-type tendril
     ModeMismatch,
 
     /// The type of the remote and local file system objects do not match, or
@@ -319,7 +319,7 @@ impl ToString for TendrilActionError {
                 format!("{:?} error", e_kind)
             }
             TendrilActionError::ModeMismatch => {
-                String::from("Wrong tendril style")
+                String::from("Wrong tendril type")
             }
             TendrilActionError::TypeMismatch { loc: Source, mistype: File } => {
                 String::from("Unexpected file at source")
@@ -388,18 +388,18 @@ impl FsoType {
 }
 
 /// Indicates the behaviour of this tendril, and determines whether it is
-/// a push/pull style, or a link style tendril.
+/// a copy-type, or a link-type tendril.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum TendrilMode {
     /// Overwrite any files/folders that are present in both the source and
     /// destination, but keep anything in the destination folder that is not
     /// in the source folder. This only applies to folder tendrils.
-    /// Tendrils with this mode are considered push/pull.
+    /// Tendrils with this mode are considered copy-type.
     DirMerge,
 
     /// Completely overwrite the destination folder with the contents of
     /// the source folder. This only applies to folder tendrils.
-    /// Tendrils with this mode are considered push/pull.
+    /// Tendrils with this mode are considered copy-type.
     DirOverwrite,
 
     /// Create a symlink at the remote location that points to local

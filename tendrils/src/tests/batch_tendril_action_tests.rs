@@ -649,7 +649,7 @@ fn link_returns_tendril_and_result_for_each_given(
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn out_returns_tendril_and_result_for_each_given_link_or_push_style(
+fn out_returns_tendril_and_result_for_each_given_link_or_copy_type(
     #[case] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
