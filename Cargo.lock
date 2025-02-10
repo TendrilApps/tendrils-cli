@@ -862,21 +862,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "td"
-version = "0.0.1"
-dependencies = [
- "clap",
- "exitcode",
- "inline_colorization",
- "rstest",
- "serial_test",
- "tabled",
- "tempdir",
- "tendrils",
- "winresource",
-]
-
-[[package]]
 name = "tempdir"
 version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -887,7 +872,22 @@ dependencies = [
 ]
 
 [[package]]
-name = "tendrils"
+name = "tendrils-cli"
+version = "0.0.1"
+dependencies = [
+ "clap",
+ "exitcode",
+ "inline_colorization",
+ "rstest",
+ "serial_test",
+ "tabled",
+ "tempdir",
+ "tendrils-core",
+ "winresource",
+]
+
+[[package]]
+name = "tendrils-core"
 version = "0.0.1"
 dependencies = [
  "fs_extra",
