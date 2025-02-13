@@ -1,5 +1,6 @@
 # General
 - Configuration can occur at the repo level using the [`tendrils.json`](#tendrilsjson) file, or at the global level using the [`global-config.json`](#global-configjson) file
+- Flexibility is a core focus to accomodate many different use cases across many systems
 
 # `tendrils.json`
 - Specifies all of the files and directories to be considered as tendrils
@@ -50,6 +51,7 @@
         - Note that unlike the first two, this entry is an array (using square brackets `[]` rather than `{}`) which allows specifying unique properties for the different remote locations
 - `null` is not valid in any of these fields
 - Must only contain valid UTF-8 characters
+- See an example configuration file [here](./example-repo/.tendrils/tendrils.json)
 
 ### Local Path
 - The keys in the `tendrils` dictionary represent the path to the master copy of the file/folder inside the [Tendrils Repo](../README.md#tendrils-repo)
@@ -109,13 +111,13 @@ Becomes `/path/to/tendrils/repo/SomeFolder/file.txt`
 - `false` - Entirely replace the destination folder with the source folder
 - If this field is omitted, it defaults to `false`
 - This setting has no effect on the behaviour of file tendrils or link-type tendrils
-    - It is only relevant for [copy-type](../README.md#copy-type) folder tendrils
+    - It is only relevant for [copy-type](../README.md#copy-type-tendrils) folder tendrils
 - Note: this field may be overriden depending on the value of [`link`](#link)
 
 ### `link`
-- `true` - Designates these tendrils as [link-type](../README.md#link-type)
+- `true` - Designates these tendrils as [link-type](../README.md#link-type-tendrils)
     - This overrides any setting for [`dir-merge`](#dir-merge)
-- `false` - Designates these tendrils as [copy-type](../README.md#copy-type)
+- `false` - Designates these tendrils as [copy-type](../README.md#copy-type-tendrils)
 - If this field is omitted, it defaults to `false`
 
 ### `profiles`
@@ -139,7 +141,6 @@ Becomes `/path/to/tendrils/repo/SomeFolder/file.txt`
 - Contains default configuration values that are applied to actions in any [Tendrils repos](../README.md#tendrils-repo) unless otherwise specified
 - Stored in the `~/.tendrils` folder
     - `~/.tendrils/global-config.json`
-- This file is not usually version controlled as the configurations are mostly specific to the local computer
 - See also [`tendrils.json`](#tendrilsjson)
 
 ### `global-config.json` Schema
@@ -152,11 +153,13 @@ Becomes `/path/to/tendrils/repo/SomeFolder/file.txt`
 
 #### `default-repo-path`
 - The default [tendrils repo path](./tendrils-commands.md#specifying-the-tendrils-repo) if it is not otherwise provided
+- Allows calling `td` from anywhere
 - Should be an absolute path, otherwise it will be [converted to one](#relative-paths)
 
 #### `default-profiles`
 - List of the default [profiles filter](./tendrils-commands.md#filtering-by-profile) if it is not otherwise provided
 - Set this to the profiles specific to this host to prevent having to type them on every [command](./tendrils-commands.md)
+- This is particularly useful if your tendril profiles are setup on a per-host basis like in [this example](./example-repo/.tendrils/tendrils.json)
 
 # Path Resolving
 - Paths will be resolved in the following order:
