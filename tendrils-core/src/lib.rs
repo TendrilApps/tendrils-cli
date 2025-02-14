@@ -260,7 +260,10 @@ const INIT_TD_TENDRILS_JSON: &str = r#"{
                 "profiles": "unix"
             },
             {
-                "remotes": "~/windows/specific/path/file.txt",
+                "remotes": [
+                    "~/windows/specific/path/file.txt",
+                    "~/windows/another-specific/path/file.txt"
+                ],
                 "link": false,
                 "profiles": "windows"
             }

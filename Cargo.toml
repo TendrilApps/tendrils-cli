@@ -1,6 +1,6 @@
 [package]
 name = "tendrils-cli"
-description = "Manage specific files/folders strewn about the computer from a single location"
+description = "Flexibly manage files/folders throughout the computer from a single location"
 license.workspace = true
 repository.workspace = true
 version = "0.0.1"

@@ -1,6 +1,10 @@
 # General
+> **Warning:**  
+> Tendrils is still quite new and the configuration is subject to change. Expect it to break in the future.
+
 - Configuration can occur at the repo level using the [`tendrils.json`](#tendrilsjson) file, or at the global level using the [`global-config.json`](#global-configjson) file
 - Flexibility is a core focus to accomodate many different use cases across many systems
+    - It can be as complex as you like by combining profiles, environment variables, filters, multiple repos, etc.
 
 # `tendrils.json`
 - Specifies all of the files and directories to be considered as tendrils
@@ -35,7 +39,10 @@
                 "profiles": "unix"
             },
             {
-                "remotes": "~/windows/specific/path/file.txt",
+                "remotes": [
+                    "~/windows/specific/path/file.txt",
+                    "~/windows/another-specific/path/file.txt"
+                ],
                 "link": false,
                 "profiles": "windows"
             }
@@ -44,11 +51,11 @@
 }
 ```
 - Each entry in the `tendrils` dictionary above defines a set of tendrils
-- The example above would define 7 tendrils
+- The example above would define 8 tendrils
     - 1 tendril for `SomeApp/SomeFile.ext`
     - 4 tendrils for `SomeApp2/SomeFolder`
-    - 2 tendrils for `SomeApp3/file.txt`
-        - Note that unlike the first two, this entry is an array (using square brackets `[]` rather than `{}`) which allows specifying unique properties for the different remote locations
+    - 3 tendrils for `SomeApp3/file.txt`
+        - Note that unlike the first two, this entry is an array (using square brackets `[]` rather than `{}`) which allows specifying unique properties for the different remote locations. In this example, the `"unix"` remotes are [link-type](../README.md#link-type-tendrils) while the `"windows"` remotes are [copy-type](../README.md#copy-type-tendrils)
 - `null` is not valid in any of these fields
 - Must only contain valid UTF-8 characters
 - See an example configuration file [here](./example-repo/.tendrils/tendrils.json)
@@ -67,26 +74,30 @@
     - Point to the `.tendrils` folder or anything inside of it
 - An attempt is made to detect values that break the guidelines above, but there are several edge cases that may not be detected
 - See [Filtering by Local](./tendrils-commands.md#filtering-by-locals)
+- For the following example tendrils:
 ```json
 "file.txt": {
     "remotes": "..."
-}
-```
-Becomes `/path/to/tendrils/repo/file.txt`
-
-``` json
-"SomeFolder": {
+},
+"Folder": {
+    "remotes": "..."
+},
+"SomeApp/file.txt": {
     "remotes": "..."
 }
 ```
-Becomes `/path/to/tendrils/repo/SomeFolder`
-
-``` json
-"SomeFolder/file.txt": {
-    "remotes": "..."
-}
+- The corresponding repo structure would be:
+``` bash
+MyRepo
+├───.tendrils
+│   └───tendrils.json
+├───file.txt
+├───Folder # If the local path is a folder, all contents are included
+│   └───misc1.txt
+│   └───misc2.txt
+└───SomeApp
+    └───file.txt
 ```
-Becomes `/path/to/tendrils/repo/SomeFolder/file.txt`
 
 ### `remotes`
 - A list of paths to the files/folders throughout the host machine that are associated with the corresponding [master copy](#local-path)

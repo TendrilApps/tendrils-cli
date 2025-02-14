@@ -1,4 +1,7 @@
 # Tendrils Commands
+> **Warning:**  
+> Tendrils is still quite new and these commands are subject to change. Expect any scripts relying on them to break in the future.
+
 - `td` is the CLI tool that performs these commands
 - List all commands using the `--help (-h)` flag
 ``` bash
@@ -101,6 +104,8 @@ td push --path /some/tendrils/folder
 - These filters are cumulative
 - For the filters below that support glob patterns, these are resolved using the [`glob-match`](https://crates.io/crates/glob-match) crate
     - Consult this crate's documentation for the syntax
+
+![](../assets/profiles-demo.gif)
 
 ### Filtering by Locals
 - Using the `--locals (-l)` argument

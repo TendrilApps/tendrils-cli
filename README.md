@@ -3,7 +3,7 @@
 </div>
 
 # General
-- Tendrils is a tool to flexibly manage specific files/folders strewn about the computer from a single location
+- Tendrils is a tool to flexibly manage files/folders throughout the computer from a single location
     - Each file/folder is defined by a [tendril](#what-is-a-tendril) in the [`tendrils.json`](./docs/configuration.md#tendrilsjson) file
     - They are all stored in a common [Tendrils repo](#tendrils-repo)
     - `td` is the CLI tool to manage these tendrils
@@ -11,8 +11,10 @@
     - Versioning/syncing configuration files that are expected to be in specific locations on the machine (video game saves, application settings, `.bashrc`, `.vim`, etc)
     - Maintaining the same (or different) profiles across multiple machines
     - Maintaining different profiles for a single user on one machine
-- Where Tendrils isn't as useful:
-    - Ephemeral environments, such as Docker containers. It's likely simpler to use a one-off script/Dockerfile to put the files where they belong
+
+![](./assets/basic-demo.gif)
+![](./assets/profiles-demo.gif)
+
 
 # License & Acknowledgements
 - GPLv3 - See additional licensing information in the [license file](./LICENSE.md)
@@ -93,12 +95,14 @@ td link
 6. Optional: Create a [global configuration](./docs/configuration.md#global-configjson) to simplify some repeated commands
 
 # Developers and Contribution
-- See [developer notes](./docs/developers.md)
+- See [developer notes](./dev/README.md)
 
 # More Use Cases
 - Keeping Obsidian configurations synchronized across multiple vaults
 - Versioning/syncing small scripts that otherwise would not have their own repos
 - Editing miscellaneous files in a common place rather than tracking them down individually
+- Where Tendrils isn't as useful:
+    - Ephemeral environments, such as Docker containers. It's likely simpler to use a one-off script/Dockerfile to put the files where they belong
 
 # Future Plans
 - Improved distribution
@@ -110,3 +114,4 @@ td link
     - Plain text
 - Get/set configuration using the CLI
 - Respect XDG Base Directories
+- And more

@@ -21,7 +21,6 @@
                 "remotes": "/etc/hosts",
                 "profiles": [
                     "eq12",
-                    "example-container",
                     "raspberry-pi"
                 ]
             },
@@ -32,8 +31,12 @@
         ],
         "obsidian/appearance.json": [
             {
-                "remotes": "<GOOGLE_DRIVE>/home-vault/.obsidian/appearance.json",
-                "profiles": "example-container"
+                "remotes": [
+                    "/home-vault/.obsidian/appearance.json",
+                    "/work-vault/.obsidian/appearance.json"
+                ],
+                "profiles": "example-container",
+                "link": true
             },
             {
                 "remotes": "<OneDrive>\\work-vault\\.obsidian\\appearance.json",
@@ -42,8 +45,12 @@
         ],
         "obsidian/hotkeys.json": [
             {
-                "remotes": "<GOOGLE_DRIVE>/home-vault/.obsidian/hotkeys.json",
-                "profiles": "example-container"
+                "remotes": [
+                    "/home-vault/.obsidian/hotkeys.json",
+                    "/work-vault/.obsidian/hotkeys.json"
+                ],
+                "profiles": "example-container",
+                "link": true
             },
             {
                 "remotes": "<OneDrive>/work-vault/.obsidian/hotkeys.json",
@@ -52,8 +59,12 @@
         ],
         "obsidian/snippets": [
             {
-                "remotes": "<GOOGLE_DRIVE>/home-vault/.obsidian/snippets",
-                "profiles": "example-container"
+                "remotes": [
+                    "/home-vault/.obsidian/snippets",
+                    "/work-vault/.obsidian/snippets"
+                ],
+                "profiles": "example-container",
+                "link": true
             },
             {
                 "remotes": "<OneDrive>\\work-vault\\.obsidian\\snippets",
@@ -94,7 +105,7 @@
             }
         ],
         "terminal/windows-terminal/settings.json": {
-            "remotes": "~/AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json",
+            "remotes": "~/AppData/vaults/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/vaultsState/settings.json",
             "link": true,
             "profiles": "windows"
         },
@@ -105,6 +116,10 @@
                 "linux",
                 "windows"
             ]
+        },
+        "useful-notes.txt": {
+            "remotes": "<GOOGLE_DRIVE>/useful-notes.txt",
+            "profiles": "example-container"
         },
         "vim/.vimrc_profile2": {
             "remotes": "~/.vimrc",
