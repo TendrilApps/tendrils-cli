@@ -5,6 +5,8 @@ license.workspace = true
 repository.workspace = true
 version = "0.0.1"
 edition = "2018"
+categories = ["command-line-utilities", "config", "filesystem"]
+keywords.workspace = true
 
 [features]
 # Exposes members that that are only meant for usage in tests within

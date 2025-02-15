@@ -6,7 +6,9 @@ repository.workspace = true
 version = "0.0.1"
 edition = "2021"
 readme = "README-CLI.md"
-include = ["/src", "/build.rs", "/assets/logo.ico"]
+include = ["/src", "/build.rs", "LICENSE.md", "/assets/logo.ico"]
+categories = ["command-line-utilities", "config", "filesystem"]
+keywords.workspace = true
 
 [[bin]]
 name = "td"
@@ -42,6 +44,7 @@ workspace = true
 [workspace.package]
 license = "GPL-3.0-or-later"
 repository = "https://github.com/TendrilApps/tendrils-cli"
+keywords = ["configuration", "sync", "backup", "dotfiles", "centralized"]
 
 [workspace]
 members = [
