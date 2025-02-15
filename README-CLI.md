@@ -1,0 +1,2 @@
+- Provides the `td` CLI tool for managing tendrils
+- See documentation at <https://github.com/TendrilApps/tendrils-cli>

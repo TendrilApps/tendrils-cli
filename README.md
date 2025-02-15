@@ -62,14 +62,9 @@ td about
 - Currently, this is only distributed through source code and must be built using the Cargo toolchain
 - To build `td`:
 ``` bash
-# From the 'tendrils' workspace folder
-cargo build           # For a 'debug' build
-cargo build --release # For a 'release' build
+cargo install tendrils-cli
 ```
-
-- By default, the output executable is placed in `target/debug` or `target/release` depending which profile was used to build it
-- Once built, it is recommended to update your `PATH` variable to include this location (or copy the executable to somewhere in your `PATH`)
-- Alternatively, just build and run the [example container](./dev/Dockerfile.example) to experiment before installing locally
+- Alternatively, clone this repo then build and run the [example container](./dev/Dockerfile.example) to experiment
 
 ## Set-up & Configuration
 1. Create a new empty folder that will become the [Tendrils repo](#tendrils-repo)
@@ -81,7 +76,7 @@ td init
 ```
 
 3. Define some tendrils in the file following the [schema](./docs/configuration.md#tendrilsjson-schema)
-    - See the [example configuration](./docs/example-repo/.tendrils/tendrils.json) for inspiration
+    - See the [example configuration](./docs/example-repo/.tendrils/tendrils.json) for ideas
 4. Run a [`pull`](./docs/tendrils-commands.md#pulling) command to make an initial copy of any [copy-type](#copy-type-tendrils) tendrils to the [Tendrils repo](#tendrils-repo)
 ``` bash
 td pull -d # Use the -d flag to dry-run at first

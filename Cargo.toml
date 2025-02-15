@@ -5,6 +5,8 @@ license.workspace = true
 repository.workspace = true
 version = "0.0.1"
 edition = "2021"
+readme = "README-CLI.md"
+include = ["/src", "/build.rs", "/assets/logo.ico"]
 
 [[bin]]
 name = "td"
@@ -20,7 +22,7 @@ clap = { version = "4.5.21", features = ["derive"] }
 exitcode = "1.1.2"
 inline_colorization = "0.1.6"
 tabled = { version = "0.16.0", features = ["ansi"] }
-tendrils-core = { path = "./tendrils-core" } # See also the usage in dev-dependencies
+tendrils-core = { path = "./tendrils-core", version = "0.0.1" } # See also the usage in dev-dependencies
 
 [dev-dependencies]
 rstest = "0.23.0"
@@ -29,7 +31,7 @@ tempdir = "0.3.7"
 # Despite being a dev-dependency, in order to prevent "_test_utils"
 # from being included in non-testing builds the resolver "2" must
 # be used (see workspace Cargo.toml).
-tendrils-core = { path = "./tendrils-core", features = ["_test_utils"] }
+tendrils-core = { path = "./tendrils-core", version = "0.0.1", features = ["_test_utils"] }
 
 [target.'cfg(windows)'.build-dependencies]
 winresource = { version = "0.1.17", optional = true } # See "metadata" feature
