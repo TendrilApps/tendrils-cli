@@ -1,9 +1,8 @@
 # Provides a Linux development environment for Tendrils
 
-# Run these commands from the top level of the repo to setup container:
-# docker build -f ./dev/Dockerfile.dev -t td-dev .
-# docker run -it --rm -v .:/root/tendrils-cli td-dev bash
-# cargo build/test/other (within the container)
+# Run these commands from the top level of the repo to setup the container:
+# sh dev/setup-containers.sh
+# docker run -it --rm -v .:/root/tendrils-cli td-dev <some-cargo-command>
 
 FROM rust:latest
 

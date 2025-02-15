@@ -1,20 +1,16 @@
-exitCodeSum=0
+set -e -u
+repoFolder=$(git rev-parse --show-toplevel)
+cd $repoFolder
 
 cargo test --all-features -q --workspace --release
-exitCodeSum=$(($exitCodeSum + $?))
 
 # Check that the td binary builds
 cargo build --all-features --release
-exitCodeSum=$(($exitCodeSum + $?))
 
 # Check that the tempdirs folder is empty
-repoFolder=$(git rev-parse --show-toplevel)
 if [ "$(ls $repoFolder/target/tempdirs)" != "" ]; then
     echo "Temp folder is not empty. Test cases may not be cleaning up properly."
-    exitCodeSum=$(($exitCodeSum + 1))
+    1/0
 fi
 
 cargo doc --all-features --document-private-items --no-deps --workspace --release
-exitCodeSum=$(($exitCodeSum + $?))
-
-exit $exitCodeSum

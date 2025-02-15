@@ -1,10 +1,9 @@
 # Provides a playground to test out the example Tendrils configuration
 
 # Run these commands from the top level of the repo to setup the container:
-# docker build -f ./dev/Dockerfile.dev -t td-dev .
-# docker run -it --rm -v .:/root/tendrils-cli td-dev cargo build
-# docker build -f ./dev/Dockerfile.example -t td-example .
+# sh dev/setup-containers.sh
 # docker run -it --rm td-example bash
+# Experiment with Tendrils commands in the container (`td -h` to list commands)
 
 FROM td-dev
 

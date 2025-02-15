@@ -1,7 +1,7 @@
 # Use this container to build the GIFs used in the documentation examples.
 
 # Run these commands from the top level of the repo to setup the container:
-# docker build -f ./dev/Dockerfile.gifs -t td-gifs .
+# sh dev/setup-containers.sh
 # docker run --rm -v .:/vhs td-gifs assets/<cassette>.tape
 
 FROM ghcr.io/charmbracelet/vhs
