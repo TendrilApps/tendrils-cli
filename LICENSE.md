@@ -1,5 +1,5 @@
 # Preamble
-Tendrils is a tool to manage specific files/folders strewn about the computer from a single location.
+Tendrils is a tool to flexibly manage files/folders throughout the computer from a single location.
 https://github.com/TendrilApps/tendrils-cli
 
 Copyright 2024  Cole Markle
