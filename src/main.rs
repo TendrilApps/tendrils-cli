@@ -1,4 +1,5 @@
-#![doc = include_str!("../README.md")]
+//! - Provides the `td` CLI tool for managing tendrils.
+//! - See documentation at <https://github.com/TendrilApps/tendrils-cli>
 
 mod about;
 use clap::Parser;
@@ -13,7 +14,7 @@ use cli::{
     TendrilsSubcommands,
 };
 use std::path::Path;
-use tendrils::{
+use tendrils_core::{
     ActionLog,
     ActionMode,
     CallbackUpdater,

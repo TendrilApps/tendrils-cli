@@ -1,0 +1,22 @@
+# Provides a playground to test out the example Tendrils configuration
+
+# Run these commands from the top level of the repo to setup the container:
+# sh dev/setup-containers.sh
+# docker run -it --rm td-example bash
+# Experiment with Tendrils commands in the container (`td -h` to list commands)
+
+FROM td-dev
+
+# SECTION: If updating anything in this section, update Dockerfile.gifs to match!
+# Must have built `td` at least once in the dev container
+COPY ./target-container/debug/td /usr/bin/td
+COPY ./docs/example-repo /root/example-repo
+
+ENV GOOGLE_DRIVE=/gdrive
+
+RUN mkdir /root/.tendrils && \
+    echo '{"default-repo-path": "~/example-repo", "default-profiles": ["linux", "example-container"]}' \
+    > /root/.tendrils/global-config.json
+# END SECTION
+
+WORKDIR /

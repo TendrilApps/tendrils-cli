@@ -21,8 +21,8 @@ use std::fs::create_dir_all;
 use std::path::PathBuf;
 use std::path::MAIN_SEPARATOR_STR as SEP;
 use std::vec;
-use tendrils::test_utils::{get_disposable_dir, MockTendrilsApi};
-use tendrils::{
+use tendrils_core::test_utils::{get_disposable_dir, MockTendrilsApi};
+use tendrils_core::{
     ActionLog,
     ActionMode,
     ConfigType,

@@ -1,5 +1,5 @@
-//! Provides tools for managing tendrils.
-//! See also the [`td` CLI](..//td/index.html)
+//! - Provides core functionality for the [`tendrils-cli`](https://crates.io/crates/tendrils-cli) crate and its `td` CLI tool.
+//! - See documentation at <https://github.com/TendrilApps/tendrils-cli>
 
 mod config;
 mod enums;
@@ -260,7 +260,10 @@ const INIT_TD_TENDRILS_JSON: &str = r#"{
                 "profiles": "unix"
             },
             {
-                "remotes": "~/windows/specific/path/file.txt",
+                "remotes": [
+                    "~/windows/specific/path/file.txt",
+                    "~/windows/another-specific/path/file.txt"
+                ],
                 "link": false,
                 "profiles": "windows"
             }

@@ -1,0 +1,154 @@
+{
+    "tendrils": {
+        ".gitconfig": {
+            "remotes": "~/.gitconfig",
+            "link": true
+        },
+        "neovim/init.vim": [
+            {
+                "remotes": "~/.config/nvim/init.vim",
+                "link": true,
+                "profiles": "linux"
+            },
+            {
+                "remotes": "~\\AppData\\Local\\nvim\\init.vim",
+                "link": true,
+                "profiles": "windows"
+            }
+        ],
+        "networking/hosts": [
+            {
+                "remotes": "/etc/hosts",
+                "profiles": [
+                    "eq12",
+                    "raspberry-pi"
+                ]
+            },
+            {
+                "remotes": "C:/Windows/System32/drivers/etc/hosts",
+                "profiles": "desktop"
+            }
+        ],
+        "obsidian/appearance.json": [
+            {
+                "remotes": [
+                    "/home-vault/.obsidian/appearance.json",
+                    "/work-vault/.obsidian/appearance.json"
+                ],
+                "profiles": "example-container",
+                "link": true
+            },
+            {
+                "remotes": "<OneDrive>\\work-vault\\.obsidian\\appearance.json",
+                "profiles": "work"
+            }
+        ],
+        "obsidian/hotkeys.json": [
+            {
+                "remotes": [
+                    "/home-vault/.obsidian/hotkeys.json",
+                    "/work-vault/.obsidian/hotkeys.json"
+                ],
+                "profiles": "example-container",
+                "link": true
+            },
+            {
+                "remotes": "<OneDrive>/work-vault/.obsidian/hotkeys.json",
+                "profiles": "work"
+            }
+        ],
+        "obsidian/snippets": [
+            {
+                "remotes": [
+                    "/home-vault/.obsidian/snippets",
+                    "/work-vault/.obsidian/snippets"
+                ],
+                "profiles": "example-container",
+                "link": true
+            },
+            {
+                "remotes": "<OneDrive>\\work-vault\\.obsidian\\snippets",
+                "profiles": "work"
+            }
+        ],
+        "rust/rustfmt.toml": {
+            "remotes": "~/rustfmt.toml",
+            "link": true,
+            "profiles": [
+                "desktop",
+                "eq12",
+                "example-container"
+            ]
+        },
+        "terminal/nushell/config.nu": [
+            {
+                "remotes": "~/.config/nushell/config.nu",
+                "link": true,
+                "profiles": "linux"
+            },
+            {
+                "remotes": "~\\AppData\\Roaming\\nushell\\config.nu",
+                "link": true,
+                "profiles": "windows"
+            }
+        ],
+        "terminal/nushell/env.nu": [
+            {
+                "remotes": "~/.config/nushell/env.nu",
+                "link": true,
+                "profiles": "linux"
+            },
+            {
+                "remotes": "~\\AppData\\Roaming\\nushell\\env.nu",
+                "link": true,
+                "profiles": "windows"
+            }
+        ],
+        "terminal/windows-terminal/settings.json": {
+            "remotes": "~/AppData/vaults/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/vaultsState/settings.json",
+            "link": true,
+            "profiles": "windows"
+        },
+        "vim/.vimrc_profile1": {
+            "remotes": "~/.vimrc",
+            "link": true,
+            "profiles": [
+                "linux",
+                "windows"
+            ]
+        },
+        "useful-notes.txt": {
+            "remotes": "<GOOGLE_DRIVE>/useful-notes.txt",
+            "profiles": "example-container"
+        },
+        "vim/.vimrc_profile2": {
+            "remotes": "~/.vimrc",
+            "link": true,
+            "profiles": "alt-profile"
+        },
+        "vscode/keybindings.json": [
+            {
+                "remotes": "~/.config/Code/User/keybindings.json",
+                "link": true,
+                "profiles": "example-container"
+            },
+            {
+                "remotes": "~/AppData/Roaming/Code/User/keybindings.json",
+                "link": true,
+                "profiles": "desktop"
+            }
+        ],
+        "vscode/settings.json": [
+            {
+                "remotes": "~/.config/Code/User/settings.json",
+                "link": true,
+                "profiles": "example-container"
+            },
+            {
+                "remotes": "~/AppData/Roaming/Code/User/settings.json",
+                "link": true,
+                "profiles": "desktop"
+            }
+        ]
+    }
+}

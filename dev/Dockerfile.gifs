@@ -1,0 +1,19 @@
+# Use this container to build the GIFs used in the documentation examples.
+
+# Run these commands from the top level of the repo to setup the container:
+# sh dev/setup-containers.sh
+# docker run --rm -v .:/vhs td-gifs assets/<cassette>.tape
+
+FROM ghcr.io/charmbracelet/vhs
+
+# SECTION: If updating anything in this section, update Dockerfile.example to match!
+# Must have built `td` at least once in the dev container
+COPY ./target-container/debug/td /usr/bin/td
+COPY ./docs/example-repo /root/example-repo
+
+ENV GOOGLE_DRIVE=/gdrive
+
+RUN mkdir /root/.tendrils && \
+    echo '{"default-repo-path": "~/example-repo", "default-profiles": ["linux", "example-container"]}' \
+    > /root/.tendrils/global-config.json
+# END SECTION

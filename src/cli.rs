@@ -4,7 +4,7 @@ use inline_colorization::{color_bright_green, color_bright_red, color_reset};
 mod td_table;
 use std::path::PathBuf;
 use td_table::TdTable;
-use tendrils::{
+use tendrils_core::{
     ActionLog,
     InvalidTendrilError,
     TendrilActionError,
