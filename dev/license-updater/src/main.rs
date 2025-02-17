@@ -42,7 +42,6 @@ struct FormattedDependency {
 struct CargoMetadataDependency {
     pub id: String,
     pub name: String,
-    pub version: String,
     pub license: Option<String>,
     #[serde(default)]
     pub license_files: Vec<String>,
@@ -137,17 +136,18 @@ fn get_license_texts(
     let mut license_texts = Vec::with_capacity(dep.license_files.len());
     let crate_path = get_local_crate_path(dep, crate_path_lookup);
     for license_file in dep.license_files.iter() {
+        let mut text;
         if is_https_url(&license_file) {
-            let text = fetch_https_license(&license_file);
-            license_texts.push(text);
+            text = fetch_https_license(&license_file);
         }
         else {
             let full_path = crate_path.join(license_file);
-            let text = std::fs::read_to_string(&full_path).expect(
+            text = std::fs::read_to_string(&full_path).expect(
                 &format!("Could not find {}", full_path.to_string_lossy())
             );
-            license_texts.push(text);
         }
+        text = String::from(text.trim_end());
+        license_texts.push(text);
     }
 
     license_texts
@@ -232,7 +232,7 @@ fn merge_info(
         // Default to docs.rs if there is not a provided repo:
         let src = match dep.repo {
             Some(v) => v,
-            _ => format!("https://docs.rs/{}/{}", dep.name, dep.version),
+            _ => format!("https://docs.rs/{}", dep.name),
         };
 
         let formatted_dep = FormattedDependency {
@@ -259,7 +259,7 @@ fn to_markdown(dep: &FormattedDependency, license_texts: Vec<String>) -> String 
 
     for (i, text) in license_texts.iter().enumerate() {
         output.push_str(&text);
-        output.push_str("\n\n");
+        output.push_str("\n\n\n");
 
         // Add divider between multiple licenses on the same dependency
         if i < license_texts.len() - 1 {
