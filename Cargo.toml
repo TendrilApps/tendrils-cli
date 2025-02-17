@@ -43,6 +43,7 @@ workspace = true
 
 [workspace]
 members = [
+    "dev/license-updater",
     "tendrils-core",
 ]
 resolver = "2" # Required to use 2 vs 1 to prevent _test_utils

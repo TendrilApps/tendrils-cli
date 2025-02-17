@@ -22,10 +22,10 @@
 ``` json
 {
     "preamble": "Introductory sentence/paragraph",
-    "cargo-dependencies": {
-        "id-of-dependency-1": {
+    "cargo-dependencies": [
+        {
+            "id": "registry+url#dep1@version",
             "name": "Name of the dependency",
-            "version": "x.y.z",
             "desc": "Short description of the package",
             "license": "MIT (for example)",
             "license_files": [
@@ -33,15 +33,16 @@
                 "path/from/crate/root/LICENSE-APACHE",
                 "https://www.web-link-to-license-raw-text.com"
             ],
-            "repo": "https://link-to-source-code-repo.com"
+            "src": "https://link-to-source-code-repo.com"
         },
-        "id-of-dependency-2": {
+        {
+            "id": "registry+url#dep2@version",
             "etc..."
         }
-    }
+    ]
 }
 ```
-- The `cargo-dependencies` section is automatically generated using the [3rd-party-update-cargo-deps.nu](./utils/3rd-party-update-cargo-deps.nu) script. In general this section should not be manually updated *except for* the `license_files` list
+- The `cargo-dependencies` section is automatically generated using the `license-updater` local crate. In general this section should not be manually updated *except for* the `license_files` list
 - The `license_files` can either be https URLs to the *raw* license text, or can be a file name that will be searched in the local repository relative to the crate root
     - For example, a value of `LICENSE.txt` would resolve typically resolve to `~/.cargo/registry/src/index.crates.io-6f17d22bba15001f/<crate-name>-<version>/LICENSE.txt`
         - This captures the exact license under which this specific version was distributed through crates.io
@@ -50,12 +51,14 @@
         - Typically if using a recent version of a dependency, its license will match that in the master branch
 - There must be at least one license file/URL specified
 - If there are dual licenses that are "either-or", only include the `license_files` you plan to abide by (but do not change the `license` field - this is automatically populated and is mainly intended to capture changes to the licensing scheme in future dependency versions)
-- This json metadata is then compiled to a markdown output using [3rd-party-compile-licenses.nu](./utils/3rd-party-compile-licenses.nu)
+- This json metadata is then compiled to a markdown output using the `license-updater` local crate
 
 ``` bash
 # From the root of the repo
-nu dev/utils/3rd-party-update-cargo-deps.nu dev/3rd-party-metadata.json
-(nu dev/utils/3rd-party-compile-licenses.nu dev/3rd-party-metadata.json) | save LICENSE-3RD-PARTY.md -f
+cargo run -p license-updater -- -d      # Dry-run - confirm metadata output
+cargo run -p license-updater            # Update metadata file
+cargo run -p license-updater -- -c -d   # Dry-run - confirm Markdown output
+cargo run -p license-updater -- -c      # Update third party license file
 ```
 
 # Example GIFs
