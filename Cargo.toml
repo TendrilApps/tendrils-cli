@@ -3,10 +3,12 @@ name = "tendrils-cli"
 description = "Flexibly manage files/folders throughout the computer from a single location"
 license.workspace = true
 repository.workspace = true
-version = "0.0.1"
+version = "0.0.2"
 edition = "2021"
 readme = "README-CLI.md"
-include = ["/src", "/build.rs", "/assets/logo.ico"]
+include = ["/src", "/build.rs", "LICENSE.md", "/assets/logo.ico"]
+categories = ["command-line-utilities", "config", "filesystem"]
+keywords.workspace = true
 
 [[bin]]
 name = "td"
@@ -18,37 +20,58 @@ logo = ["metadata"] # Embeds the logo in the executable
 metadata = ["dep:winresource"] # Embeds metadata in the executable
 
 [dependencies]
-clap = { version = "4.5.21", features = ["derive"] }
-exitcode = "1.1.2"
-inline_colorization = "0.1.6"
-tabled = { version = "0.16.0", features = ["ansi"] }
-tendrils-core = { path = "./tendrils-core", version = "0.0.1" } # See also the usage in dev-dependencies
+clap = { workspace = true, features = ["derive"] }
+exitcode = { workspace = true }
+inline_colorization = { workspace = true }
+tabled = { workspace = true, features = ["ansi"] }
+tendrils-core = { workspace = true } # See also the usage in dev-dependencies
 
 [dev-dependencies]
-rstest = "0.23.0"
-serial_test = "3.2.0"
-tempdir = "0.3.7"
+rstest = { workspace = true }
+serial_test = { workspace = true }
+tempdir = { workspace = true }
 # Despite being a dev-dependency, in order to prevent "_test_utils"
 # from being included in non-testing builds the resolver "2" must
 # be used (see workspace Cargo.toml).
-tendrils-core = { path = "./tendrils-core", version = "0.0.1", features = ["_test_utils"] }
+tendrils-core = { workspace = true, features = ["_test_utils"] }
 
 [target.'cfg(windows)'.build-dependencies]
-winresource = { version = "0.1.17", optional = true } # See "metadata" feature
+winresource = { workspace = true, optional = true } # See "metadata" feature
 
 [lints]
 workspace = true
 
-[workspace.package]
-license = "GPL-3.0-or-later"
-repository = "https://github.com/TendrilApps/tendrils-cli"
-
 [workspace]
 members = [
+    "dev/license-updater",
     "tendrils-core",
 ]
 resolver = "2" # Required to use 2 vs 1 to prevent _test_utils
                # being included even outside of testing
+
+[workspace.package]
+license = "GPL-3.0-or-later"
+repository = "https://github.com/TendrilApps/tendrils-cli"
+keywords = ["configuration", "sync", "backup", "dotfiles", "centralized"]
+
+[workspace.dependencies]
+clap = "4.5.21"
+exitcode = "1.1.2"
+fs_extra = "1.3.0"
+glob-match = "0.2.1"
+indexmap = "2.6.0"
+inline_colorization = "0.1.6"
+is-root = "0.1.3"
+rstest = "0.23.0"
+rstest_reuse = "0.7.0"
+serde = "1.0.215"
+serde_json = "1.0.132"
+serial_test = "3.2.0"
+tabled = "0.16.0"
+tempdir = "0.3.7"
+tendrils-core = { path = "./tendrils-core", version = "0.0.2" }
+winreg = "0.52.0"
+winresource = "0.1.17"
 
 [workspace.lints.rust]
 private-bounds = "deny"

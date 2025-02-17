@@ -2,7 +2,7 @@
 Tendrils is a tool to flexibly manage files/folders throughout the computer from a single location.
 https://github.com/TendrilApps/tendrils-cli
 
-Copyright 2024  Cole Markle
+Copyright 2024-2025  Cole Markle
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
