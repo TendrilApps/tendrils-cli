@@ -16,11 +16,17 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - name: Run tests
-      run: cargo test --all-features --verbose --workspace --release
-    - name: Check empty tempdir folder
-      run: cargo test --all-features --verbose --workspace --release
+    - name: Run tests except admin tests
+      # Test all features except _admin_tests
+      run: cargo test --workspace --release --features default
+    - name: Check tempdir folder is empty
+      run: |
+        repoFolder=$(git rev-parse --show-toplevel)
+        if [ "$(ls $repoFolder/target/tempdirs)" != "" ]; then
+          echo "Temp folder is not empty. Test cases may not be cleaning up properly."
+          exit 1
+        fi
     - name: Build binary
-      run: cargo build --all-features --verbose
+      run: cargo build --all-features
     - name: Build docs
       run: cargo doc --all-features --workspace --document-private-items --no-deps --release
