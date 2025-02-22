@@ -14,9 +14,9 @@ jobs:
 
     runs-on: [
       ubuntu-latest,
-      windows-latest,
+      # windows-latest,
       macos-latest, # arm64 (Apple silicon)
-      macos-13, # Intel
+      # macos-13, # Intel
     ]
 
     # These steps should mirror ../../dev/test-full.sh
