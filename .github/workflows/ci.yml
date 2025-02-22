@@ -1,0 +1,30 @@
+name: Rust
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test-full:
+
+    runs-on: ubuntu-latest
+
+    # These steps should mirror ../../dev/test-full.sh
+    steps:
+    - uses: actions/checkout@v4 # Sets PWD to top level of repo
+    - name: Run tests except admin tests
+      run: sh dev/utils/test-except-admin.sh
+
+    - name: Check tempdir folder is empty
+      run: sh dev/utils/check-tempdir-empty.sh
+
+    - name: Build `td` binary
+      run: sh dev/utils/build-td.sh
+
+    - name: Build docs
+      run: sh dev/utils/build-docs.sh
