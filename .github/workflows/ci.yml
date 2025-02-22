@@ -14,8 +14,8 @@ jobs:
 
     runs-on: [
       ubuntu-latest,
-      # windows-latest,
-      macos-latest, # arm64 (Apple silicon)
+      windows-latest,
+      # macos-latest, # arm64 (Apple silicon)
       # macos-13, # Intel
     ]
 
