@@ -12,7 +12,12 @@ env:
 jobs:
   test-full:
 
-    runs-on: ubuntu-latest
+    runs-on: [
+      ubuntu-latest,
+      windows-latest,
+      # macos-latest, # arm64 (Apple silicon)
+      # macos-13, # Intel
+    ]
 
     # These steps should mirror ../../dev/test-full.sh
     steps:
