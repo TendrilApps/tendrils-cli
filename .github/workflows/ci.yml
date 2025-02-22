@@ -18,7 +18,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Run tests except admin tests
-      run: sh ../../dev/utils/test-except-admin.sh
+      run: echo $PWD && sh dev/utils/test-except-admin.sh
 
     - name: Check tempdir folder is empty
       run: sh ../../dev/utils/check-tempdir-empty.sh
