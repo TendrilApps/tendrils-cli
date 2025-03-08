@@ -11,8 +11,16 @@ env:
 
 jobs:
   test-full:
-
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        os: [
+          ubuntu-latest,
+          windows-latest,
+          macos-latest, # arm64 (Apple silicon)
+          macos-13, # Intel
+        ]
 
     # These steps should mirror ../../dev/test-full.sh
     steps:

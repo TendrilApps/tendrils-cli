@@ -126,6 +126,30 @@ fn get_username() -> String {
     std::env::var("USERNAME").unwrap()
 }
 
+/// Check if UAC is enabled. Useful when test are running in the context
+/// of a Github Action, as UAC is disabled here.
+pub fn uac_enabled() -> bool {
+    #[cfg(windows)] {
+        let mut cmd = std::process::Command::new("REG");
+        let output = cmd
+            .arg("QUERY")
+            .arg("HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\System\\")
+            .arg("/v")
+            .arg("ConsentPromptBehaviorAdmin")
+            .output()
+            .unwrap();
+        if !output.status.success() {
+            panic!("ERROR: Could not check UAC status");
+        }
+
+        !String::from_utf8(output.stdout).unwrap().contains("0x0")
+    }
+
+    #[cfg(not(windows))] {
+        true
+    }
+}
+
 /// File or folder must already exist
 pub fn set_ra(path: &Path, can_read: bool) {
     #[cfg(windows)]
