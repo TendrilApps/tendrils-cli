@@ -6,6 +6,7 @@ use crate::test_utils::{
     set_ra,
     symlink_expose,
     Setup,
+    uac_enabled,
 };
 use crate::{
     pull_tendril,
@@ -691,7 +692,7 @@ fn no_read_access_from_remote_file_returns_io_error_permission_denied_unless_dry
 #[case(true)]
 #[case(false)]
 #[cfg_attr(target_os = "linux", ignore)]
-fn no_read_access_from_remote_dir_returns_io_error_permission_denied_unless_dry_run(
+fn no_read_access_from_remote_dir_returns_io_error_permission_denied_unless_dry_run_or_uac_disabled(
     #[case] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -710,16 +711,21 @@ fn no_read_access_from_remote_dir_returns_io_error_permission_denied_unless_dry_
     let actual = pull_tendril(&tendril, dry_run, force);
 
     set_ra(&setup.remote_nra_dir, true);
-    assert!(is_empty(&setup.group_dir));
     let exp_result;
     if dry_run {
         exp_result = Ok(TendrilActionSuccess::NewSkipped);
+        assert!(is_empty(&setup.group_dir));
+    }
+    else if !uac_enabled() {
+        exp_result = Ok(TendrilActionSuccess::New);
+        assert!(!is_empty(&setup.group_dir));
     }
     else {
         exp_result = Err(TendrilActionError::IoError {
             kind: std::io::ErrorKind::PermissionDenied,
             loc: Location::Source,
         });
+        assert!(is_empty(&setup.group_dir));
     }
     assert_eq!(
         actual,

@@ -5,6 +5,7 @@ use crate::test_utils::{
     set_ra,
     symlink_expose,
     Setup,
+    uac_enabled,
 };
 use crate::{
     push_tendril,
@@ -683,7 +684,7 @@ fn no_read_access_from_local_file_returns_io_error_permission_denied_unless_dry_
 #[case(true)]
 #[case(false)]
 #[cfg_attr(target_os = "linux", ignore)]
-fn no_read_access_from_local_dir_returns_io_error_permission_denied_unless_dry_run(
+fn no_read_access_from_local_dir_returns_io_error_permission_denied_unless_dry_run_or_uac_disabled(
     #[case] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -705,12 +706,18 @@ fn no_read_access_from_local_dir_returns_io_error_permission_denied_unless_dry_r
     let exp_result;
     if dry_run {
         exp_result = Ok(TendrilActionSuccess::NewSkipped);
+        assert!(!setup.remote_nra_dir.exists());
+    }
+    else if !uac_enabled() {
+        exp_result = Ok(TendrilActionSuccess::New);
+        assert!(setup.remote_nra_dir.exists());
     }
     else {
         exp_result = Err(TendrilActionError::IoError {
             kind: std::io::ErrorKind::PermissionDenied,
             loc: Location::Source,
         });
+        assert!(!setup.remote_nra_dir.exists());
     }
     assert_eq!(
         actual,
@@ -721,7 +728,6 @@ fn no_read_access_from_local_dir_returns_io_error_permission_denied_unless_dry_r
             exp_result,
         )
     );
-    assert!(!setup.remote_nra_dir.exists());
 }
 
 #[rstest]
