@@ -7,6 +7,7 @@ use td_table::TdTable;
 use tendrils_core::{
     ActionLog,
     InvalidTendrilError,
+    ListLog,
     TendrilActionError,
     TendrilActionSuccess,
     TendrilLog,
@@ -69,6 +70,15 @@ pub(crate) enum TendrilsSubcommands {
         filter_args: FilterArgs,
     },
 
+    /// Lists extended info about the tendrils
+    List {
+        #[clap(flatten)]
+        path_args: PathArgs,
+
+        #[clap(flatten)]
+        filter_args: FilterArgs,
+    },
+
     /// Performs all outward bound operations (link and push)
     Out {
         #[clap(flatten)]
@@ -96,9 +106,8 @@ pub(crate) enum AboutSubcommands {
 
 #[derive(Args, Clone, Debug, Eq, PartialEq)]
 pub(crate) struct ActionArgs {
-    /// Explicitly sets the path to the Tendrils repo
-    #[arg(long)]
-    pub path: Option<String>,
+    #[clap(flatten)]
+    pub path_args: PathArgs,
 
     /// Prints what the command would do without modifying
     /// the file system
@@ -108,6 +117,13 @@ pub(crate) struct ActionArgs {
     /// Ignores type mismatches and forces the operation
     #[arg(short, long)]
     pub force: bool,
+}
+
+#[derive(Args, Clone, Debug, Eq, PartialEq)]
+pub(crate) struct PathArgs {
+    /// Explicitly sets the path to the Tendrils repo
+    #[arg(long)]
+    pub path: Option<String>,
 }
 
 #[derive(Args, Clone, Debug, Eq, PartialEq)]
@@ -176,7 +192,7 @@ fn ansi_styled_result(
     }
 }
 
-pub(crate) fn print_reports(
+pub(crate) fn print_action_reports(
     reports: &[TendrilReport<ActionLog>],
     writer: &mut impl Writer,
 ) {
@@ -214,6 +230,12 @@ pub(crate) fn print_reports(
     writer.writeln(&tbl.draw());
 
     print_totals(reports, writer);
+}
+
+pub(crate) fn print_list_reports(reports: Vec<TendrilReport<ListLog>>) {
+    for report in reports {
+        println!("{:?}", report);
+    }
 }
 
 fn print_totals(

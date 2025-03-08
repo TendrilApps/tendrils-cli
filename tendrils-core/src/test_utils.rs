@@ -324,6 +324,14 @@ impl TendrilsApi for MockTendrilsApi<'_> {
             self.get_default_profiles_const_rt.clone()
         }
     }
+    
+    fn list_tendrils(
+        &self,
+        td_repo: Option<&UniPath>,
+        filter: FilterSpec,
+    ) -> Result<Vec<TendrilReport<crate::ListLog>>, SetupError> {
+        unimplemented!()
+    }
 
     fn tendril_action_updating<U>(
         &self,

@@ -3,7 +3,7 @@
 
 mod config;
 mod enums;
-use config::LazyCachedGlobalConfig;
+use config::{get_config, LazyCachedGlobalConfig};
 pub use enums::{
     ActionMode,
     ConfigType,
@@ -35,6 +35,7 @@ mod tendril_report;
 pub use tendril_report::{
     ActionLog,
     CallbackUpdater,
+    ListLog,
     TendrilLog,
     TendrilReport,
     UpdateHandler
@@ -81,6 +82,12 @@ pub trait TendrilsApi {
     /// - Note: This does *not* check that the `tendrils.json` contents are valid.
     fn is_tendrils_repo(&self, dir: &UniPath) -> bool;
 
+    fn list_tendrils(
+        &self,
+        td_repo: Option<&UniPath>,
+        filter: FilterSpec,
+    ) -> Result<Vec<TendrilReport<ListLog>>, SetupError>;
+    
     /// Reads the `tendrils.json` file in the given Tendrils repo, and
     /// performs the action on each tendril that matches the
     /// filter.
@@ -186,6 +193,40 @@ impl TendrilsApi for TendrilsActor {
     fn is_tendrils_repo(&self, dir: &UniPath) -> bool {
         is_tendrils_repo(dir)
     }
+
+    fn list_tendrils(
+        &self,
+        td_repo: Option<&UniPath>,
+        filter: FilterSpec,
+    ) -> Result<Vec<TendrilReport<ListLog>>, SetupError> {
+        let mut global_cfg = LazyCachedGlobalConfig::new();
+        let td_repo= get_tendrils_repo(td_repo, &mut global_cfg)?;
+        let all_tendrils = get_config(&td_repo)?.raw_tendrils;
+        let filtered_tendrils = 
+            filter_tendrils(all_tendrils, filter, &mut global_cfg);
+        let mut reports = Vec::with_capacity(filtered_tendrils.len());
+
+        for raw_tendril in filtered_tendrils {
+            let log = match raw_tendril.resolve(&td_repo) {
+                Ok(v) => {
+                    Ok(ListLog::new(
+                        v.local_abs().get_type(), 
+                        v.remote().inner().get_type(),
+                        v.remote().inner().into()
+                    ))
+                }
+                Err(e) => Err(e),
+            };
+
+            reports.push(TendrilReport {
+                raw_tendril,
+                log,
+            });
+        }
+
+        Ok(reports)
+    }
+
 
     fn tendril_action_updating<U>(
         &self,
