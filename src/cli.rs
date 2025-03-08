@@ -206,7 +206,7 @@ pub(crate) fn print_reports(
         };
 
         tbl.push_row(&[
-            report.local.clone(),
+            report.raw_tendril.local.clone(),
             styled_path,
             styled_result,
         ]);

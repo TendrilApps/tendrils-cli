@@ -1020,7 +1020,6 @@ fn tendril_action_prints_progress_to_stderr_and_table_to_stdout(
     api.tau_const_after_updater_rts = vec![
         TendrilReport {
             raw_tendril: t1.clone(),
-            local: "SomeApp/misc.txt".to_string(),
             log: Ok(ActionLog::new(
                 Some(FsoType::File),
                 None,
@@ -1030,7 +1029,6 @@ fn tendril_action_prints_progress_to_stderr_and_table_to_stdout(
         },
         TendrilReport {
             raw_tendril: t2.clone(),
-            local: "SomeApp/misc.txt".to_string(),
             log: Ok(ActionLog::new(
                 Some(FsoType::File),
                 None,
@@ -1155,7 +1153,6 @@ fn tendril_action_if_all_pass_they_are_totalled_and_returns_ok(
     api.tau_const_after_updater_rts = vec![
         TendrilReport {
             raw_tendril: t1.clone(),
-            local: "misc.txt".to_string(),
             log: Ok(ActionLog::new(
                 Some(FsoType::File),
                 None,
@@ -1165,7 +1162,6 @@ fn tendril_action_if_all_pass_they_are_totalled_and_returns_ok(
         },
         TendrilReport {
             raw_tendril: t2.clone(),
-            local: "misc.txt".to_string(),
             log: Ok(ActionLog::new(
                 None,
                 None,
@@ -1175,7 +1171,6 @@ fn tendril_action_if_all_pass_they_are_totalled_and_returns_ok(
         },
         TendrilReport {
             raw_tendril: t3.clone(),
-            local: "misc.txt".to_string(),
             log: Ok(ActionLog::new(
                 Some(FsoType::Dir),
                 None,
@@ -1254,7 +1249,6 @@ fn tendril_action_if_any_fail_they_are_totalled_and_returns_exit_code(
     api.tau_const_after_updater_rts = vec![
         TendrilReport {
             raw_tendril: t1.clone(),
-            local: "misc.txt".to_string(),
             log: Ok(ActionLog::new(
                 Some(FsoType::File),
                 None,
@@ -1264,7 +1258,6 @@ fn tendril_action_if_any_fail_they_are_totalled_and_returns_exit_code(
         },
         TendrilReport {
             raw_tendril: t2.clone(),
-            local: "misc.txt".to_string(),
             log: Ok(ActionLog::new(
                 None,
                 None,
@@ -1274,7 +1267,6 @@ fn tendril_action_if_any_fail_they_are_totalled_and_returns_exit_code(
         },
         TendrilReport {
             raw_tendril: t3.clone(),
-            local: "misc.txt".to_string(),
             log: Ok(ActionLog::new(
                 Some(FsoType::Dir),
                 None,
@@ -1377,7 +1369,6 @@ fn tendril_action_order_of_reports_is_unchanged(
     api.tau_const_after_updater_rts = vec![
         TendrilReport {
             raw_tendril: t2_3.clone(),
-            local: "l2".to_string(),
             log: Ok(ActionLog::new(
                 None,
                 None,
@@ -1387,7 +1378,6 @@ fn tendril_action_order_of_reports_is_unchanged(
         },
         TendrilReport {
             raw_tendril: t2_2.clone(),
-            local: "l2".to_string(),
             log: Ok(ActionLog::new(
                 None,
                 None,
@@ -1397,7 +1387,6 @@ fn tendril_action_order_of_reports_is_unchanged(
         },
         TendrilReport {
             raw_tendril: t2_1.clone(),
-            local: "l2".to_string(),
             log: Ok(ActionLog::new(
                 None,
                 None,
@@ -1407,7 +1396,6 @@ fn tendril_action_order_of_reports_is_unchanged(
         },
         TendrilReport {
             raw_tendril: t1_2.clone(),
-            local: "l1".to_string(),
             log: Ok(ActionLog::new(
                 None,
                 None,
@@ -1417,7 +1405,6 @@ fn tendril_action_order_of_reports_is_unchanged(
         },
         TendrilReport {
             raw_tendril: t1_1.clone(),
-            local: "l1".to_string(),
             log: Ok(ActionLog::new(
                 None,
                 None,
@@ -1427,7 +1414,6 @@ fn tendril_action_order_of_reports_is_unchanged(
         },
         TendrilReport {
             raw_tendril: t1_3.clone(),
-            local: "l1".to_string(),
             log: Ok(ActionLog::new(
                 None,
                 None,
@@ -1437,7 +1423,6 @@ fn tendril_action_order_of_reports_is_unchanged(
         },
         TendrilReport {
             raw_tendril: t3_3.clone(),
-            local: "l3".to_string(),
             log: Ok(ActionLog::new(
                 None,
                 None,
@@ -1447,7 +1432,6 @@ fn tendril_action_order_of_reports_is_unchanged(
         },
         TendrilReport {
             raw_tendril: t3_3.clone(),
-            local: "l3".to_string(),
             log: Ok(ActionLog::new(
                 None,
                 None,
@@ -1457,7 +1441,6 @@ fn tendril_action_order_of_reports_is_unchanged(
         },
         TendrilReport {
             raw_tendril: t3_2.clone(),
-            local: "l3".to_string(),
             log: Ok(ActionLog::new(
                 None,
                 None,

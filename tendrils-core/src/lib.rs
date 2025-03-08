@@ -805,8 +805,6 @@ where
     updater.count(raw_tendrils.len() as i32);
 
     for raw_tendril in raw_tendrils.into_iter() {
-        // TODO: Don't clone here - if `raw_tendril` is separate from the
-        // `TendrilReport` this additional instance will not be required
         updater.before(raw_tendril.clone());
         let tendril = raw_tendril.resolve(td_repo);
 
@@ -843,10 +841,8 @@ where
             (Err(e), _, _) => Err(e),
         };
 
-        let local = raw_tendril.local.clone();
         let report = TendrilReport {
             raw_tendril,
-            local,
             log,
         };
 

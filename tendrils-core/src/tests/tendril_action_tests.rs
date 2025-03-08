@@ -206,7 +206,6 @@ fn given_td_repo_is_none_default_td_repo_is_valid_uses_default_td_repo(
         actual,
         vec![TendrilReport {
             raw_tendril: tendril.clone(),
-            local: tendril.local.clone(),
             log: Ok(ActionLog::new(
                 None,
                 None,
@@ -286,7 +285,6 @@ fn leading_tilde_or_env_vars_in_default_repo_path_are_resolved(
         actual,
         vec![TendrilReport {
             raw_tendril: tendril.clone(),
-            local: tendril.local.clone(),
             log: Ok(ActionLog::new(
                 exp_local_type,
                 exp_remote_type,
@@ -361,7 +359,6 @@ fn tendrils_are_filtered_before_action(
         actual,
         vec![TendrilReport {
             raw_tendril: t1,
-            local: "SomeApp/misc.txt".to_string(),
             log: Ok(ActionLog::new(
                 None,
                 None,
@@ -455,7 +452,6 @@ fn tendrils_are_filtered_by_mode(
     });
     let t1_result = TendrilReport {
         raw_tendril: t1.clone(),
-        local: "misc1.txt".to_string(),
         log: Ok(ActionLog::new(
             None,
             None,
@@ -465,7 +461,6 @@ fn tendrils_are_filtered_by_mode(
     };
     let t2_result = TendrilReport {
         raw_tendril: t2.clone(),
-        local: "misc2.txt".to_string(),
         log: Ok(ActionLog::new(
             None,
             None,
@@ -475,7 +470,6 @@ fn tendrils_are_filtered_by_mode(
     };
     let t3_result = TendrilReport {
         raw_tendril: t3.clone(),
-        local: "misc3.txt".to_string(),
         log: Ok(ActionLog::new(
             None,
             None,
@@ -541,7 +535,6 @@ fn tendrils_are_filtered_by_local(
     });
     let t2_result = TendrilReport {
         raw_tendril: t2.clone(),
-        local: "App2/misc2.txt".to_string(),
         log: Ok(ActionLog::new(
             None,
             None,
@@ -551,7 +544,6 @@ fn tendrils_are_filtered_by_local(
     };
     let t3_result = TendrilReport {
         raw_tendril: t3.clone(),
-        local: "App3/misc3.txt".to_string(),
         log: Ok(ActionLog::new(
             None,
             None,
@@ -611,7 +603,6 @@ fn tendrils_are_filtered_by_remotes(
     });
     let t2_result = TendrilReport {
         raw_tendril: t2.clone(),
-        local: "misc2.txt".to_string(),
         log: Ok(ActionLog::new(
             None,
             None,
@@ -621,7 +612,6 @@ fn tendrils_are_filtered_by_remotes(
     };
     let t3_result = TendrilReport {
         raw_tendril: t3.clone(),
-        local: "misc3.txt".to_string(),
         log: Ok(ActionLog::new(
             None,
             None,
@@ -683,7 +673,6 @@ fn tendrils_are_filtered_by_profile(
     });
     let t2_result = TendrilReport {
         raw_tendril: t2.clone(),
-        local: "misc2.txt".to_string(),
         log: Ok(ActionLog::new(
             None,
             None,
@@ -693,7 +682,6 @@ fn tendrils_are_filtered_by_profile(
     };
     let t3_result = TendrilReport {
         raw_tendril: t3.clone(),
-        local: "misc3.txt".to_string(),
         log: Ok(ActionLog::new(
             None,
             None,
