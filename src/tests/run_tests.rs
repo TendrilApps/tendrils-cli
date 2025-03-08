@@ -4,6 +4,7 @@ use crate::cli::{
     ActionArgs,
     CLEAR_LINE,
     FilterArgs,
+    PathArgs,
     TendrilCliArgs,
     TendrilsSubcommands,
 };
@@ -93,7 +94,8 @@ fn build_action_subcommand(
     remotes: Vec<String>,
     profiles: Option<Vec<String>>,
 ) -> TendrilsSubcommands {
-    let action_args = ActionArgs { path, dry_run, force };
+    let path_args = PathArgs { path };
+    let action_args = ActionArgs { path_args, dry_run, force };
     let filter_args = FilterArgs { locals, remotes, profiles };
 
     match mode {

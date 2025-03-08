@@ -6,10 +6,12 @@ use clap::Parser;
 mod cli;
 use cli::{
     ansi_hyperlink,
-    print_reports,
+    print_action_reports,
+    print_list_reports,
     AboutSubcommands,
     ActionArgs,
     FilterArgs,
+    PathArgs,
     TendrilCliArgs,
     TendrilsSubcommands,
 };
@@ -78,6 +80,9 @@ fn run(
                 api,
                 writer,
             )
+        }
+        TendrilsSubcommands::List { path_args, filter_args } => {
+            list_tendrils_subcommand(path_args, filter_args, api, writer)
         }
         TendrilsSubcommands::Link { action_args, filter_args } => {
             tendril_action_subcommand(
@@ -164,6 +169,21 @@ fn init(
     Ok(())
 }
 
+fn list_tendrils_subcommand(
+    path_args: PathArgs,
+    filter_args: FilterArgs,
+    api: &impl TendrilsApi,
+    writer: &mut impl Writer,
+) -> Result<(), i32> {
+    let td_repo = get_td_repo(path_args, api, writer)?;
+    let filter = filter_args.to_spec(&ActionMode::Out);
+    let reports = api.list_tendrils(td_repo.as_ref(), filter).unwrap();
+
+    print_list_reports(reports);
+
+    Ok(())
+}
+
 /// Returns, but does not set, the suggested exit code in case of error.
 /// It is up to the calling function to handle exiting with this code.
 fn path(api: &impl TendrilsApi, writer: &mut impl Writer) -> Result<(), i32> {
@@ -208,34 +228,11 @@ fn tendril_action_subcommand(
     api: &impl TendrilsApi,
     writer: &mut impl Writer,
 ) -> Result<(), i32> {
-    let td_repo = match action_args.path {
-        Some(v) => Some(UniPath::new_with_root(
-            Path::new(&v),
-            &std::env::current_dir().unwrap_or_default(),
-        )),
-        None => match std::env::current_dir() {
-            Ok(cd) => {
-                let u_cd = UniPath::from(cd);
-                if api.is_tendrils_repo(&u_cd) {
-                    Some(u_cd)
-                }
-                else {
-                    None
-                }
-            },
-            Err(_err) => {
-                writer.writeln(&format!(
-                    "{ERR_PREFIX}: Could not get the current directory"
-                ));
-                return Err(exitcode::OSERR);
-            }
-        },
-    };
-
+    let td_repo = get_td_repo(action_args.path_args, api, writer)?;
     let filter = filter_args.to_spec(&mode);
     let mut reports = vec![];
 
-    // Create locks on share resources between the callback functions
+    // Create locks on shared resources between the callback functions
     let total_lock = std::sync::RwLock::new(0);
     let completed_lock = std::sync::RwLock::new(0);
     let writer_lock = std::sync::RwLock::new(writer);
@@ -284,7 +281,7 @@ fn tendril_action_subcommand(
         Ok(()) => reports,
     };
 
-    print_reports(&action_reports, writer);
+    print_action_reports(&action_reports, writer);
 
     if action_reports.iter().any(|r| match &r.log {
         Err(_) => true,
@@ -294,6 +291,36 @@ fn tendril_action_subcommand(
     }
 
     Ok(())
+}
+
+fn get_td_repo(
+    path_args: PathArgs,
+    api: &impl TendrilsApi,
+    writer: &mut impl Writer
+) -> Result<Option<UniPath>, i32> {
+    match path_args.path {
+        Some(v) => Ok(Some(UniPath::new_with_root(
+            Path::new(&v),
+            &std::env::current_dir().unwrap_or_default(),
+        ))),
+        None => match std::env::current_dir() {
+            Ok(cd) => {
+                let u_cd = UniPath::from(cd);
+                if api.is_tendrils_repo(&u_cd) {
+                    Ok(Some(u_cd))
+                }
+                else {
+                    Ok(None)
+                }
+            },
+            Err(_err) => {
+                writer.writeln(&format!(
+                    "{ERR_PREFIX}: Could not get the current directory"
+                ));
+                return Err(exitcode::OSERR);
+            }
+        },
+    }
 }
 
 fn setup_err_to_exit_code(err: SetupError) -> i32 {

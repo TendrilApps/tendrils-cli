@@ -71,6 +71,38 @@ impl TendrilLog for ActionLog {
     }
 }
 
+/// Contains the metadata from a single tendril.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ListLog {
+    local_type: Option<FsoType>,
+    remote_type: Option<FsoType>,
+    resolved_path: PathBuf,
+}
+
+impl ListLog {
+    pub fn new(
+        local_type: Option<FsoType>,
+        remote_type: Option<FsoType>,
+        resolved_path: PathBuf,
+    ) -> ListLog {
+        ListLog { local_type, remote_type, resolved_path }
+    }
+}
+
+impl TendrilLog for ListLog {
+    fn local_type(&self) -> &Option<FsoType> {
+        &self.local_type
+    }
+
+    fn remote_type(&self) -> &Option<FsoType> {
+        &self.remote_type
+    }
+
+    fn resolved_path(&self) -> &PathBuf {
+        &self.resolved_path
+    }
+}
+
 /// Contains various updater functions for live feedback during a tendrils
 /// command.
 pub trait UpdateHandler<L>
