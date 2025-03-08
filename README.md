@@ -101,7 +101,6 @@ td link
 
 # Future Plans
 - Improved distribution
-- `list` action to list all tendrils and their status
 - `sync` action to automatically propage the last modified version of a file across all instances
 - `diff` action to quickly compare all instances of a file
 - More output formats
