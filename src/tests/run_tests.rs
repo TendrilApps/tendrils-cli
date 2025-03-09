@@ -32,6 +32,7 @@ use tendrils_core::{
     GetConfigError,
     GetTendrilsRepoError,
     InitError,
+    ListLog,
     Location,
     RawTendril,
     SetupError,
@@ -112,6 +113,17 @@ fn build_action_subcommand(
             TendrilsSubcommands::Out { action_args, filter_args }
         }
     }
+}
+
+fn build_list_subcommand(
+    path: Option<String>,
+    locals: Vec<String>,
+    remotes: Vec<String>,
+    profiles: Option<Vec<String>>,
+) -> TendrilsSubcommands {
+    let path_args = PathArgs { path };
+    let filter_args = FilterArgs { locals, remotes, profiles };
+    TendrilsSubcommands::List { path_args, filter_args }
 }
 
 #[test]
@@ -639,6 +651,38 @@ fn tendril_action_no_path_given_and_no_cd_prints_message(
     assert_eq!(writer.all_output, expected);
 }
 
+#[rstest]
+#[serial(SERIAL_CD)]
+#[cfg_attr(windows, ignore)]
+fn list_tendrils_no_path_given_and_no_cd_prints_message() {
+    let mut api = MockTendrilsApi::new();
+    let mut writer = MockWriter::new();
+    let temp_dir =
+        tempdir::TempDir::new_in(get_disposable_dir(), "TempDir").unwrap();
+    let cd = temp_dir.path().join("CurrentDir");
+    create_dir_all(&cd).unwrap();
+    std::env::set_current_dir(&cd).unwrap();
+    std::fs::remove_dir(&cd).unwrap();
+
+    api.list_fn = Some(Box::new(|_, _| panic!()));
+
+    let tendrils_command = build_list_subcommand(
+        None,
+        vec![],
+        vec![],
+        None
+    );
+    let args = TendrilCliArgs { tendrils_command };
+
+    let expected =
+        format!("{ERR_PREFIX}: Could not get the current directory\n");
+
+    let actual_exit_code = run(args, &api, &mut writer);
+
+    assert_eq!(actual_exit_code, Err(exitcode::OSERR));
+    assert_eq!(writer.all_output, expected);
+}
+
 // TODO: Test no path given and cd is not Tendrils repo
 // TODO: Test no path given and cd is Tendrils repo
 
@@ -664,7 +708,7 @@ fn tendril_action_given_path_is_not_tendrils_repo_but_cd_is_should_print_message
         dir.inner() == cd_for_closure
     }));
     api.ta_exp_mode = mode.clone();
-    api.ta_exp_path = Some(&given_dir);
+    api.ta_exp_path= Some(&given_dir);
     api.ta_exp_filter = FilterSpec::new();
     api.ta_exp_filter.mode = Some(mode.clone());
     api.ta_exp_dry_run = dry_run;
@@ -679,6 +723,49 @@ fn tendril_action_given_path_is_not_tendrils_repo_but_cd_is_should_print_message
         mode,
         dry_run,
         force,
+        vec![],
+        vec![],
+        None,
+    );
+    let args = TendrilCliArgs { tendrils_command };
+
+    let expected =
+        format!("{ERR_PREFIX}: /SomeGivenDir is not a Tendrils repo\n");
+
+    let actual_exit_code = run(args, &api, &mut writer);
+
+    // To free the TempDir from use
+    std::env::set_current_dir(temp_dir.path().parent().unwrap()).unwrap();
+
+    assert_eq!(actual_exit_code, Err(exitcode::NOINPUT));
+    assert_eq!(writer.all_output, expected);
+}
+
+#[rstest]
+#[serial(SERIAL_CD)]
+fn list_tendril_given_path_is_not_tendrils_repo_but_cd_is_should_print_message()
+{
+    let mut api = MockTendrilsApi::new();
+    let mut writer = MockWriter::new();
+    let temp_dir =
+        tempdir::TempDir::new_in(get_disposable_dir(), "TempDir").unwrap();
+    let cd = temp_dir.path().join("CurrentDir");
+    let cd_for_closure = cd.clone();
+    let given_dir = PathBuf::from("/SomeGivenDir");
+    create_dir_all(&cd).unwrap();
+    std::env::set_current_dir(&cd).unwrap();
+
+    api.is_tendrils_repo_fn = Some(Box::new(move |dir| {
+        dir.inner() == cd_for_closure
+    }));
+    api.list_exp_path = Some(&given_dir);
+    api.list_const_rt = Err(SetupError::NoValidTendrilsRepo(
+        GetTendrilsRepoError::GivenInvalid { path: given_dir.clone() },
+    ));
+
+    let path = Some(given_dir.to_str().unwrap().to_string());
+    let tendrils_command = build_list_subcommand(
+        path,
         vec![],
         vec![],
         None,
@@ -754,6 +841,48 @@ fn tendril_action_given_path_and_cd_are_both_tendrils_repos_uses_given_path(
 
 #[rstest]
 #[serial(SERIAL_CD)]
+fn list_tendrils_given_path_and_cd_are_both_tendrils_repos_uses_given_path() {
+    let mut api = MockTendrilsApi::new();
+    let mut writer = MockWriter::new();
+    let temp_dir =
+        tempdir::TempDir::new_in(get_disposable_dir(), "TempDir").unwrap();
+    let cd = temp_dir.path().join("CurrentDir");
+    let given_dir = PathBuf::from("/SomeGivenDir");
+    create_dir_all(&cd).unwrap();
+    std::env::set_current_dir(&cd).unwrap();
+
+    api.is_tendrils_repo_const_rt = true;
+    api.list_exp_path = Some(&given_dir);
+    api.list_const_rt = Err(SetupError::ConfigError(GetConfigError::ParseError {
+        cfg_type: ConfigType::Repo,
+        msg: "Some parse error msg".to_string(),
+    }));
+
+    let path = Some(given_dir.to_str().unwrap().to_string());
+    let tendrils_command = build_list_subcommand(
+        path,
+        vec![],
+        vec![],
+        None,
+    );
+    let args = TendrilCliArgs { tendrils_command };
+
+    let expected = format!(
+        "{ERR_PREFIX}: Could not parse the tendrils.json file:\nSome parse \
+         error msg\n"
+    );
+
+    let actual_exit_code = run(args, &api, &mut writer);
+
+    // To free the TempDir from use
+    std::env::set_current_dir(temp_dir.path().parent().unwrap()).unwrap();
+
+    assert_eq!(actual_exit_code, Err(exitcode::DATAERR));
+    assert_eq!(writer.all_output, expected);
+}
+
+#[rstest]
+#[serial(SERIAL_CD)]
 fn tendril_action_given_path_is_relative_prepends_with_cd(
     #[values(ActionMode::Pull, ActionMode::Push, ActionMode::Link)]
     mode: ActionMode,
@@ -787,6 +916,42 @@ fn tendril_action_given_path_is_relative_prepends_with_cd(
         mode,
         dry_run,
         force,
+        vec![],
+        vec![],
+        None,
+    );
+    let args = TendrilCliArgs { tendrils_command };
+
+    let actual_exit_code = run(args, &api, &mut writer);
+
+    // To free the TempDir from use
+    std::env::set_current_dir(temp_dir.path().parent().unwrap()).unwrap();
+
+    assert_eq!(actual_exit_code, Err(exitcode::DATAERR));
+}
+
+#[rstest]
+#[serial(SERIAL_CD)]
+fn list_tendrils_given_path_is_relative_prepends_with_cd() {
+    let mut api = MockTendrilsApi::new();
+    let mut writer = MockWriter::new();
+    let temp_dir =
+        tempdir::TempDir::new_in(get_disposable_dir(), "TempDir").unwrap();
+    let user_given_dir = "../Relative/Path";
+    let cd = temp_dir.path().join("CurrentDir");
+    create_dir_all(&cd).unwrap();
+    std::env::set_current_dir(&cd).unwrap();
+    let exp_passed_dir = cd.join(&user_given_dir);
+
+    api.is_tendrils_repo_const_rt = true;
+    api.list_exp_path = Some(&exp_passed_dir);
+    api.list_const_rt = Err(SetupError::ConfigError(GetConfigError::ParseError {
+        cfg_type: ConfigType::Repo,
+        msg: "Some parse error msg".to_string(),
+    }));
+
+    let tendrils_command = build_list_subcommand(
+        Some(user_given_dir.to_string()),
         vec![],
         vec![],
         None,
@@ -850,6 +1015,42 @@ fn tendril_action_given_path_is_relative_and_cd_doesnt_exist_prepends_with_dir_s
 }
 
 #[rstest]
+#[serial(SERIAL_CD)]
+#[cfg_attr(windows, ignore)]
+fn list_tendrils_given_path_is_relative_and_cd_doesnt_exist_prepends_with_dir_sep(
+) {
+    let mut api = MockTendrilsApi::new();
+    let mut writer = MockWriter::new();
+    let temp_dir =
+        tempdir::TempDir::new_in(get_disposable_dir(), "TempDir").unwrap();
+    let user_given_dir = "../Relative/Path";
+    let cd = temp_dir.path().join("CurrentDir");
+    create_dir_all(&cd).unwrap();
+    std::env::set_current_dir(&cd).unwrap();
+    std::fs::remove_dir(&cd).unwrap();
+    let exp_passed_dir = PathBuf::from("/../Relative/Path");
+
+    api.is_tendrils_repo_const_rt = true;
+    api.list_exp_path = Some(&exp_passed_dir);
+    api.list_const_rt = Err(SetupError::ConfigError(GetConfigError::ParseError {
+        cfg_type: ConfigType::Repo,
+        msg: "Some parse error msg".to_string(),
+    }));
+
+    let tendrils_command = build_list_subcommand(
+        Some(user_given_dir.to_string()),
+        vec![],
+        vec![],
+        None,
+    );
+    let args = TendrilCliArgs { tendrils_command };
+
+    let actual_exit_code = run(args, &api, &mut writer);
+
+    assert_eq!(actual_exit_code, Err(exitcode::DATAERR));
+}
+
+#[rstest]
 #[serial(SERIAL_MUT_ENV_VARS)]
 fn tendril_action_given_path_is_relative_but_resolves_to_abs_should_not_prepend_cd(
     #[values(ActionMode::Pull, ActionMode::Push, ActionMode::Link)]
@@ -880,6 +1081,36 @@ fn tendril_action_given_path_is_relative_but_resolves_to_abs_should_not_prepend_
         mode,
         dry_run,
         force,
+        vec![],
+        vec![],
+        None,
+    );
+    let args = TendrilCliArgs { tendrils_command };
+
+    let actual_exit_code = run(args, &api, &mut writer);
+
+    assert_eq!(actual_exit_code, Err(exitcode::DATAERR));
+}
+
+#[rstest]
+#[serial(SERIAL_MUT_ENV_VARS)]
+fn list_tendrils_given_path_is_relative_but_resolves_to_abs_should_not_prepend_cd(
+) {
+    let mut api = MockTendrilsApi::new();
+    let mut writer = MockWriter::new();
+    std::env::set_var("HOME", "/Some/Abs/Path");
+    let user_given_dir = "~/Relative/Path";
+    let exp_passed_dir = PathBuf::from("/Some/Abs/Path/Relative/Path");
+
+    api.is_tendrils_repo_const_rt = true;
+    api.list_exp_path = Some(&exp_passed_dir);
+    api.list_const_rt = Err(SetupError::ConfigError(GetConfigError::ParseError {
+        cfg_type: ConfigType::Repo,
+        msg: "Some parse error msg".to_string(),
+    }));
+
+    let tendrils_command = build_list_subcommand(
+        Some(user_given_dir.to_string()),
         vec![],
         vec![],
         None,
@@ -941,6 +1172,43 @@ fn tendril_action_given_path_is_relative_but_resolves_to_abs_and_cd_doesnt_exist
 }
 
 #[rstest]
+#[serial(SERIAL_CD, SERIAL_MUT_ENV_VARS)]
+#[cfg_attr(windows, ignore)]
+fn list_tendrils_given_path_is_relative_but_resolves_to_abs_and_cd_doesnt_exist_should_not_prepend_cd(
+) {
+    let mut api = MockTendrilsApi::new();
+    let mut writer = MockWriter::new();
+    std::env::set_var("HOME", "/Some/Abs/Path");
+    let user_given_dir = "~/Relative/Path";
+    let exp_passed_dir = PathBuf::from("/Some/Abs/Path/Relative/Path");
+    let temp_dir =
+        tempdir::TempDir::new_in(get_disposable_dir(), "TempDir").unwrap();
+    let cd = temp_dir.path().join("CurrentDir");
+    create_dir_all(&cd).unwrap();
+    std::env::set_current_dir(&cd).unwrap();
+    std::fs::remove_dir(&cd).unwrap();
+
+    api.is_tendrils_repo_const_rt = true;
+    api.list_exp_path = Some(&exp_passed_dir);
+    api.list_const_rt = Err(SetupError::ConfigError(GetConfigError::ParseError {
+        cfg_type: ConfigType::Repo,
+        msg: "Some parse error msg".to_string(),
+    }));
+
+    let tendrils_command = build_list_subcommand(
+        Some(user_given_dir.to_string()),
+        vec![],
+        vec![],
+        None,
+    );
+    let args = TendrilCliArgs { tendrils_command };
+
+    let actual_exit_code = run(args, &api, &mut writer);
+
+    assert_eq!(actual_exit_code, Err(exitcode::DATAERR));
+}
+
+#[rstest]
 fn tendril_action_prints_returned_resolved_path_when_invalid_td_repo(
     #[values(ActionMode::Pull, ActionMode::Push, ActionMode::Link)]
     mode: ActionMode,
@@ -970,6 +1238,38 @@ fn tendril_action_prints_returned_resolved_path_when_invalid_td_repo(
         mode,
         dry_run,
         force,
+        vec![],
+        vec![],
+        None,
+    );
+    let args = TendrilCliArgs { tendrils_command };
+
+    let actual_exit_code = run(args, &api, &mut writer);
+
+    let expected =
+        format!("{ERR_PREFIX}: /Resolved/Returned/Path is not a Tendrils repo\n");
+
+    assert_eq!(actual_exit_code, Err(exitcode::NOINPUT));
+    assert_eq!(writer.all_output, expected);
+}
+
+#[rstest]
+fn list_tendrils_prints_returned_resolved_path_when_invalid_td_repo() {
+    let mut api = MockTendrilsApi::new();
+    let mut writer = MockWriter::new();
+    let given_dir = PathBuf::from("/Given/Path");
+
+    api.is_tendrils_repo_const_rt = true;
+    api.list_exp_path = Some(&given_dir);
+    api.list_const_rt = Err(SetupError::NoValidTendrilsRepo(
+        GetTendrilsRepoError::GivenInvalid {
+            path: PathBuf::from("/Resolved/Returned/Path"),
+        },
+    ));
+
+    let path = Some(given_dir.to_str().unwrap().to_string());
+    let tendrils_command = build_list_subcommand(
+        path,
         vec![],
         vec![],
         None,
@@ -1488,6 +1788,134 @@ fn tendril_action_order_of_reports_is_unchanged(
 }
 
 #[rstest]
+fn list_tendrils_order_of_reports_is_unchanged() {
+    let mut api = MockTendrilsApi::new();
+    let given_dir = PathBuf::from("/SomeGivenDir");
+    let mut t1_1 = RawTendril::new("l1");
+    let mut t1_2 = RawTendril::new("l1");
+    let mut t1_3 = RawTendril::new("l1");
+    let mut t2_1 = RawTendril::new("l2");
+    let mut t2_2 = RawTendril::new("l2");
+    let mut t2_3 = RawTendril::new("l2");
+    let mut t3_1 = RawTendril::new("l3");
+    let mut t3_2 = RawTendril::new("l3");
+    let mut t3_3 = RawTendril::new("l3");
+    t1_1.remote = "r1_1".to_string();
+    t1_2.remote = "r1_2".to_string();
+    t1_3.remote = "r1_3".to_string();
+    t2_1.remote = "r2_1".to_string();
+    t2_2.remote = "r2_2".to_string();
+    t2_3.remote = "r2_3".to_string();
+    t3_1.remote = "r3_1".to_string();
+    t3_2.remote = "r3_2".to_string();
+    t3_3.remote = "r3_3".to_string();
+
+    api.list_exp_path = Some(&given_dir);
+    api.list_const_rt = Ok(vec![
+        TendrilReport {
+            raw_tendril: t2_3.clone(),
+            log: Ok(ListLog::new(
+                None,
+                None,
+                PathBuf::from("r2_3"),
+            )),
+        },
+        TendrilReport {
+            raw_tendril: t2_2.clone(),
+            log: Ok(ListLog::new(
+                None,
+                None,
+                PathBuf::from("r2_2"),
+            )),
+        },
+        TendrilReport {
+            raw_tendril: t2_1.clone(),
+            log: Ok(ListLog::new(
+                None,
+                None,
+                PathBuf::from("r2_1"),
+            )),
+        },
+        TendrilReport {
+            raw_tendril: t1_2.clone(),
+            log: Ok(ListLog::new(
+                None,
+                None,
+                PathBuf::from("r1_2"),
+            )),
+        },
+        TendrilReport {
+            raw_tendril: t1_1.clone(),
+            log: Ok(ListLog::new(
+                None,
+                None,
+                PathBuf::from("r1_1"),
+            )),
+        },
+        TendrilReport {
+            raw_tendril: t1_3.clone(),
+            log: Ok(ListLog::new(
+                None,
+                None,
+                PathBuf::from("r1_3"),
+            )),
+        },
+        TendrilReport {
+            raw_tendril: t3_3.clone(),
+            log: Ok(ListLog::new(
+                None,
+                None,
+                PathBuf::from("r3_3"),
+            )),
+        },
+        TendrilReport {
+            raw_tendril: t3_3.clone(),
+            log: Ok(ListLog::new(
+                None,
+                None,
+                PathBuf::from("r3_1"),
+            )),
+        },
+        TendrilReport {
+            raw_tendril: t3_2.clone(),
+            log: Ok(ListLog::new(
+                None,
+                None,
+                PathBuf::from("r3_2"),
+            )),
+        },
+    ]);
+
+    let mut writer = MockWriter::new();
+    let path = Some(given_dir.to_str().unwrap().to_string());
+    let tendrils_command = build_list_subcommand(
+        path,
+        vec![],
+        vec![],
+        None,
+    );
+    let args = TendrilCliArgs { tendrils_command };
+
+    let actual_exit_code = run(args, &api, &mut writer);
+
+    println!("{}", writer.all_output);
+    assert_eq!(actual_exit_code, Ok(()));
+    assert_eq!(
+        writer.all_output_lines().last().unwrap().to_string(),
+        "Total: 9"
+    );
+    assert!(writer.all_output_lines()[3] .contains("r2_3"));
+    assert!(writer.all_output_lines()[5] .contains("r2_2"));
+    assert!(writer.all_output_lines()[7] .contains("r2_1"));
+    assert!(writer.all_output_lines()[9] .contains("r1_2"));
+    assert!(writer.all_output_lines()[11].contains("r1_1"));
+    assert!(writer.all_output_lines()[13].contains("r1_3"));
+    assert!(writer.all_output_lines()[15].contains("r3_3"));
+    assert!(writer.all_output_lines()[17].contains("r3_1"));
+    assert!(writer.all_output_lines()[19].contains("r3_2"));
+}
+
+#[rstest]
 #[case(ActionMode::Pull)]
 #[case(ActionMode::Push)]
 #[case(ActionMode::Link)]
@@ -1535,6 +1963,39 @@ fn tendril_action_filters_are_passed_properly(
 }
 
 #[rstest]
+fn list_tendrils_filters_are_passed_properly() {
+    let mut api = MockTendrilsApi::new();
+    let given_dir = PathBuf::from("/SomeGivenDir");
+    let locals_filter = vec!["l1".to_string(), "l2".to_string()];
+    let remotes_filter = vec!["r1".to_string(), "r2".to_string()];
+    let profiles_filter = Some(vec!["p1".to_string(), "p2".to_string()]);
+    let filter = FilterSpec {
+        mode: None,
+        locals: locals_filter.clone(),
+        remotes: remotes_filter.clone(),
+        profiles: profiles_filter.clone(),
+    };
+
+    // These assertions occur in the mock run call
+    api.list_exp_path = Some(&given_dir);
+    api.list_exp_filter = filter;
+
+    let mut writer = MockWriter::new();
+    let path = Some(given_dir.to_str().unwrap().to_string());
+    let tendrils_command = build_list_subcommand(
+        path,
+        locals_filter,
+        remotes_filter,
+        profiles_filter,
+    );
+    let args = TendrilCliArgs { tendrils_command };
+
+    let actual_exit_code = run(args, &api, &mut writer);
+
+    assert_eq!(actual_exit_code, Ok(()));
+}
+
+#[rstest]
 #[case(ActionMode::Pull)]
 #[case(ActionMode::Push)]
 #[case(ActionMode::Link)]
@@ -1562,6 +2023,30 @@ fn tendril_action_empty_reports_list_prints_message(
         mode,
         dry_run,
         force,
+        vec![],
+        vec![],
+        None,
+    );
+    let args = TendrilCliArgs { tendrils_command };
+
+    let actual_exit_code = run(args, &api, &mut writer);
+
+    assert_eq!(actual_exit_code, Ok(()));
+    assert_eq!(writer.all_output, "No tendrils matched the given filter(s)\n");
+}
+
+#[rstest]
+fn list_tendrils_empty_reports_list_prints_message() {
+    let mut api = MockTendrilsApi::new();
+    let given_dir = PathBuf::from("/SomeGivenDir");
+
+    api.list_exp_path = Some(&given_dir);
+    api.list_const_rt = Ok(vec![]);
+
+    let mut writer = MockWriter::new();
+    let path = Some(given_dir.to_str().unwrap().to_string());
+    let tendrils_command = build_list_subcommand(
+        path,
         vec![],
         vec![],
         None,

@@ -4,6 +4,7 @@ use crate::{
     ActionLog,
     FilterSpec,
     InitError,
+    ListLog,
     PathExt,
     SetupError,
     RawTendril,
@@ -233,6 +234,11 @@ pub struct MockTendrilsApi<'a> {
     pub tau_const_before_updater_rts: Vec<RawTendril>,
     pub tau_const_after_updater_rts: Vec<TendrilReport<ActionLog>>,
     pub tau_const_rt: Result<(), SetupError>,
+    pub list_const_rt: Result<Vec<TendrilReport<ListLog>>, SetupError>,
+    pub list_fn: Option<Box<dyn Fn(Option<&UniPath>, FilterSpec)
+        -> Result<Vec<TendrilReport<ListLog>>, SetupError>>>,
+    pub list_exp_path: Option<&'a Path>,
+    pub list_exp_filter: FilterSpec,
     pub ta_const_rt: Result<Vec<TendrilReport<ActionLog>>, SetupError>,
     pub ta_fn: Option<
         Box<
@@ -266,6 +272,10 @@ impl<'a> MockTendrilsApi<'a> {
             get_default_repo_fn: None,
             get_default_profiles_const_rt: Ok(None),
             get_default_profiles_fn: None,
+            list_const_rt: Ok(vec![]),
+            list_fn: None,
+            list_exp_path: None,
+            list_exp_filter: FilterSpec::new(),
             tau_const_count_updater_rt: 0,
             tau_const_before_updater_rts: vec![],
             tau_const_after_updater_rts: vec![],
@@ -330,7 +340,20 @@ impl TendrilsApi for MockTendrilsApi<'_> {
         td_repo: Option<&UniPath>,
         filter: FilterSpec,
     ) -> Result<Vec<TendrilReport<crate::ListLog>>, SetupError> {
-        unimplemented!()
+        if let Some(p) = td_repo {
+            assert_eq!(p.inner(), self.list_exp_path.unwrap());
+        }
+        else {
+            assert_eq!(None, self.list_exp_path);
+        }
+        assert_eq!(filter, self.list_exp_filter);
+
+        if let Some(f) = self.list_fn.as_ref() {
+            f(td_repo, filter)
+        }
+        else {
+            self.list_const_rt.clone()
+        }
     }
 
     fn tendril_action_updating<U>(
