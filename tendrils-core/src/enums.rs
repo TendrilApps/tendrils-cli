@@ -407,6 +407,16 @@ pub enum TendrilMode {
     Link,
 }
 
+impl ToString for TendrilMode {
+    fn to_string(&self) -> String {
+        match &self {
+            TendrilMode::DirMerge => String::from("Directory merge"),
+            TendrilMode::DirOverwrite => String::from("Directory overwrite"),
+            TendrilMode::Link => String::from("Link"),
+        }
+    }
+}
+
 /// Indicates an invalid tendril field.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum InvalidTendrilError {

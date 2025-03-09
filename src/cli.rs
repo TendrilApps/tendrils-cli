@@ -2,7 +2,7 @@ use crate::writer::Writer;
 use clap::{Args, Parser, Subcommand};
 use inline_colorization::{color_bright_green, color_bright_red, color_reset};
 mod td_table;
-use std::path::PathBuf;
+use std::path::Path;
 use td_table::TdTable;
 use tendrils_core::{
     ActionLog,
@@ -162,7 +162,7 @@ pub(crate) fn ansi_hyperlink(url: &str, display: &str) -> String {
 }
 
 fn ansi_styled_resolved_path(
-    path: &Result<PathBuf, InvalidTendrilError>,
+    path: Result<&Path, &InvalidTendrilError>,
 ) -> String {
     match path {
         Ok(p) => {
@@ -196,8 +196,7 @@ pub(crate) fn print_action_reports(
     reports: &[TendrilReport<ActionLog>],
     writer: &mut impl Writer,
 ) {
-    if reports.is_empty() {
-        writer.writeln("No tendrils matched the given filter(s)");
+    if print_empty_reports_warning(&reports, writer).is_err() {
         return;
     }
 
@@ -211,13 +210,13 @@ pub(crate) fn print_action_reports(
     for report in reports {
         let (styled_path, styled_result) = match &report.log {
             Ok(log) => (
-                ansi_styled_resolved_path(&Ok(log.resolved_path().clone())),
+                ansi_styled_resolved_path(Ok(&log.resolved_path())),
                 ansi_styled_result(&log.result),
             ),
             Err(e) => (
                 // Print the resolving error in the result column
                 String::from(""),
-                ansi_styled_resolved_path(&Err(e.clone())),
+                ansi_styled_resolved_path(Err(e)),
             ),
         };
 
@@ -232,10 +231,57 @@ pub(crate) fn print_action_reports(
     print_totals(reports, writer);
 }
 
-pub(crate) fn print_list_reports(reports: Vec<TendrilReport<ListLog>>) {
-    for report in reports {
-        println!("{:?}", report);
+pub(crate) fn print_list_reports(
+    reports: Vec<TendrilReport<ListLog>>,
+    writer: &mut impl Writer,
+) {
+    if print_empty_reports_warning(&reports, writer).is_err() {
+        return;
     }
+
+    let mut tbl = TdTable::new();
+    tbl.set_header(&[
+        String::from("Local"),
+        String::from("Remote"),
+        String::from("Mode"),
+        String::from("Profiles"),
+    ]);
+
+    let total = reports.len();
+    for report in reports {
+        let styled_path = match &report.log {
+            Ok(log) => {
+                ansi_styled_resolved_path(Ok(log.resolved_path()))
+            }
+            Err(e) => {
+                ansi_styled_resolved_path(Err(e))
+            }
+        };
+
+        let profiles_str = report.raw_tendril.profiles.join(", ");
+
+        tbl.push_row(&[
+            report.raw_tendril.local.clone(),
+            styled_path,
+            report.raw_tendril.mode.to_string(),
+            profiles_str,
+        ]);
+    }
+
+    writer.writeln(&tbl.draw());
+    writer.writeln(&format!("Total: {total}"));
+}
+
+fn print_empty_reports_warning<T>(
+    reports: &[TendrilReport<T>],
+    writer: &mut impl Writer,
+) -> Result<(), ()>
+where T: TendrilLog {
+    if reports.is_empty() {
+        writer.writeln("No tendrils matched the given filter(s)");
+        return Err(())
+    }
+    Ok(())
 }
 
 fn print_totals(
