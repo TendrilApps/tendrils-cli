@@ -177,9 +177,17 @@ fn list_tendrils_subcommand(
 ) -> Result<(), i32> {
     let td_repo = get_td_repo(path_args, api, writer)?;
     let filter = filter_args.to_spec(&ActionMode::Out);
-    let reports = api.list_tendrils(td_repo.as_ref(), filter).unwrap();
+    let list_result = api.list_tendrils(td_repo.as_ref(), filter);
 
-    print_list_reports(reports);
+    let list_reports = match list_result {
+        Ok(reports) => reports,
+        Err(e) => {
+            writer.writeln(&format!("{ERR_PREFIX}: {}", e.to_string()));
+            return Err(setup_err_to_exit_code(e));
+        }
+    };
+
+    print_list_reports(list_reports, writer);
 
     Ok(())
 }
