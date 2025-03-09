@@ -114,7 +114,6 @@ fn returns_result_after_each_operation(
         if after_call_counter == 1 {
             assert_eq!(r, TendrilReport {
                 raw_tendril: t1.clone(),
-                local: t1.local.clone(),
                 log: Ok(ActionLog::new(
                     Some(FsoType::File),
                     None,
@@ -133,7 +132,6 @@ fn returns_result_after_each_operation(
         else if after_call_counter == 2 {
             assert_eq!(r, TendrilReport {
                 raw_tendril: t2.clone(),
-                local: t2.local.clone(),
                 log: Ok(ActionLog::new(
                     Some(FsoType::File),
                     None,
@@ -228,7 +226,6 @@ fn pull_returns_tendril_and_result_for_each_given(
     let expected = vec![
         TendrilReport {
             raw_tendril: given[0].clone(),
-            local: given[0].local.clone(),
             log: Ok(ActionLog::new(
                 None,
                 Some(FsoType::File),
@@ -238,7 +235,6 @@ fn pull_returns_tendril_and_result_for_each_given(
         },
         TendrilReport {
             raw_tendril: given[1].clone(),
-            local: given[1].local.clone(),
             log: Ok(ActionLog::new(
                 None,
                 Some(FsoType::File),
@@ -250,7 +246,6 @@ fn pull_returns_tendril_and_result_for_each_given(
         // version is checked
         TendrilReport {
             raw_tendril: given[2].clone(),
-            local: given[2].local.clone(),
             log: Ok(ActionLog::new(
                 match dry_run {
                     true => None,
@@ -266,7 +261,6 @@ fn pull_returns_tendril_and_result_for_each_given(
         },
         TendrilReport {
             raw_tendril: given[3].clone(),
-            local: given[3].local.clone(),
             log: Ok(ActionLog::new(
                 None,
                 Some(FsoType::Dir),
@@ -276,7 +270,6 @@ fn pull_returns_tendril_and_result_for_each_given(
         },
         TendrilReport {
             raw_tendril: given[4].clone(),
-            local: given[4].local.clone(),
             log: Ok(ActionLog::new(
                 None,
                 None,
@@ -383,7 +376,6 @@ fn push_returns_tendril_and_result_for_each_given(
     let expected = vec![
         TendrilReport {
             raw_tendril: given[0].clone(),
-            local: given[0].local.clone(),
             log: Ok(ActionLog::new(
                 Some(FsoType::File),
                 None,
@@ -393,7 +385,6 @@ fn push_returns_tendril_and_result_for_each_given(
         },
         TendrilReport {
             raw_tendril: given[1].clone(),
-            local: given[1].local.clone(),
             log: Ok(ActionLog::new(
                 Some(FsoType::File),
                 None,
@@ -403,7 +394,6 @@ fn push_returns_tendril_and_result_for_each_given(
         },
         TendrilReport {
             raw_tendril: given[2].clone(),
-            local: given[2].local.clone(),
             log: Ok(ActionLog::new(
                 Some(FsoType::File),
                 None,
@@ -413,7 +403,6 @@ fn push_returns_tendril_and_result_for_each_given(
         },
         TendrilReport {
             raw_tendril: given[3].clone(),
-            local: given[3].local.clone(),
             log: Ok(ActionLog::new(
                 Some(FsoType::Dir),
                 None,
@@ -423,7 +412,6 @@ fn push_returns_tendril_and_result_for_each_given(
         },
         TendrilReport {
             raw_tendril: given[4].clone(),
-            local: given[4].local.clone(),
             log: Ok(ActionLog::new(
                 None,
                 None,
@@ -543,7 +531,6 @@ fn link_returns_tendril_and_result_for_each_given(
     let expected = vec![
         TendrilReport {
             raw_tendril: given[0].clone(),
-            local: given[0].local.clone(),
             log: Ok(ActionLog::new(
                 Some(FsoType::File),
                 None,
@@ -553,7 +540,6 @@ fn link_returns_tendril_and_result_for_each_given(
         },
         TendrilReport {
             raw_tendril: given[1].clone(),
-            local: given[1].local.clone(),
             log: Ok(ActionLog::new(
                 Some(FsoType::File),
                 None,
@@ -563,7 +549,6 @@ fn link_returns_tendril_and_result_for_each_given(
         },
         TendrilReport {
             raw_tendril: given[2].clone(),
-            local: given[2].local.clone(),
             log: Ok(ActionLog::new(
                 Some(FsoType::File),
                 None,
@@ -573,7 +558,6 @@ fn link_returns_tendril_and_result_for_each_given(
         },
         TendrilReport {
             raw_tendril: given[3].clone(),
-            local: given[3].local.clone(),
             log: Ok(ActionLog::new(
                 Some(FsoType::Dir),
                 None,
@@ -583,7 +567,6 @@ fn link_returns_tendril_and_result_for_each_given(
         },
         TendrilReport {
             raw_tendril: given[4].clone(),
-            local: given[4].local.clone(),
             log: Ok(ActionLog::new(
                 None,
                 None,
@@ -703,7 +686,6 @@ fn out_returns_tendril_and_result_for_each_given_link_or_copy_type(
     let expected = vec![
         TendrilReport {
             raw_tendril: given[0].clone(),
-            local: given[0].local.clone(),
             log: Ok(ActionLog::new(
                 Some(FsoType::File),
                 None,
@@ -713,7 +695,6 @@ fn out_returns_tendril_and_result_for_each_given_link_or_copy_type(
         },
         TendrilReport {
             raw_tendril: given[1].clone(),
-            local: given[1].local.clone(),
             log: Ok(ActionLog::new(
                 Some(FsoType::File),
                 None,
@@ -723,7 +704,6 @@ fn out_returns_tendril_and_result_for_each_given_link_or_copy_type(
         },
         TendrilReport {
             raw_tendril: given[2].clone(),
-            local: given[2].local.clone(),
             log: Ok(ActionLog::new(
                 Some(FsoType::File),
                 None,
@@ -733,7 +713,6 @@ fn out_returns_tendril_and_result_for_each_given_link_or_copy_type(
         },
         TendrilReport {
             raw_tendril: given[3].clone(),
-            local: given[3].local.clone(),
             log: Ok(ActionLog::new(
                 Some(FsoType::Dir),
                 None,
@@ -743,7 +722,6 @@ fn out_returns_tendril_and_result_for_each_given_link_or_copy_type(
         },
         TendrilReport {
             raw_tendril: given[4].clone(),
-            local: given[4].local.clone(),
             log: Ok(ActionLog::new(
                 None,
                 None,
@@ -831,7 +809,6 @@ fn remote_path_vars_are_resolved(
     );
     let expected = vec![TendrilReport {
         raw_tendril: tendril,
-        local: "SomeApp/misc.txt".to_string(),
         log: Ok(ActionLog::new(
             None,
             None,

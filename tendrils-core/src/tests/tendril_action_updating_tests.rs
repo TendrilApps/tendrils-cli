@@ -92,7 +92,6 @@ fn returns_result_after_each_operation(
         if after_call_counter == 1 {
             assert_eq!(report, TendrilReport {
                 raw_tendril: t1.clone(),
-                local: t1.local.clone(),
                 log: Ok(ActionLog::new(
                     Some(FsoType::File),
                     None,
@@ -111,7 +110,6 @@ fn returns_result_after_each_operation(
         else if after_call_counter == 2 {
             assert_eq!(report, TendrilReport {
                 raw_tendril: t2.clone(),
-                local: t2.local.clone(),
                 log: Ok(ActionLog::new(
                     Some(FsoType::File),
                     None,

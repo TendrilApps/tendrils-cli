@@ -14,9 +14,6 @@ pub struct TendrilReport<T: TendrilLog> {
     /// The original tendril bundle that this tendril was expanded from.
     pub raw_tendril: RawTendril,
 
-    // TODO: `local` no longer needed if `raw_tendril` is here?
-    /// The tendril's relative local path.
-    pub local: String,
     /// Result containing the log from the operation, provided
     /// the tendril was valid.
     /// Otherwise, it contains the [`InvalidTendrilError`].
