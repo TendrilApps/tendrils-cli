@@ -22,6 +22,12 @@ td init
 td init --force (-f)
 ```
 
+# Listing Tendrils
+- Lists extended information about the tendrils
+``` bash
+td list
+```
+
 # Tendril Actions
 - There are several actions for working with tendrils 
 - `td` is the CLI tool that performs these commands
