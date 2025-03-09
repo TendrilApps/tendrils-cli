@@ -25,6 +25,8 @@ jobs:
     # These steps should mirror ../../dev/test-full.sh
     steps:
     - uses: actions/checkout@v4 # Sets PWD to top level of repo
+    - uses: Swatinem/rust-cache@v2 # Cache build dependencies
+
     - name: Run tests except admin tests
       run: sh dev/utils/test-except-admin.sh
 
