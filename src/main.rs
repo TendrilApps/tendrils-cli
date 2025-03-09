@@ -176,7 +176,7 @@ fn list_tendrils_subcommand(
     writer: &mut impl Writer,
 ) -> Result<(), i32> {
     let td_repo = get_td_repo(path_args, api, writer)?;
-    let filter = filter_args.to_spec(&ActionMode::Out);
+    let filter = filter_args.to_spec(None);
     let list_result = api.list_tendrils(td_repo.as_ref(), filter);
 
     let list_reports = match list_result {
@@ -237,7 +237,7 @@ fn tendril_action_subcommand(
     writer: &mut impl Writer,
 ) -> Result<(), i32> {
     let td_repo = get_td_repo(action_args.path_args, api, writer)?;
-    let filter = filter_args.to_spec(&mode);
+    let filter = filter_args.to_spec(Some(mode.clone()));
     let mut reports = vec![];
 
     // Create locks on shared resources between the callback functions
@@ -345,9 +345,9 @@ fn setup_err_to_exit_code(err: SetupError) -> i32 {
 }
 
 impl FilterArgs {
-    fn to_spec(self, mode: &ActionMode) -> FilterSpec {
+    fn to_spec(self, mode: Option<ActionMode>) -> FilterSpec {
         FilterSpec {
-            mode: Some(mode.clone()),
+            mode,
             locals: self.locals,
             remotes: self.remotes,
             profiles: self.profiles,
