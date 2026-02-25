@@ -742,7 +742,7 @@ fn no_read_access_from_remote_dir_returns_io_error_permission_denied_unless_dry_
 #[case(true)]
 #[case(false)]
 #[cfg_attr(target_os = "linux", ignore)]
-fn no_write_access_at_local_file_returns_io_error_permission_denied_unless_dry_run(
+fn no_write_access_at_local_file_returns_io_error_permission_denied_unless_dry_run_or_uac_disabled(
     #[case] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -772,16 +772,21 @@ fn no_write_access_at_local_file_returns_io_error_permission_denied_unless_dry_r
     parent_perms.set_readonly(false);
     set_permissions(&setup.group_dir, parent_perms).unwrap();
 
-    assert_eq!(setup.local_file_contents(), "Local file contents");
     let exp_result;
     if dry_run {
         exp_result = Ok(TendrilActionSuccess::OverwriteSkipped);
+        assert_eq!(setup.local_file_contents(), "Local file contents");
+    }
+    else if !uac_enabled() {
+        exp_result = Ok(TendrilActionSuccess::Overwrite);
+        assert_eq!(setup.local_file_contents(), "Remote file contents");
     }
     else {
         exp_result = Err(TendrilActionError::IoError {
             kind: std::io::ErrorKind::PermissionDenied,
             loc: Location::Dest,
         });
+        assert_eq!(setup.local_file_contents(), "Local file contents");
     }
     assert_eq!(
         actual,
