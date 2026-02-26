@@ -19,7 +19,7 @@ jobs:
           ubuntu-latest,
           windows-latest,
           macos-latest, # arm64 (Apple silicon)
-          macos-13, # Intel
+          macos-15-intel, # Intel
         ]
 
     # These steps should mirror ../../dev/test-full.sh

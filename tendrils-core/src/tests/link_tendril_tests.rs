@@ -6,6 +6,7 @@ use crate::test_utils::{
     set_ra,
     symlink_expose,
     Setup,
+    uac_enabled,
 };
 use crate::{
     link_tendril,
@@ -520,7 +521,7 @@ fn no_read_access_from_local_dir_returns_success(
 #[case(false)]
 #[cfg_attr(unix, ignore)] // On most Unix implementations, the symlink permissions
                           // are ignored and the target's permissions are respected
-fn no_write_access_at_remote_symfile_returns_io_error_permission_denied_unless_dry_run(
+fn no_write_access_at_remote_symfile_returns_io_error_permission_denied_unless_dry_run_or_uac_disabled(
     #[case] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -544,12 +545,18 @@ fn no_write_access_at_remote_symfile_returns_io_error_permission_denied_unless_d
     let exp_result;
     if dry_run {
         exp_result = Ok(TendrilActionSuccess::OverwriteSkipped);
+        assert_eq!(setup.remote_file_contents(), "Target file contents");
+    }
+    else if !uac_enabled() {
+        exp_result = Ok(TendrilActionSuccess::Overwrite);
+        assert_eq!(setup.remote_file_contents(), "Local file contents");
     }
     else {
         exp_result = Err(TendrilActionError::IoError {
             kind: std::io::ErrorKind::PermissionDenied,
             loc: Location::Dest,
         });
+        assert_eq!(setup.remote_file_contents(), "Target file contents");
     }
     assert_eq!(
         actual,
@@ -560,7 +567,6 @@ fn no_write_access_at_remote_symfile_returns_io_error_permission_denied_unless_d
             exp_result,
         )
     );
-    assert_eq!(setup.remote_file_contents(), "Target file contents");
 }
 
 #[rstest]
