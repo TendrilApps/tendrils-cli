@@ -87,7 +87,7 @@ pub trait TendrilsApi {
         td_repo: Option<&UniPath>,
         filter: FilterSpec,
     ) -> Result<Vec<TendrilReport<ListLog>>, SetupError>;
-    
+
     /// Reads the `tendrils.json` file in the given Tendrils repo, and
     /// performs the action on each tendril that matches the
     /// filter.
@@ -114,7 +114,7 @@ pub trait TendrilsApi {
     /// `None`, the [default repo](`TendrilsApi::get_default_repo_path`) will be checked for a
     /// valid Tendrils repo. If neither the given `td_repo` or the default
     /// folder are valid Tendrils folders, a
-    /// [`SetupError::NoValidTendrilsRepo`] is returned. 
+    /// [`SetupError::NoValidTendrilsRepo`] is returned.
     /// - `filter` - Only tendrils matching this filter will be included.
     /// - `dry_run`
     ///     - `true` will perform the internal checks for the action but does not
@@ -202,31 +202,12 @@ impl TendrilsApi for TendrilsActor {
         let mut global_cfg = LazyCachedGlobalConfig::new();
         let td_repo= get_tendrils_repo(td_repo, &mut global_cfg)?;
         let all_tendrils = get_config(&td_repo)?.raw_tendrils;
-        let filtered_tendrils = 
+        let filtered_tendrils =
             filter_tendrils(all_tendrils, filter, &mut global_cfg);
-        let mut reports = Vec::with_capacity(filtered_tendrils.len());
 
-        for raw_tendril in filtered_tendrils {
-            let log = match raw_tendril.resolve(&td_repo) {
-                Ok(v) => {
-                    Ok(ListLog::new(
-                        v.local_abs().get_type(), 
-                        v.remote().inner().get_type(),
-                        v.remote().inner().into()
-                    ))
-                }
-                Err(e) => Err(e),
-            };
-
-            reports.push(TendrilReport {
-                raw_tendril,
-                log,
-            });
-        }
-
+        let reports = list_tendrils_inner(&td_repo, filtered_tendrils);
         Ok(reports)
     }
-
 
     fn tendril_action_updating<U>(
         &self,
@@ -628,6 +609,34 @@ fn link_tendril(
     log
 }
 
+fn list_tendrils_inner(
+    td_repo: &UniPath,
+    raw_tendrils: Vec<RawTendril>,
+) -> Vec<TendrilReport<ListLog>> {
+    let mut reports = Vec::with_capacity(raw_tendrils.len());
+
+    for raw_tendril in raw_tendrils {
+        let log = match raw_tendril.resolve(&td_repo) {
+            Ok(v) => {
+                Ok(ListLog::new(
+                    v.local_abs().get_type(),
+                    v.remote().inner().get_type(),
+                    v.remote().inner().into()
+                ))
+            }
+            Err(e) => Err(e),
+        };
+
+        reports.push(TendrilReport {
+            raw_tendril,
+            log,
+        });
+    }
+
+    reports
+}
+
+
 fn pull_tendril(
     tendril: &Tendril,
     dry_run: bool,
@@ -842,7 +851,7 @@ where
 {
     let can_symlink =
         (mode == ActionMode::Link || mode == ActionMode::Out) && can_symlink();
-    
+
     updater.count(raw_tendrils.len() as i32);
 
     for raw_tendril in raw_tendrils.into_iter() {

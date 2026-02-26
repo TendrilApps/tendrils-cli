@@ -334,7 +334,7 @@ impl TendrilsApi for MockTendrilsApi<'_> {
             self.get_default_profiles_const_rt.clone()
         }
     }
-    
+
     fn list_tendrils(
         &self,
         td_repo: Option<&UniPath>,
@@ -364,7 +364,7 @@ impl TendrilsApi for MockTendrilsApi<'_> {
         filter: FilterSpec,
         dry_run: bool,
         force: bool,
-    ) -> Result<(), SetupError> 
+    ) -> Result<(), SetupError>
     where
         U: UpdateHandler<ActionLog>
     {
@@ -749,6 +749,10 @@ impl Setup {
         read_to_string(&self.remote_subdir_nested_file).unwrap()
     }
 
+    pub fn target_file_contents(&self) -> String {
+        read_to_string(&self.target_file).unwrap()
+    }
+
     /// Create a file without read access
     pub fn make_remote_nra_file(&self) {
         write(&self.remote_nra_file, "Remote file contents").unwrap();
@@ -787,4 +791,3 @@ impl Setup {
         UniPath::from(&self.td_repo)
     }
 }
-

@@ -389,7 +389,7 @@ impl FsoType {
 
 /// Indicates the behaviour of this tendril, and determines whether it is
 /// a copy-type, or a link-type tendril.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum TendrilMode {
     /// Overwrite any files/folders that are present in both the source and
     /// destination, but keep anything in the destination folder that is not
