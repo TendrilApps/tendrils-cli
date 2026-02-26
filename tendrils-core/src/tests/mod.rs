@@ -6,6 +6,7 @@ mod get_tendrils_repo_tests;
 mod init_tendrils_repo_tests;
 mod is_tendrils_repo_tests;
 mod link_tendril_tests;
+mod list_tendrils_inner_tests;
 mod pull_tendril_tests;
 mod push_tendril_tests;
 mod batch_tendril_action_tests;
