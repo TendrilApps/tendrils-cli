@@ -77,16 +77,22 @@ td init
 
 3. Define some tendrils in the file following the [schema](./docs/configuration.md#tendrilsjson-schema)
     - See the [example configuration](./docs/example-repo/.tendrils/tendrils.json) for ideas
+``` bash
+td list # List the tendrils that were just configured
+```
+
 4. Run a [`pull`](./docs/tendrils-commands.md#pulling) command to make an initial copy of any [copy-type](#copy-type-tendrils) tendrils to the [Tendrils repo](#tendrils-repo)
 ``` bash
 td pull -d # Use the -d flag to dry-run at first
 td pull
 ```
+
 5. Run a [`link`](./docs/tendrils-commands.md#linking) command to setup any [link-type](#link-type-tendrils) tendrils
 ``` bash
 td link -d # Use the -d flag to dry-run at first
 td link
 ```
+
 6. Optional: Create a [global configuration](./docs/configuration.md#global-configjson) to simplify some repeated commands
 
 # Developers and Contribution
