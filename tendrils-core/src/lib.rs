@@ -92,19 +92,15 @@ pub trait TendrilsApi {
     /// performs the action on each tendril that matches the
     /// filter.
     ///
-    /// The order of the actions maintains the order of the [`RawTendril`]s found in
-    /// the `tendrils.json`, but each one is expanded into individual tendrils firstly by
-    /// each of its `names`, then by each of its `parents`. For example, for a
-    /// list of two tendril bundles [t1, t2], each having multiple names [n1, n2] and
-    /// multiple parents [p1, p2], the list will be expanded to:
-    /// - t1_n1_p1
-    /// - t1_n1_p2
-    /// - t1_n2_p1
-    /// - t1_n2_p2
-    /// - t2_n1_p1
-    /// - t2_n1_p2
-    /// - t2_n2_p1
-    /// - t2_n2_p2
+    /// The order of the actions maintains the order defined in
+    /// the `tendrils.json`, but each tendril set is expanded into individual tendrils for
+    /// each of its `remotes`. For example, for a
+    /// list of two tendril sets [t1, t2], each having multiple remotes [r1, r2], the
+    /// list will be expanded to:
+    /// - t1_r1
+    /// - t1_r2
+    /// - t2_r1
+    /// - t2_r2
     ///
     /// # Arguments
     /// - `updater` - [`UpdateHandler`] to provide synchronous progress updates
