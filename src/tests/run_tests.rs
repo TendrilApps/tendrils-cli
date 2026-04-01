@@ -1,12 +1,5 @@
 use crate::cli::{
-    ansi_hyperlink,
-    AboutSubcommands,
-    ActionArgs,
-    CLEAR_LINE,
-    FilterArgs,
-    PathArgs,
-    TendrilCliArgs,
-    TendrilsSubcommands,
+    AboutSubcommands, ActionArgs, CLEAR_LINE, FilterArgs, LocalFilterArgs, PathArgs, TendrilCliArgs, TendrilsSubcommands, ansi_hyperlink
 };
 use crate::{run, Writer, ERR_PREFIX};
 use inline_colorization::{
@@ -97,20 +90,21 @@ fn build_action_subcommand(
 ) -> TendrilsSubcommands {
     let path_args = PathArgs { path };
     let action_args = ActionArgs { path_args, dry_run, force };
-    let filter_args = FilterArgs { locals, remotes, profiles };
+    let local_filter_args = LocalFilterArgs { locals };
+    let filter_args = FilterArgs { remotes, profiles };
 
     match mode {
         ActionMode::Pull => {
-            TendrilsSubcommands::Pull { action_args, filter_args }
+            TendrilsSubcommands::Pull { action_args, local_filter_args, filter_args }
         }
         ActionMode::Push => {
-            TendrilsSubcommands::Push { action_args, filter_args }
+            TendrilsSubcommands::Push { action_args, local_filter_args, filter_args }
         }
         ActionMode::Link => {
-            TendrilsSubcommands::Link { action_args, filter_args }
+            TendrilsSubcommands::Link { action_args, local_filter_args, filter_args }
         }
         ActionMode::Out => {
-            TendrilsSubcommands::Out { action_args, filter_args }
+            TendrilsSubcommands::Out { action_args, local_filter_args, filter_args }
         }
     }
 }
@@ -122,8 +116,9 @@ fn build_list_subcommand(
     profiles: Option<Vec<String>>,
 ) -> TendrilsSubcommands {
     let path_args = PathArgs { path };
-    let filter_args = FilterArgs { locals, remotes, profiles };
-    TendrilsSubcommands::List { path_args, filter_args }
+    let local_filter_args = LocalFilterArgs { locals };
+    let filter_args = FilterArgs { remotes, profiles };
+    TendrilsSubcommands::List { path_args, local_filter_args, filter_args }
 }
 
 #[test]

@@ -48,6 +48,9 @@ pub(crate) enum TendrilsSubcommands {
         action_args: ActionArgs,
 
         #[clap(flatten)]
+        local_filter_args: LocalFilterArgs,
+
+        #[clap(flatten)]
         filter_args: FilterArgs,
     },
 
@@ -55,6 +58,9 @@ pub(crate) enum TendrilsSubcommands {
     Push {
         #[clap(flatten)]
         action_args: ActionArgs,
+
+        #[clap(flatten)]
+        local_filter_args: LocalFilterArgs,
 
         #[clap(flatten)]
         filter_args: FilterArgs,
@@ -67,6 +73,9 @@ pub(crate) enum TendrilsSubcommands {
         action_args: ActionArgs,
 
         #[clap(flatten)]
+        local_filter_args: LocalFilterArgs,
+
+        #[clap(flatten)]
         filter_args: FilterArgs,
     },
 
@@ -76,6 +85,9 @@ pub(crate) enum TendrilsSubcommands {
         path_args: PathArgs,
 
         #[clap(flatten)]
+        local_filter_args: LocalFilterArgs,
+
+        #[clap(flatten)]
         filter_args: FilterArgs,
     },
 
@@ -83,6 +95,9 @@ pub(crate) enum TendrilsSubcommands {
     Out {
         #[clap(flatten)]
         action_args: ActionArgs,
+
+        #[clap(flatten)]
+        local_filter_args: LocalFilterArgs,
 
         #[clap(flatten)]
         filter_args: FilterArgs,
@@ -121,22 +136,24 @@ pub(crate) struct ActionArgs {
 
 #[derive(Args, Clone, Debug, Eq, PartialEq)]
 pub(crate) struct PathArgs {
-    /// Explicitly sets the path to the Tendrils repo
+    /// Path to the Tendrils repo (overriding global settings)
     #[arg(long)]
     pub path: Option<String>,
 }
 
 #[derive(Args, Clone, Debug, Eq, PartialEq)]
-pub(crate) struct FilterArgs {
+pub(crate) struct LocalFilterArgs {
     /// List of locals to filter for. Globs accepted.
-    #[arg(short, long, num_args = ..)]
     pub locals: Vec<String>,
+}
 
+#[derive(Args, Clone, Debug, Eq, PartialEq)]
+pub(crate) struct FilterArgs {
     /// List of remotes to filter for. Globs accepted.
     #[arg(short, long, num_args = ..)]
     pub remotes: Vec<String>,
 
-    /// Explicitly sets the list of profiles to filter for. Globs accepted.
+    /// List of profiles to filter for (overriding global settings). Globs accepted.
     #[arg(short, long, num_args = ..)]
     pub profiles: Option<Vec<String>>,
 }

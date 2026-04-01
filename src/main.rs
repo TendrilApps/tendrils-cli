@@ -32,6 +32,8 @@ use tendrils_core::{
 mod writer;
 use writer::Writer;
 
+use crate::cli::LocalFilterArgs;
+
 #[cfg(test)]
 mod tests;
 
@@ -63,40 +65,50 @@ fn run(
         }
         TendrilsSubcommands::Path => path(api, writer),
         TendrilsSubcommands::Profiles => profiles(api, writer),
-        TendrilsSubcommands::Pull { action_args, filter_args } => {
+        TendrilsSubcommands::Pull { action_args, local_filter_args, filter_args } => {
             tendril_action_subcommand(
                 ActionMode::Pull,
                 action_args,
+                local_filter_args,
                 filter_args,
                 api,
                 writer,
             )
         }
-        TendrilsSubcommands::Push { action_args, filter_args } => {
+        TendrilsSubcommands::Push { action_args, local_filter_args, filter_args } => {
             tendril_action_subcommand(
                 ActionMode::Push,
                 action_args,
+                local_filter_args,
                 filter_args,
                 api,
                 writer,
             )
         }
-        TendrilsSubcommands::List { path_args, filter_args } => {
-            list_tendrils_subcommand(path_args, filter_args, api, writer)
+        TendrilsSubcommands::List { path_args, local_filter_args, filter_args } => {
+            list_tendrils_subcommand(
+                path_args,
+                local_filter_args,
+                filter_args,
+                api,
+                writer,
+            )
         }
-        TendrilsSubcommands::Link { action_args, filter_args } => {
+        TendrilsSubcommands::Link { action_args, local_filter_args, filter_args } => {
             tendril_action_subcommand(
                 ActionMode::Link,
                 action_args,
+                local_filter_args,
                 filter_args,
                 api,
                 writer,
             )
         }
-        TendrilsSubcommands::Out { action_args, filter_args } => {
+        TendrilsSubcommands::Out { action_args, local_filter_args, filter_args } => {
             tendril_action_subcommand(
                 ActionMode::Out,
                 action_args,
+                local_filter_args,
                 filter_args,
                 api,
                 writer,
@@ -171,12 +183,13 @@ fn init(
 
 fn list_tendrils_subcommand(
     path_args: PathArgs,
+    local_filter_args: LocalFilterArgs,
     filter_args: FilterArgs,
     api: &impl TendrilsApi,
     writer: &mut impl Writer,
 ) -> Result<(), i32> {
     let td_repo = get_td_repo(path_args, api, writer)?;
-    let filter = filter_args.to_spec(None);
+    let filter = filter_args.to_spec(None, local_filter_args.locals);
     let list_result = api.list_tendrils(td_repo.as_ref(), filter);
 
     let list_reports = match list_result {
@@ -232,12 +245,13 @@ fn profiles(api: &impl TendrilsApi, writer: &mut impl Writer) -> Result<(), i32>
 fn tendril_action_subcommand(
     mode: ActionMode,
     action_args: ActionArgs,
+    local_filter_args: LocalFilterArgs,
     filter_args: FilterArgs,
     api: &impl TendrilsApi,
     writer: &mut impl Writer,
 ) -> Result<(), i32> {
     let td_repo = get_td_repo(action_args.path_args, api, writer)?;
-    let filter = filter_args.to_spec(Some(mode.clone()));
+    let filter = filter_args.to_spec(Some(mode.clone()), local_filter_args.locals);
     let mut reports = vec![];
 
     // Create locks on shared resources between the callback functions
@@ -345,10 +359,10 @@ fn setup_err_to_exit_code(err: SetupError) -> i32 {
 }
 
 impl FilterArgs {
-    fn to_spec(self, mode: Option<ActionMode>) -> FilterSpec {
+    fn to_spec(self, mode: Option<ActionMode>, locals: Vec<String>) -> FilterSpec {
         FilterSpec {
             mode,
-            locals: self.locals,
+            locals,
             remotes: self.remotes,
             profiles: self.profiles,
         }
