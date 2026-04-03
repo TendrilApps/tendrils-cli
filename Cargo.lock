@@ -883,7 +883,7 @@ dependencies = [
 
 [[package]]
 name = "tendrils-cli"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "clap",
  "exitcode",
@@ -899,7 +899,7 @@ dependencies = [
 
 [[package]]
 name = "tendrils-core"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "fs_extra",
  "glob-match",
