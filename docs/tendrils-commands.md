@@ -44,27 +44,11 @@ td pull
 ```
 
 ## Pushing
-- Copies tendrils from the Tendrils folder to their various locations on the machine
-- Only operates on [copy-type](../README.md#copy-type-tendrils) tendrils
+- Copies the [copy-type](../README.md#copy-type-tendrils) tendrils from the Tendrils folder to their various locations on the machine
+- Creates symlinks at the various locations on the computer to the [link-type](../README.md#link-type-tendrils) tendrils in the [Tendrils repo](../README.md#tendrils-repo)
 - *Each* [remote](./configuration.md#remotes) is used
 ```bash
 td push
-```
-
-## Linking
-- Creates symlinks at the various locations on the computer to the tendrils in the [Tendrils repo](../README.md#tendrils-repo)
-- Only operates on [link-type](../README.md#link-type-tendrils) tendrils
-- *Each* [remote](./configuration.md#remotes) is used
-``` bash
-td link
-```
-
-## "Out" Action
-- Performs all outward bound actions
-- Will [link](#linking) all [link-type](../README.md#link-type-tendrils) tendrils
-- Will [push](#pushing) all [copy-type](../README.md#copy-type-tendrils) tendrils
-``` bash
-td out
 ```
 
 ## Dry Run Modifier
@@ -83,7 +67,7 @@ td push --dry-run (-d)
 - If this flag is not included, the action will display an error for any type mismatches
 - Type mismatches occur when the source and destination file system objects do not match, or do not match the expected types, such as:
     - The source is a file but the destination is a folder
-    - The local or remote are symlinks (during a push/pull action)
+    - The local or remote are symlinks (during a copy action)
     - The remote is *not* a symlink (during a link action)
 ``` bash
 td push --force (-f)
@@ -113,37 +97,40 @@ td push --path /some/tendrils/folder
 
 ![](../assets/profiles-demo.gif)
 
+### Filtering by Modes
+- Using the `--modes (-m)` argument
+- Only includes tendril modes that match any of the given remotes
+- Any tendril modes that do not match are omitted
+- [`pull`](#pulling) commands implicitly filter out any [link-type](../README.md#link-type-tendrils) tendrils
+
 ### Filtering by Locals
-- Using the `--locals (-l)` argument
-- Available on all of the actions listed above
+- Passed as the first argument to the command
 - Only tendrils who's [local](./configuration.md#local-path) matches any of the given filters will be included
     - Glob patterns are supported
 ``` bash
-td link -l file1.txt SomeFolder/file2.txt **/*.json
+td link file1.txt SomeFolder/file2.txt **/*.json
 ```
 - Will only include tendrils whose local path is exactly `file1.txt` or `SomeFolder/file2.txt`, and all JSON files
 - Note: Local paths are filtered *before* appending to the [repo](../README.md#tendrils-repo) path
 
 ### Filtering by Remotes
 - Using the `--remotes (-r)` argument
-- Available on all of the actions listed above
 - Only includes tendril [remotes](./configuration.md#remotes) that match any of the given remotes
     - Glob patterns are supported
 - Any tendril remotes that do not match are omitted, and any tendrils without any matching remotes are omitted entirely.
 - Note: Remotes are filtered *before* they are [resolved](./configuration.md#path-resolving)
 ``` bash
-td push -p ~/Library/SomeApp/config.json **/*OneDrive*/**
+td push -r ~/Library/SomeApp/config.json **/*OneDrive*/**
 ```
 - Will only include tendrils whose remote is exactly `~/Library/SomeApp/config.json`, or any path that contains `OneDrive`
 
 ### Filtering by Profile
-- Using the `--profiles (-P)` argument
-- Available on all of the actions listed above
+- Using the `--profiles (-p)` argument
 - Only tendrils with one or more matching [profiles](./configuration.md#profiles) will be included
     - Glob patterns are supported
 - Tendrils without any profiles specified will still be included
 ``` bash
-td push -P home mac
+td push -p home mac
 ```
 - Will include any tendrils with the `home` or `mac` profile, and any that don't have a profile
 - When this argument is not provided, the [default profiles](./configuration.md#default-profiles) are used
