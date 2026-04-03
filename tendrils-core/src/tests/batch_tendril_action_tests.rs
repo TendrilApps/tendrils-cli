@@ -674,10 +674,10 @@ fn out_returns_tendril_and_result_for_each_given_link_or_copy_type(
     given[4].remote = given_parent_dir_a.join("I don't exist").to_string_lossy().to_string();
 
     given[0].mode = TendrilMode::Link;
-    given[1].mode = TendrilMode::DirOverwrite;
+    given[1].mode = TendrilMode::CopyOverwrite;
     given[2].mode = TendrilMode::Link;
-    given[3].mode = TendrilMode::DirMerge;
-    given[4].mode = TendrilMode::DirOverwrite;
+    given[3].mode = TendrilMode::CopyMerge;
+    given[4].mode = TendrilMode::CopyOverwrite;
 
     let expected_success = match dry_run {
         true => Ok(TendrilActionSuccess::NewSkipped),

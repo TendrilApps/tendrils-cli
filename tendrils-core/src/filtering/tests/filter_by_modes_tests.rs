@@ -1,65 +1,61 @@
-use crate::filtering::filter_by_mode;
-use crate::{ActionMode, RawTendril, TendrilMode};
+use crate::filtering::filter_by_modes;
+use crate::{RawTendril, TendrilMode};
 use rstest::rstest;
 
 #[rstest]
-#[case(ActionMode::Link)]
-#[case(ActionMode::Push)]
-#[case(ActionMode::Pull)]
-#[case(ActionMode::Out)]
-fn empty_tendril_list_returns_empty(#[case] action_mode: ActionMode) {
+#[case(vec![TendrilMode::CopyMerge])]
+#[case(vec![TendrilMode::CopyOverwrite])]
+#[case(vec![TendrilMode::Link])]
+fn empty_tendril_list_returns_empty(#[case] modes: Vec<TendrilMode>) {
     let tendrils = vec![];
 
-    let actual = filter_by_mode(tendrils, action_mode);
+    let actual = filter_by_modes(tendrils, &modes);
 
     assert!(actual.is_empty())
 }
 
 #[test]
-fn link_action_only_includes_tendrils_with_link_true() {
+fn tendril_matches_if_mode_matches_any() {
     let mut t1 = RawTendril::new("SomeLocal");
-    t1.mode = TendrilMode::DirMerge;
+    t1.mode = TendrilMode::CopyMerge;
     let mut t2 = RawTendril::new("SomeLocal");
     t2.mode = TendrilMode::Link;
     let mut t3 = RawTendril::new("SomeLocal");
-    t3.mode = TendrilMode::DirOverwrite;
-    let tendrils = vec![t1.clone(), t2.clone(), t3.clone()];
+    t3.mode = TendrilMode::CopyOverwrite;
+    let mut t4 = RawTendril::new("SomeLocal");
+    t4.mode = TendrilMode::Link;
+    let tendrils = vec![t1.clone(), t2.clone(), t3.clone(), t4.clone()];
 
-    let actual = filter_by_mode(tendrils, ActionMode::Link);
+    let actual = filter_by_modes(tendrils, &[TendrilMode::CopyOverwrite, TendrilMode::Link]);
+
+    assert_eq!(actual, vec![t2, t3, t4]);
+}
+
+#[test]
+fn duplicate_filter_only_returns_tendril_once() {
+    let mut t1 = RawTendril::new("SomeLocal");
+    t1.mode = TendrilMode::CopyMerge;
+    let mut t2 = RawTendril::new("SomeLocal");
+    t2.mode = TendrilMode::Link;
+    let tendrils = vec![t1.clone(), t2.clone()];
+    let modes = [TendrilMode::Link, TendrilMode::Link, TendrilMode::Link];
+
+    let actual = filter_by_modes(tendrils, &modes);
 
     assert_eq!(actual, vec![t2]);
 }
 
-#[rstest]
-#[case(ActionMode::Push)]
-#[case(ActionMode::Pull)]
-fn non_link_action_only_includes_tendrils_with_link_false(
-    #[case] action_mode: ActionMode,
-) {
-    let mut t1 = RawTendril::new("SomeLocal");
-    t1.mode = TendrilMode::DirMerge;
-    let mut t2 = RawTendril::new("SomeLocal");
-    t2.mode = TendrilMode::Link;
-    let mut t3 = RawTendril::new("SomeLocal");
-    t3.mode = TendrilMode::DirOverwrite;
-    let tendrils = vec![t1.clone(), t2.clone(), t3.clone()];
-
-    let actual = filter_by_mode(tendrils, action_mode);
-
-    assert_eq!(actual, vec![t1, t3]);
-}
-
 #[test]
-fn out_action_includes_all() {
+fn empty_filters_list_returns_all_tendrils() {
     let mut t1 = RawTendril::new("SomeLocal");
-    t1.mode = TendrilMode::DirMerge;
+    t1.mode = TendrilMode::CopyMerge;
     let mut t2 = RawTendril::new("SomeLocal");
     t2.mode = TendrilMode::Link;
     let mut t3 = RawTendril::new("SomeLocal");
-    t3.mode = TendrilMode::DirOverwrite;
+    t3.mode = TendrilMode::CopyOverwrite;
     let tendrils = vec![t1.clone(), t2.clone(), t3.clone()];
 
-    let actual = filter_by_mode(tendrils, ActionMode::Out);
+    let actual = filter_by_modes(tendrils, &[]);
 
     assert_eq!(actual, vec![t1, t2, t3]);
 }

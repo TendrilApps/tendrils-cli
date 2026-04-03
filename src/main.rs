@@ -11,8 +11,10 @@ use cli::{
     AboutSubcommands,
     ActionArgs,
     FilterArgs,
+    LocalFilterArgs,
     PathArgs,
     TendrilCliArgs,
+    TendrilModeFilterArgs,
     TendrilsSubcommands,
 };
 use std::path::Path;
@@ -27,12 +29,11 @@ use tendrils_core::{
     SetupError,
     TendrilsActor,
     TendrilsApi,
+    TendrilMode,
     UniPath,
 };
 mod writer;
 use writer::Writer;
-
-use crate::cli::LocalFilterArgs;
 
 #[cfg(test)]
 mod tests;
@@ -189,7 +190,7 @@ fn list_tendrils_subcommand(
     writer: &mut impl Writer,
 ) -> Result<(), i32> {
     let td_repo = get_td_repo(path_args, api, writer)?;
-    let filter = filter_args.to_spec(None, local_filter_args.locals);
+    let filter = filter_args.to_spec(local_filter_args.locals);
     let list_result = api.list_tendrils(td_repo.as_ref(), filter);
 
     let list_reports = match list_result {
@@ -251,7 +252,7 @@ fn tendril_action_subcommand(
     writer: &mut impl Writer,
 ) -> Result<(), i32> {
     let td_repo = get_td_repo(action_args.path_args, api, writer)?;
-    let filter = filter_args.to_spec(Some(mode.clone()), local_filter_args.locals);
+    let filter = filter_args.to_spec(local_filter_args.locals);
     let mut reports = vec![];
 
     // Create locks on shared resources between the callback functions
@@ -359,9 +360,21 @@ fn setup_err_to_exit_code(err: SetupError) -> i32 {
 }
 
 impl FilterArgs {
-    fn to_spec(self, mode: Option<ActionMode>, locals: Vec<String>) -> FilterSpec {
+    fn to_spec(self, locals: Vec<String>) -> FilterSpec {
+        let core_modes = self.modes.iter().flat_map(|m| {
+            match m {
+                TendrilModeFilterArgs::Copy => vec![
+                    TendrilMode::CopyMerge,
+                    TendrilMode::CopyOverwrite,
+                ],
+                TendrilModeFilterArgs::Link => vec![
+                    TendrilMode::Link,
+                ]
+            }
+        }).collect();
+
         FilterSpec {
-            mode,
+            modes: core_modes,
             locals,
             remotes: self.remotes,
             profiles: self.profiles,

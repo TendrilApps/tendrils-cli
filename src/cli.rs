@@ -141,6 +141,12 @@ pub(crate) struct PathArgs {
     pub path: Option<String>,
 }
 
+#[derive(clap::ValueEnum, Clone, Debug, Eq, PartialEq)]
+pub(crate) enum TendrilModeFilterArgs {
+    Copy,
+    Link,
+}
+
 #[derive(Args, Clone, Debug, Eq, PartialEq)]
 pub(crate) struct LocalFilterArgs {
     /// List of locals to filter for. Globs accepted.
@@ -149,6 +155,10 @@ pub(crate) struct LocalFilterArgs {
 
 #[derive(Args, Clone, Debug, Eq, PartialEq)]
 pub(crate) struct FilterArgs {
+    /// List of tendril modes to filter for.
+    #[arg(short, long, num_args = ..)]
+    pub modes: Vec<TendrilModeFilterArgs>,
+
     /// List of remotes to filter for. Globs accepted.
     #[arg(short, long, num_args = ..)]
     pub remotes: Vec<String>,

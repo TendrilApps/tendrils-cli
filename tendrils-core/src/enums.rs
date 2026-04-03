@@ -395,12 +395,12 @@ pub enum TendrilMode {
     /// destination, but keep anything in the destination folder that is not
     /// in the source folder. This only applies to folder tendrils.
     /// Tendrils with this mode are considered copy-type.
-    DirMerge,
+    CopyMerge,
 
     /// Completely overwrite the destination folder with the contents of
     /// the source folder. This only applies to folder tendrils.
     /// Tendrils with this mode are considered copy-type.
-    DirOverwrite,
+    CopyOverwrite,
 
     /// Create a symlink at the remote location that points to local
     /// file/folder.
@@ -410,8 +410,8 @@ pub enum TendrilMode {
 impl ToString for TendrilMode {
     fn to_string(&self) -> String {
         match &self {
-            TendrilMode::DirMerge => String::from("Directory merge"),
-            TendrilMode::DirOverwrite => String::from("Directory overwrite"),
+            TendrilMode::CopyMerge => String::from("Directory merge"),
+            TendrilMode::CopyOverwrite => String::from("Directory overwrite"),
             TendrilMode::Link => String::from("Link"),
         }
     }

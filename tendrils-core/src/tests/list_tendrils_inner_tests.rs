@@ -26,8 +26,8 @@ fn empty_tendrils_list_returns_empty_logs() {
 
 #[rstest]
 #[case(TendrilMode::Link)]
-#[case(TendrilMode::DirMerge)]
-#[case(TendrilMode::DirOverwrite)]
+#[case(TendrilMode::CopyMerge)]
+#[case(TendrilMode::CopyOverwrite)]
 fn returns_fso_types_and_resolved_paths_for_all_in_given_order(
     #[case] mode: TendrilMode,
 ) {
@@ -179,8 +179,8 @@ fn returns_fso_types_and_resolved_paths_for_all_in_given_order(
 
 #[rstest]
 #[case(TendrilMode::Link)]
-#[case(TendrilMode::DirMerge)]
-#[case(TendrilMode::DirOverwrite)]
+#[case(TendrilMode::CopyMerge)]
+#[case(TendrilMode::CopyOverwrite)]
 fn no_read_access_from_local_or_remote_file_returns_proper_fso_type(
     #[case] mode: TendrilMode,
 ) {
@@ -215,8 +215,8 @@ fn no_read_access_from_local_or_remote_file_returns_proper_fso_type(
 
 #[rstest]
 #[case(TendrilMode::Link)]
-#[case(TendrilMode::DirMerge)]
-#[case(TendrilMode::DirOverwrite)]
+#[case(TendrilMode::CopyMerge)]
+#[case(TendrilMode::CopyOverwrite)]
 fn no_read_access_from_local_or_remote_dir_returns_proper_fso_type(
     #[case] mode: TendrilMode,
 ) {

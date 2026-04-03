@@ -165,7 +165,7 @@ fn remote_is_global_config_dir_proceeds_normally(
         setup.uni_td_repo(),
         "SomeApp/.tendrils".into(),
         home_dir().join(".tendrils").into(),
-        TendrilMode::DirOverwrite,
+        TendrilMode::CopyOverwrite,
     ).unwrap();
     if action == ActionMode::Link {
         tendril.mode = TendrilMode::Link;
@@ -218,7 +218,7 @@ fn remote_is_in_global_config_dir_proceeds_normally(
         setup.uni_td_repo(),
         "SomeApp/global-config.json".into(),
         global_cfg_dir().join("global-config.json").into(),
-        TendrilMode::DirOverwrite,
+        TendrilMode::CopyOverwrite,
     ).unwrap();
     if action == ActionMode::Link {
         tendril.mode = TendrilMode::Link;
@@ -369,7 +369,7 @@ fn var_in_local_uses_raw_path_even_if_var_exists(
         setup.uni_td_repo(),
         local.into(),
         UniPath::from(&setup.remote_file),
-        TendrilMode::DirOverwrite,
+        TendrilMode::CopyOverwrite,
     )
     .unwrap();
     let exp_remote_type;
@@ -600,25 +600,25 @@ fn remote_parent_doesnt_exist_creates_anyways(
         &setup.uni_td_repo(),
         "SomeApp/misc.txt".into(),
         UniPath::from(&setup.remote_file),
-        TendrilMode::DirOverwrite,
+        TendrilMode::CopyOverwrite,
     ).unwrap();
     let mut dir_tendril = Tendril::new_expose(
         &setup.uni_td_repo(),
         "SomeApp/misc".into(),
         UniPath::from(&setup.remote_dir),
-        TendrilMode::DirOverwrite,
+        TendrilMode::CopyOverwrite,
     ).unwrap();
     let mut subdir_file_tendril = Tendril::new_expose(
         &setup.uni_td_repo(),
         "SomeApp/SubDir/misc.txt".into(),
         UniPath::from(&setup.remote_subdir_file),
-        TendrilMode::DirOverwrite,
+        TendrilMode::CopyOverwrite,
     ).unwrap();
     let mut subdir_dir_tendril = Tendril::new_expose(
         &setup.uni_td_repo(),
         "SomeApp/SubDir/misc".into(),
         UniPath::from(&setup.remote_subdir_dir),
-        TendrilMode::DirOverwrite,
+        TendrilMode::CopyOverwrite,
     ).unwrap();
     if action == ActionMode::Link {
         file_tendril.mode = TendrilMode::Link;
@@ -1429,7 +1429,7 @@ mod admin_container {
         setup.local_nested_file = setup.local_dir.join("nested.txt");
         setup.make_local_file();
         setup.make_local_nested_file();
-        let mut mode = TendrilMode::DirOverwrite;
+        let mut mode = TendrilMode::CopyOverwrite;
         let mut exp_remote_type_file = Some(FsoType::File);
         let mut exp_remote_type_dir = Some(FsoType::Dir);
 

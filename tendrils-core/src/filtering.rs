@@ -1,6 +1,6 @@
 use std::vec;
 
-use crate::{ActionMode, RawTendril, TendrilMode};
+use crate::{RawTendril, TendrilMode};
 use crate::config::LazyCachedGlobalConfig;
 use glob_match::glob_match;
 
@@ -11,10 +11,8 @@ mod tests;
 /// list of tendrils.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct FilterSpec {
-    /// Matches only link-type tendrils if the action mode is `Link`,
-    /// otherwise it matches only the copy-type tendrils. If
-    /// `None`, or [`ActionMode::Out`] all tendrils will match.
-    pub mode: Option<ActionMode>,
+    /// Matches only those tendrils whose mode matches any of the given modes.
+    pub modes: Vec<TendrilMode>,
 
     /// Matches only those tendrils whose local matches any of the given
     /// locals. Glob patterns are supported.
@@ -36,7 +34,7 @@ pub struct FilterSpec {
 impl FilterSpec {
     pub fn new() -> FilterSpec {
         FilterSpec {
-            mode: None,
+            modes: vec![],
             locals: vec![],
             remotes: vec![],
             profiles: None,
@@ -52,11 +50,6 @@ pub(crate) fn filter_tendrils(
     filter: FilterSpec,
     global_cfg: &mut LazyCachedGlobalConfig,
 ) -> Vec<RawTendril> {
-    let mut filtered = match filter.mode {
-        Some(v) => filter_by_mode(tendrils.to_vec(), v),
-        None => tendrils.to_vec(),
-    };
-
     let profiles;
     if let Some(f) = filter.profiles {
         profiles = f;
@@ -68,27 +61,23 @@ pub(crate) fn filter_tendrils(
         };
     }
 
+    let mut filtered = filter_by_modes(tendrils, &filter.modes);
     filtered = filter_by_profiles(filtered, &profiles);
     filtered = filter_by_locals(filtered, &filter.locals);
     filter_by_remotes(filtered, &filter.remotes)
 }
 
-fn filter_by_mode(
+fn filter_by_modes(
     tendrils: Vec<RawTendril>,
-    mode: ActionMode,
+    modes: &[TendrilMode],
 ) -> Vec<RawTendril> {
-    if mode == ActionMode::Out {
+    if modes.is_empty() {
         return tendrils;
     }
 
     tendrils
         .into_iter()
-        .filter(|t| match (&t.mode, &mode) {
-            (TendrilMode::Link, ActionMode::Link) => true,
-            (TendrilMode::Link, _) => false,
-            (_, ActionMode::Link) => false,
-            (_, _) => true,
-        })
+        .filter(|t| modes.contains(&t.mode))
         .collect()
 }
 

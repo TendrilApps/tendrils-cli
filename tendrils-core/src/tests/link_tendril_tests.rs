@@ -571,7 +571,7 @@ fn no_write_access_at_remote_symfile_returns_io_error_permission_denied_unless_d
 
 #[rstest]
 fn non_link_mode_tendril_returns_mode_mismatch_error(
-    #[values(TendrilMode::DirMerge, TendrilMode::DirOverwrite)]
+    #[values(TendrilMode::CopyMerge, TendrilMode::CopyOverwrite)]
     mode: TendrilMode,
 
     #[values(true, false)] dry_run: bool,

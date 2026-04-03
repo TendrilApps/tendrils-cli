@@ -422,12 +422,13 @@ fn dry_run_does_not_modify(
 }
 
 #[rstest]
-#[case(ActionMode::Pull)]
-#[case(ActionMode::Push)]
-#[case(ActionMode::Link)]
-#[case(ActionMode::Out)]
+#[case(ActionMode::Pull, vec![TendrilMode::CopyOverwrite])]
+#[case(ActionMode::Push, vec![TendrilMode::CopyOverwrite])]
+#[case(ActionMode::Link, vec![TendrilMode::Link])]
+#[case(ActionMode::Out, vec![TendrilMode::CopyOverwrite, TendrilMode::Link])]
 fn tendrils_are_filtered_by_mode(
     #[case] mode: ActionMode,
+    #[case] given_mode_filter: Vec<TendrilMode>,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -440,7 +441,7 @@ fn tendrils_are_filtered_by_mode(
     t1.local = "misc1.txt".to_string();
     t2.local = "misc2.txt".to_string();
     t3.local = "misc3.txt".to_string();
-    t1.mode = TendrilMode::DirOverwrite;
+    t1.mode = TendrilMode::CopyOverwrite;
     t2.mode = TendrilMode::Link;
     t3.mode = TendrilMode::Link;
     t1.remote = setup.parent_dir.join("misc1.txt").to_string_lossy().to_string();
@@ -480,7 +481,7 @@ fn tendrils_are_filtered_by_mode(
 
     setup.make_td_json_file(&[t1.clone(), t2.clone(), t3.clone()]);
     let mut filter = FilterSpec::new();
-    filter.mode = Some(mode.clone());
+    filter.modes = given_mode_filter;
 
     let actual = api.tendril_action(
         mode.clone(),
