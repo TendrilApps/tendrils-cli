@@ -883,12 +883,13 @@ dependencies = [
 
 [[package]]
 name = "tendrils-cli"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "clap",
  "exitcode",
  "inline_colorization",
  "rstest",
+ "rstest_reuse",
  "serial_test",
  "tabled",
  "tempdir",
@@ -898,7 +899,7 @@ dependencies = [
 
 [[package]]
 name = "tendrils-core"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "fs_extra",
  "glob-match",

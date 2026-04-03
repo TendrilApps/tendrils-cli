@@ -17,7 +17,7 @@ use rstest::rstest;
 
 #[rstest]
 fn empty_tendrils_list_returns_empty(
-    #[values(ActionMode::Push, ActionMode::Pull, ActionMode::Link)]
+    #[values(ActionMode::Push, ActionMode::Pull)]
     mode: ActionMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,

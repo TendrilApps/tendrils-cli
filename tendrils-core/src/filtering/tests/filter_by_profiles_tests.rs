@@ -49,7 +49,7 @@ fn tendril_only_included_if_any_profile_matches(
     assert_eq!(actual, vec![t1.clone()]);
     // Check that at least one of the expected profile
     // matches is included. Non-matching profiles are still
-    // included in the list (unlike name filtering).
+    // included in the list (unlike local/remote filtering).
     assert!(t1.profiles.iter().any(|p| { exp_matches.contains(&p.as_str()) }));
 }
 

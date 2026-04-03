@@ -9,7 +9,7 @@ Set Width 650
 Set Height 600
 Set BorderRadius 10
 
-Type "td out -l vim**"
+Type "td push vim**"
 Sleep 500ms
 Enter
 Sleep 1s
@@ -19,7 +19,7 @@ Sleep 500ms
 Enter
 Sleep 3s
 
-Type "td out -l vim** -p alt-profile"
+Type "td push vim** -p alt-profile"
 Sleep 500ms
 Enter
 Sleep 1s

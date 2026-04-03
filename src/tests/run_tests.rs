@@ -1,12 +1,5 @@
 use crate::cli::{
-    ansi_hyperlink,
-    AboutSubcommands,
-    ActionArgs,
-    CLEAR_LINE,
-    FilterArgs,
-    PathArgs,
-    TendrilCliArgs,
-    TendrilsSubcommands,
+    AboutSubcommands, ActionArgs, CLEAR_LINE, FilterArgs, LocalFilterArgs, PathArgs, TendrilCliArgs, TendrilModeFilterArgs, TendrilsSubcommands, ansi_hyperlink
 };
 use crate::{run, Writer, ERR_PREFIX};
 use inline_colorization::{
@@ -17,6 +10,7 @@ use inline_colorization::{
     style_underline,
 };
 use rstest::rstest;
+use rstest_reuse::{apply, template};
 use serial_test::serial;
 use std::fs::create_dir_all;
 use std::path::PathBuf;
@@ -91,39 +85,37 @@ fn build_action_subcommand(
     mode: ActionMode,
     dry_run: bool,
     force: bool,
+    modes: Vec<TendrilModeFilterArgs>,
     locals: Vec<String>,
     remotes: Vec<String>,
     profiles: Option<Vec<String>>,
 ) -> TendrilsSubcommands {
     let path_args = PathArgs { path };
     let action_args = ActionArgs { path_args, dry_run, force };
-    let filter_args = FilterArgs { locals, remotes, profiles };
+    let local_filter_args = LocalFilterArgs { locals };
+    let filter_args = FilterArgs { modes, remotes, profiles };
 
     match mode {
         ActionMode::Pull => {
-            TendrilsSubcommands::Pull { action_args, filter_args }
+            TendrilsSubcommands::Pull { action_args, local_filter_args, filter_args }
         }
         ActionMode::Push => {
-            TendrilsSubcommands::Push { action_args, filter_args }
-        }
-        ActionMode::Link => {
-            TendrilsSubcommands::Link { action_args, filter_args }
-        }
-        ActionMode::Out => {
-            TendrilsSubcommands::Out { action_args, filter_args }
+            TendrilsSubcommands::Push { action_args, local_filter_args, filter_args }
         }
     }
 }
 
 fn build_list_subcommand(
     path: Option<String>,
+    modes: Vec<TendrilModeFilterArgs>,
     locals: Vec<String>,
     remotes: Vec<String>,
     profiles: Option<Vec<String>>,
 ) -> TendrilsSubcommands {
     let path_args = PathArgs { path };
-    let filter_args = FilterArgs { locals, remotes, profiles };
-    TendrilsSubcommands::List { path_args, filter_args }
+    let local_filter_args = LocalFilterArgs { locals };
+    let filter_args = FilterArgs { modes, remotes, profiles };
+    TendrilsSubcommands::List { path_args, local_filter_args, filter_args }
 }
 
 #[test]
@@ -615,7 +607,7 @@ fn path_io_error_accessing_global_config_file_prints_message() {
 #[serial(SERIAL_CD)]
 #[cfg_attr(windows, ignore)]
 fn tendril_action_no_path_given_and_no_cd_prints_message(
-    #[values(ActionMode::Pull, ActionMode::Push, ActionMode::Link)]
+    #[values(ActionMode::Pull, ActionMode::Push)]
     mode: ActionMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
@@ -636,6 +628,7 @@ fn tendril_action_no_path_given_and_no_cd_prints_message(
         mode,
         dry_run,
         force,
+        vec![],
         vec![],
         vec![],
         None,
@@ -670,6 +663,7 @@ fn list_tendrils_no_path_given_and_no_cd_prints_message() {
         None,
         vec![],
         vec![],
+        vec![],
         None
     );
     let args = TendrilCliArgs { tendrils_command };
@@ -689,7 +683,7 @@ fn list_tendrils_no_path_given_and_no_cd_prints_message() {
 #[rstest]
 #[serial(SERIAL_CD)]
 fn tendril_action_given_path_is_not_tendrils_repo_but_cd_is_should_print_message(
-    #[values(ActionMode::Pull, ActionMode::Push, ActionMode::Link)]
+    #[values(ActionMode::Pull, ActionMode::Push)]
     mode: ActionMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
@@ -710,7 +704,6 @@ fn tendril_action_given_path_is_not_tendrils_repo_but_cd_is_should_print_message
     api.ta_exp_mode = mode.clone();
     api.ta_exp_path= Some(&given_dir);
     api.ta_exp_filter = FilterSpec::new();
-    api.ta_exp_filter.mode = Some(mode.clone());
     api.ta_exp_dry_run = dry_run;
     api.ta_exp_force = force;
     api.tau_const_rt = Err(SetupError::NoValidTendrilsRepo(
@@ -723,6 +716,7 @@ fn tendril_action_given_path_is_not_tendrils_repo_but_cd_is_should_print_message
         mode,
         dry_run,
         force,
+        vec![],
         vec![],
         vec![],
         None,
@@ -768,6 +762,7 @@ fn list_tendril_given_path_is_not_tendrils_repo_but_cd_is_should_print_message()
         path,
         vec![],
         vec![],
+        vec![],
         None,
     );
     let args = TendrilCliArgs { tendrils_command };
@@ -787,7 +782,7 @@ fn list_tendril_given_path_is_not_tendrils_repo_but_cd_is_should_print_message()
 #[rstest]
 #[serial(SERIAL_CD)]
 fn tendril_action_given_path_and_cd_are_both_tendrils_repos_uses_given_path(
-    #[values(ActionMode::Pull, ActionMode::Push, ActionMode::Link)]
+    #[values(ActionMode::Pull, ActionMode::Push)]
     mode: ActionMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
@@ -805,7 +800,6 @@ fn tendril_action_given_path_and_cd_are_both_tendrils_repos_uses_given_path(
     api.ta_exp_mode = mode.clone();
     api.ta_exp_path = Some(&given_dir);
     api.ta_exp_filter = FilterSpec::new();
-    api.ta_exp_filter.mode = Some(mode.clone());
     api.ta_exp_dry_run = dry_run;
     api.ta_exp_force = force;
     api.tau_const_rt = Err(SetupError::ConfigError(GetConfigError::ParseError {
@@ -819,6 +813,7 @@ fn tendril_action_given_path_and_cd_are_both_tendrils_repos_uses_given_path(
         mode,
         dry_run,
         force,
+        vec![],
         vec![],
         vec![],
         None,
@@ -863,6 +858,7 @@ fn list_tendrils_given_path_and_cd_are_both_tendrils_repos_uses_given_path() {
         path,
         vec![],
         vec![],
+        vec![],
         None,
     );
     let args = TendrilCliArgs { tendrils_command };
@@ -884,7 +880,7 @@ fn list_tendrils_given_path_and_cd_are_both_tendrils_repos_uses_given_path() {
 #[rstest]
 #[serial(SERIAL_CD)]
 fn tendril_action_given_path_is_relative_prepends_with_cd(
-    #[values(ActionMode::Pull, ActionMode::Push, ActionMode::Link)]
+    #[values(ActionMode::Pull, ActionMode::Push)]
     mode: ActionMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
@@ -903,7 +899,6 @@ fn tendril_action_given_path_is_relative_prepends_with_cd(
     api.ta_exp_mode = mode.clone();
     api.ta_exp_path = Some(&exp_passed_dir);
     api.ta_exp_filter = FilterSpec::new();
-    api.ta_exp_filter.mode = Some(mode.clone());
     api.ta_exp_dry_run = dry_run;
     api.ta_exp_force = force;
     api.tau_const_rt = Err(SetupError::ConfigError(GetConfigError::ParseError {
@@ -916,6 +911,7 @@ fn tendril_action_given_path_is_relative_prepends_with_cd(
         mode,
         dry_run,
         force,
+        vec![],
         vec![],
         vec![],
         None,
@@ -954,6 +950,7 @@ fn list_tendrils_given_path_is_relative_prepends_with_cd() {
         Some(user_given_dir.to_string()),
         vec![],
         vec![],
+        vec![],
         None,
     );
     let args = TendrilCliArgs { tendrils_command };
@@ -970,7 +967,7 @@ fn list_tendrils_given_path_is_relative_prepends_with_cd() {
 #[serial(SERIAL_CD)]
 #[cfg_attr(windows, ignore)]
 fn tendril_action_given_path_is_relative_and_cd_doesnt_exist_prepends_with_dir_sep(
-    #[values(ActionMode::Pull, ActionMode::Push, ActionMode::Link)]
+    #[values(ActionMode::Pull, ActionMode::Push)]
     mode: ActionMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
@@ -990,7 +987,6 @@ fn tendril_action_given_path_is_relative_and_cd_doesnt_exist_prepends_with_dir_s
     api.ta_exp_mode = mode.clone();
     api.ta_exp_path = Some(&exp_passed_dir);
     api.ta_exp_filter = FilterSpec::new();
-    api.ta_exp_filter.mode = Some(mode.clone());
     api.ta_exp_dry_run = dry_run;
     api.ta_exp_force = force;
     api.tau_const_rt = Err(SetupError::ConfigError(GetConfigError::ParseError {
@@ -1003,6 +999,7 @@ fn tendril_action_given_path_is_relative_and_cd_doesnt_exist_prepends_with_dir_s
         mode,
         dry_run,
         force,
+        vec![],
         vec![],
         vec![],
         None,
@@ -1041,6 +1038,7 @@ fn list_tendrils_given_path_is_relative_and_cd_doesnt_exist_prepends_with_dir_se
         Some(user_given_dir.to_string()),
         vec![],
         vec![],
+        vec![],
         None,
     );
     let args = TendrilCliArgs { tendrils_command };
@@ -1053,7 +1051,7 @@ fn list_tendrils_given_path_is_relative_and_cd_doesnt_exist_prepends_with_dir_se
 #[rstest]
 #[serial(SERIAL_MUT_ENV_VARS)]
 fn tendril_action_given_path_is_relative_but_resolves_to_abs_should_not_prepend_cd(
-    #[values(ActionMode::Pull, ActionMode::Push, ActionMode::Link)]
+    #[values(ActionMode::Pull, ActionMode::Push)]
     mode: ActionMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
@@ -1068,7 +1066,6 @@ fn tendril_action_given_path_is_relative_but_resolves_to_abs_should_not_prepend_
     api.ta_exp_mode = mode.clone();
     api.ta_exp_path = Some(&exp_passed_dir);
     api.ta_exp_filter = FilterSpec::new();
-    api.ta_exp_filter.mode = Some(mode.clone());
     api.ta_exp_dry_run = dry_run;
     api.ta_exp_force = force;
     api.tau_const_rt = Err(SetupError::ConfigError(GetConfigError::ParseError {
@@ -1081,6 +1078,7 @@ fn tendril_action_given_path_is_relative_but_resolves_to_abs_should_not_prepend_
         mode,
         dry_run,
         force,
+        vec![],
         vec![],
         vec![],
         None,
@@ -1113,6 +1111,7 @@ fn list_tendrils_given_path_is_relative_but_resolves_to_abs_should_not_prepend_c
         Some(user_given_dir.to_string()),
         vec![],
         vec![],
+        vec![],
         None,
     );
     let args = TendrilCliArgs { tendrils_command };
@@ -1126,7 +1125,7 @@ fn list_tendrils_given_path_is_relative_but_resolves_to_abs_should_not_prepend_c
 #[serial(SERIAL_CD, SERIAL_MUT_ENV_VARS)]
 #[cfg_attr(windows, ignore)]
 fn tendril_action_given_path_is_relative_but_resolves_to_abs_and_cd_doesnt_exist_should_not_prepend_cd(
-    #[values(ActionMode::Pull, ActionMode::Push, ActionMode::Link)]
+    #[values(ActionMode::Pull, ActionMode::Push)]
     mode: ActionMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
@@ -1147,7 +1146,6 @@ fn tendril_action_given_path_is_relative_but_resolves_to_abs_and_cd_doesnt_exist
     api.ta_exp_mode = mode.clone();
     api.ta_exp_path = Some(&exp_passed_dir);
     api.ta_exp_filter = FilterSpec::new();
-    api.ta_exp_filter.mode = Some(mode.clone());
     api.ta_exp_dry_run = dry_run;
     api.ta_exp_force = force;
     api.tau_const_rt = Err(SetupError::ConfigError(GetConfigError::ParseError {
@@ -1160,6 +1158,7 @@ fn tendril_action_given_path_is_relative_but_resolves_to_abs_and_cd_doesnt_exist
         mode,
         dry_run,
         force,
+        vec![],
         vec![],
         vec![],
         None,
@@ -1199,6 +1198,7 @@ fn list_tendrils_given_path_is_relative_but_resolves_to_abs_and_cd_doesnt_exist_
         Some(user_given_dir.to_string()),
         vec![],
         vec![],
+        vec![],
         None,
     );
     let args = TendrilCliArgs { tendrils_command };
@@ -1210,7 +1210,7 @@ fn list_tendrils_given_path_is_relative_but_resolves_to_abs_and_cd_doesnt_exist_
 
 #[rstest]
 fn tendril_action_prints_returned_resolved_path_when_invalid_td_repo(
-    #[values(ActionMode::Pull, ActionMode::Push, ActionMode::Link)]
+    #[values(ActionMode::Pull, ActionMode::Push)]
     mode: ActionMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
@@ -1223,7 +1223,6 @@ fn tendril_action_prints_returned_resolved_path_when_invalid_td_repo(
     api.ta_exp_mode = mode.clone();
     api.ta_exp_path = Some(&given_dir);
     api.ta_exp_filter = FilterSpec::new();
-    api.ta_exp_filter.mode = Some(mode.clone());
     api.ta_exp_dry_run = dry_run;
     api.ta_exp_force = force;
     api.tau_const_rt = Err(SetupError::NoValidTendrilsRepo(
@@ -1238,6 +1237,7 @@ fn tendril_action_prints_returned_resolved_path_when_invalid_td_repo(
         mode,
         dry_run,
         force,
+        vec![],
         vec![],
         vec![],
         None,
@@ -1272,6 +1272,7 @@ fn list_tendrils_prints_returned_resolved_path_when_invalid_td_repo() {
         path,
         vec![],
         vec![],
+        vec![],
         None,
     );
     let args = TendrilCliArgs { tendrils_command };
@@ -1285,13 +1286,24 @@ fn list_tendrils_prints_returned_resolved_path_when_invalid_td_repo() {
     assert_eq!(writer.all_output, expected);
 }
 
+/// This template must be manually updated to match its equivalent in
+/// tendrils-core.
+#[template]
 #[rstest]
-#[case(ActionMode::Pull)]
-#[case(ActionMode::Push)]
-#[case(ActionMode::Link)]
-#[case(ActionMode::Out)]
+#[case(ActionMode::Push, TendrilMode::CopyMerge)]
+#[case(ActionMode::Push, TendrilMode::CopyOverwrite)]
+#[case(ActionMode::Push, TendrilMode::Link)]
+#[case(ActionMode::Pull, TendrilMode::CopyMerge)]
+#[case(ActionMode::Pull, TendrilMode::CopyOverwrite)]
+fn compatible_action_and_tendril_modes(
+    #[case] mode: ActionMode,
+    #[case] tendril_mode: TendrilMode,
+) {}
+
+#[apply(compatible_action_and_tendril_modes)]
 fn tendril_action_prints_progress_to_stderr_and_table_to_stdout(
     #[case] mode: ActionMode,
+    #[case] tendril_mode: TendrilMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -1299,12 +1311,10 @@ fn tendril_action_prints_progress_to_stderr_and_table_to_stdout(
     let given_dir = PathBuf::from("/SomeGivenDir");
     let mut t1 = RawTendril::new("SomeApp/misc.txt");
     let mut t2 = RawTendril::new("SomeApp/misc.txt");
+    t1.mode = tendril_mode;
+    t2.mode = tendril_mode;
     t1.remote = "r1/misc.txt".to_string();
     t2.remote = "r2/misc.txt".to_string();
-    if mode == ActionMode::Link {
-        t1.mode = TendrilMode::Link;
-        t2.mode = TendrilMode::Link;
-    }
     let ok_result = Ok(TendrilActionSuccess::New);
     let err_result = Err(TendrilActionError::IoError {
         kind: std::io::ErrorKind::NotFound,
@@ -1314,7 +1324,6 @@ fn tendril_action_prints_progress_to_stderr_and_table_to_stdout(
     api.ta_exp_mode = mode.clone();
     api.ta_exp_path = Some(&given_dir);
     api.ta_exp_filter = FilterSpec::new();
-    api.ta_exp_filter.mode = Some(mode.clone());
     api.ta_exp_dry_run = dry_run;
     api.ta_exp_force = force;
     api.tau_const_count_updater_rt = 2;
@@ -1347,6 +1356,7 @@ fn tendril_action_prints_progress_to_stderr_and_table_to_stdout(
         mode,
         dry_run,
         force,
+        vec![],
         vec![],
         vec![],
         None,
@@ -1419,13 +1429,10 @@ fn tendril_action_prints_progress_to_stderr_and_table_to_stdout(
     assert_eq!(writer.all_output_lines(), exp_all_output_lines);
 }
 
-#[rstest]
-#[case(ActionMode::Pull)]
-#[case(ActionMode::Push)]
-#[case(ActionMode::Link)]
-#[case(ActionMode::Out)]
+#[apply(compatible_action_and_tendril_modes)]
 fn tendril_action_if_all_pass_they_are_totalled_and_returns_ok(
     #[case] mode: ActionMode,
+    #[case] tendril_mode: TendrilMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -1434,20 +1441,17 @@ fn tendril_action_if_all_pass_they_are_totalled_and_returns_ok(
     let mut t1 = RawTendril::new("SomeApp/misc.txt");
     let mut t2 = RawTendril::new("SomeApp/misc.txt");
     let mut t3 = RawTendril::new("SomeApp/misc.txt");
+    t1.mode = tendril_mode;
+    t2.mode = tendril_mode;
+    t3.mode = tendril_mode;
     t1.remote = "r1".to_string();
     t2.remote = "r2".to_string();
     t3.remote = "r3".to_string();
-    if mode == ActionMode::Link {
-        t1.mode = TendrilMode::Link;
-        t2.mode = TendrilMode::Link;
-        t3.mode = TendrilMode::Link;
-    }
     let ok_result = Ok(TendrilActionSuccess::New);
 
     api.ta_exp_mode = mode.clone();
     api.ta_exp_path = Some(&given_dir);
     api.ta_exp_filter = FilterSpec::new();
-    api.ta_exp_filter.mode = Some(mode.clone());
     api.ta_exp_dry_run = dry_run;
     api.ta_exp_force = force;
     api.tau_const_count_updater_rt = 3;
@@ -1491,6 +1495,7 @@ fn tendril_action_if_all_pass_they_are_totalled_and_returns_ok(
         force,
         vec![],
         vec![],
+        vec![],
         None,
     );
     let args = TendrilCliArgs { tendrils_command };
@@ -1507,13 +1512,10 @@ fn tendril_action_if_all_pass_they_are_totalled_and_returns_ok(
     );
 }
 
-#[rstest]
-#[case(ActionMode::Pull)]
-#[case(ActionMode::Push)]
-#[case(ActionMode::Link)]
-#[case(ActionMode::Out)]
+#[apply(compatible_action_and_tendril_modes)]
 fn tendril_action_if_any_fail_they_are_totalled_and_returns_exit_code(
     #[case] mode: ActionMode,
+    #[case] tendril_mode: TendrilMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -1522,14 +1524,12 @@ fn tendril_action_if_any_fail_they_are_totalled_and_returns_exit_code(
     let mut t1 = RawTendril::new("SomeApp/misc.txt");
     let mut t2 = RawTendril::new("SomeApp/misc.txt");
     let mut t3 = RawTendril::new("SomeApp/misc.txt");
+    t1.mode = tendril_mode;
+    t2.mode = tendril_mode;
+    t3.mode = tendril_mode;
     t1.remote = "r1".to_string();
     t2.remote = "r2".to_string();
     t3.remote = "r3".to_string();
-    if mode == ActionMode::Link {
-        t1.mode = TendrilMode::Link;
-        t2.mode = TendrilMode::Link;
-        t3.mode = TendrilMode::Link;
-    }
     let ok_result = Ok(TendrilActionSuccess::New);
     let err_result = Err(TendrilActionError::IoError {
         kind: std::io::ErrorKind::NotFound,
@@ -1539,7 +1539,6 @@ fn tendril_action_if_any_fail_they_are_totalled_and_returns_exit_code(
     api.ta_exp_mode = mode.clone();
     api.ta_exp_path = Some(&given_dir);
     api.ta_exp_filter = FilterSpec::new();
-    api.ta_exp_filter.mode = Some(mode.clone());
     api.ta_exp_dry_run = dry_run;
     api.ta_exp_force = force;
     api.tau_const_count_updater_rt = 3;
@@ -1587,6 +1586,7 @@ fn tendril_action_if_any_fail_they_are_totalled_and_returns_exit_code(
         force,
         vec![],
         vec![],
+        vec![],
         None,
     );
     let args = TendrilCliArgs { tendrils_command };
@@ -1603,13 +1603,10 @@ fn tendril_action_if_any_fail_they_are_totalled_and_returns_exit_code(
     );
 }
 
-#[rstest]
-#[case(ActionMode::Pull)]
-#[case(ActionMode::Push)]
-#[case(ActionMode::Link)]
-#[case(ActionMode::Out)]
+#[apply(compatible_action_and_tendril_modes)]
 fn tendril_action_order_of_reports_is_unchanged(
     #[case] mode: ActionMode,
+    #[case] tendril_mode: TendrilMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -1624,6 +1621,15 @@ fn tendril_action_order_of_reports_is_unchanged(
     let mut t3_1 = RawTendril::new("l3");
     let mut t3_2 = RawTendril::new("l3");
     let mut t3_3 = RawTendril::new("l3");
+    t1_1.mode = tendril_mode;
+    t1_2.mode = tendril_mode;
+    t1_3.mode = tendril_mode;
+    t2_1.mode = tendril_mode;
+    t2_2.mode = tendril_mode;
+    t2_3.mode = tendril_mode;
+    t3_1.mode = tendril_mode;
+    t3_2.mode = tendril_mode;
+    t3_3.mode = tendril_mode;
     t1_1.remote = "r1_1".to_string();
     t1_2.remote = "r1_2".to_string();
     t1_3.remote = "r1_3".to_string();
@@ -1634,17 +1640,6 @@ fn tendril_action_order_of_reports_is_unchanged(
     t3_2.remote = "r3_2".to_string();
     t3_3.remote = "r3_3".to_string();
 
-    if mode == ActionMode::Link {
-        t1_1.mode = TendrilMode::Link;
-        t1_2.mode = TendrilMode::Link;
-        t1_3.mode = TendrilMode::Link;
-        t2_1.mode = TendrilMode::Link;
-        t2_2.mode = TendrilMode::Link;
-        t2_3.mode = TendrilMode::Link;
-        t3_1.mode = TendrilMode::Link;
-        t3_2.mode = TendrilMode::Link;
-        t3_3.mode = TendrilMode::Link;
-    }
     let result = Err(TendrilActionError::IoError {
         kind: std::io::ErrorKind::NotFound,
         loc: Location::Source,
@@ -1653,7 +1648,6 @@ fn tendril_action_order_of_reports_is_unchanged(
     api.ta_exp_mode = mode.clone();
     api.ta_exp_path = Some(&given_dir);
     api.ta_exp_filter = FilterSpec::new();
-    api.ta_exp_filter.mode = Some(mode.clone());
     api.ta_exp_dry_run = dry_run;
     api.ta_exp_force = force;
     api.tau_const_count_updater_rt = 9;
@@ -1761,6 +1755,7 @@ fn tendril_action_order_of_reports_is_unchanged(
         force,
         vec![],
         vec![],
+        vec![],
         None,
     );
     let args = TendrilCliArgs { tendrils_command };
@@ -1787,7 +1782,7 @@ fn tendril_action_order_of_reports_is_unchanged(
     assert!(writer.all_output_lines()[19].contains("r3_2"));
 }
 
-#[rstest]
+#[test]
 fn list_tendrils_order_of_reports_is_unchanged() {
     let mut api = MockTendrilsApi::new();
     let given_dir = PathBuf::from("/SomeGivenDir");
@@ -1892,6 +1887,7 @@ fn list_tendrils_order_of_reports_is_unchanged() {
         path,
         vec![],
         vec![],
+        vec![],
         None,
     );
     let args = TendrilCliArgs { tendrils_command };
@@ -1918,8 +1914,6 @@ fn list_tendrils_order_of_reports_is_unchanged() {
 #[rstest]
 #[case(ActionMode::Pull)]
 #[case(ActionMode::Push)]
-#[case(ActionMode::Link)]
-#[case(ActionMode::Out)]
 fn tendril_action_filters_are_passed_properly(
     #[case] mode: ActionMode,
     #[values(true, false)] dry_run: bool,
@@ -1927,11 +1921,12 @@ fn tendril_action_filters_are_passed_properly(
 ) {
     let mut api = MockTendrilsApi::new();
     let given_dir = PathBuf::from("/SomeGivenDir");
+    let modes_filter = vec![TendrilModeFilterArgs::Copy];
     let locals_filter = vec!["l1".to_string(), "l2".to_string()];
     let remotes_filter = vec!["r1".to_string(), "r2".to_string()];
     let profiles_filter = Some(vec!["p1".to_string(), "p2".to_string()]);
     let filter = FilterSpec {
-        mode: Some(mode.clone()),
+        modes: vec![TendrilMode::CopyMerge, TendrilMode::CopyOverwrite],
         locals: locals_filter.clone(),
         remotes: remotes_filter.clone(),
         profiles: profiles_filter.clone(),
@@ -1951,6 +1946,7 @@ fn tendril_action_filters_are_passed_properly(
         mode.clone(),
         dry_run,
         force,
+        modes_filter,
         locals_filter,
         remotes_filter,
         profiles_filter,
@@ -1962,15 +1958,16 @@ fn tendril_action_filters_are_passed_properly(
     assert_eq!(actual_exit_code, Ok(()));
 }
 
-#[rstest]
+#[test]
 fn list_tendrils_filters_are_passed_properly() {
     let mut api = MockTendrilsApi::new();
     let given_dir = PathBuf::from("/SomeGivenDir");
+    let modes_filter = vec![TendrilModeFilterArgs::Copy];
     let locals_filter = vec!["l1".to_string(), "l2".to_string()];
     let remotes_filter = vec!["r1".to_string(), "r2".to_string()];
     let profiles_filter = Some(vec!["p1".to_string(), "p2".to_string()]);
     let filter = FilterSpec {
-        mode: None,
+        modes: vec![TendrilMode::CopyMerge, TendrilMode::CopyOverwrite],
         locals: locals_filter.clone(),
         remotes: remotes_filter.clone(),
         profiles: profiles_filter.clone(),
@@ -1984,6 +1981,7 @@ fn list_tendrils_filters_are_passed_properly() {
     let path = Some(given_dir.to_str().unwrap().to_string());
     let tendrils_command = build_list_subcommand(
         path,
+        modes_filter,
         locals_filter,
         remotes_filter,
         profiles_filter,
@@ -1998,8 +1996,6 @@ fn list_tendrils_filters_are_passed_properly() {
 #[rstest]
 #[case(ActionMode::Pull)]
 #[case(ActionMode::Push)]
-#[case(ActionMode::Link)]
-#[case(ActionMode::Out)]
 fn tendril_action_empty_reports_list_prints_message(
     #[case] mode: ActionMode,
     #[values(true, false)] dry_run: bool,
@@ -2011,7 +2007,6 @@ fn tendril_action_empty_reports_list_prints_message(
     api.ta_exp_mode = mode.clone();
     api.ta_exp_path = Some(&given_dir);
     api.ta_exp_filter = FilterSpec::new();
-    api.ta_exp_filter.mode = Some(mode.clone());
     api.ta_exp_dry_run = dry_run;
     api.ta_exp_force = force;
     api.ta_const_rt = Ok(vec![]);
@@ -2025,6 +2020,7 @@ fn tendril_action_empty_reports_list_prints_message(
         force,
         vec![],
         vec![],
+        vec![],
         None,
     );
     let args = TendrilCliArgs { tendrils_command };
@@ -2035,7 +2031,7 @@ fn tendril_action_empty_reports_list_prints_message(
     assert_eq!(writer.all_output, "No tendrils matched the given filter(s)\n");
 }
 
-#[rstest]
+#[test]
 fn list_tendrils_empty_reports_list_prints_message() {
     let mut api = MockTendrilsApi::new();
     let given_dir = PathBuf::from("/SomeGivenDir");
@@ -2047,6 +2043,7 @@ fn list_tendrils_empty_reports_list_prints_message() {
     let path = Some(given_dir.to_str().unwrap().to_string());
     let tendrils_command = build_list_subcommand(
         path,
+        vec![],
         vec![],
         vec![],
         None,

@@ -8,7 +8,7 @@
     - They are all stored in a common [Tendrils repo](#tendrils-repo)
     - `td` is the CLI tool to manage these tendrils
 - Main uses include:
-    - Versioning/syncing configuration files that are expected to be in specific locations on the machine (video game saves, application settings, `.bashrc`, `.vim`, etc)
+    - Versioning/syncing configuration files that are expected to be in specific locations on the machine (application settings, `.bashrc`, `.gitconfig`, `.vim`, etc)
     - Maintaining the same (or different) profiles across multiple machines
     - Maintaining different profiles for a single user on one machine
 
@@ -30,13 +30,11 @@ td about
 
 ## Copy-Type Tendrils
 - These tendrils rely on copying back and forth between the various locations on the computer and the [Tendrils repo](#tendrils-repo)
-- Managed using the [`push`](./docs/tendrils-commands.md#pushing) and [`pull`](./docs/tendrils-commands.md#pulling) commands
 - Designated by setting [`link`](./docs/configuration.md#link) to `false`
 
 ## Link-Type Tendrils
 - These tendrils are setup as symlinks rather than being copied back and forth
 - The symlinks are created at the various locations on the computer and all target the same file/folder in the [Tendrils repo](#tendrils-repo)
-- Managed using the [`link`](./docs/tendrils-commands.md#linking) command
 - Designated by setting [`link`](./docs/configuration.md#link) to `true`
 
 # Tendrils Repo
@@ -87,10 +85,10 @@ td pull -d # Use the -d flag to dry-run at first
 td pull
 ```
 
-5. Run a [`link`](./docs/tendrils-commands.md#linking) command to setup any [link-type](#link-type-tendrils) tendrils
+5. Run a [`push`](./docs/tendrils-commands.md#pushing) command to setup any [link-type](#link-type-tendrils) tendrils
 ``` bash
-td link -d # Use the -d flag to dry-run at first
-td link
+td push -d # Use the -d flag to dry-run at first
+td push
 ```
 
 6. Optional: Create a [global configuration](./docs/configuration.md#global-configjson) to simplify some repeated commands

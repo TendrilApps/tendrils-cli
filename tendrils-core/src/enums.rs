@@ -4,20 +4,13 @@ use std::path::PathBuf;
 /// Indicates the tendril action to be performed.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ActionMode {
-    /// Copy tendrils from the Tendrils repo to their various locations
+    /// Copy/symlink tendrils from the Tendrils repo to their various locations
     /// on the computer.
     Push,
 
     /// Copy tendrils from their various locations on the computer to the
     /// Tendrils repo.
     Pull,
-
-    /// Create symlinks at the various locations on the computer to the
-    /// tendrils in the Tendrils repo.
-    Link,
-
-    /// Perform all outward bound actions (link & push)
-    Out,
 }
 
 /// Indicates an error while initializing a new
@@ -395,23 +388,29 @@ pub enum TendrilMode {
     /// destination, but keep anything in the destination folder that is not
     /// in the source folder. This only applies to folder tendrils.
     /// Tendrils with this mode are considered copy-type.
-    DirMerge,
+    CopyMerge,
 
     /// Completely overwrite the destination folder with the contents of
     /// the source folder. This only applies to folder tendrils.
     /// Tendrils with this mode are considered copy-type.
-    DirOverwrite,
+    CopyOverwrite,
 
     /// Create a symlink at the remote location that points to local
     /// file/folder.
     Link,
 }
 
+impl TendrilMode {
+    pub fn requires_symlink(&self) -> bool {
+        *self == TendrilMode::Link
+    }
+}
+
 impl ToString for TendrilMode {
     fn to_string(&self) -> String {
         match &self {
-            TendrilMode::DirMerge => String::from("Directory merge"),
-            TendrilMode::DirOverwrite => String::from("Directory overwrite"),
+            TendrilMode::CopyMerge => String::from("Copy - Directory merge"),
+            TendrilMode::CopyOverwrite => String::from("Copy - Directory overwrite"),
             TendrilMode::Link => String::from("Link"),
         }
     }

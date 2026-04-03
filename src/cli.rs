@@ -48,23 +48,19 @@ pub(crate) enum TendrilsSubcommands {
         action_args: ActionArgs,
 
         #[clap(flatten)]
+        local_filter_args: LocalFilterArgs,
+
+        #[clap(flatten)]
         filter_args: FilterArgs,
     },
 
-    /// Copies tendrils from the Tendrils repo to their various locations
+    /// Copies/symlinks tendrils from the Tendrils repo to their various locations
     Push {
         #[clap(flatten)]
         action_args: ActionArgs,
 
         #[clap(flatten)]
-        filter_args: FilterArgs,
-    },
-
-    /// Creates symlinks at their various locations to the tendrils in the
-    /// Tendrils repo
-    Link {
-        #[clap(flatten)]
-        action_args: ActionArgs,
+        local_filter_args: LocalFilterArgs,
 
         #[clap(flatten)]
         filter_args: FilterArgs,
@@ -76,13 +72,7 @@ pub(crate) enum TendrilsSubcommands {
         path_args: PathArgs,
 
         #[clap(flatten)]
-        filter_args: FilterArgs,
-    },
-
-    /// Performs all outward bound operations (link and push)
-    Out {
-        #[clap(flatten)]
-        action_args: ActionArgs,
+        local_filter_args: LocalFilterArgs,
 
         #[clap(flatten)]
         filter_args: FilterArgs,
@@ -121,22 +111,34 @@ pub(crate) struct ActionArgs {
 
 #[derive(Args, Clone, Debug, Eq, PartialEq)]
 pub(crate) struct PathArgs {
-    /// Explicitly sets the path to the Tendrils repo
+    /// Path to the Tendrils repo (overriding global settings)
     #[arg(long)]
     pub path: Option<String>,
 }
 
+#[derive(clap::ValueEnum, Clone, Debug, Eq, PartialEq)]
+pub(crate) enum TendrilModeFilterArgs {
+    Copy,
+    Link,
+}
+
+#[derive(Args, Clone, Debug, Eq, PartialEq)]
+pub(crate) struct LocalFilterArgs {
+    /// List of locals to filter for. Globs accepted.
+    pub locals: Vec<String>,
+}
+
 #[derive(Args, Clone, Debug, Eq, PartialEq)]
 pub(crate) struct FilterArgs {
-    /// List of locals to filter for. Globs accepted.
+    /// List of tendril modes to filter for.
     #[arg(short, long, num_args = ..)]
-    pub locals: Vec<String>,
+    pub modes: Vec<TendrilModeFilterArgs>,
 
     /// List of remotes to filter for. Globs accepted.
     #[arg(short, long, num_args = ..)]
     pub remotes: Vec<String>,
 
-    /// Explicitly sets the list of profiles to filter for. Globs accepted.
+    /// List of profiles to filter for (overriding global settings). Globs accepted.
     #[arg(short, long, num_args = ..)]
     pub profiles: Option<Vec<String>>,
 }

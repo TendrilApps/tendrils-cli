@@ -33,8 +33,8 @@ impl From<SerdeConfig> for Config {
 
             remote_specs.into_iter().map(move |spec| {
                 let mode = match (spec.dir_merge, spec.link) {
-                    (true, false) => TendrilMode::DirMerge,
-                    (false, false) => TendrilMode::DirOverwrite,
+                    (true, false) => TendrilMode::CopyMerge,
+                    (false, false) => TendrilMode::CopyOverwrite,
                     (_, true) => TendrilMode::Link,
                 };
 
@@ -147,8 +147,8 @@ struct TendrilSet {
     pub remotes: Vec<String>,
 
     /// `true` indicates that each tendril will have
-    /// [`crate::TendrilMode::DirMerge`]. `false` indicates
-    /// [`crate::TendrilMode::DirOverwrite`]. Note: this field
+    /// [`crate::TendrilMode::CopyMerge`]. `false` indicates
+    /// [`crate::TendrilMode::CopyOverwrite`]. Note: this field
     /// may be overriden depending on the value of `link`.
     #[serde(rename = "dir-merge")]
     #[serde(default)]
@@ -172,8 +172,8 @@ struct TendrilSet {
 impl From<RawTendril> for TendrilSet {
     fn from(raw: RawTendril) -> Self {
         let (dir_merge, link) = match raw.mode {
-            TendrilMode::DirMerge => (true, false),
-            TendrilMode::DirOverwrite => (false, false),
+            TendrilMode::CopyMerge => (true, false),
+            TendrilMode::CopyOverwrite => (false, false),
             TendrilMode::Link => (false, true),
         };
 
