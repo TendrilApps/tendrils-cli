@@ -889,6 +889,7 @@ dependencies = [
  "exitcode",
  "inline_colorization",
  "rstest",
+ "rstest_reuse",
  "serial_test",
  "tabled",
  "tempdir",

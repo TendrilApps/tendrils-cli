@@ -27,6 +27,28 @@ use std::fs::{
     write,
 };
 
+#[rstest]
+fn non_link_mode_tendril_returns_mode_mismatch_error(
+    #[values(true, false)] dry_run: bool,
+    #[values(true, false)] force: bool,
+) {
+    let setup = Setup::new();
+    let mut tendril = setup.file_tendril();
+    tendril.mode = TendrilMode::Link;
+
+    let actual = pull_tendril(&tendril, dry_run, force);
+
+    assert_eq!(
+        actual,
+        ActionLog::new(
+            None,
+            None,
+            setup.remote_file,
+            Err(TendrilActionError::ModeMismatch),
+        )
+    );
+}
+
 /// See also [`crate::tests::common_action_tests::local_is_unchanged`] for
 /// `dry_run` case
 #[rstest]

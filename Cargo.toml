@@ -28,6 +28,7 @@ tendrils-core = { workspace = true } # See also the usage in dev-dependencies
 
 [dev-dependencies]
 rstest = { workspace = true }
+rstest_reuse = { workspace = true }
 serial_test = { workspace = true }
 tempdir = { workspace = true }
 # Despite being a dev-dependency, in order to prevent "_test_utils"

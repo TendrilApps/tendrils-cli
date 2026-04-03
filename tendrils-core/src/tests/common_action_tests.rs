@@ -29,6 +29,7 @@ use crate::{
     TendrilMode,
     UniPath,
 };
+use crate::tests::tendril_action_tests::compatible_action_and_tendril_modes;
 use rstest::rstest;
 use rstest_reuse::{self, apply, template};
 use serial_test::serial;
@@ -37,21 +38,18 @@ use std::path::PathBuf;
 
 impl ActionMode {
     fn call(&self, t: &Tendril, dry_run: bool, force: bool) -> ActionLog {
-        match &self {
-            ActionMode::Link => link_tendril(t, dry_run, force),
-            ActionMode::Pull => pull_tendril(t, dry_run, force),
-            ActionMode::Push => push_tendril(t, dry_run, force),
-            ActionMode::Out => panic!("Not implemented for test cases"),
+        match (&self, t.mode) {
+            (ActionMode::Push, TendrilMode::Link) => link_tendril(t, dry_run, force),
+            (ActionMode::Push, _) => push_tendril(t, dry_run, force),
+            (ActionMode::Pull, _) => pull_tendril(t, dry_run, force),
         }
     }
 }
 
-#[rstest]
-#[case(ActionMode::Link)]
-#[case(ActionMode::Pull)]
-#[case(ActionMode::Push)]
+#[apply(compatible_action_and_tendril_modes)]
 fn remote_is_sibling_to_given_td_repo_proceeds_normally(
     #[case] action: ActionMode,
+    #[case] tendril_mode: TendrilMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -66,8 +64,8 @@ fn remote_is_sibling_to_given_td_repo_proceeds_normally(
 
     let exp_remote_type;
     let mut tendril = setup.dir_tendril();
-    if action == ActionMode::Link {
-        tendril.mode = TendrilMode::Link;
+    tendril.mode = tendril_mode;
+    if tendril.mode.requires_symlink() {
         symlink_expose(&setup.remote_dir, &setup.target_dir, false, true)
             .unwrap();
         exp_remote_type = Some(FsoType::SymDir);
@@ -97,12 +95,10 @@ fn remote_is_sibling_to_given_td_repo_proceeds_normally(
     );
 }
 
-#[rstest]
-#[case(ActionMode::Link)]
-#[case(ActionMode::Pull)]
-#[case(ActionMode::Push)]
+#[apply(compatible_action_and_tendril_modes)]
 fn remote_is_another_td_repo_proceeds_normally(
     #[case] action: ActionMode,
+    #[case] tendril_mode: TendrilMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -115,14 +111,12 @@ fn remote_is_another_td_repo_proceeds_normally(
     assert!(api.is_tendrils_repo(&UniPath::from(&setup.remote_dir)));
 
     let mut tendril = setup.dir_tendril();
-    if action == ActionMode::Link {
-        tendril.mode = TendrilMode::Link;
-    }
+    tendril.mode = tendril_mode;
 
     let actual = action.call(&tendril, dry_run, force);
 
     let exp_result;
-    if action == ActionMode::Link && !force {
+    if tendril_mode.requires_symlink() && !force {
         exp_result = Err(TendrilActionError::TypeMismatch {
             loc: Location::Dest,
             mistype: FsoType::Dir,
@@ -145,13 +139,11 @@ fn remote_is_another_td_repo_proceeds_normally(
     );
 }
 
-#[rstest]
-#[case(ActionMode::Link)]
-#[case(ActionMode::Pull)]
-#[case(ActionMode::Push)]
+#[apply(compatible_action_and_tendril_modes)]
 #[serial(SERIAL_MUT_ENV_VARS)]
 fn remote_is_global_config_dir_proceeds_normally(
     #[case] action: ActionMode,
+    #[case] tendril_mode: TendrilMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -167,14 +159,12 @@ fn remote_is_global_config_dir_proceeds_normally(
         home_dir().join(".tendrils").into(),
         TendrilMode::CopyOverwrite,
     ).unwrap();
-    if action == ActionMode::Link {
-        tendril.mode = TendrilMode::Link;
-    }
+    tendril.mode = tendril_mode;
 
     let actual = action.call(&tendril, dry_run, force);
 
     let exp_result;
-    if action == ActionMode::Link && !force {
+    if tendril.mode.requires_symlink() && !force {
         exp_result = Err(TendrilActionError::TypeMismatch {
             loc: Location::Dest,
             mistype: FsoType::Dir,
@@ -197,13 +187,11 @@ fn remote_is_global_config_dir_proceeds_normally(
     );
 }
 
-#[rstest]
-#[case(ActionMode::Link)]
-#[case(ActionMode::Pull)]
-#[case(ActionMode::Push)]
+#[apply(compatible_action_and_tendril_modes)]
 #[serial(SERIAL_MUT_ENV_VARS)]
 fn remote_is_in_global_config_dir_proceeds_normally(
     #[case] action: ActionMode,
+    #[case] tendril_mode: TendrilMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -220,14 +208,12 @@ fn remote_is_in_global_config_dir_proceeds_normally(
         global_cfg_dir().join("global-config.json").into(),
         TendrilMode::CopyOverwrite,
     ).unwrap();
-    if action == ActionMode::Link {
-        tendril.mode = TendrilMode::Link;
-    }
+    tendril.mode = tendril_mode;
 
     let actual = action.call(&tendril, dry_run, force);
 
     let exp_result;
-    if action == ActionMode::Link && !force {
+    if tendril.mode.requires_symlink() && !force {
         exp_result = Err(TendrilActionError::TypeMismatch {
             loc: Location::Dest,
             mistype: FsoType::File,
@@ -250,13 +236,11 @@ fn remote_is_in_global_config_dir_proceeds_normally(
     );
 }
 
-#[rstest]
-#[case(ActionMode::Link)]
-#[case(ActionMode::Pull)]
-#[case(ActionMode::Push)]
+#[apply(compatible_action_and_tendril_modes)]
 #[serial(SERIAL_MUT_ENV_VARS)]
 fn repo_is_global_cfg_dir_and_config_file_exists_proceeds_normally(
     #[case] action: ActionMode,
+    #[case] tendril_mode: TendrilMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -269,14 +253,12 @@ fn repo_is_global_cfg_dir_and_config_file_exists_proceeds_normally(
     setup.make_remote_file();
 
     let mut tendril = setup.file_tendril();
-    if action == ActionMode::Link {
-        tendril.mode = TendrilMode::Link;
-    }
+    tendril.mode = tendril_mode;
 
     let actual = action.call(&tendril, dry_run, force);
 
     let exp_result;
-    if action == ActionMode::Link && !force {
+    if tendril.mode.requires_symlink() && !force {
         exp_result = Err(TendrilActionError::TypeMismatch {
             loc: Location::Dest,
             mistype: FsoType::File,
@@ -299,13 +281,11 @@ fn repo_is_global_cfg_dir_and_config_file_exists_proceeds_normally(
     );
 }
 
-#[rstest]
-#[case(ActionMode::Link)]
-#[case(ActionMode::Pull)]
-#[case(ActionMode::Push)]
+#[apply(compatible_action_and_tendril_modes)]
 #[serial(SERIAL_MUT_ENV_VARS)]
 fn repo_is_in_global_cfg_dir_and_config_file_exists_proceeds_normally(
     #[case] action: ActionMode,
+    #[case] tendril_mode: TendrilMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -318,14 +298,12 @@ fn repo_is_in_global_cfg_dir_and_config_file_exists_proceeds_normally(
     setup.make_remote_file();
 
     let mut tendril = setup.file_tendril();
-    if action == ActionMode::Link {
-        tendril.mode = TendrilMode::Link;
-    }
+    tendril.mode = tendril_mode;
 
     let actual = action.call(&tendril, dry_run, force);
 
     let exp_result;
-    if action == ActionMode::Link && !force {
+    if tendril.mode.requires_symlink() && !force {
         exp_result = Err(TendrilActionError::TypeMismatch {
             loc: Location::Dest,
             mistype: FsoType::File,
@@ -348,14 +326,13 @@ fn repo_is_in_global_cfg_dir_and_config_file_exists_proceeds_normally(
     );
 }
 
-#[rstest]
-#[case("<mut-testing>")]
-#[case("<I_DO_NOT_EXIST>")]
+#[apply(compatible_action_and_tendril_modes)]
 #[cfg_attr(windows, ignore)] // These are invalid paths on Windows
 #[serial(SERIAL_MUT_ENV_VARS)]
 fn var_in_local_uses_raw_path_even_if_var_exists(
-    #[case] local: &str,
-    #[values(ActionMode::Link, ActionMode::Pull, ActionMode::Push)] action: ActionMode,
+    #[values("<mut-testing>", "<I_DO_NOT_EXIST>")] local: &str,
+    #[case] action: ActionMode,
+    #[case] tendril_mode: TendrilMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -372,9 +349,9 @@ fn var_in_local_uses_raw_path_even_if_var_exists(
         TendrilMode::CopyOverwrite,
     )
     .unwrap();
+    tendril.mode = tendril_mode;
     let exp_remote_type;
-    if action == ActionMode::Link {
-        tendril.mode = TendrilMode::Link;
+    if tendril.mode.requires_symlink() {
         symlink_expose(&setup.remote_file, &setup.target_file, false, true)
             .unwrap();
         exp_remote_type = Some(FsoType::SymFile);
@@ -404,12 +381,10 @@ fn var_in_local_uses_raw_path_even_if_var_exists(
     );
 }
 
-#[rstest]
-#[case(ActionMode::Link)]
-#[case(ActionMode::Pull)]
-#[case(ActionMode::Push)]
+#[apply(compatible_action_and_tendril_modes)]
 fn other_tendrils_in_same_group_dir_are_unchanged(
     #[case] action: ActionMode,
+    #[case] tendril_mode: TendrilMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -432,9 +407,9 @@ fn other_tendrils_in_same_group_dir_are_unchanged(
 
     let exp_remote_type_file;
     let exp_remote_type_dir;
-    if action == ActionMode::Link {
-        file_tendril.mode = TendrilMode::Link;
-        dir_tendril.mode = TendrilMode::Link;
+    file_tendril.mode = tendril_mode;
+    dir_tendril.mode = tendril_mode;
+    if tendril_mode.requires_symlink() {
         symlink_expose(&setup.remote_file, &setup.target_file, false, true)
             .unwrap();
         symlink_expose(&setup.remote_dir, &setup.target_dir, false, true)
@@ -492,12 +467,10 @@ fn other_tendrils_in_same_group_dir_are_unchanged(
     );
 }
 
-#[rstest]
-#[case(ActionMode::Link)]
-#[case(ActionMode::Pull)]
-#[case(ActionMode::Push)]
+#[apply(compatible_action_and_tendril_modes)]
 fn other_files_in_subdir_are_unchanged(
     #[case] action: ActionMode,
+    #[case] tendril_mode: TendrilMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -516,11 +489,9 @@ fn other_files_in_subdir_are_unchanged(
 
     let mut subdir_file_tendril = setup.subdir_file_tendril();
     let mut subdir_dir_tendril = setup.subdir_dir_tendril();
-    if action == ActionMode::Link {
-        subdir_file_tendril.mode = TendrilMode::Link;
-        subdir_dir_tendril.mode = TendrilMode::Link;
-    }
-    else if action != ActionMode::Link {
+    subdir_file_tendril.mode = tendril_mode;
+    subdir_dir_tendril.mode = tendril_mode;
+    if !tendril_mode.requires_symlink() {
         setup.make_remote_subdir_file();
         setup.make_remote_subdir_nested_file();
     }
@@ -532,7 +503,7 @@ fn other_files_in_subdir_are_unchanged(
     let exp_result;
     let mut exp_remote_type_file = Some(FsoType::File);
     let mut exp_remote_type_dir = Some(FsoType::Dir);
-    if action == ActionMode::Link {
+    if tendril_mode.requires_symlink() {
         if dry_run {
             exp_result = Ok(TendrilActionSuccess::NewSkipped);
         }
@@ -574,10 +545,11 @@ fn other_files_in_subdir_are_unchanged(
 }
 
 #[rstest]
-#[case(ActionMode::Link)]
-#[case(ActionMode::Push)]
+#[case(TendrilMode::Link)]
+#[case(TendrilMode::CopyMerge)]
+#[case(TendrilMode::CopyOverwrite)]
 fn remote_parent_doesnt_exist_creates_anyways(
-    #[case] action: ActionMode,
+    #[case] tendril_mode: TendrilMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -620,17 +592,16 @@ fn remote_parent_doesnt_exist_creates_anyways(
         UniPath::from(&setup.remote_subdir_dir),
         TendrilMode::CopyOverwrite,
     ).unwrap();
-    if action == ActionMode::Link {
-        file_tendril.mode = TendrilMode::Link;
-        dir_tendril.mode = TendrilMode::Link;
-        subdir_file_tendril.mode = TendrilMode::Link;
-        subdir_dir_tendril.mode = TendrilMode::Link;
-    }
+    file_tendril.mode = tendril_mode;
+    dir_tendril.mode = tendril_mode;
+    subdir_file_tendril.mode = tendril_mode;
+    subdir_dir_tendril.mode = tendril_mode;
     assert!(!file_tendril.remote().inner().parent().unwrap().exists());
     assert!(!dir_tendril.remote().inner().parent().unwrap().exists());
     assert!(!subdir_file_tendril.remote().inner().parent().unwrap().exists());
     assert!(!subdir_dir_tendril.remote().inner().parent().unwrap().exists());
 
+    let action = ActionMode::Push;
     let file_actual = action.call(&file_tendril, dry_run, force);
     let dir_actual = action.call(&dir_tendril, dry_run, force);
     let subdir_file_actual =
@@ -718,11 +689,11 @@ fn remote_parent_doesnt_exist_creates_anyways(
 }
 
 #[rstest]
-#[case(ActionMode::Link)]
-#[case(ActionMode::Pull)]
-#[case(ActionMode::Push)]
+#[case(TendrilMode::Link)]
+#[case(TendrilMode::CopyMerge)]
+#[case(TendrilMode::CopyOverwrite)]
 fn remote_direct_parent_doesnt_exist_but_parent_does_should_create_subdirs_then_succeed(
-    #[case] action: ActionMode,
+    #[case] tendril_mode: TendrilMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -733,13 +704,12 @@ fn remote_direct_parent_doesnt_exist_but_parent_does_should_create_subdirs_then_
 
     let mut subdir_file_tendril = subdir_file_setup.subdir_file_tendril();
     let mut subdir_dir_tendril = subdir_dir_setup.subdir_dir_tendril();
-    if action == ActionMode::Link {
-        subdir_file_tendril.mode = TendrilMode::Link;
-        subdir_dir_tendril.mode = TendrilMode::Link;
-    }
+    subdir_file_tendril.mode = tendril_mode;
+    subdir_dir_tendril.mode = tendril_mode;
     assert!(!subdir_file_tendril.remote().inner().parent().unwrap().exists());
     assert!(!subdir_dir_tendril.remote().inner().parent().unwrap().exists());
 
+    let action = ActionMode::Push;
     let subdir_file_actual = action.call(&subdir_file_tendril, dry_run, force);
     let subdir_dir_actual = action.call(&subdir_dir_tendril, dry_run, force);
 
@@ -802,51 +772,19 @@ fn remote_direct_parent_doesnt_exist_but_parent_does_should_create_subdirs_then_
     );
 }
 
-#[rstest]
-#[case(ActionMode::Pull)]
-#[case(ActionMode::Push)]
-fn link_mode_tendril_returns_mode_mismatch_error(
-    #[case] action: ActionMode,
-    #[values(true, false)] dry_run: bool,
-    #[values(true, false)] force: bool,
-) {
-    let setup = Setup::new();
-    setup.make_remote_file();
-    setup.make_local_file();
-
-    let mut tendril = setup.file_tendril();
-    tendril.mode = TendrilMode::Link;
-
-    let actual = action.call(&tendril, dry_run, force);
-
-    assert_eq!(
-        actual,
-        ActionLog::new(
-            Some(FsoType::File),
-            Some(FsoType::File),
-            setup.remote_file.clone(),
-            Err(TendrilActionError::ModeMismatch),
-        )
-    );
-    assert_eq!(&setup.remote_file_contents(), "Remote file contents");
-    assert_eq!(&setup.local_file_contents(), "Local file contents");
-}
-
 #[template]
 #[rstest]
-#[case(ActionMode::Link, true)]
-#[case(ActionMode::Link, false)]
-#[case(ActionMode::Pull, true)] // Only applies to pull in a dry run
-#[case(ActionMode::Push, true)]
-#[case(ActionMode::Push, false)]
+#[case(ActionMode::Pull, TendrilMode::CopyMerge, true)]
+#[case(ActionMode::Pull, TendrilMode::CopyOverwrite, true)]
+#[case(ActionMode::Push, TendrilMode::CopyMerge, true)]
+#[case(ActionMode::Push, TendrilMode::CopyMerge, false)]
+#[case(ActionMode::Push, TendrilMode::CopyOverwrite, true)]
+#[case(ActionMode::Push, TendrilMode::CopyOverwrite, false)]
+#[case(ActionMode::Push, TendrilMode::Link, true)]
+#[case(ActionMode::Push, TendrilMode::Link, false)]
 fn cases_that_do_not_modify_local(
-    #[case] action: fn(
-        &Path,
-        &ResolvedTendril,
-        bool,
-        bool,
-    ) -> TendrilActionMetadata,
-
+    #[case] action: ActionMode,
+    #[case] tendril_mode: TendrilMode,
     #[case] dry_run: bool,
 ) {
 }
@@ -854,6 +792,7 @@ fn cases_that_do_not_modify_local(
 #[apply(cases_that_do_not_modify_local)]
 fn local_is_unchanged(
     #[case] action: ActionMode,
+    #[case] tendril_mode: TendrilMode,
     #[case] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -868,9 +807,9 @@ fn local_is_unchanged(
 
     let exp_remote_type_file;
     let exp_remote_type_dir;
-    if action == ActionMode::Link {
-        file_tendril.mode = TendrilMode::Link;
-        dir_tendril.mode = TendrilMode::Link;
+    file_tendril.mode = tendril_mode;
+    dir_tendril.mode = tendril_mode;
+    if tendril_mode.requires_symlink() {
         symlink_expose(&setup.remote_file, &setup.target_file, false, true)
             .unwrap();
         symlink_expose(&setup.remote_dir, &setup.target_dir, false, true)
@@ -923,6 +862,7 @@ fn local_is_unchanged(
 #[apply(cases_that_do_not_modify_local)]
 fn local_symlink_is_unchanged(
     #[case] action: ActionMode,
+    #[case] tendril_mode: TendrilMode,
     #[case] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -940,9 +880,9 @@ fn local_symlink_is_unchanged(
 
     let exp_remote_type_file;
     let exp_remote_type_dir;
-    if action == ActionMode::Link {
-        file_tendril.mode = TendrilMode::Link;
-        dir_tendril.mode = TendrilMode::Link;
+    file_tendril.mode = tendril_mode;
+    dir_tendril.mode = tendril_mode;
+    if tendril_mode.requires_symlink() {
         // Setup symlinks at remote to prevent unintended
         // type mismatch here during links
         symlink_expose(&setup.remote_file, &setup.target_file, false, true)
@@ -1013,18 +953,16 @@ fn local_symlink_is_unchanged(
 
 #[template]
 #[rstest]
-#[case(ActionMode::Link, true)] // Only applies to link in a dry run
-#[case(ActionMode::Pull, true)]
-#[case(ActionMode::Pull, false)]
-#[case(ActionMode::Push, true)] // Only applies to push in a dry run
+#[case(ActionMode::Pull, TendrilMode::CopyMerge, true)]
+#[case(ActionMode::Pull, TendrilMode::CopyMerge, false)]
+#[case(ActionMode::Pull, TendrilMode::CopyOverwrite, true)]
+#[case(ActionMode::Pull, TendrilMode::CopyOverwrite, false)]
+#[case(ActionMode::Push, TendrilMode::CopyMerge, true)]
+#[case(ActionMode::Push, TendrilMode::CopyOverwrite, true)]
+#[case(ActionMode::Push, TendrilMode::Link, true)]
 fn cases_that_do_not_modify_remote(
-    #[case] action: fn(
-        &Path,
-        &ResolvedTendril,
-        bool,
-        bool,
-    ) -> TendrilActionMetadata,
-
+    #[case] action: ActionMode,
+    #[case] tendril_mode: TendrilMode,
     #[case] dry_run: bool,
 ) {
 }
@@ -1032,6 +970,7 @@ fn cases_that_do_not_modify_remote(
 #[apply(cases_that_do_not_modify_remote)]
 fn remote_is_unchanged(
     #[case] action: ActionMode,
+    #[case] tendril_mode: TendrilMode,
     #[case] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -1043,17 +982,15 @@ fn remote_is_unchanged(
 
     let mut file_tendril = setup.file_tendril();
     let mut dir_tendril = setup.dir_tendril();
-    if action == ActionMode::Link {
-        file_tendril.mode = TendrilMode::Link;
-        dir_tendril.mode = TendrilMode::Link;
-    }
+    file_tendril.mode = tendril_mode;
+    dir_tendril.mode = tendril_mode;
 
     let file_actual = action.call(&file_tendril, dry_run, force);
     let dir_actual = action.call(&dir_tendril, dry_run, force);
 
     let exp_file_result;
     let exp_dir_result;
-    if !force && action == ActionMode::Link {
+    if !force && tendril_mode.requires_symlink() {
         exp_file_result = Err(TendrilActionError::TypeMismatch {
             loc: Location::Dest,
             mistype: FsoType::File,
@@ -1099,6 +1036,7 @@ fn remote_is_unchanged(
 #[apply(cases_that_do_not_modify_remote)]
 fn remote_symlink_is_unchanged(
     #[case] action: ActionMode,
+    #[case] tendril_mode: TendrilMode,
     #[case] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -1113,17 +1051,15 @@ fn remote_symlink_is_unchanged(
 
     let mut file_tendril = setup.file_tendril();
     let mut dir_tendril = setup.dir_tendril();
-    if action == ActionMode::Link {
-        file_tendril.mode = TendrilMode::Link;
-        dir_tendril.mode = TendrilMode::Link;
-    }
+    file_tendril.mode = tendril_mode;
+    dir_tendril.mode = tendril_mode;
 
     let file_actual = action.call(&file_tendril, dry_run, force);
     let dir_actual = action.call(&dir_tendril, dry_run, force);
 
     let exp_file_result;
     let exp_dir_result;
-    if !force && action != ActionMode::Link {
+    if !force && !tendril_mode.requires_symlink() {
         let exp_loc = match action == ActionMode::Pull {
             true => Location::Source,
             false => Location::Dest,
@@ -1172,12 +1108,10 @@ fn remote_symlink_is_unchanged(
     );
 }
 
-#[rstest]
-#[case(ActionMode::Link)]
-#[case(ActionMode::Pull)]
-#[case(ActionMode::Push)]
+#[apply(compatible_action_and_tendril_modes)]
 fn remote_is_broken_symlink_treats_as_if_it_doesnt_exist_if_forced_except_for_pull(
     #[case] action: ActionMode,
+    #[case] tendril_mode: TendrilMode,
     #[values (true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -1196,17 +1130,15 @@ fn remote_is_broken_symlink_treats_as_if_it_doesnt_exist_if_forced_except_for_pu
 
     let mut file_tendril = setup.file_tendril();
     let mut dir_tendril = setup.dir_tendril();
-    if action == ActionMode::Link {
-        file_tendril.mode = TendrilMode::Link;
-        dir_tendril.mode = TendrilMode::Link;
-    }
+    file_tendril.mode = tendril_mode;
+    dir_tendril.mode = tendril_mode;
 
     let file_actual = action.call(&file_tendril, dry_run, force);
     let dir_actual = action.call(&dir_tendril, dry_run, force);
 
     let exp_file_result;
     let exp_dir_result;
-    if !force && action == ActionMode::Push {
+    if !force && action == ActionMode::Push && !tendril_mode.requires_symlink() {
         exp_file_result = Err(TendrilActionError::TypeMismatch {
             loc: Location::Dest,
             mistype: FsoType::BrokenSym,
@@ -1258,12 +1190,10 @@ fn remote_is_broken_symlink_treats_as_if_it_doesnt_exist_if_forced_except_for_pu
     );
 }
 
-#[rstest]
-#[case(ActionMode::Link)]
-#[case(ActionMode::Pull)]
-#[case(ActionMode::Push)]
-fn local_is_broken_symlink_treats_as_if_it_doesnt_exist_if_forced_except_for_push(
+#[apply(compatible_action_and_tendril_modes)]
+fn local_is_broken_symlink_treats_as_if_it_doesnt_exist_if_forced_except_for_copy_style_push(
     #[case] action: ActionMode,
+    #[case] tendril_mode: TendrilMode,
     #[values (true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -1282,19 +1212,17 @@ fn local_is_broken_symlink_treats_as_if_it_doesnt_exist_if_forced_except_for_pus
 
     let mut file_tendril = setup.file_tendril();
     let mut dir_tendril = setup.dir_tendril();
-    if action == ActionMode::Link {
-        file_tendril.mode = TendrilMode::Link;
-        dir_tendril.mode = TendrilMode::Link;
-    }
+    file_tendril.mode = tendril_mode;
+    dir_tendril.mode = tendril_mode;
 
     let file_actual = action.call(&file_tendril, dry_run, force);
     let dir_actual = action.call(&dir_tendril, dry_run, force);
 
     let exp_file_result;
     let exp_dir_result;
-    if !force && (action == ActionMode::Pull || action == ActionMode::Link) {
+    if !force && (action == ActionMode::Pull || tendril_mode.requires_symlink()) {
         let exp_loc;
-        if action == ActionMode::Link {
+        if tendril_mode.requires_symlink() {
             exp_loc = Location::Source;
         }
         else {
@@ -1309,7 +1237,7 @@ fn local_is_broken_symlink_treats_as_if_it_doesnt_exist_if_forced_except_for_pus
             mistype: FsoType::BrokenSym,
         });
     }
-    else if action == ActionMode::Push {
+    else if action == ActionMode::Push && !tendril_mode.requires_symlink() {
         exp_file_result = Err(TendrilActionError::IoError {
             kind: std::io::ErrorKind::NotFound,
             loc: Location::Source,
@@ -1351,12 +1279,10 @@ fn local_is_broken_symlink_treats_as_if_it_doesnt_exist_if_forced_except_for_pus
     );
 }
 
-#[rstest]
-#[case(ActionMode::Link)]
-#[case(ActionMode::Pull)]
-#[case(ActionMode::Push)]
+#[apply(compatible_action_and_tendril_modes)]
 fn current_dir_is_unchanged(
     #[case] action: ActionMode,
+    #[case] tendril_mode: TendrilMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -1367,10 +1293,8 @@ fn current_dir_is_unchanged(
 
     let mut file_tendril = setup.file_tendril();
     let mut dir_tendril = setup.dir_tendril();
-    if action == ActionMode::Link {
-        file_tendril.mode = TendrilMode::Link;
-        dir_tendril.mode = TendrilMode::Link;
-    }
+    file_tendril.mode = tendril_mode;
+    dir_tendril.mode = tendril_mode;
 
     let file_actual = action.call(&file_tendril, dry_run, force);
     let dir_actual = action.call(&dir_tendril, dry_run, force);
@@ -1407,14 +1331,12 @@ mod admin_container {
         }
     }
 
-    #[rstest]
-    #[case(ActionMode::Link)]
-    #[case(ActionMode::Pull)]
-    #[case(ActionMode::Push)]
+    #[apply(compatible_action_and_tendril_modes)]
     #[serial(SERIAL_ROOT)]
     #[cfg_attr(any(not(target_os = "linux"), not(feature = "_admin_tests")), ignore)]
     pub fn remote_parent_is_root_returns_success_if_admin(
         #[case] action: ActionMode,
+        #[case] tendril_mode: TendrilMode,
         #[values(true, false)] dry_run: bool,
         #[values(true, false)] force: bool,
     ) {
@@ -1429,12 +1351,10 @@ mod admin_container {
         setup.local_nested_file = setup.local_dir.join("nested.txt");
         setup.make_local_file();
         setup.make_local_nested_file();
-        let mut mode = TendrilMode::CopyOverwrite;
         let mut exp_remote_type_file = Some(FsoType::File);
         let mut exp_remote_type_dir = Some(FsoType::Dir);
 
-        if action == ActionMode::Link {
-            mode = TendrilMode::Link;
+        if tendril_mode.requires_symlink() {
             setup.make_target_file();
             setup.make_target_nested_file();
 
@@ -1452,14 +1372,14 @@ mod admin_container {
             setup.uni_td_repo(),
             "SomeApp/tendrils_test_file.txt".into(),
             UniPath::from(&setup.remote_file),
-            mode.clone(),
+            tendril_mode,
         )
         .unwrap();
         let dir_tendril = Tendril::new_expose(
             setup.uni_td_repo(),
             "SomeApp/tendrils_test_dir".into(),
             UniPath::from(&setup.remote_dir),
-            mode,
+            tendril_mode,
         )
         .unwrap();
 
@@ -1499,7 +1419,7 @@ mod admin_container {
                 );
             }
         }
-        if action == ActionMode::Link {
+        if tendril_mode.requires_symlink() {
             if dry_run {
                 assert_eq!(
                     setup.remote_file_contents(),
@@ -1566,7 +1486,7 @@ mod admin_container {
         // Cleanup
         remove_file(&setup.remote_file).unwrap();
         remove_file(&setup.remote_nested_file).unwrap();
-        if action == ActionMode::Link && std::env::consts::OS == "linux" {
+        if tendril_mode.requires_symlink() && std::env::consts::OS == "linux" {
             // Linux treats symlinks to directories as files
             remove_file(&setup.remote_dir).unwrap();
         }

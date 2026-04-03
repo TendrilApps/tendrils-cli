@@ -26,13 +26,15 @@ use crate::{
     TendrilsApi,
 };
 use rstest::rstest;
+use rstest_reuse::{apply, template};
 use serial_test::serial;
+use std::collections::HashMap;
 use std::fs::write;
 use std::path::{MAIN_SEPARATOR_STR as SEP, PathBuf};
 
 #[rstest]
 fn empty_tendrils_list_returns_empty(
-    #[values(ActionMode::Push, ActionMode::Pull, ActionMode::Link)]
+    #[values(ActionMode::Push, ActionMode::Pull)]
     mode: ActionMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
@@ -57,7 +59,7 @@ fn empty_tendrils_list_returns_empty(
 
 #[rstest]
 fn empty_filtered_tendrils_list_returns_empty(
-    #[values(ActionMode::Push, ActionMode::Pull, ActionMode::Link)]
+    #[values(ActionMode::Push, ActionMode::Pull)]
     mode: ActionMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
@@ -85,7 +87,7 @@ fn empty_filtered_tendrils_list_returns_empty(
 
 #[rstest]
 fn given_td_repo_is_invalid_returns_no_valid_td_repo_err(
-    #[values(ActionMode::Push, ActionMode::Pull, ActionMode::Link)]
+    #[values(ActionMode::Push, ActionMode::Pull)]
     mode: ActionMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
@@ -114,7 +116,7 @@ fn given_td_repo_is_invalid_returns_no_valid_td_repo_err(
 #[rstest]
 #[serial(SERIAL_MUT_ENV_VARS)]
 fn given_td_repo_is_none_default_td_repo_invalid_returns_no_valid_td_repo_err(
-    #[values(ActionMode::Push, ActionMode::Pull, ActionMode::Link)]
+    #[values(ActionMode::Push, ActionMode::Pull)]
     mode: ActionMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
@@ -146,7 +148,7 @@ fn given_td_repo_is_none_default_td_repo_invalid_returns_no_valid_td_repo_err(
 #[rstest]
 #[serial(SERIAL_MUT_ENV_VARS)]
 fn given_td_repo_is_none_default_td_repo_not_set_returns_no_valid_td_repo_err(
-    #[values(ActionMode::Push, ActionMode::Pull, ActionMode::Link)]
+    #[values(ActionMode::Push, ActionMode::Pull)]
     mode: ActionMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
@@ -175,17 +177,14 @@ fn given_td_repo_is_none_default_td_repo_not_set_returns_no_valid_td_repo_err(
 #[rstest]
 #[serial(SERIAL_MUT_ENV_VARS)]
 fn given_td_repo_is_none_default_td_repo_is_valid_uses_default_td_repo(
-    #[values(ActionMode::Push, ActionMode::Pull, ActionMode::Link)]
+    #[values(ActionMode::Push, ActionMode::Pull)]
     mode: ActionMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
     let api = TendrilsActor {};
     let setup = Setup::new();
-    let mut tendril = setup.file_tendril_raw();
-    if mode == ActionMode::Link {
-        tendril.mode = TendrilMode::Link;
-    }
+    let tendril = setup.file_tendril_raw();
     setup.make_td_json_file(&[tendril.clone()]);
     let json_path = setup.td_repo.to_string_lossy().replace("\\", "\\\\");
     setup.make_global_cfg_file(
@@ -222,17 +221,14 @@ fn given_td_repo_is_none_default_td_repo_is_valid_uses_default_td_repo(
 #[rstest]
 #[serial(SERIAL_MUT_ENV_VARS)]
 fn leading_tilde_or_env_vars_in_default_repo_path_are_resolved(
-    #[values(ActionMode::Push, ActionMode::Pull, ActionMode::Link)]
+    #[values(ActionMode::Push, ActionMode::Pull)]
     mode: ActionMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
     let api = TendrilsActor {};
     let setup = Setup::new();
-    let mut tendril = setup.file_tendril_raw();
-    if mode == ActionMode::Link {
-        tendril.mode = TendrilMode::Link;
-    }
+    let tendril = setup.file_tendril_raw();
     setup.make_td_json_file(&[tendril.clone()]);
     let exp_local_type;
     let exp_remote_type;
@@ -297,7 +293,7 @@ fn leading_tilde_or_env_vars_in_default_repo_path_are_resolved(
 
 #[rstest]
 fn tendrils_json_invalid_returns_config_error(
-    #[values(ActionMode::Push, ActionMode::Pull, ActionMode::Link)]
+    #[values(ActionMode::Push, ActionMode::Pull)]
     mode: ActionMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
@@ -327,20 +323,16 @@ fn tendrils_json_invalid_returns_config_error(
 
 #[rstest]
 fn tendrils_are_filtered_before_action(
-    #[values(ActionMode::Push, ActionMode::Pull, ActionMode::Link)]
+    #[values(ActionMode::Push, ActionMode::Pull)]
     mode: ActionMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
     let api = TendrilsActor {};
     let setup = Setup::new();
-    let mut t1 = setup.file_tendril_raw();
+    let t1 = setup.file_tendril_raw();
     let mut t2 = t1.clone();
     t2.remote = setup.parent_dir.join("misc").to_string_lossy().to_string();
-    if mode == ActionMode::Link {
-        t1.mode = TendrilMode::Link;
-        t2.mode = TendrilMode::Link;
-    }
     setup.make_td_json_file(&[t1.clone(), t2.clone()]);
     let mut filter = FilterSpec::new();
     let remotes_filter = vec!["**/misc.txt".to_string()];
@@ -372,12 +364,24 @@ fn tendrils_are_filtered_before_action(
     );
 }
 
+/// This template is not exported (macros are finicky).
+/// Any consuming crates should manually recreate this template instead.
+#[template]
 #[rstest]
-#[case(ActionMode::Pull)]
-#[case(ActionMode::Push)]
-#[case(ActionMode::Link)]
+#[case(ActionMode::Push, TendrilMode::CopyMerge)]
+#[case(ActionMode::Push, TendrilMode::CopyOverwrite)]
+#[case(ActionMode::Push, TendrilMode::Link)]
+#[case(ActionMode::Pull, TendrilMode::CopyMerge)]
+#[case(ActionMode::Pull, TendrilMode::CopyOverwrite)]
+fn compatible_action_and_tendril_modes(
+    #[case] mode: ActionMode,
+    #[case] tendril_mode: TendrilMode,
+) {}
+
+#[apply(compatible_action_and_tendril_modes)]
 fn dry_run_does_not_modify(
     #[case] mode: ActionMode,
+    #[case] tendril_mode: TendrilMode,
     #[values(true, false)] force: bool,
 ) {
     let api = TendrilsActor {};
@@ -385,7 +389,7 @@ fn dry_run_does_not_modify(
     setup.make_local_file();
     setup.make_target_file();
     let filter = FilterSpec::new();
-    if mode == ActionMode::Link {
+    if tendril_mode == TendrilMode::Link {
         // Setup remote file as symlink to some random (non-tendril) file
         symlink_expose(&setup.remote_file, &setup.target_file, false, false)
             .unwrap();
@@ -395,9 +399,7 @@ fn dry_run_does_not_modify(
     }
 
     let mut tendril = setup.file_tendril_raw();
-    if mode == ActionMode::Link {
-        tendril.mode = TendrilMode::Link;
-    }
+    tendril.mode = tendril_mode;
     tendril.remote = setup.parent_dir.join("misc.txt").to_string_lossy().to_string();
     setup.make_td_json_file(&[tendril]);
 
@@ -412,7 +414,7 @@ fn dry_run_does_not_modify(
     )
     .unwrap();
 
-    if mode == ActionMode::Link {
+    if tendril_mode == TendrilMode::Link {
         assert_eq!(setup.remote_file_contents(), "Target file contents");
     }
     else {
@@ -422,13 +424,18 @@ fn dry_run_does_not_modify(
 }
 
 #[rstest]
-#[case(ActionMode::Pull, vec![TendrilMode::CopyOverwrite])]
-#[case(ActionMode::Push, vec![TendrilMode::CopyOverwrite])]
-#[case(ActionMode::Link, vec![TendrilMode::Link])]
-#[case(ActionMode::Out, vec![TendrilMode::CopyOverwrite, TendrilMode::Link])]
+#[case(ActionMode::Pull, vec![TendrilMode::CopyOverwrite], vec!["t1"])]
+#[case(ActionMode::Pull, vec![TendrilMode::CopyMerge], vec!["t4"])]
+#[case(ActionMode::Pull, vec![TendrilMode::Link], vec![])]
+#[case(ActionMode::Pull, vec![], vec!["t1", "t4"])] // Ignore 'link' style
+#[case(ActionMode::Push, vec![TendrilMode::CopyOverwrite], vec!["t1"])]
+#[case(ActionMode::Push, vec![TendrilMode::CopyMerge], vec!["t4"])]
+#[case(ActionMode::Push, vec![TendrilMode::Link], vec!["t2", "t3"])]
+#[case(ActionMode::Push, vec![], vec!["t1", "t2", "t3", "t4"])]
 fn tendrils_are_filtered_by_mode(
     #[case] mode: ActionMode,
     #[case] given_mode_filter: Vec<TendrilMode>,
+    #[case] exp_incl_tendrils: Vec<&str>,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -438,15 +445,19 @@ fn tendrils_are_filtered_by_mode(
     let mut t1 = setup.file_tendril_raw();
     let mut t2 = setup.file_tendril_raw();
     let mut t3 = setup.file_tendril_raw();
+    let mut t4 = setup.file_tendril_raw();
     t1.local = "misc1.txt".to_string();
     t2.local = "misc2.txt".to_string();
     t3.local = "misc3.txt".to_string();
+    t4.local = "misc4.txt".to_string();
     t1.mode = TendrilMode::CopyOverwrite;
     t2.mode = TendrilMode::Link;
     t3.mode = TendrilMode::Link;
+    t4.mode = TendrilMode::CopyMerge;
     t1.remote = setup.parent_dir.join("misc1.txt").to_string_lossy().to_string();
     t2.remote = setup.parent_dir.join("misc2.txt").to_string_lossy().to_string();
     t3.remote = setup.parent_dir.join("misc3.txt").to_string_lossy().to_string();
+    t4.remote = setup.parent_dir.join("misc4.txt").to_string_lossy().to_string();
     let io_err = Err(TendrilActionError::IoError {
         kind: std::io::ErrorKind::NotFound,
         loc: Location::Source
@@ -478,8 +489,22 @@ fn tendrils_are_filtered_by_mode(
             io_err.clone(),
         )),
     };
+    let t4_result = TendrilReport {
+        raw_tendril: t4.clone(),
+        log: Ok(ActionLog::new(
+            None,
+            None,
+            setup.parent_dir.join("misc4.txt"),
+            io_err.clone(),
+        )),
+    };
+    let mut result_map: HashMap<&str, _> = HashMap::new();
+    result_map.insert("t1", t1_result);
+    result_map.insert("t2", t2_result);
+    result_map.insert("t3", t3_result);
+    result_map.insert("t4", t4_result);
 
-    setup.make_td_json_file(&[t1.clone(), t2.clone(), t3.clone()]);
+    setup.make_td_json_file(&[t1.clone(), t2.clone(), t3.clone(), t4.clone()]);
     let mut filter = FilterSpec::new();
     filter.modes = given_mode_filter;
 
@@ -492,24 +517,16 @@ fn tendrils_are_filtered_by_mode(
     )
     .unwrap();
 
-    if mode == ActionMode::Link {
-        assert_eq!(actual, vec![t2_result, t3_result]);
-    }
-    else if mode == ActionMode::Out {
-        assert_eq!(actual, vec![t1_result, t2_result, t3_result]);
-    }
-    else {
-        assert_eq!(actual, vec![t1_result]);
+    for exp_incl_tendril in exp_incl_tendrils {
+        let exp_incl_result = result_map.get(exp_incl_tendril).unwrap();
+        assert!(actual.contains(exp_incl_result));
     }
 }
 
-#[rstest]
-#[case(ActionMode::Pull)]
-#[case(ActionMode::Push)]
-#[case(ActionMode::Link)]
-#[case(ActionMode::Out)]
+#[apply(compatible_action_and_tendril_modes)]
 fn tendrils_are_filtered_by_local(
     #[case] mode: ActionMode,
+    #[case] tendril_mode: TendrilMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -522,11 +539,9 @@ fn tendrils_are_filtered_by_local(
     t1.local = "App1/misc1.txt".to_string();
     t2.local = "App2/misc2.txt".to_string();
     t3.local = "App3/misc3.txt".to_string();
-    if mode == ActionMode::Link {
-        t1.mode = TendrilMode::Link;
-        t2.mode = TendrilMode::Link;
-        t3.mode = TendrilMode::Link;
-    }
+    t1.mode = tendril_mode;
+    t2.mode = tendril_mode;
+    t3.mode = tendril_mode;
     t1.remote = setup.parent_dir.join("misc1.txt").to_string_lossy().to_string();
     t2.remote = setup.parent_dir.join("misc2.txt").to_string_lossy().to_string();
     t3.remote = setup.parent_dir.join("misc3.txt").to_string_lossy().to_string();
@@ -570,13 +585,10 @@ fn tendrils_are_filtered_by_local(
     assert_eq!(actual, vec![t2_result, t3_result]);
 }
 
-#[rstest]
-#[case(ActionMode::Pull)]
-#[case(ActionMode::Push)]
-#[case(ActionMode::Link)]
-#[case(ActionMode::Out)]
+#[apply(compatible_action_and_tendril_modes)]
 fn tendrils_are_filtered_by_remotes(
     #[case] mode: ActionMode,
+    #[case] tendril_mode: TendrilMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -586,17 +598,15 @@ fn tendrils_are_filtered_by_remotes(
     let mut t1 = setup.file_tendril_raw();
     let mut t2 = setup.file_tendril_raw();
     let mut t3 = setup.file_tendril_raw();
+    t1.mode = tendril_mode;
+    t2.mode = tendril_mode;
+    t3.mode = tendril_mode;
     t1.local = "misc1.txt".to_string();
     t2.local = "misc2.txt".to_string();
     t3.local = "misc3.txt".to_string();
     t1.remote = "r/1/misc1.txt".to_string();
     t2.remote = "r/2/misc2.txt".to_string();
     t3.remote = "r/3/misc3.txt".to_string();
-    if mode == ActionMode::Link {
-        t1.mode = TendrilMode::Link;
-        t2.mode = TendrilMode::Link;
-        t3.mode = TendrilMode::Link;
-    }
 
     let io_err = Err(TendrilActionError::IoError {
         kind: std::io::ErrorKind::NotFound,
@@ -638,13 +648,10 @@ fn tendrils_are_filtered_by_remotes(
     assert_eq!(actual, vec![t2_result, t3_result]);
 }
 
-#[rstest]
-#[case(ActionMode::Pull)]
-#[case(ActionMode::Push)]
-#[case(ActionMode::Link)]
-#[case(ActionMode::Out)]
+#[apply(compatible_action_and_tendril_modes)]
 fn tendrils_are_filtered_by_profile(
     #[case] mode: ActionMode,
+    #[case] tendril_mode: TendrilMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -654,14 +661,12 @@ fn tendrils_are_filtered_by_profile(
     let mut t1 = setup.file_tendril_raw();
     let mut t2 = setup.file_tendril_raw();
     let mut t3 = setup.file_tendril_raw();
+    t1.mode = tendril_mode;
+    t2.mode = tendril_mode;
+    t3.mode = tendril_mode;
     t1.local = "misc1.txt".to_string();
     t2.local = "misc2.txt".to_string();
     t3.local = "misc3.txt".to_string();
-    if mode == ActionMode::Link {
-        t1.mode = TendrilMode::Link;
-        t2.mode = TendrilMode::Link;
-        t3.mode = TendrilMode::Link;
-    }
     t1.remote = setup.parent_dir.join("misc1.txt").to_string_lossy().to_string();
     t2.remote = setup.parent_dir.join("misc2.txt").to_string_lossy().to_string();
     t3.remote = setup.parent_dir.join("misc3.txt").to_string_lossy().to_string();

@@ -222,9 +222,16 @@ impl TendrilsApi for TendrilsActor {
         let config = config::get_config(&td_repo)?;
         let all_tendrils = config.raw_tendrils;
 
-        let filtered_tendrils =
+        let mut filtered_tendrils =
             filter_tendrils(all_tendrils, filter, &mut global_cfg);
-        if mode == ActionMode::Link && !filtered_tendrils.is_empty() && !can_symlink() {
+        if mode == ActionMode::Pull {
+            // Do not attempt to pull link-style tendrils
+            filtered_tendrils = filtered_tendrils.into_iter().filter(|t| !t.mode.requires_symlink()).collect();
+        }
+        if mode == ActionMode::Push
+            && filtered_tendrils.iter().any(|t| t.mode.requires_symlink())
+            && !can_symlink() {
+            // Do not continue if any symlinks are expected to fail
             return Err(SetupError::CannotSymlink);
         }
 
@@ -632,7 +639,6 @@ fn list_tendrils_inner(
     reports
 }
 
-
 fn pull_tendril(
     tendril: &Tendril,
     dry_run: bool,
@@ -845,46 +851,42 @@ fn batch_tendril_action<U>(
 where
     U: UpdateHandler<ActionLog>,
 {
-    let can_symlink =
-        (mode == ActionMode::Link || mode == ActionMode::Out) && can_symlink();
-
     updater.count(raw_tendrils.len() as i32);
 
     for raw_tendril in raw_tendrils.into_iter() {
         updater.before(raw_tendril.clone());
         let tendril = raw_tendril.resolve(td_repo);
 
-        let log = match (tendril, &mode, can_symlink) {
-            (Ok(v), ActionMode::Pull, _) => {
+        let log = match (tendril, &mode) {
+            (Ok(v), ActionMode::Pull) => {
                 Ok(pull_tendril(&v, dry_run, force))
             }
-            (Ok(v), ActionMode::Push, _) => {
-                Ok(push_tendril(&v, dry_run, force))
+            (Ok(v), ActionMode::Push) => match v.mode {
+                TendrilMode::Link if !can_symlink() => {
+                    // Do not attempt to symlink if it has already been
+                    // determined that the process
+                    // does not have the required permissions.
+                    // This prevents deleting any of the remote files
+                    // unnecessarily.
+                    let remote = v.remote();
+                    Ok(ActionLog::new(
+                        v.local_abs().get_type(),
+                        remote.inner().get_type(),
+                        remote.inner().to_path_buf(),
+                        Err(TendrilActionError::IoError {
+                            kind: std::io::ErrorKind::PermissionDenied,
+                            loc: Location::Dest,
+                        }),
+                    ))
+                },
+                TendrilMode::Link => {
+                    Ok(link_tendril(&v, dry_run, force))
+                }
+                _ => {
+                    Ok(push_tendril(&v, dry_run, force))
+                },
             }
-            (Ok(v), ActionMode::Out, _) if v.mode != TendrilMode::Link => {
-                Ok(push_tendril(&v, dry_run, force))
-            }
-            (Ok(v), ActionMode::Out | ActionMode::Link, true) => {
-                Ok(link_tendril(&v, dry_run, force))
-            }
-            (Ok(v), ActionMode::Link | ActionMode::Out, false) => {
-                // Do not attempt to symlink if it has already been
-                // determined that the process
-                // does not have the required permissions.
-                // This prevents deleting any of the remote files
-                // unnecessarily.
-                let remote = v.remote();
-                Ok(ActionLog::new(
-                    v.local_abs().get_type(),
-                    remote.inner().get_type(),
-                    remote.inner().to_path_buf(),
-                    Err(TendrilActionError::IoError {
-                        kind: std::io::ErrorKind::PermissionDenied,
-                        loc: Location::Dest,
-                    }),
-                ))
-            }
-            (Err(e), _, _) => Err(e),
+            (Err(e), _) => Err(e),
         };
 
         let report = TendrilReport {

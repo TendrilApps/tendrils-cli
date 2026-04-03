@@ -95,26 +95,6 @@ fn run(
                 writer,
             )
         }
-        TendrilsSubcommands::Link { action_args, local_filter_args, filter_args } => {
-            tendril_action_subcommand(
-                ActionMode::Link,
-                action_args,
-                local_filter_args,
-                filter_args,
-                api,
-                writer,
-            )
-        }
-        TendrilsSubcommands::Out { action_args, local_filter_args, filter_args } => {
-            tendril_action_subcommand(
-                ActionMode::Out,
-                action_args,
-                local_filter_args,
-                filter_args,
-                api,
-                writer,
-            )
-        }
     }
 }
 

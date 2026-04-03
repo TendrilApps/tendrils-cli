@@ -54,21 +54,8 @@ pub(crate) enum TendrilsSubcommands {
         filter_args: FilterArgs,
     },
 
-    /// Copies tendrils from the Tendrils repo to their various locations
+    /// Copies/symlinks tendrils from the Tendrils repo to their various locations
     Push {
-        #[clap(flatten)]
-        action_args: ActionArgs,
-
-        #[clap(flatten)]
-        local_filter_args: LocalFilterArgs,
-
-        #[clap(flatten)]
-        filter_args: FilterArgs,
-    },
-
-    /// Creates symlinks at their various locations to the tendrils in the
-    /// Tendrils repo
-    Link {
         #[clap(flatten)]
         action_args: ActionArgs,
 
@@ -83,18 +70,6 @@ pub(crate) enum TendrilsSubcommands {
     List {
         #[clap(flatten)]
         path_args: PathArgs,
-
-        #[clap(flatten)]
-        local_filter_args: LocalFilterArgs,
-
-        #[clap(flatten)]
-        filter_args: FilterArgs,
-    },
-
-    /// Performs all outward bound operations (link and push)
-    Out {
-        #[clap(flatten)]
-        action_args: ActionArgs,
 
         #[clap(flatten)]
         local_filter_args: LocalFilterArgs,
