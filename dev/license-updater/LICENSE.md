@@ -1,7 +1,7 @@
 The MIT License (MIT)
 =====================
 
-Copyright © 2025 Cole Markle
+Copyright © 2025-2026 Cole Markle
 
 Permission is hereby granted, free of charge, to any person
 obtaining a copy of this software and associated documentation
