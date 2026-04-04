@@ -1,7 +1,0 @@
-{
-    "recommendations": [
-        "rust-lang.rust-analyzer",
-        "Swellaby.vscode-rust-test-adapter",
-        "vadimcn.vscode-lldb"
-    ]
-}
