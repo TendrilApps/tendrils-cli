@@ -3,9 +3,12 @@ use crate::test_utils::non_utf_8_text;
 use rstest::rstest;
 use serial_test::serial;
 use std::ffi::OsString;
-use std::path::{Path, PathBuf};
-use std::path::MAIN_SEPARATOR as SEP;
-use std::path::MAIN_SEPARATOR_STR as SEP_STR;
+use std::path::{
+    Path,
+    PathBuf,
+    MAIN_SEPARATOR as SEP,
+    MAIN_SEPARATOR_STR as SEP_STR,
+};
 
 #[test]
 fn replaces_dir_seps_on_init_on_windows() {
@@ -63,8 +66,7 @@ fn resolves_vars_then_tilde_then_dir_seps_then_roots() {
     #[cfg(not(windows))]
     let expected_str = "/~/Home/.//<var>\\/./value\\\\\\misc.txt";
     #[cfg(windows)]
-    let expected_str =
-        "\\~\\Home\\.\\\\<var>\\\\.\\value\\\\\\misc.txt";
+    let expected_str = "\\~\\Home\\.\\\\<var>\\\\.\\value\\\\\\misc.txt";
 
     let actual = UniPath::from(given);
 
@@ -114,7 +116,8 @@ fn resolves_vars_then_replaces_seps_on_win_then_roots_with_dir_sep(
 }
 
 #[test]
-fn new_with_root_prepends_given_root_to_non_rooted_path_and_replaces_dir_seps() {
+fn new_with_root_prepends_given_root_to_non_rooted_path_and_replaces_dir_seps()
+{
     let given = PathBuf::from("RelPath");
     #[cfg(not(windows))]
     let expected = "/MyRoot\\/RelPath";
@@ -127,15 +130,13 @@ fn new_with_root_prepends_given_root_to_non_rooted_path_and_replaces_dir_seps() 
 }
 
 #[test]
-fn new_with_root_prepends_dir_sep_to_non_rooted_path_if_given_root_is_also_not_rooted() {
+fn new_with_root_prepends_dir_sep_to_non_rooted_path_if_given_root_is_also_not_rooted(
+) {
     let given = PathBuf::from("RelPath");
 
     let actual = UniPath::new_with_root(&given, &Path::new("NotARoot"));
 
-    assert_eq!(
-        actual.inner().to_string_lossy(),
-        format!("{SEP}RelPath")
-    );
+    assert_eq!(actual.inner().to_string_lossy(), format!("{SEP}RelPath"));
 }
 
 #[test]

@@ -1,11 +1,6 @@
-use crate::{TendrilsActor, TendrilsApi};
 use crate::config::parse_config_expose;
-use crate::test_utils::{
-    get_disposable_dir,
-    global_cfg_dir,
-    home_dir,
-    Setup
-};
+use crate::test_utils::{get_disposable_dir, global_cfg_dir, home_dir, Setup};
+use crate::{TendrilsActor, TendrilsApi};
 use serial_test::serial;
 use std::fs::{create_dir_all, write};
 use tempdir::TempDir;

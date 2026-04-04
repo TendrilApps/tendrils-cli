@@ -1,12 +1,7 @@
 //! Contains tests specific to push actions.
 //! See also [`crate::tests::common_action_tests`].
 
-use crate::test_utils::{
-    set_ra,
-    symlink_expose,
-    Setup,
-    uac_enabled,
-};
+use crate::test_utils::{set_ra, symlink_expose, uac_enabled, Setup};
 use crate::{
     push_tendril,
     ActionLog,
@@ -91,10 +86,8 @@ fn local_is_symlink_returns_type_mismatch_error_unless_forced_then_copies_symlin
     let file_tendril = setup.file_tendril();
     let dir_tendril = setup.dir_tendril();
 
-    let file_actual =
-        push_tendril(&file_tendril, dry_run, force);
-    let dir_actual =
-        push_tendril(&dir_tendril, dry_run, force);
+    let file_actual = push_tendril(&file_tendril, dry_run, force);
+    let dir_actual = push_tendril(&dir_tendril, dry_run, force);
 
     let exp_file_result;
     let exp_dir_result;
@@ -175,10 +168,8 @@ fn remote_is_symlink_returns_type_mismatch_error_unless_forced(
     let file_tendril = setup.file_tendril();
     let dir_tendril = setup.dir_tendril();
 
-    let file_actual =
-        push_tendril(&file_tendril, dry_run, force);
-    let dir_actual =
-        push_tendril(&dir_tendril, dry_run, force);
+    let file_actual = push_tendril(&file_tendril, dry_run, force);
+    let dir_actual = push_tendril(&dir_tendril, dry_run, force);
 
     let exp_file_result;
     let exp_dir_result;
@@ -283,7 +274,10 @@ fn remote_parent_doesnt_exist_creates_full_parent_structure(
         );
     }
     else {
-        assert_eq!(setup.remote_subdir_file_contents(), "Local subdir file contents");
+        assert_eq!(
+            setup.remote_subdir_file_contents(),
+            "Local subdir file contents"
+        );
     }
     assert_eq!(setup.group_dir.read_dir().iter().count(), 1);
 }
@@ -795,8 +789,8 @@ fn no_write_access_at_remote_file_returns_io_error_permission_denied_unless_dry_
 #[case(true)]
 #[case(false)]
 #[cfg_attr(any(windows, target_os = "linux"), ignore)] // These permissions do not prevent write access on
-                             // Windows. This must be done through the Security
-                             // interface
+                                                       // Windows. This must be done through the Security
+                                                       // interface
 fn no_write_access_at_remote_dir_returns_io_error_permission_denied_unless_dry_run(
     #[case] dry_run: bool,
     #[values(true, false)] force: bool,

@@ -15,9 +15,9 @@ fn path_without_slashes_returns_given(#[case] given_str: &str) {
 }
 
 #[rstest]
-#[case("\\Path\\With\\Matching\\Slashes\\",  "/Path/With/Matching/Slashes/")]
-#[case("/Path/With\\Mixed/Slashes\\",  "/Path/With/Mixed/Slashes/")]
-#[case("\\",  "/")]
+#[case("\\Path\\With\\Matching\\Slashes\\", "/Path/With/Matching/Slashes/")]
+#[case("/Path/With\\Mixed/Slashes\\", "/Path/With/Mixed/Slashes/")]
+#[case("\\", "/")]
 #[cfg_attr(windows, ignore)]
 fn backslashes_replaced_with_forward_slash(
     #[case] given: PathBuf,
@@ -29,9 +29,9 @@ fn backslashes_replaced_with_forward_slash(
 }
 
 #[rstest]
-#[case("/Path/With/Matching/Slashes/",  "\\Path\\With\\Matching\\Slashes\\")]
-#[case("/Path/With\\Mixed/Slashes\\",  "\\Path\\With\\Mixed\\Slashes\\")]
-#[case("/",  "\\")]
+#[case("/Path/With/Matching/Slashes/", "\\Path\\With\\Matching\\Slashes\\")]
+#[case("/Path/With\\Mixed/Slashes\\", "\\Path\\With\\Mixed\\Slashes\\")]
+#[case("/", "\\")]
 #[cfg_attr(not(windows), ignore)]
 fn forward_slashes_replaced_with_backslashes(
     #[case] given: PathBuf,
@@ -66,9 +66,8 @@ fn non_utf8_paths_are_preserved() {
 
     let expected;
     unsafe {
-        expected = OsString::from_encoded_bytes_unchecked(
-            expected_bytes.clone()
-        );
+        expected =
+            OsString::from_encoded_bytes_unchecked(expected_bytes.clone());
     }
 
     assert_eq!(expected, actual.as_os_str());

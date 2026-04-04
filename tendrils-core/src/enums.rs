@@ -43,12 +43,10 @@ impl ToString for InitError {
             InitError::AlreadyInitialized => {
                 String::from("This folder is already a Tendrils repo")
             }
-            InitError::NotEmpty => {
-                String::from(
-                    "This folder is not empty. Creating a Tendrils \
-                    folder here may interfere with the existing \
-                    contents.")
-            }
+            InitError::NotEmpty => String::from(
+                "This folder is not empty. Creating a Tendrils folder here \
+                 may interfere with the existing contents.",
+            ),
         }
     }
 }
@@ -77,7 +75,10 @@ impl ToString for GetTendrilsRepoError {
                 format!("{} is not a Tendrils repo", path.to_string_lossy())
             }
             GetTendrilsRepoError::DefaultInvalid { path } => {
-                format!("The default path \"{}\" is not a Tendrils repo", path.to_string_lossy())
+                format!(
+                    "The default path \"{}\" is not a Tendrils repo",
+                    path.to_string_lossy()
+                )
             }
             GetTendrilsRepoError::DefaultNotSet => {
                 String::from("The default Tendrils repo path is not set")
@@ -143,7 +144,7 @@ impl From<serde_json::Error> for GetConfigError {
     fn from(err: serde_json::Error) -> Self {
         GetConfigError::ParseError {
             cfg_type: ConfigType::Repo,
-            msg: err.to_string()
+            msg: err.to_string(),
         }
     }
 }
@@ -162,7 +163,7 @@ impl ConfigType {
     fn file_name(&self) -> &str {
         match self {
             ConfigType::Repo => "tendrils.json",
-            ConfigType::Global => "global-config.json"
+            ConfigType::Global => "global-config.json",
         }
     }
 }
@@ -183,11 +184,11 @@ impl ToString for SetupError {
         match self {
             SetupError::CannotSymlink => String::from(
                 "Missing the permissions required to create symlinks on \
-                Windows. Consider:\n    \
-                - Running this command in an elevated terminal\n    \
-                - Enabling developer mode (this allows creating symlinks \
-                without requiring administrator priviledges)\n    \
-                - Changing these tendrils to non-link modes instead"
+                 Windows. Consider:\n    - Running this command in an \
+                 elevated terminal\n    - Enabling developer mode (this \
+                 allows creating symlinks without requiring administrator \
+                 priviledges)\n    - Changing these tendrils to non-link \
+                 modes instead",
             ),
             SetupError::ConfigError(err) => err.to_string(),
             SetupError::NoValidTendrilsRepo(err) => err.to_string(),
@@ -235,7 +236,9 @@ impl ToString for TendrilActionSuccess {
     fn to_string(&self) -> String {
         match self {
             TendrilActionSuccess::New => String::from("Created"),
-            TendrilActionSuccess::NewSkipped => String::from("Skipped creation"),
+            TendrilActionSuccess::NewSkipped => {
+                String::from("Skipped creation")
+            }
             TendrilActionSuccess::Overwrite => String::from("Overwritten"),
             TendrilActionSuccess::OverwriteSkipped => {
                 String::from("Skipped overwrite")
@@ -290,7 +293,7 @@ impl From<std::io::ErrorKind> for TendrilActionError {
 impl ToString for TendrilActionError {
     fn to_string(&self) -> String {
         use std::io::ErrorKind::NotFound;
-        use FsoType::{Dir, File, SymDir, SymFile, BrokenSym};
+        use FsoType::{BrokenSym, Dir, File, SymDir, SymFile};
         use Location::{Dest, Source, Unknown};
         match self {
             TendrilActionError::IoError { kind: NotFound, loc: Source } => {
@@ -375,8 +378,8 @@ impl FsoType {
 
     pub fn is_symlink(&self) -> bool {
         self == &FsoType::SymFile
-        || self == &FsoType::SymDir
-        || self == &FsoType::BrokenSym
+            || self == &FsoType::SymDir
+            || self == &FsoType::BrokenSym
     }
 }
 
@@ -410,7 +413,9 @@ impl ToString for TendrilMode {
     fn to_string(&self) -> String {
         match &self {
             TendrilMode::CopyMerge => String::from("Copy - Directory merge"),
-            TendrilMode::CopyOverwrite => String::from("Copy - Directory overwrite"),
+            TendrilMode::CopyOverwrite => {
+                String::from("Copy - Directory overwrite")
+            }
             TendrilMode::Link => String::from("Link"),
         }
     }

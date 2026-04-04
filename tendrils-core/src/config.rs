@@ -1,8 +1,8 @@
-use crate::ConfigType;
 use crate::enums::{GetConfigError, OneOrMany, TendrilMode};
 use crate::env_ext::get_home_dir;
 use crate::path_ext::UniPath;
 use crate::tendril::RawTendril;
+use crate::ConfigType;
 use serde::{de, Deserialize, Deserializer, Serialize};
 use std::path::PathBuf;
 
@@ -16,44 +16,50 @@ struct SerdeConfig {
     /// Using [`IndexMap`](indexmap::IndexMap) to maintain the
     /// order of insertions when iterating over the map.
     #[serde(default)]
-    pub tendrils: indexmap::IndexMap<String, OneOrMany<TendrilSet>>
+    pub tendrils: indexmap::IndexMap<String, OneOrMany<TendrilSet>>,
 }
 
 /// Contains the configuration context for a Tendrils repo.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct Config {
     /// The tendrils that are defined in a Tendrils repo.
-    pub raw_tendrils: Vec<RawTendril>
+    pub raw_tendrils: Vec<RawTendril>,
 }
 
 impl From<SerdeConfig> for Config {
     fn from(serde_cfg: SerdeConfig) -> Self {
-        let raw_tendrils = serde_cfg.tendrils.into_iter().map(|(k, v)| {
-            let remote_specs: Vec<TendrilSet> = v.into();
+        let raw_tendrils = serde_cfg
+            .tendrils
+            .into_iter()
+            .map(|(k, v)| {
+                let remote_specs: Vec<TendrilSet> = v.into();
 
-            remote_specs.into_iter().map(move |spec| {
-                let mode = match (spec.dir_merge, spec.link) {
-                    (true, false) => TendrilMode::CopyMerge,
-                    (false, false) => TendrilMode::CopyOverwrite,
-                    (_, true) => TendrilMode::Link,
-                };
+                remote_specs
+                    .into_iter()
+                    .map(move |spec| {
+                        let mode = match (spec.dir_merge, spec.link) {
+                            (true, false) => TendrilMode::CopyMerge,
+                            (false, false) => TendrilMode::CopyOverwrite,
+                            (_, true) => TendrilMode::Link,
+                        };
 
-                let local = k.clone();
-                let profiles = spec.profiles.clone();
-                spec.remotes.into_iter().map(move |r| -> RawTendril {
-                    RawTendril {
-                        local: local.clone(),
-                        remote: r.clone(),
-                        mode: mode.clone(),
-                        profiles: profiles.clone(),
-                    }
-                })
-            }).flatten()
-        }).flatten().collect();
+                        let local = k.clone();
+                        let profiles = spec.profiles.clone();
+                        spec.remotes.into_iter().map(move |r| -> RawTendril {
+                            RawTendril {
+                                local: local.clone(),
+                                remote: r.clone(),
+                                mode: mode.clone(),
+                                profiles: profiles.clone(),
+                            }
+                        })
+                    })
+                    .flatten()
+            })
+            .flatten()
+            .collect();
 
-        Config {
-            raw_tendrils
-        }
+        Config { raw_tendrils }
     }
 }
 
@@ -62,14 +68,16 @@ impl From<Config> for SerdeConfig {
     fn from(cfg: Config) -> Self {
         use indexmap::IndexMap;
 
-        let mut tendril_map: IndexMap<String, OneOrMany<TendrilSet>> = indexmap::IndexMap::new();
+        let mut tendril_map: IndexMap<String, OneOrMany<TendrilSet>> =
+            indexmap::IndexMap::new();
         for raw in cfg.raw_tendrils.into_iter() {
             let local = raw.local.clone();
 
             let added_sets: Vec<TendrilSet>;
             // Subsequent inserts are overwriting the value if the keys clash
             if tendril_map.contains_key(&local) {
-                let mut exist_sets: Vec<TendrilSet> = tendril_map.get(&local).unwrap().to_owned().into();
+                let mut exist_sets: Vec<TendrilSet> =
+                    tendril_map.get(&local).unwrap().to_owned().into();
                 exist_sets.push(raw.into());
                 added_sets = exist_sets;
             }
@@ -98,22 +106,17 @@ pub(crate) struct GlobalConfig {
 
 impl GlobalConfig {
     fn new() -> GlobalConfig {
-        GlobalConfig {
-            default_repo_path: None,
-            default_profiles: None,
-        }
+        GlobalConfig { default_repo_path: None, default_profiles: None }
     }
 }
 
 pub struct LazyCachedGlobalConfig {
-    cached_cfg: Option<Result<GlobalConfig, GetConfigError>>
+    cached_cfg: Option<Result<GlobalConfig, GetConfigError>>,
 }
 
 impl LazyCachedGlobalConfig {
     pub fn new() -> LazyCachedGlobalConfig {
-        LazyCachedGlobalConfig {
-            cached_cfg: None,
-        }
+        LazyCachedGlobalConfig { cached_cfg: None }
     }
 
     pub fn eval(&mut self) -> Result<GlobalConfig, GetConfigError> {
@@ -123,7 +126,7 @@ impl LazyCachedGlobalConfig {
                 let global_cfg = get_global_config();
                 self.cached_cfg = Some(global_cfg.clone());
                 global_cfg
-            },
+            }
         }
     }
 
@@ -206,9 +209,7 @@ fn one_or_many_to_vec<'de, D: Deserializer<'de>>(
 ///
 /// # Arguments
 /// - `td_repo` - Path to the Tendrils folder.
-pub(crate) fn get_config(
-    td_repo: &UniPath,
-) -> Result<Config, GetConfigError> {
+pub(crate) fn get_config(td_repo: &UniPath) -> Result<Config, GetConfigError> {
     let config_file_path = td_repo.inner().join(".tendrils/tendrils.json");
     let config_file_contents = std::fs::read_to_string(config_file_path)?;
     let serde_config = parse_config(&config_file_contents)?;
@@ -223,48 +224,45 @@ pub(crate) fn get_global_config() -> Result<GlobalConfig, GetConfigError> {
         Some(v) => v,
         None => return Ok(GlobalConfig::new()),
     };
-    let config_file_path = PathBuf::from(home_dir).join(".tendrils/global-config.json");
+    let config_file_path =
+        PathBuf::from(home_dir).join(".tendrils/global-config.json");
     let config_file_contents = match std::fs::read_to_string(config_file_path) {
         Ok(v) => v,
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
             return Ok(GlobalConfig::new())
         }
-        Err(e) => return Err(
-            Into::<GetConfigError>::into(e).with_cfg_type(ConfigType::Global)
-        )
+        Err(e) => {
+            return Err(Into::<GetConfigError>::into(e)
+                .with_cfg_type(ConfigType::Global))
+        }
     };
 
     match parse_global_config(&config_file_contents) {
         Ok(v) => Ok(v),
-        Err(e) => Err(
-            Into::<GetConfigError>::into(e).with_cfg_type(ConfigType::Global)
-        ),
+        Err(e) => {
+            Err(Into::<GetConfigError>::into(e)
+                .with_cfg_type(ConfigType::Global))
+        }
     }
 }
 
 /// # Arguments
 /// - `json` - JSON object following the tendrils.json schema
-fn parse_config(
-    json: &str
-) -> Result<Config, serde_json::Error> {
+fn parse_config(json: &str) -> Result<Config, serde_json::Error> {
     match serde_json::from_str::<SerdeConfig>(json) {
         Ok(raw) => Ok(raw.into()),
-        Err(e) => Err(e)
+        Err(e) => Err(e),
     }
 }
 
 // Exposes the otherwise private function
 #[cfg(test)]
-pub fn parse_config_expose(
-    json: &str,
-) -> Result<Config, serde_json::Error> {
+pub fn parse_config_expose(json: &str) -> Result<Config, serde_json::Error> {
     parse_config(json)
 }
 
 /// # Arguments
 /// - `json` - JSON object following the global-config.json schema
-fn parse_global_config(
-    json: &str
-) -> Result<GlobalConfig, serde_json::Error> {
+fn parse_global_config(json: &str) -> Result<GlobalConfig, serde_json::Error> {
     serde_json::from_str::<GlobalConfig>(json)
 }

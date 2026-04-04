@@ -107,7 +107,7 @@ impl TendrilLog for ListLog {
 /// command.
 pub trait UpdateHandler<L>
 where
-    L: TendrilLog
+    L: TendrilLog,
 {
     /// Accepts `value` indicating the total count
     /// of all raw tendrils that will be processed.
@@ -144,16 +144,16 @@ where
     L: TendrilLog,
 {
     pub fn new(count: C, before: B, after: A) -> CallbackUpdater<A, B, C, L> {
-        CallbackUpdater {
-            count,
-            before,
-            after,
-            _marker: PhantomData,
-        }
+        CallbackUpdater { count, before, after, _marker: PhantomData }
     }
 
     #[cfg(test)]
-    pub fn default() -> CallbackUpdater<impl FnMut(TendrilReport<L>), impl FnMut(RawTendril), impl FnMut(i32), L> {
+    pub fn default() -> CallbackUpdater<
+        impl FnMut(TendrilReport<L>),
+        impl FnMut(RawTendril),
+        impl FnMut(i32),
+        L,
+    > {
         CallbackUpdater {
             count: |_| {},
             before: |_| {},

@@ -28,7 +28,7 @@ fn tendril_remote_only_included_if_remote_matches_any(
     let mut t2 = RawTendril::new("SomeLocal");
     t1.remote = "v1".to_string();
     t2.remote = "v2".to_string();
-    
+
     let tendrils = vec![t1.clone(), t2.clone()];
 
     let actual = filter_by_remotes(tendrils, &filters);
@@ -44,7 +44,9 @@ fn tendril_remote_only_included_if_remote_matches_any(
 }
 
 #[apply(string_filter_non_match_tests)]
-fn tendril_not_included_if_remote_does_not_match_any(#[case] filters: &[String]) {
+fn tendril_not_included_if_remote_does_not_match_any(
+    #[case] filters: &[String],
+) {
     let mut t1 = RawTendril::new("SomeLocal");
     let mut t2 = RawTendril::new("SomeLocal");
     t1.remote = "v1".to_string();

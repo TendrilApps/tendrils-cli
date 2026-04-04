@@ -1,11 +1,11 @@
-use crate::path_ext::PathExt;
 use crate::path_ext::tests::test_paths::cases;
+use crate::path_ext::PathExt;
 use crate::test_utils::non_utf_8_text;
 use std::collections::HashMap;
 use std::ffi::OsString;
 use std::path::{Path, PathBuf, MAIN_SEPARATOR_STR as SEP};
 
-/// Checks that each of the subscribed sets of test cases has a corresponding 
+/// Checks that each of the subscribed sets of test cases has a corresponding
 /// expected output.
 #[test]
 fn all_given_path_test_cases_covered() {
@@ -22,7 +22,7 @@ fn all_given_path_test_cases_covered() {
     }
 }
 
-/// Checks that each of the subscribed sets of test cases has a corresponding 
+/// Checks that each of the subscribed sets of test cases has a corresponding
 /// expected output.
 #[test]
 fn all_given_root_test_cases_covered() {
@@ -46,12 +46,7 @@ fn given_path_and_abs_root_returns_expected() {
 
         let actual = given_path.root(&Path::new("/MyRoot"));
 
-        assert_eq!(
-            actual.to_string_lossy(),
-            pair.1,
-            "Given: {:?}",
-            pair.0,
-        );
+        assert_eq!(actual.to_string_lossy(), pair.1, "Given: {:?}", pair.0,);
     }
 }
 
@@ -62,12 +57,7 @@ fn given_root_and_relative_path_returns_expected() {
 
         let actual = &Path::new("RelPath").root(&given_root);
 
-        assert_eq!(
-            actual.to_string_lossy(),
-            pair.1,
-            "Given: {:?}",
-            pair.0,
-        );
+        assert_eq!(actual.to_string_lossy(), pair.1, "Given: {:?}", pair.0,);
     }
 }
 
@@ -80,8 +70,8 @@ fn non_utf8_is_preserved() {
     expected_str.push(SEP);
     expected_str.push(non_utf_8_text());
 
-    let actual = PathBuf::from(non_utf_8_text())
-        .root(&PathBuf::from(given_root));
+    let actual =
+        PathBuf::from(non_utf_8_text()).root(&PathBuf::from(given_root));
 
     assert_eq!(actual.as_os_str(), expected_str);
 }
@@ -410,7 +400,8 @@ fn given_path_and_exp() -> Vec<(String, String)> {
         #[cfg(not(windows))]
         (
             "\\\\?\\Volume{12a34b56-78c9-012d-ef3g-45678hij9012}\\misc.txt",
-            "/MyRoot/\\\\?\\Volume{12a34b56-78c9-012d-ef3g-45678hij9012}\\misc.txt",
+            "/MyRoot/\\\\?\\Volume{12a34b56-78c9-012d-ef3g-45678hij9012}\\\
+             misc.txt",
         ),
         #[cfg(windows)]
         (
@@ -452,7 +443,8 @@ fn given_path_and_exp() -> Vec<(String, String)> {
         #[cfg(not(windows))]
         (
             "\\\\.\\Volume{12a34b56-78c9-012d-ef3g-45678hij9012}\\misc.txt",
-            "/MyRoot/\\\\.\\Volume{12a34b56-78c9-012d-ef3g-45678hij9012}\\misc.txt",
+            "/MyRoot/\\\\.\\Volume{12a34b56-78c9-012d-ef3g-45678hij9012}\\\
+             misc.txt",
         ),
         #[cfg(windows)]
         (
@@ -581,10 +573,7 @@ fn given_root_and_exp() -> Vec<(String, String)> {
         #[cfg(not(windows))]
         ("\\\\Server\\Share\\misc.txt", "/RelPath"),
         #[cfg(windows)]
-        (
-            "\\\\Server\\Share\\misc.txt",
-            "\\\\Server\\Share\\misc.txt\\RelPath"
-        ),
+        ("\\\\Server\\Share\\misc.txt", "\\\\Server\\Share\\misc.txt\\RelPath"),
         #[cfg(not(windows))]
         ("\\\\Server\\misc.txt", "/RelPath"),
         #[cfg(windows)]
@@ -791,15 +780,20 @@ fn given_root_and_exp() -> Vec<(String, String)> {
         (
             "//?/Volume{12a34b56-78c9-012d-ef3g-45678hij9012}/misc.txt",
             &format!(
-                "//?/Volume{{12a34b56-78c9-012d-ef3g-45678hij9012}}/misc.txt{SEP}RelPath"
+                "//?/Volume{{12a34b56-78c9-012d-ef3g-45678hij9012}}/misc.\
+                 txt{SEP}RelPath"
             ),
         ),
         #[cfg(not(windows))]
-        ("\\\\?\\Volume{12a34b56-78c9-012d-ef3g-45678hij9012}\\misc.txt", "/RelPath"),
+        (
+            "\\\\?\\Volume{12a34b56-78c9-012d-ef3g-45678hij9012}\\misc.txt",
+            "/RelPath",
+        ),
         #[cfg(windows)]
         (
             "\\\\?\\Volume{12a34b56-78c9-012d-ef3g-45678hij9012}\\misc.txt",
-            "\\\\?\\Volume{12a34b56-78c9-012d-ef3g-45678hij9012}\\misc.txt\\RelPath",
+            "\\\\?\\Volume{12a34b56-78c9-012d-ef3g-45678hij9012}\\misc.txt\\\
+             RelPath",
         ),
         (
             "//./Volume{12a34b56-78c9-012d-ef3g-45678hij9012}",
@@ -828,15 +822,20 @@ fn given_root_and_exp() -> Vec<(String, String)> {
         (
             "//./Volume{12a34b56-78c9-012d-ef3g-45678hij9012}/misc.txt",
             &format!(
-                "//./Volume{{12a34b56-78c9-012d-ef3g-45678hij9012}}/misc.txt{SEP}RelPath"
+                "//./Volume{{12a34b56-78c9-012d-ef3g-45678hij9012}}/misc.\
+                 txt{SEP}RelPath"
             ),
         ),
         #[cfg(not(windows))]
-        ("\\\\.\\Volume{12a34b56-78c9-012d-ef3g-45678hij9012}\\misc.txt", "/RelPath"),
+        (
+            "\\\\.\\Volume{12a34b56-78c9-012d-ef3g-45678hij9012}\\misc.txt",
+            "/RelPath",
+        ),
         #[cfg(windows)]
         (
             "\\\\.\\Volume{12a34b56-78c9-012d-ef3g-45678hij9012}\\misc.txt",
-            "\\\\.\\Volume{12a34b56-78c9-012d-ef3g-45678hij9012}\\misc.txt\\RelPath",
+            "\\\\.\\Volume{12a34b56-78c9-012d-ef3g-45678hij9012}\\misc.txt\\\
+             RelPath",
         ),
         ("file:///../File/Protocol", &format!("{SEP}RelPath")),
         ("https://www.website.com", &format!("{SEP}RelPath")),

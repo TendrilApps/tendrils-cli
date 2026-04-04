@@ -63,7 +63,8 @@ impl PathExt for Path {
 
         #[cfg(not(windows))]
         if parent_bytes.ends_with(&['/' as u8])
-            || child_bytes.starts_with(&['/' as u8]) {
+            || child_bytes.starts_with(&['/' as u8])
+        {
             raw_str.push(path);
         }
         else {
@@ -75,7 +76,8 @@ impl PathExt for Path {
         if parent_bytes.ends_with(&['/' as u8])
             || parent_bytes.ends_with(&['\\' as u8])
             || child_bytes.starts_with(&['/' as u8])
-            || child_bytes.starts_with(&['\\' as u8]) {
+            || child_bytes.starts_with(&['\\' as u8])
+        {
             raw_str.push(path);
         }
         else {
@@ -125,7 +127,8 @@ impl PathExt for Path {
             // All bytes were originally from an OsString, or are the known path
             // separators so this call is safe.
             OsString::from_encoded_bytes_unchecked(bytes)
-        }.into()
+        }
+        .into()
     }
 
     fn resolve_tilde(&self) -> PathBuf {
@@ -133,7 +136,8 @@ impl PathExt for Path {
 
         if path_bytes == &['~' as u8]
             || path_bytes.starts_with(&['~' as u8, '/' as u8])
-            || path_bytes.starts_with(&['~' as u8, '\\' as u8]) {
+            || path_bytes.starts_with(&['~' as u8, '\\' as u8])
+        {
             // Continue
         }
         else {
@@ -147,7 +151,7 @@ impl PathExt for Path {
                     // All bytes were originally from an OsString so this call
                     // is safe.
                     trimmed_str = OsString::from_encoded_bytes_unchecked(
-                        path_bytes[1..].to_vec()
+                        path_bytes[1..].to_vec(),
                     );
                 }
 
@@ -175,7 +179,8 @@ impl PathExt for Path {
                 resolved_bytes.extend(v.as_encoded_bytes());
             }
             else {
-                resolved_bytes.extend(&given_bytes[search_start_idx..next.1 + 1]);
+                resolved_bytes
+                    .extend(&given_bytes[search_start_idx..next.1 + 1]);
             }
             search_start_idx = next.1 + 1;
         }
@@ -210,7 +215,10 @@ impl PathExt for Path {
 /// name, including the surrounding brackets, starting the search from the
 /// `search_start_idx`. Returns `None` if no variables remain at or after the
 /// start index.
-fn next_env_var(bytes: &[u8], search_start_idx: usize) -> Option<(usize, usize)> {
+fn next_env_var(
+    bytes: &[u8],
+    search_start_idx: usize,
+) -> Option<(usize, usize)> {
     let mut var_start = 0;
     let mut has_start = false;
 
@@ -220,7 +228,7 @@ fn next_env_var(bytes: &[u8], search_start_idx: usize) -> Option<(usize, usize)>
             has_start = true;
         }
         else if *b == '>' as u8 && has_start {
-            return Some((search_start_idx + var_start, search_start_idx + i))
+            return Some((search_start_idx + var_start, search_start_idx + i));
         }
     }
 
@@ -252,19 +260,15 @@ impl UniPath {
     pub fn new_with_root(path: &Path, root: &Path) -> Self {
         #[cfg(windows)]
         return UniPath(
-            path
-                .resolve_env_variables()
+            path.resolve_env_variables()
                 .resolve_tilde()
                 .root(root)
-                .replace_dir_seps()
+                .replace_dir_seps(),
         );
 
         #[cfg(not(windows))]
         return UniPath(
-            path
-                .resolve_env_variables()
-                .resolve_tilde()
-                .root(root)
+            path.resolve_env_variables().resolve_tilde().root(root),
         );
     }
 

@@ -13,6 +13,7 @@ use crate::test_utils::{
     symlink_expose,
     Setup,
 };
+use crate::tests::tendril_action_tests::compatible_action_and_tendril_modes;
 use crate::{
     link_tendril,
     pull_tendril,
@@ -24,12 +25,11 @@ use crate::{
     Tendril,
     TendrilActionError,
     TendrilActionSuccess,
+    TendrilMode,
     TendrilsActor,
     TendrilsApi,
-    TendrilMode,
     UniPath,
 };
-use crate::tests::tendril_action_tests::compatible_action_and_tendril_modes;
 use rstest::rstest;
 use rstest_reuse::{self, apply, template};
 use serial_test::serial;
@@ -39,7 +39,9 @@ use std::path::PathBuf;
 impl ActionMode {
     fn call(&self, t: &Tendril, dry_run: bool, force: bool) -> ActionLog {
         match (&self, t.mode) {
-            (ActionMode::Push, TendrilMode::Link) => link_tendril(t, dry_run, force),
+            (ActionMode::Push, TendrilMode::Link) => {
+                link_tendril(t, dry_run, force)
+            }
             (ActionMode::Push, _) => push_tendril(t, dry_run, force),
             (ActionMode::Pull, _) => pull_tendril(t, dry_run, force),
         }
@@ -158,7 +160,8 @@ fn remote_is_global_config_dir_proceeds_normally(
         "SomeApp/.tendrils".into(),
         home_dir().join(".tendrils").into(),
         TendrilMode::CopyOverwrite,
-    ).unwrap();
+    )
+    .unwrap();
     tendril.mode = tendril_mode;
 
     let actual = action.call(&tendril, dry_run, force);
@@ -207,7 +210,8 @@ fn remote_is_in_global_config_dir_proceeds_normally(
         "SomeApp/global-config.json".into(),
         global_cfg_dir().join("global-config.json").into(),
         TendrilMode::CopyOverwrite,
-    ).unwrap();
+    )
+    .unwrap();
     tendril.mode = tendril_mode;
 
     let actual = action.call(&tendril, dry_run, force);
@@ -495,10 +499,8 @@ fn other_files_in_subdir_are_unchanged(
         setup.make_remote_subdir_file();
         setup.make_remote_subdir_nested_file();
     }
-    let subdir_file_actual =
-        action.call(&subdir_file_tendril, dry_run, force);
-    let subdir_dir_actual =
-        action.call(&subdir_dir_tendril, dry_run, force);
+    let subdir_file_actual = action.call(&subdir_file_tendril, dry_run, force);
+    let subdir_dir_actual = action.call(&subdir_dir_tendril, dry_run, force);
 
     let exp_result;
     let mut exp_remote_type_file = Some(FsoType::File);
@@ -559,8 +561,7 @@ fn remote_parent_doesnt_exist_creates_anyways(
     setup.remote_nested_file = setup.remote_dir.join("nested.txt");
     setup.remote_subdir_file =
         setup.parent_dir.join("IDoNotExist3/SubDir/misc.txt");
-    setup.remote_subdir_dir =
-        setup.parent_dir.join("IDoNotExist4/SubDir/misc");
+    setup.remote_subdir_dir = setup.parent_dir.join("IDoNotExist4/SubDir/misc");
     setup.remote_subdir_nested_file =
         setup.remote_subdir_dir.join("nested.txt");
     setup.make_local_file();
@@ -573,25 +574,29 @@ fn remote_parent_doesnt_exist_creates_anyways(
         "SomeApp/misc.txt".into(),
         UniPath::from(&setup.remote_file),
         TendrilMode::CopyOverwrite,
-    ).unwrap();
+    )
+    .unwrap();
     let mut dir_tendril = Tendril::new_expose(
         &setup.uni_td_repo(),
         "SomeApp/misc".into(),
         UniPath::from(&setup.remote_dir),
         TendrilMode::CopyOverwrite,
-    ).unwrap();
+    )
+    .unwrap();
     let mut subdir_file_tendril = Tendril::new_expose(
         &setup.uni_td_repo(),
         "SomeApp/SubDir/misc.txt".into(),
         UniPath::from(&setup.remote_subdir_file),
         TendrilMode::CopyOverwrite,
-    ).unwrap();
+    )
+    .unwrap();
     let mut subdir_dir_tendril = Tendril::new_expose(
         &setup.uni_td_repo(),
         "SomeApp/SubDir/misc".into(),
         UniPath::from(&setup.remote_subdir_dir),
         TendrilMode::CopyOverwrite,
-    ).unwrap();
+    )
+    .unwrap();
     file_tendril.mode = tendril_mode;
     dir_tendril.mode = tendril_mode;
     subdir_file_tendril.mode = tendril_mode;
@@ -604,10 +609,8 @@ fn remote_parent_doesnt_exist_creates_anyways(
     let action = ActionMode::Push;
     let file_actual = action.call(&file_tendril, dry_run, force);
     let dir_actual = action.call(&dir_tendril, dry_run, force);
-    let subdir_file_actual =
-        action.call(&subdir_file_tendril, dry_run, force);
-    let subdir_dir_actual =
-        action.call(&subdir_dir_tendril, dry_run, force);
+    let subdir_file_actual = action.call(&subdir_file_tendril, dry_run, force);
+    let subdir_dir_actual = action.call(&subdir_dir_tendril, dry_run, force);
 
     let exp_result;
     if dry_run {
@@ -1112,7 +1115,7 @@ fn remote_symlink_is_unchanged(
 fn remote_is_broken_symlink_treats_as_if_it_doesnt_exist_if_forced_except_for_pull(
     #[case] action: ActionMode,
     #[case] tendril_mode: TendrilMode,
-    #[values (true, false)] dry_run: bool,
+    #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
     let setup = Setup::new();
@@ -1138,7 +1141,8 @@ fn remote_is_broken_symlink_treats_as_if_it_doesnt_exist_if_forced_except_for_pu
 
     let exp_file_result;
     let exp_dir_result;
-    if !force && action == ActionMode::Push && !tendril_mode.requires_symlink() {
+    if !force && action == ActionMode::Push && !tendril_mode.requires_symlink()
+    {
         exp_file_result = Err(TendrilActionError::TypeMismatch {
             loc: Location::Dest,
             mistype: FsoType::BrokenSym,
@@ -1168,7 +1172,10 @@ fn remote_is_broken_symlink_treats_as_if_it_doesnt_exist_if_forced_except_for_pu
         exp_file_result = Ok(TendrilActionSuccess::Overwrite);
         exp_dir_result = Ok(TendrilActionSuccess::Overwrite);
         assert_eq!(setup.remote_file_contents(), "Local file contents");
-        assert_eq!(setup.remote_nested_file_contents(), "Local nested file contents");
+        assert_eq!(
+            setup.remote_nested_file_contents(),
+            "Local nested file contents"
+        );
     }
     assert_eq!(
         file_actual,
@@ -1194,7 +1201,7 @@ fn remote_is_broken_symlink_treats_as_if_it_doesnt_exist_if_forced_except_for_pu
 fn local_is_broken_symlink_treats_as_if_it_doesnt_exist_if_forced_except_for_copy_style_push(
     #[case] action: ActionMode,
     #[case] tendril_mode: TendrilMode,
-    #[values (true, false)] dry_run: bool,
+    #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
     let setup = Setup::new();
@@ -1202,8 +1209,7 @@ fn local_is_broken_symlink_treats_as_if_it_doesnt_exist_if_forced_except_for_cop
     setup.make_remote_nested_file();
     setup.make_target_file();
     setup.make_target_dir();
-    symlink_expose(&setup.local_file, &setup.target_file, false, true)
-        .unwrap();
+    symlink_expose(&setup.local_file, &setup.target_file, false, true).unwrap();
     symlink_expose(&setup.local_dir, &setup.target_dir, false, true).unwrap();
     remove_file(&setup.target_file).unwrap();
     remove_dir(&setup.target_dir).unwrap();
@@ -1220,7 +1226,8 @@ fn local_is_broken_symlink_treats_as_if_it_doesnt_exist_if_forced_except_for_cop
 
     let exp_file_result;
     let exp_dir_result;
-    if !force && (action == ActionMode::Pull || tendril_mode.requires_symlink()) {
+    if !force && (action == ActionMode::Pull || tendril_mode.requires_symlink())
+    {
         let exp_loc;
         if tendril_mode.requires_symlink() {
             exp_loc = Location::Source;
@@ -1257,7 +1264,10 @@ fn local_is_broken_symlink_treats_as_if_it_doesnt_exist_if_forced_except_for_cop
         exp_file_result = Ok(TendrilActionSuccess::Overwrite);
         exp_dir_result = Ok(TendrilActionSuccess::Overwrite);
         assert_eq!(setup.local_file_contents(), "Remote file contents");
-        assert_eq!(setup.local_nested_file_contents(), "Remote nested file contents");
+        assert_eq!(
+            setup.local_nested_file_contents(),
+            "Remote nested file contents"
+        );
     }
     assert_eq!(
         file_actual,
@@ -1333,7 +1343,10 @@ mod admin_container {
 
     #[apply(compatible_action_and_tendril_modes)]
     #[serial(SERIAL_ROOT)]
-    #[cfg_attr(any(not(target_os = "linux"), not(feature = "_admin_tests")), ignore)]
+    #[cfg_attr(
+        any(not(target_os = "linux"), not(feature = "_admin_tests")),
+        ignore
+    )]
     pub fn remote_parent_is_root_returns_success_if_admin(
         #[case] action: ActionMode,
         #[case] tendril_mode: TendrilMode,
@@ -1360,8 +1373,10 @@ mod admin_container {
 
             exp_remote_type_file = Some(FsoType::SymFile);
             exp_remote_type_dir = Some(FsoType::SymDir);
-            symlink_expose(&setup.remote_file, &setup.target_file, false, true).unwrap();
-            symlink_expose(&setup.remote_dir, &setup.target_dir, false, true).unwrap();
+            symlink_expose(&setup.remote_file, &setup.target_file, false, true)
+                .unwrap();
+            symlink_expose(&setup.remote_dir, &setup.target_dir, false, true)
+                .unwrap();
         }
         else {
             setup.make_remote_file();
@@ -1399,20 +1414,14 @@ mod admin_container {
 
         if action == ActionMode::Pull {
             if dry_run {
-                assert_eq!(
-                    setup.local_file_contents(),
-                    "Local file contents"
-                );
+                assert_eq!(setup.local_file_contents(), "Local file contents");
                 assert_eq!(
                     setup.local_nested_file_contents(),
                     "Local nested file contents"
                 );
             }
             else {
-                assert_eq!(
-                    setup.local_file_contents(),
-                    "Remote file contents"
-                );
+                assert_eq!(setup.local_file_contents(), "Remote file contents");
                 assert_eq!(
                     setup.local_nested_file_contents(),
                     "Remote nested file contents"
@@ -1431,10 +1440,7 @@ mod admin_container {
                 );
             }
             else {
-                assert_eq!(
-                    setup.remote_file_contents(),
-                    "Local file contents"
-                );
+                assert_eq!(setup.remote_file_contents(), "Local file contents");
                 assert_eq!(
                     setup.remote_nested_file_contents(),
                     "Local nested file contents"
@@ -1453,10 +1459,7 @@ mod admin_container {
                 );
             }
             else {
-                assert_eq!(
-                    setup.remote_file_contents(),
-                    "Local file contents"
-                );
+                assert_eq!(setup.remote_file_contents(), "Local file contents");
                 assert_eq!(
                     setup.remote_nested_file_contents(),
                     "Local nested file contents"
@@ -1500,5 +1503,6 @@ mod admin_container {
 
 // TODO: Test when path is invalid and a copy is attempted with both a folder
 // and a file (Windows only?)
-// TODO: Test when td_repo is in the ~/.tendrils folder and global config dir exists
-// TODO: Test when td_repo is the ~/.tendrils folder and global config dir exists
+// TODO: Test when td_repo is in the ~/.tendrils folder and global config dir
+// exists TODO: Test when td_repo is the ~/.tendrils folder and global config
+// dir exists

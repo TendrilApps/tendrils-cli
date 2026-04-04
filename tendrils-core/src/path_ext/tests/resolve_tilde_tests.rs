@@ -181,7 +181,6 @@ fn non_utf8_in_path_is_preserved(#[case] home_exists: bool) {
     assert_eq!(actual, expected);
 }
 
-
 #[rstest]
 #[case(true)]
 #[case(false)]
@@ -221,7 +220,7 @@ fn non_utf8_in_tilde_value_is_preserved(#[case] home_exists: bool) {
 #[case("~")]
 #[case("~/Home")]
 #[case("~\\Home")]
-#[case( "../Home/./..")]
+#[case("../Home/./..")]
 #[serial(SERIAL_MUT_ENV_VARS)]
 fn tilde_value_is_misc_returns_raw_tilde_value(#[case] home: &str) {
     std::env::set_var("HOME", home);

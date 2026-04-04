@@ -1,17 +1,11 @@
-use crate::{ConfigType, GetConfigError};
 use crate::config::{get_global_config, GlobalConfig};
-use crate::test_utils::{
-    global_cfg_file,
-    set_ra,
-    Setup,
-};
+use crate::test_utils::{global_cfg_file, set_ra, Setup};
+use crate::{ConfigType, GetConfigError};
 use serial_test::serial;
 use std::path::PathBuf;
 
-const EMPTY_CONFIG: GlobalConfig = GlobalConfig {
-    default_repo_path: None,
-    default_profiles: None,
-};
+const EMPTY_CONFIG: GlobalConfig =
+    GlobalConfig { default_repo_path: None, default_profiles: None };
 
 #[test]
 #[serial(SERIAL_MUT_ENV_VARS)]
@@ -22,10 +16,7 @@ fn no_config_file_returns_empty_config() {
 
     let actual = get_global_config();
 
-    assert_eq!(
-        actual,
-        Ok(EMPTY_CONFIG),
-    );
+    assert_eq!(actual, Ok(EMPTY_CONFIG),);
 }
 
 #[test]
@@ -70,10 +61,7 @@ fn empty_json_object_returns_empty_config() {
 
     let actual = get_global_config();
 
-    assert_eq!(
-        actual,
-        Ok(EMPTY_CONFIG),
-    );
+    assert_eq!(actual, Ok(EMPTY_CONFIG),);
 }
 
 #[test]
@@ -102,7 +90,8 @@ fn no_read_access_to_config_file_returns_io_permission_error() {
 fn valid_json_returns_config_values() {
     let setup = Setup::new();
     setup.make_global_cfg_file(
-        r#"{"default-repo-path": "Some/Path", "default-profiles": ["p1"]}"#.to_string()
+        r#"{"default-repo-path": "Some/Path", "default-profiles": ["p1"]}"#
+            .to_string(),
     );
 
     let actual = get_global_config();
@@ -121,12 +110,15 @@ fn valid_json_returns_config_values() {
 fn config_file_is_unchanged() {
     let setup = Setup::new();
     setup.make_global_cfg_file(
-        r#"{"default-repo-path": "Orig text"}"#.to_string()
+        r#"{"default-repo-path": "Orig text"}"#.to_string(),
     );
 
     let _ = get_global_config().unwrap();
 
-    let global_cfg_file_contents = std::fs::read_to_string(global_cfg_file()).unwrap();
-    assert_eq!(global_cfg_file_contents, r#"{"default-repo-path": "Orig text"}"#);
+    let global_cfg_file_contents =
+        std::fs::read_to_string(global_cfg_file()).unwrap();
+    assert_eq!(
+        global_cfg_file_contents,
+        r#"{"default-repo-path": "Orig text"}"#
+    );
 }
-

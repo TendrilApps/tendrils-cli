@@ -88,9 +88,7 @@ fn leading_tilde_in_remote_path_tilde_value_doesnt_exist_returns_raw_path() {
 #[case(TendrilMode::CopyMerge)]
 #[case(TendrilMode::CopyOverwrite)]
 #[case(TendrilMode::Link)]
-fn resolves_tendril_mode_properly(
-    #[case] expected_mode: TendrilMode,
-) {
+fn resolves_tendril_mode_properly(#[case] expected_mode: TendrilMode) {
     let td_repo = UniPath::from(Path::new("/Repo"));
     let mut given = RawTendril::new("SomeLocal");
     given.remote = "SomeRemotePath".to_string();

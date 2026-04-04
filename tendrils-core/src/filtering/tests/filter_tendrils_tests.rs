@@ -1,6 +1,6 @@
-use crate::{RawTendril, TendrilMode};
 use crate::config::LazyCachedGlobalConfig;
 use crate::filtering::{filter_tendrils, FilterSpec};
+use crate::{RawTendril, TendrilMode};
 use rstest_reuse::{self, template};
 
 #[template]

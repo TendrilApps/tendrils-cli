@@ -1,10 +1,5 @@
-use crate::config::{Config, parse_config_expose};
-use crate::test_utils::{
-    global_cfg_dir,
-    global_cfg_file,
-    home_dir,
-    Setup
-};
+use crate::config::{parse_config_expose, Config};
+use crate::test_utils::{global_cfg_dir, global_cfg_file, home_dir, Setup};
 use crate::{
     is_tendrils_repo,
     InitError,
@@ -111,7 +106,8 @@ fn does_not_change_cd(#[case] force: bool) {
     let actual = api.init_tendrils_repo(&UniPath::from(&cd), force);
 
     assert_eq!(std::env::current_dir().unwrap(), cd);
-    std::env::set_current_dir(&setup.temp_dir.path().parent().unwrap()).unwrap();
+    std::env::set_current_dir(&setup.temp_dir.path().parent().unwrap())
+        .unwrap();
 
     assert_eq!(actual, Ok(()));
     assert!(is_tendrils_repo(&cd.into()));
@@ -137,9 +133,7 @@ fn dir_doesnt_exist_returns_io_error_not_found(#[case] force: bool) {
 #[rstest]
 #[case(true)]
 #[case(false)]
-fn dir_is_a_file_returns_io_err(
-    #[case] force: bool,
-) {
+fn dir_is_a_file_returns_io_err(#[case] force: bool) {
     let api = TendrilsActor {};
     let setup = Setup::new();
     write(&setup.td_repo, "I'm not a folder!").unwrap();

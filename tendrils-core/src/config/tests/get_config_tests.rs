@@ -1,7 +1,7 @@
-use crate::{ConfigType, GetConfigError, RawTendril};
-use crate::config::{Config, get_config};
+use crate::config::{get_config, Config};
 use crate::test_utils::{get_disposable_dir, Setup};
 use crate::tests::sample_tendrils::SampleTendrils;
+use crate::{ConfigType, GetConfigError, RawTendril};
 use std::fs::write;
 use tempdir::TempDir;
 

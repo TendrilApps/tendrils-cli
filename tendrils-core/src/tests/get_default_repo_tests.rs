@@ -1,8 +1,4 @@
-use crate::test_utils::{
-    default_repo_path_as_json,
-    global_cfg_file,
-    Setup,
-};
+use crate::test_utils::{default_repo_path_as_json, global_cfg_file, Setup};
 use crate::{ConfigType, GetConfigError, TendrilsActor, TendrilsApi};
 use rstest::rstest;
 use serial_test::serial;
@@ -59,13 +55,11 @@ fn invalid_json_returns_parse_error() {
 #[serial(SERIAL_MUT_ENV_VARS)]
 fn config_file_exists_returns_unaltered_path_even_if_invalid(
     #[case] field_contents: &str,
-    #[case] exp_field_contents: &str
+    #[case] exp_field_contents: &str,
 ) {
     let api = TendrilsActor {};
     let setup = Setup::new();
-    setup.make_global_cfg_file(
-        default_repo_path_as_json(field_contents)
-    );
+    setup.make_global_cfg_file(default_repo_path_as_json(field_contents));
 
     let actual = api.get_default_repo_path();
 

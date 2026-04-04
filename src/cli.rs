@@ -54,7 +54,8 @@ pub(crate) enum TendrilsSubcommands {
         filter_args: FilterArgs,
     },
 
-    /// Copies/symlinks tendrils from the Tendrils repo to their various locations
+    /// Copies/symlinks tendrils from the Tendrils repo to their various
+    /// locations
     Push {
         #[clap(flatten)]
         action_args: ActionArgs,
@@ -138,7 +139,8 @@ pub(crate) struct FilterArgs {
     #[arg(short, long, num_args = ..)]
     pub remotes: Vec<String>,
 
-    /// List of profiles to filter for (overriding global settings). Globs accepted.
+    /// List of profiles to filter for (overriding global settings). Globs
+    /// accepted.
     #[arg(short, long, num_args = ..)]
     pub profiles: Option<Vec<String>>,
 }
@@ -252,12 +254,8 @@ pub(crate) fn print_list_reports(
     let total = reports.len();
     for report in reports {
         let styled_path = match &report.log {
-            Ok(log) => {
-                ansi_styled_resolved_path(Ok(log.resolved_path()))
-            }
-            Err(e) => {
-                ansi_styled_resolved_path(Err(e))
-            }
+            Ok(log) => ansi_styled_resolved_path(Ok(log.resolved_path())),
+            Err(e) => ansi_styled_resolved_path(Err(e)),
         };
 
         let profiles_str = report.raw_tendril.profiles.join(", ");
@@ -278,10 +276,12 @@ fn print_empty_reports_warning<T>(
     reports: &[TendrilReport<T>],
     writer: &mut impl Writer,
 ) -> Result<(), ()>
-where T: TendrilLog {
+where
+    T: TendrilLog,
+{
     if reports.is_empty() {
         writer.writeln("No tendrils matched the given filter(s)");
-        return Err(())
+        return Err(());
     }
     Ok(())
 }

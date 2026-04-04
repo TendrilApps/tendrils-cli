@@ -1,17 +1,20 @@
 //! Contains tests specific to list actions.
 //! See also [`crate::tests::common_action_tests`].
 
-use crate::test_utils::{
-    set_ra,
-    symlink_expose,
-    Setup,
-};
+use crate::test_utils::{set_ra, symlink_expose, Setup};
 use crate::{
-    FsoType, InvalidTendrilError, ListLog, RawTendril, TendrilMode, TendrilReport, UniPath, list_tendrils_inner
+    list_tendrils_inner,
+    FsoType,
+    InvalidTendrilError,
+    ListLog,
+    RawTendril,
+    TendrilMode,
+    TendrilReport,
+    UniPath,
 };
-use rstest::rstest;
 use core::assert_eq;
 use core::convert::From;
+use rstest::rstest;
 use std::fs::{remove_file, write};
 use std::path::PathBuf;
 
@@ -37,12 +40,36 @@ fn returns_fso_types_and_resolved_paths_for_all_in_given_order(
     setup.make_remote_file();
     setup.make_remote_nested_file();
     setup.make_target_file();
-    symlink_expose(&setup.parent_dir.join("misc_link.txt"), &setup.local_file, false, true).unwrap();
-    symlink_expose(&setup.parent_dir.join("misc_link"), &setup.local_dir, false, true).unwrap();
-    symlink_expose(&setup.parent_dir.join("wrong_link.txt"), &setup.target_file, false, true).unwrap();
+    symlink_expose(
+        &setup.parent_dir.join("misc_link.txt"),
+        &setup.local_file,
+        false,
+        true,
+    )
+    .unwrap();
+    symlink_expose(
+        &setup.parent_dir.join("misc_link"),
+        &setup.local_dir,
+        false,
+        true,
+    )
+    .unwrap();
+    symlink_expose(
+        &setup.parent_dir.join("wrong_link.txt"),
+        &setup.target_file,
+        false,
+        true,
+    )
+    .unwrap();
     let file_to_del = &setup.td_repo.join("I don't exist");
     write(file_to_del, "").unwrap();
-    symlink_expose(&setup.parent_dir.join("missing_link.txt"), &file_to_del, false, true).unwrap();
+    symlink_expose(
+        &setup.parent_dir.join("missing_link.txt"),
+        &file_to_del,
+        false,
+        true,
+    )
+    .unwrap();
     remove_file(file_to_del).unwrap();
 
     let raw_file_tendril = RawTendril {
@@ -71,13 +98,21 @@ fn returns_fso_types_and_resolved_paths_for_all_in_given_order(
     };
     let raw_wrong_link_tendril = RawTendril {
         local: "SomeApp/misc.txt".to_string(),
-        remote: setup.parent_dir.join("wrong_link.txt").to_string_lossy().into(),
+        remote: setup
+            .parent_dir
+            .join("wrong_link.txt")
+            .to_string_lossy()
+            .into(),
         mode,
         profiles: vec![],
     };
     let raw_missing_link_tendril = RawTendril {
         local: "I don't exist".to_string(),
-        remote: setup.parent_dir.join("missing_link.txt").to_string_lossy().into(),
+        remote: setup
+            .parent_dir
+            .join("missing_link.txt")
+            .to_string_lossy()
+            .into(),
         mode,
         profiles: vec![],
     };
@@ -171,9 +206,15 @@ fn returns_fso_types_and_resolved_paths_for_all_in_given_order(
 
     assert_eq!(actual, exp);
     assert_eq!(setup.local_file_contents(), "Local file contents");
-    assert_eq!(setup.local_nested_file_contents(), "Local nested file contents");
+    assert_eq!(
+        setup.local_nested_file_contents(),
+        "Local nested file contents"
+    );
     assert_eq!(setup.remote_file_contents(), "Remote file contents");
-    assert_eq!(setup.remote_nested_file_contents(), "Remote nested file contents");
+    assert_eq!(
+        setup.remote_nested_file_contents(),
+        "Remote nested file contents"
+    );
     assert_eq!(setup.target_file_contents(), "Target file contents");
 }
 
@@ -199,16 +240,14 @@ fn no_read_access_from_local_or_remote_file_returns_proper_fso_type(
 
     let actual = list_tendrils_inner(&setup.td_repo.into(), given);
 
-    let exp = vec![
-        TendrilReport {
-            raw_tendril: raw_tendril,
-            log: Ok(ListLog::new(
-                Some(FsoType::File),
-                Some(FsoType::File),
-                setup.remote_nra_file,
-            )),
-        },
-    ];
+    let exp = vec![TendrilReport {
+        raw_tendril,
+        log: Ok(ListLog::new(
+            Some(FsoType::File),
+            Some(FsoType::File),
+            setup.remote_nra_file,
+        )),
+    }];
 
     assert_eq!(actual, exp);
 }
@@ -237,16 +276,14 @@ fn no_read_access_from_local_or_remote_dir_returns_proper_fso_type(
     set_ra(&setup.remote_nra_dir, true);
     set_ra(&setup.local_nra_dir, true);
 
-    let exp = vec![
-        TendrilReport {
-            raw_tendril: raw_tendril,
-            log: Ok(ListLog::new(
-                Some(FsoType::Dir),
-                Some(FsoType::Dir),
-                setup.remote_nra_dir,
-            )),
-        },
-    ];
+    let exp = vec![TendrilReport {
+        raw_tendril,
+        log: Ok(ListLog::new(
+            Some(FsoType::Dir),
+            Some(FsoType::Dir),
+            setup.remote_nra_dir,
+        )),
+    }];
 
     assert_eq!(actual, exp);
 }

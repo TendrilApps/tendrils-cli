@@ -45,9 +45,9 @@ struct CargoMetadataDependency {
     pub license: Option<String>,
     #[serde(default)]
     pub license_files: Vec<String>,
-    #[serde(rename="description")]
+    #[serde(rename = "description")]
     pub desc: Option<String>,
-    #[serde(rename="repository")]
+    #[serde(rename = "repository")]
     pub repo: Option<String>,
     pub manifest_path: String,
 }
@@ -55,13 +55,13 @@ struct CargoMetadataDependency {
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
 struct ThirdPartyMetadata {
     pub preamble: String,
-    #[serde(rename="cargo-dependencies")]
+    #[serde(rename = "cargo-dependencies")]
     pub cargo_deps: Vec<FormattedDependency>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
 struct CargoMetadataOutput {
-    #[serde(rename="packages")]
+    #[serde(rename = "packages")]
     pub cargo_deps: Vec<CargoMetadataDependency>,
 
     /// List of crate id's that belong to the workspace
@@ -76,7 +76,8 @@ struct LicenseUpdaterArgs {
     #[arg(short, long)]
     dry_run: bool,
 
-    /// Compiles license texts in Markdown format to file (will not update the metadata file)
+    /// Compiles license texts in Markdown format to file (will not update the
+    /// metadata file)
     #[arg(short, long)]
     compile: bool,
 }
@@ -85,12 +86,7 @@ fn fetch_https_license(url: &str) -> String {
     // Using curl isn't the "best" way to do this but it is simple.
     // Could be replaced in the future.
     let mut cmd = std::process::Command::new("curl");
-    let output = cmd
-        .arg(url)
-        .arg("-s")
-        .arg("-f")
-        .output()
-        .unwrap();
+    let output = cmd.arg(url).arg("-s").arg("-f").output().unwrap();
     if !output.status.success() {
         panic!("ERROR: Could not fetch license at {url}");
     }
@@ -102,13 +98,13 @@ fn filter_workspace_members(
     deps: Vec<FormattedDependency>,
     workspace_members: Vec<String>,
 ) -> Vec<FormattedDependency> {
-    deps.into_iter().filter(
-        |dep| !workspace_members.contains(&dep.id)
-    ).collect()
+    deps.into_iter()
+        .filter(|dep| !workspace_members.contains(&dep.id))
+        .collect()
 }
 
 fn get_cargo_metadata() -> CargoMetadataOutput {
-   let mut cmd = std::process::Command::new("cargo");
+    let mut cmd = std::process::Command::new("cargo");
     let output = cmd
         .arg("metadata")
         .arg("--all-features")
@@ -142,9 +138,10 @@ fn get_license_texts(
         }
         else {
             let full_path = crate_path.join(license_file);
-            text = std::fs::read_to_string(&full_path).expect(
-                &format!("Could not find {}", full_path.to_string_lossy())
-            );
+            text = std::fs::read_to_string(&full_path).expect(&format!(
+                "Could not find {}",
+                full_path.to_string_lossy()
+            ));
         }
         text = String::from(text.trim_end());
         license_texts.push(text);
@@ -177,7 +174,7 @@ fn get_compiled_licenses_path() -> PathBuf {
 }
 
 fn get_dep_lookup(
-    deps: Vec<FormattedDependency>
+    deps: Vec<FormattedDependency>,
 ) -> HashMap<String, FormattedDependency> {
     let mut lookup = HashMap::with_capacity(deps.len());
 
@@ -189,7 +186,7 @@ fn get_dep_lookup(
 }
 
 fn get_local_crate_path_lookup(
-    deps: Vec<CargoMetadataDependency>
+    deps: Vec<CargoMetadataDependency>,
 ) -> HashMap<String, PathBuf> {
     let mut lookup = HashMap::with_capacity(deps.len());
     for dep in deps {
@@ -251,10 +248,19 @@ fn merge_info(
 }
 
 /// Formats a dependency and its license as a Markdown section.
-fn to_markdown(dep: &FormattedDependency, license_texts: Vec<String>) -> String {
+fn to_markdown(
+    dep: &FormattedDependency,
+    license_texts: Vec<String>,
+) -> String {
     let mut output = format!("## {}\n", dep.name);
-    output.push_str(&format!("The `{}` software is included in this product.\n", dep.name));
-    output.push_str(&format!("The source code is available here: {}.\n", dep.src));
+    output.push_str(&format!(
+        "The `{}` software is included in this product.\n",
+        dep.name
+    ));
+    output.push_str(&format!(
+        "The source code is available here: {}.\n",
+        dep.src
+    ));
     output.push_str("Its license(s) and notice(s) are as follows:\n\n");
 
     for (i, text) in license_texts.iter().enumerate() {
@@ -271,21 +277,20 @@ fn to_markdown(dep: &FormattedDependency, license_texts: Vec<String>) -> String 
 }
 
 /// Updates the metadata file and returns the updated metadata.
-fn update_metadata_file(old_metadata: ThirdPartyMetadata, dry_run: bool) -> ThirdPartyMetadata {
+fn update_metadata_file(
+    old_metadata: ThirdPartyMetadata,
+    dry_run: bool,
+) -> ThirdPartyMetadata {
     let old_deps = old_metadata.cargo_deps;
     let name_lookup = get_dep_lookup(old_deps);
 
     let cargo_metadata = get_cargo_metadata();
-    let mut new_deps = merge_info(
-        cargo_metadata.cargo_deps,
-        name_lookup,
-    );
-    new_deps = filter_workspace_members(new_deps, cargo_metadata.workspace_members);
+    let mut new_deps = merge_info(cargo_metadata.cargo_deps, name_lookup);
+    new_deps =
+        filter_workspace_members(new_deps, cargo_metadata.workspace_members);
     new_deps.sort_by(|a, b| a.id.cmp(&b.id));
-    let new_metadata = ThirdPartyMetadata {
-        cargo_deps: new_deps,
-        ..old_metadata
-    };
+    let new_metadata =
+        ThirdPartyMetadata { cargo_deps: new_deps, ..old_metadata };
 
     let json = serde_json::to_string_pretty(&new_metadata).unwrap();
 
@@ -299,14 +304,16 @@ fn update_metadata_file(old_metadata: ThirdPartyMetadata, dry_run: bool) -> Thir
 }
 
 fn update_3rd_party_licenses(metadata: ThirdPartyMetadata, dry_run: bool) {
-    let mut output = String::from("<!-- This file is auto-generated using 3rd-party-compile-licenses.nu - any changes here will be overwritten. -->\n\n");
+    let mut output = String::from(
+        "<!-- This file is auto-generated using 3rd-party-compile-licenses.nu \
+         - any changes here will be overwritten. -->\n\n",
+    );
     output.push_str("# General\n");
     output.push_str(&metadata.preamble);
     output.push_str("\n\n# Third Party Dependencies\n");
 
-    let crate_path_lookup = get_local_crate_path_lookup(
-        get_cargo_metadata().cargo_deps
-    );
+    let crate_path_lookup =
+        get_local_crate_path_lookup(get_cargo_metadata().cargo_deps);
 
     for dep in metadata.cargo_deps {
         let dep_license_texts = get_license_texts(&dep, &crate_path_lookup);

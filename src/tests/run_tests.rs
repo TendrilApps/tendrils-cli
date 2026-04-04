@@ -1,5 +1,14 @@
 use crate::cli::{
-    AboutSubcommands, ActionArgs, CLEAR_LINE, FilterArgs, LocalFilterArgs, PathArgs, TendrilCliArgs, TendrilModeFilterArgs, TendrilsSubcommands, ansi_hyperlink
+    ansi_hyperlink,
+    AboutSubcommands,
+    ActionArgs,
+    FilterArgs,
+    LocalFilterArgs,
+    PathArgs,
+    TendrilCliArgs,
+    TendrilModeFilterArgs,
+    TendrilsSubcommands,
+    CLEAR_LINE,
 };
 use crate::{run, Writer, ERR_PREFIX};
 use inline_colorization::{
@@ -13,8 +22,7 @@ use rstest::rstest;
 use rstest_reuse::{apply, template};
 use serial_test::serial;
 use std::fs::create_dir_all;
-use std::path::PathBuf;
-use std::path::MAIN_SEPARATOR_STR as SEP;
+use std::path::{PathBuf, MAIN_SEPARATOR_STR as SEP};
 use std::vec;
 use tendrils_core::test_utils::{get_disposable_dir, MockTendrilsApi};
 use tendrils_core::{
@@ -96,12 +104,16 @@ fn build_action_subcommand(
     let filter_args = FilterArgs { modes, remotes, profiles };
 
     match mode {
-        ActionMode::Pull => {
-            TendrilsSubcommands::Pull { action_args, local_filter_args, filter_args }
-        }
-        ActionMode::Push => {
-            TendrilsSubcommands::Push { action_args, local_filter_args, filter_args }
-        }
+        ActionMode::Pull => TendrilsSubcommands::Pull {
+            action_args,
+            local_filter_args,
+            filter_args,
+        },
+        ActionMode::Push => TendrilsSubcommands::Push {
+            action_args,
+            local_filter_args,
+            filter_args,
+        },
     }
 }
 
@@ -348,9 +360,7 @@ fn init_non_empty_dir_prints_error_message_unless_forced(#[case] force: bool) {
         assert_eq!(actual_exit_code, Ok(()));
         assert_eq!(
             writer.all_output,
-            format!(
-                "Created a Tendrils repo at: \"{SEP}SomeGivenDir\"\n"
-            )
+            format!("Created a Tendrils repo at: \"{SEP}SomeGivenDir\"\n")
         );
     }
     else {
@@ -461,11 +471,13 @@ fn init_given_path_is_relative_prepends_with_cd(#[case] force: bool) {
 #[case(false)]
 #[serial(SERIAL_CD)]
 #[cfg_attr(windows, ignore)]
-fn init_given_path_is_relative_and_cd_doesnt_exist_prepends_with_dir_sep(#[case] force: bool) {
+fn init_given_path_is_relative_and_cd_doesnt_exist_prepends_with_dir_sep(
+    #[case] force: bool,
+) {
     let mut api = MockTendrilsApi::new();
     let mut writer = MockWriter::new();
     let temp_dir =
-    tempdir::TempDir::new_in(get_disposable_dir(), "TempDir").unwrap();
+        tempdir::TempDir::new_in(get_disposable_dir(), "TempDir").unwrap();
     let user_given_dir = "../Relative/Path";
     let cd = temp_dir.path().join("CurrentDir");
     create_dir_all(&cd).unwrap();
@@ -494,7 +506,9 @@ fn init_given_path_is_relative_and_cd_doesnt_exist_prepends_with_dir_sep(#[case]
 #[case(true)]
 #[case(false)]
 #[serial(SERIAL_MUT_ENV_VARS)]
-fn init_given_path_is_relative_but_resolves_to_abs_should_not_prepend_cd(#[case] force: bool) {
+fn init_given_path_is_relative_but_resolves_to_abs_should_not_prepend_cd(
+    #[case] force: bool,
+) {
     let mut api = MockTendrilsApi::new();
     let mut writer = MockWriter::new();
     std::env::set_var("HOME", "/Some/Abs/Path");
@@ -522,7 +536,9 @@ fn init_given_path_is_relative_but_resolves_to_abs_should_not_prepend_cd(#[case]
 #[case(false)]
 #[serial(SERIAL_CD, SERIAL_MUT_ENV_VARS)]
 #[cfg_attr(windows, ignore)]
-fn init_given_path_is_relative_but_resolves_to_abs_and_cd_doesnt_exist_should_not_prepend_cd(#[case] force: bool) {
+fn init_given_path_is_relative_but_resolves_to_abs_and_cd_doesnt_exist_should_not_prepend_cd(
+    #[case] force: bool,
+) {
     let mut api = MockTendrilsApi::new();
     let mut writer = MockWriter::new();
     std::env::set_var("HOME", "/Some/Abs/Path");
@@ -570,9 +586,7 @@ fn path_with_default_set_prints_path() {
     let mut api = MockTendrilsApi::new();
     let mut writer = MockWriter::new();
     api.get_default_repo_const_rt = Ok(Some(PathBuf::from("SomePath")));
-    let args = TendrilCliArgs {
-        tendrils_command: TendrilsSubcommands::Path
-    };
+    let args = TendrilCliArgs { tendrils_command: TendrilsSubcommands::Path };
 
     // Formatted as hyperlink
     let expected = "\u{1b}]8;;SomePath\u{1b}\\SomePath\u{1b}]8;;\u{1b}\\\n";
@@ -593,9 +607,10 @@ fn path_io_error_accessing_global_config_file_prints_message() {
     });
     let args = TendrilCliArgs { tendrils_command: TendrilsSubcommands::Path };
 
-    let expected =
-        format!("{ERR_PREFIX}: IO error while reading the global-config.json file:\n\
-        permission denied\n");
+    let expected = format!(
+        "{ERR_PREFIX}: IO error while reading the global-config.json \
+         file:\npermission denied\n"
+    );
 
     let actual_exit_code = run(args, &api, &mut writer);
 
@@ -607,8 +622,7 @@ fn path_io_error_accessing_global_config_file_prints_message() {
 #[serial(SERIAL_CD)]
 #[cfg_attr(windows, ignore)]
 fn tendril_action_no_path_given_and_no_cd_prints_message(
-    #[values(ActionMode::Pull, ActionMode::Push)]
-    mode: ActionMode,
+    #[values(ActionMode::Pull, ActionMode::Push)] mode: ActionMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -659,13 +673,8 @@ fn list_tendrils_no_path_given_and_no_cd_prints_message() {
 
     api.list_fn = Some(Box::new(|_, _| panic!()));
 
-    let tendrils_command = build_list_subcommand(
-        None,
-        vec![],
-        vec![],
-        vec![],
-        None
-    );
+    let tendrils_command =
+        build_list_subcommand(None, vec![], vec![], vec![], None);
     let args = TendrilCliArgs { tendrils_command };
 
     let expected =
@@ -683,8 +692,7 @@ fn list_tendrils_no_path_given_and_no_cd_prints_message() {
 #[rstest]
 #[serial(SERIAL_CD)]
 fn tendril_action_given_path_is_not_tendrils_repo_but_cd_is_should_print_message(
-    #[values(ActionMode::Pull, ActionMode::Push)]
-    mode: ActionMode,
+    #[values(ActionMode::Pull, ActionMode::Push)] mode: ActionMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -698,11 +706,10 @@ fn tendril_action_given_path_is_not_tendrils_repo_but_cd_is_should_print_message
     create_dir_all(&cd).unwrap();
     std::env::set_current_dir(&cd).unwrap();
 
-    api.is_tendrils_repo_fn = Some(Box::new(move |dir| {
-        dir.inner() == cd_for_closure
-    }));
+    api.is_tendrils_repo_fn =
+        Some(Box::new(move |dir| dir.inner() == cd_for_closure));
     api.ta_exp_mode = mode.clone();
-    api.ta_exp_path= Some(&given_dir);
+    api.ta_exp_path = Some(&given_dir);
     api.ta_exp_filter = FilterSpec::new();
     api.ta_exp_dry_run = dry_run;
     api.ta_exp_force = force;
@@ -749,22 +756,16 @@ fn list_tendril_given_path_is_not_tendrils_repo_but_cd_is_should_print_message()
     create_dir_all(&cd).unwrap();
     std::env::set_current_dir(&cd).unwrap();
 
-    api.is_tendrils_repo_fn = Some(Box::new(move |dir| {
-        dir.inner() == cd_for_closure
-    }));
+    api.is_tendrils_repo_fn =
+        Some(Box::new(move |dir| dir.inner() == cd_for_closure));
     api.list_exp_path = Some(&given_dir);
     api.list_const_rt = Err(SetupError::NoValidTendrilsRepo(
         GetTendrilsRepoError::GivenInvalid { path: given_dir.clone() },
     ));
 
     let path = Some(given_dir.to_str().unwrap().to_string());
-    let tendrils_command = build_list_subcommand(
-        path,
-        vec![],
-        vec![],
-        vec![],
-        None,
-    );
+    let tendrils_command =
+        build_list_subcommand(path, vec![], vec![], vec![], None);
     let args = TendrilCliArgs { tendrils_command };
 
     let expected =
@@ -782,8 +783,7 @@ fn list_tendril_given_path_is_not_tendrils_repo_but_cd_is_should_print_message()
 #[rstest]
 #[serial(SERIAL_CD)]
 fn tendril_action_given_path_and_cd_are_both_tendrils_repos_uses_given_path(
-    #[values(ActionMode::Pull, ActionMode::Push)]
-    mode: ActionMode,
+    #[values(ActionMode::Pull, ActionMode::Push)] mode: ActionMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -802,10 +802,11 @@ fn tendril_action_given_path_and_cd_are_both_tendrils_repos_uses_given_path(
     api.ta_exp_filter = FilterSpec::new();
     api.ta_exp_dry_run = dry_run;
     api.ta_exp_force = force;
-    api.tau_const_rt = Err(SetupError::ConfigError(GetConfigError::ParseError {
-        cfg_type: ConfigType::Repo,
-        msg: "Some parse error msg".to_string(),
-    }));
+    api.tau_const_rt =
+        Err(SetupError::ConfigError(GetConfigError::ParseError {
+            cfg_type: ConfigType::Repo,
+            msg: "Some parse error msg".to_string(),
+        }));
 
     let path = Some(given_dir.to_str().unwrap().to_string());
     let tendrils_command = build_action_subcommand(
@@ -848,19 +849,15 @@ fn list_tendrils_given_path_and_cd_are_both_tendrils_repos_uses_given_path() {
 
     api.is_tendrils_repo_const_rt = true;
     api.list_exp_path = Some(&given_dir);
-    api.list_const_rt = Err(SetupError::ConfigError(GetConfigError::ParseError {
-        cfg_type: ConfigType::Repo,
-        msg: "Some parse error msg".to_string(),
-    }));
+    api.list_const_rt =
+        Err(SetupError::ConfigError(GetConfigError::ParseError {
+            cfg_type: ConfigType::Repo,
+            msg: "Some parse error msg".to_string(),
+        }));
 
     let path = Some(given_dir.to_str().unwrap().to_string());
-    let tendrils_command = build_list_subcommand(
-        path,
-        vec![],
-        vec![],
-        vec![],
-        None,
-    );
+    let tendrils_command =
+        build_list_subcommand(path, vec![], vec![], vec![], None);
     let args = TendrilCliArgs { tendrils_command };
 
     let expected = format!(
@@ -880,8 +877,7 @@ fn list_tendrils_given_path_and_cd_are_both_tendrils_repos_uses_given_path() {
 #[rstest]
 #[serial(SERIAL_CD)]
 fn tendril_action_given_path_is_relative_prepends_with_cd(
-    #[values(ActionMode::Pull, ActionMode::Push)]
-    mode: ActionMode,
+    #[values(ActionMode::Pull, ActionMode::Push)] mode: ActionMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -901,10 +897,11 @@ fn tendril_action_given_path_is_relative_prepends_with_cd(
     api.ta_exp_filter = FilterSpec::new();
     api.ta_exp_dry_run = dry_run;
     api.ta_exp_force = force;
-    api.tau_const_rt = Err(SetupError::ConfigError(GetConfigError::ParseError {
-        cfg_type: ConfigType::Repo,
-        msg: "Some parse error msg".to_string(),
-    }));
+    api.tau_const_rt =
+        Err(SetupError::ConfigError(GetConfigError::ParseError {
+            cfg_type: ConfigType::Repo,
+            msg: "Some parse error msg".to_string(),
+        }));
 
     let tendrils_command = build_action_subcommand(
         Some(user_given_dir.to_string()),
@@ -941,10 +938,11 @@ fn list_tendrils_given_path_is_relative_prepends_with_cd() {
 
     api.is_tendrils_repo_const_rt = true;
     api.list_exp_path = Some(&exp_passed_dir);
-    api.list_const_rt = Err(SetupError::ConfigError(GetConfigError::ParseError {
-        cfg_type: ConfigType::Repo,
-        msg: "Some parse error msg".to_string(),
-    }));
+    api.list_const_rt =
+        Err(SetupError::ConfigError(GetConfigError::ParseError {
+            cfg_type: ConfigType::Repo,
+            msg: "Some parse error msg".to_string(),
+        }));
 
     let tendrils_command = build_list_subcommand(
         Some(user_given_dir.to_string()),
@@ -967,8 +965,7 @@ fn list_tendrils_given_path_is_relative_prepends_with_cd() {
 #[serial(SERIAL_CD)]
 #[cfg_attr(windows, ignore)]
 fn tendril_action_given_path_is_relative_and_cd_doesnt_exist_prepends_with_dir_sep(
-    #[values(ActionMode::Pull, ActionMode::Push)]
-    mode: ActionMode,
+    #[values(ActionMode::Pull, ActionMode::Push)] mode: ActionMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -989,10 +986,11 @@ fn tendril_action_given_path_is_relative_and_cd_doesnt_exist_prepends_with_dir_s
     api.ta_exp_filter = FilterSpec::new();
     api.ta_exp_dry_run = dry_run;
     api.ta_exp_force = force;
-    api.tau_const_rt = Err(SetupError::ConfigError(GetConfigError::ParseError {
-        cfg_type: ConfigType::Repo,
-        msg: "Some parse error msg".to_string(),
-    }));
+    api.tau_const_rt =
+        Err(SetupError::ConfigError(GetConfigError::ParseError {
+            cfg_type: ConfigType::Repo,
+            msg: "Some parse error msg".to_string(),
+        }));
 
     let tendrils_command = build_action_subcommand(
         Some(user_given_dir.to_string()),
@@ -1029,10 +1027,11 @@ fn list_tendrils_given_path_is_relative_and_cd_doesnt_exist_prepends_with_dir_se
 
     api.is_tendrils_repo_const_rt = true;
     api.list_exp_path = Some(&exp_passed_dir);
-    api.list_const_rt = Err(SetupError::ConfigError(GetConfigError::ParseError {
-        cfg_type: ConfigType::Repo,
-        msg: "Some parse error msg".to_string(),
-    }));
+    api.list_const_rt =
+        Err(SetupError::ConfigError(GetConfigError::ParseError {
+            cfg_type: ConfigType::Repo,
+            msg: "Some parse error msg".to_string(),
+        }));
 
     let tendrils_command = build_list_subcommand(
         Some(user_given_dir.to_string()),
@@ -1051,8 +1050,7 @@ fn list_tendrils_given_path_is_relative_and_cd_doesnt_exist_prepends_with_dir_se
 #[rstest]
 #[serial(SERIAL_MUT_ENV_VARS)]
 fn tendril_action_given_path_is_relative_but_resolves_to_abs_should_not_prepend_cd(
-    #[values(ActionMode::Pull, ActionMode::Push)]
-    mode: ActionMode,
+    #[values(ActionMode::Pull, ActionMode::Push)] mode: ActionMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -1068,10 +1066,11 @@ fn tendril_action_given_path_is_relative_but_resolves_to_abs_should_not_prepend_
     api.ta_exp_filter = FilterSpec::new();
     api.ta_exp_dry_run = dry_run;
     api.ta_exp_force = force;
-    api.tau_const_rt = Err(SetupError::ConfigError(GetConfigError::ParseError {
-        cfg_type: ConfigType::Repo,
-        msg: "Some parse error msg".to_string(),
-    }));
+    api.tau_const_rt =
+        Err(SetupError::ConfigError(GetConfigError::ParseError {
+            cfg_type: ConfigType::Repo,
+            msg: "Some parse error msg".to_string(),
+        }));
 
     let tendrils_command = build_action_subcommand(
         Some(user_given_dir.to_string()),
@@ -1102,10 +1101,11 @@ fn list_tendrils_given_path_is_relative_but_resolves_to_abs_should_not_prepend_c
 
     api.is_tendrils_repo_const_rt = true;
     api.list_exp_path = Some(&exp_passed_dir);
-    api.list_const_rt = Err(SetupError::ConfigError(GetConfigError::ParseError {
-        cfg_type: ConfigType::Repo,
-        msg: "Some parse error msg".to_string(),
-    }));
+    api.list_const_rt =
+        Err(SetupError::ConfigError(GetConfigError::ParseError {
+            cfg_type: ConfigType::Repo,
+            msg: "Some parse error msg".to_string(),
+        }));
 
     let tendrils_command = build_list_subcommand(
         Some(user_given_dir.to_string()),
@@ -1125,8 +1125,7 @@ fn list_tendrils_given_path_is_relative_but_resolves_to_abs_should_not_prepend_c
 #[serial(SERIAL_CD, SERIAL_MUT_ENV_VARS)]
 #[cfg_attr(windows, ignore)]
 fn tendril_action_given_path_is_relative_but_resolves_to_abs_and_cd_doesnt_exist_should_not_prepend_cd(
-    #[values(ActionMode::Pull, ActionMode::Push)]
-    mode: ActionMode,
+    #[values(ActionMode::Pull, ActionMode::Push)] mode: ActionMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -1148,10 +1147,11 @@ fn tendril_action_given_path_is_relative_but_resolves_to_abs_and_cd_doesnt_exist
     api.ta_exp_filter = FilterSpec::new();
     api.ta_exp_dry_run = dry_run;
     api.ta_exp_force = force;
-    api.tau_const_rt = Err(SetupError::ConfigError(GetConfigError::ParseError {
-        cfg_type: ConfigType::Repo,
-        msg: "Some parse error msg".to_string(),
-    }));
+    api.tau_const_rt =
+        Err(SetupError::ConfigError(GetConfigError::ParseError {
+            cfg_type: ConfigType::Repo,
+            msg: "Some parse error msg".to_string(),
+        }));
 
     let tendrils_command = build_action_subcommand(
         Some(user_given_dir.to_string()),
@@ -1189,10 +1189,11 @@ fn list_tendrils_given_path_is_relative_but_resolves_to_abs_and_cd_doesnt_exist_
 
     api.is_tendrils_repo_const_rt = true;
     api.list_exp_path = Some(&exp_passed_dir);
-    api.list_const_rt = Err(SetupError::ConfigError(GetConfigError::ParseError {
-        cfg_type: ConfigType::Repo,
-        msg: "Some parse error msg".to_string(),
-    }));
+    api.list_const_rt =
+        Err(SetupError::ConfigError(GetConfigError::ParseError {
+            cfg_type: ConfigType::Repo,
+            msg: "Some parse error msg".to_string(),
+        }));
 
     let tendrils_command = build_list_subcommand(
         Some(user_given_dir.to_string()),
@@ -1210,8 +1211,7 @@ fn list_tendrils_given_path_is_relative_but_resolves_to_abs_and_cd_doesnt_exist_
 
 #[rstest]
 fn tendril_action_prints_returned_resolved_path_when_invalid_td_repo(
-    #[values(ActionMode::Pull, ActionMode::Push)]
-    mode: ActionMode,
+    #[values(ActionMode::Pull, ActionMode::Push)] mode: ActionMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -1246,8 +1246,9 @@ fn tendril_action_prints_returned_resolved_path_when_invalid_td_repo(
 
     let actual_exit_code = run(args, &api, &mut writer);
 
-    let expected =
-        format!("{ERR_PREFIX}: /Resolved/Returned/Path is not a Tendrils repo\n");
+    let expected = format!(
+        "{ERR_PREFIX}: /Resolved/Returned/Path is not a Tendrils repo\n"
+    );
 
     assert_eq!(actual_exit_code, Err(exitcode::NOINPUT));
     assert_eq!(writer.all_output, expected);
@@ -1268,19 +1269,15 @@ fn list_tendrils_prints_returned_resolved_path_when_invalid_td_repo() {
     ));
 
     let path = Some(given_dir.to_str().unwrap().to_string());
-    let tendrils_command = build_list_subcommand(
-        path,
-        vec![],
-        vec![],
-        vec![],
-        None,
-    );
+    let tendrils_command =
+        build_list_subcommand(path, vec![], vec![], vec![], None);
     let args = TendrilCliArgs { tendrils_command };
 
     let actual_exit_code = run(args, &api, &mut writer);
 
-    let expected =
-        format!("{ERR_PREFIX}: /Resolved/Returned/Path is not a Tendrils repo\n");
+    let expected = format!(
+        "{ERR_PREFIX}: /Resolved/Returned/Path is not a Tendrils repo\n"
+    );
 
     assert_eq!(actual_exit_code, Err(exitcode::NOINPUT));
     assert_eq!(writer.all_output, expected);
@@ -1298,7 +1295,8 @@ fn list_tendrils_prints_returned_resolved_path_when_invalid_td_repo() {
 fn compatible_action_and_tendril_modes(
     #[case] mode: ActionMode,
     #[case] tendril_mode: TendrilMode,
-) {}
+) {
+}
 
 #[apply(compatible_action_and_tendril_modes)]
 fn tendril_action_prints_progress_to_stderr_and_table_to_stdout(
@@ -1369,8 +1367,8 @@ fn tendril_action_prints_progress_to_stderr_and_table_to_stdout(
     // Processing [1/2]: r1/misc.txt (then line is cleared and overwritten)
     // Processing [2/2]: r1/misc.txt (then line is cleared and overwritten)
     let mut exp_std_err_lines = vec![format!(
-        "Processing [1/2]: r1/misc.txt{CLEAR_LINE}\
-        Processing [2/2]: r2/misc.txt{CLEAR_LINE}"
+        "Processing [1/2]: r1/misc.txt{CLEAR_LINE}Processing [2/2]: \
+         r2/misc.txt{CLEAR_LINE}"
     )];
 
     // Update this example table as format changes in the future
@@ -1423,7 +1421,6 @@ fn tendril_action_prints_progress_to_stderr_and_table_to_stdout(
     // was cleared.
     exp_std_err_lines[0].push_str(&exp_std_out_lines[0]);
     exp_std_err_lines.append(&mut exp_std_out_lines[1..].to_vec());
-
 
     let exp_all_output_lines = exp_std_err_lines;
     assert_eq!(writer.all_output_lines(), exp_all_output_lines);
@@ -1542,11 +1539,7 @@ fn tendril_action_if_any_fail_they_are_totalled_and_returns_exit_code(
     api.ta_exp_dry_run = dry_run;
     api.ta_exp_force = force;
     api.tau_const_count_updater_rt = 3;
-    api.tau_const_before_updater_rts = vec![
-        t1.clone(),
-        t2.clone(),
-        t3.clone(),
-    ];
+    api.tau_const_before_updater_rts = vec![t1.clone(), t2.clone(), t3.clone()];
     api.tau_const_after_updater_rts = vec![
         TendrilReport {
             raw_tendril: t1.clone(),
@@ -1771,10 +1764,10 @@ fn tendril_action_order_of_reports_is_unchanged(
              Failed: {color_bright_red}9{color_reset}"
         )
     );
-    assert!(writer.all_output_lines()[3] .contains("r2_3"));
-    assert!(writer.all_output_lines()[5] .contains("r2_2"));
-    assert!(writer.all_output_lines()[7] .contains("r2_1"));
-    assert!(writer.all_output_lines()[9] .contains("r1_2"));
+    assert!(writer.all_output_lines()[3].contains("r2_3"));
+    assert!(writer.all_output_lines()[5].contains("r2_2"));
+    assert!(writer.all_output_lines()[7].contains("r2_1"));
+    assert!(writer.all_output_lines()[9].contains("r1_2"));
     assert!(writer.all_output_lines()[11].contains("r1_1"));
     assert!(writer.all_output_lines()[13].contains("r1_3"));
     assert!(writer.all_output_lines()[15].contains("r3_3"));
@@ -1809,87 +1802,46 @@ fn list_tendrils_order_of_reports_is_unchanged() {
     api.list_const_rt = Ok(vec![
         TendrilReport {
             raw_tendril: t2_3.clone(),
-            log: Ok(ListLog::new(
-                None,
-                None,
-                PathBuf::from("r2_3"),
-            )),
+            log: Ok(ListLog::new(None, None, PathBuf::from("r2_3"))),
         },
         TendrilReport {
             raw_tendril: t2_2.clone(),
-            log: Ok(ListLog::new(
-                None,
-                None,
-                PathBuf::from("r2_2"),
-            )),
+            log: Ok(ListLog::new(None, None, PathBuf::from("r2_2"))),
         },
         TendrilReport {
             raw_tendril: t2_1.clone(),
-            log: Ok(ListLog::new(
-                None,
-                None,
-                PathBuf::from("r2_1"),
-            )),
+            log: Ok(ListLog::new(None, None, PathBuf::from("r2_1"))),
         },
         TendrilReport {
             raw_tendril: t1_2.clone(),
-            log: Ok(ListLog::new(
-                None,
-                None,
-                PathBuf::from("r1_2"),
-            )),
+            log: Ok(ListLog::new(None, None, PathBuf::from("r1_2"))),
         },
         TendrilReport {
             raw_tendril: t1_1.clone(),
-            log: Ok(ListLog::new(
-                None,
-                None,
-                PathBuf::from("r1_1"),
-            )),
+            log: Ok(ListLog::new(None, None, PathBuf::from("r1_1"))),
         },
         TendrilReport {
             raw_tendril: t1_3.clone(),
-            log: Ok(ListLog::new(
-                None,
-                None,
-                PathBuf::from("r1_3"),
-            )),
+            log: Ok(ListLog::new(None, None, PathBuf::from("r1_3"))),
         },
         TendrilReport {
             raw_tendril: t3_3.clone(),
-            log: Ok(ListLog::new(
-                None,
-                None,
-                PathBuf::from("r3_3"),
-            )),
+            log: Ok(ListLog::new(None, None, PathBuf::from("r3_3"))),
         },
         TendrilReport {
             raw_tendril: t3_3.clone(),
-            log: Ok(ListLog::new(
-                None,
-                None,
-                PathBuf::from("r3_1"),
-            )),
+            log: Ok(ListLog::new(None, None, PathBuf::from("r3_1"))),
         },
         TendrilReport {
             raw_tendril: t3_2.clone(),
-            log: Ok(ListLog::new(
-                None,
-                None,
-                PathBuf::from("r3_2"),
-            )),
+            log: Ok(ListLog::new(None, None, PathBuf::from("r3_2"))),
         },
     ]);
 
     let mut writer = MockWriter::new();
     let path = Some(given_dir.to_str().unwrap().to_string());
-    let tendrils_command = build_list_subcommand(
-        path,
-        vec![],
-        vec![],
-        vec![],
-        None,
-    );
+    let tendrils_command =
+        build_list_subcommand(path, vec![], vec![], vec![], None);
     let args = TendrilCliArgs { tendrils_command };
 
     let actual_exit_code = run(args, &api, &mut writer);
@@ -1900,10 +1852,10 @@ fn list_tendrils_order_of_reports_is_unchanged() {
         writer.all_output_lines().last().unwrap().to_string(),
         "Total: 9"
     );
-    assert!(writer.all_output_lines()[3] .contains("r2_3"));
-    assert!(writer.all_output_lines()[5] .contains("r2_2"));
-    assert!(writer.all_output_lines()[7] .contains("r2_1"));
-    assert!(writer.all_output_lines()[9] .contains("r1_2"));
+    assert!(writer.all_output_lines()[3].contains("r2_3"));
+    assert!(writer.all_output_lines()[5].contains("r2_2"));
+    assert!(writer.all_output_lines()[7].contains("r2_1"));
+    assert!(writer.all_output_lines()[9].contains("r1_2"));
     assert!(writer.all_output_lines()[11].contains("r1_1"));
     assert!(writer.all_output_lines()[13].contains("r1_3"));
     assert!(writer.all_output_lines()[15].contains("r3_3"));
@@ -2041,13 +1993,8 @@ fn list_tendrils_empty_reports_list_prints_message() {
 
     let mut writer = MockWriter::new();
     let path = Some(given_dir.to_str().unwrap().to_string());
-    let tendrils_command = build_list_subcommand(
-        path,
-        vec![],
-        vec![],
-        vec![],
-        None,
-    );
+    let tendrils_command =
+        build_list_subcommand(path, vec![], vec![], vec![], None);
     let args = TendrilCliArgs { tendrils_command };
 
     let actual_exit_code = run(args, &api, &mut writer);

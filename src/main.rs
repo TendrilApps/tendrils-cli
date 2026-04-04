@@ -27,9 +27,9 @@ use tendrils_core::{
     InitError,
     RawTendril,
     SetupError,
+    TendrilMode,
     TendrilsActor,
     TendrilsApi,
-    TendrilMode,
     UniPath,
 };
 mod writer;
@@ -66,35 +66,41 @@ fn run(
         }
         TendrilsSubcommands::Path => path(api, writer),
         TendrilsSubcommands::Profiles => profiles(api, writer),
-        TendrilsSubcommands::Pull { action_args, local_filter_args, filter_args } => {
-            tendril_action_subcommand(
-                ActionMode::Pull,
-                action_args,
-                local_filter_args,
-                filter_args,
-                api,
-                writer,
-            )
-        }
-        TendrilsSubcommands::Push { action_args, local_filter_args, filter_args } => {
-            tendril_action_subcommand(
-                ActionMode::Push,
-                action_args,
-                local_filter_args,
-                filter_args,
-                api,
-                writer,
-            )
-        }
-        TendrilsSubcommands::List { path_args, local_filter_args, filter_args } => {
-            list_tendrils_subcommand(
-                path_args,
-                local_filter_args,
-                filter_args,
-                api,
-                writer,
-            )
-        }
+        TendrilsSubcommands::Pull {
+            action_args,
+            local_filter_args,
+            filter_args,
+        } => tendril_action_subcommand(
+            ActionMode::Pull,
+            action_args,
+            local_filter_args,
+            filter_args,
+            api,
+            writer,
+        ),
+        TendrilsSubcommands::Push {
+            action_args,
+            local_filter_args,
+            filter_args,
+        } => tendril_action_subcommand(
+            ActionMode::Push,
+            action_args,
+            local_filter_args,
+            filter_args,
+            api,
+            writer,
+        ),
+        TendrilsSubcommands::List {
+            path_args,
+            local_filter_args,
+            filter_args,
+        } => list_tendrils_subcommand(
+            path_args,
+            local_filter_args,
+            filter_args,
+            api,
+            writer,
+        ),
     }
 }
 
@@ -206,7 +212,10 @@ fn path(api: &impl TendrilsApi, writer: &mut impl Writer) -> Result<(), i32> {
 
 /// Returns, but does not set, the suggested exit code in case of error.
 /// It is up to the calling function to handle exiting with this code.
-fn profiles(api: &impl TendrilsApi, writer: &mut impl Writer) -> Result<(), i32> {
+fn profiles(
+    api: &impl TendrilsApi,
+    writer: &mut impl Writer,
+) -> Result<(), i32> {
     match api.get_default_profiles() {
         Ok(Some(v)) => {
             let display = v.join("\n");
@@ -250,7 +259,12 @@ fn tendril_action_subcommand(
         let completed = *completed_lock.read().unwrap();
         let total = *total_lock.read().unwrap();
         let mut writer = writer_lock.write().unwrap();
-        (*writer).ewrite(&format!("Processing [{}/{}]: {}", completed + 1, total, t.remote));
+        (*writer).ewrite(&format!(
+            "Processing [{}/{}]: {}",
+            completed + 1,
+            total,
+            t.remote
+        ));
 
         // Flush to ensure immediate output
         use std::io::Write;
@@ -263,7 +277,9 @@ fn tendril_action_subcommand(
         reports.push(r);
         *completed += 1;
     };
-    let updater = CallbackUpdater::<_, _, _, ActionLog>::new(count_fn, before_fn, after_fn);
+    let updater = CallbackUpdater::<_, _, _, ActionLog>::new(
+        count_fn, before_fn, after_fn,
+    );
 
     let batch_result = api.tendril_action_updating(
         updater,
@@ -275,7 +291,7 @@ fn tendril_action_subcommand(
     );
 
     // Remove locking wrapper
-    let writer= writer_lock.into_inner().unwrap();
+    let writer = writer_lock.into_inner().unwrap();
     let action_reports = match batch_result {
         Err(e) => {
             writer.writeln(&format!("{ERR_PREFIX}: {}", e.to_string()));
@@ -299,7 +315,7 @@ fn tendril_action_subcommand(
 fn get_td_repo(
     path_args: PathArgs,
     api: &impl TendrilsApi,
-    writer: &mut impl Writer
+    writer: &mut impl Writer,
 ) -> Result<Option<UniPath>, i32> {
     match path_args.path {
         Some(v) => Ok(Some(UniPath::new_with_root(
@@ -315,7 +331,7 @@ fn get_td_repo(
                 else {
                     Ok(None)
                 }
-            },
+            }
             Err(_err) => {
                 writer.writeln(&format!(
                     "{ERR_PREFIX}: Could not get the current directory"
@@ -341,17 +357,16 @@ fn setup_err_to_exit_code(err: SetupError) -> i32 {
 
 impl FilterArgs {
     fn to_spec(self, locals: Vec<String>) -> FilterSpec {
-        let core_modes = self.modes.iter().flat_map(|m| {
-            match m {
-                TendrilModeFilterArgs::Copy => vec![
-                    TendrilMode::CopyMerge,
-                    TendrilMode::CopyOverwrite,
-                ],
-                TendrilModeFilterArgs::Link => vec![
-                    TendrilMode::Link,
-                ]
-            }
-        }).collect();
+        let core_modes = self
+            .modes
+            .iter()
+            .flat_map(|m| match m {
+                TendrilModeFilterArgs::Copy => {
+                    vec![TendrilMode::CopyMerge, TendrilMode::CopyOverwrite]
+                }
+                TendrilModeFilterArgs::Link => vec![TendrilMode::Link],
+            })
+            .collect();
 
         FilterSpec {
             modes: core_modes,
