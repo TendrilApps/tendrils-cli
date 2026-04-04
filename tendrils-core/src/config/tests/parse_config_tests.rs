@@ -58,9 +58,10 @@ fn tendrils_field_is_empty_returns_empty() {
 
 #[test]
 fn ignores_extra_top_level_fields() {
-    let original_json = SampleTendrils::build_tendrils_json(&[
-        SampleTendrils::tendril_1_json()
-    ]);
+    let original_json =
+        SampleTendrils::build_tendrils_json(
+            &[SampleTendrils::tendril_1_json()],
+        );
     let given = original_json.replacen("{", r#"{"extra-field": true, "#, 1);
     let expected = SampleTendrils::raw_tendrils_1();
 
@@ -76,13 +77,13 @@ fn json_missing_remotes_returns_error() {
         .replace(r#""remotes": ["some/remote/path/settings2.json"],"#, "");
     assert_ne!(&original_tendril_json, &partial_tendril_json);
 
-    let given =
-        SampleTendrils::build_tendrils_json(&[partial_tendril_json]);
+    let given = SampleTendrils::build_tendrils_json(&[partial_tendril_json]);
 
     let actual = parse_config(&given);
 
     assert!(actual.is_err());
-    assert!(format!("{:?}", actual).contains("data did not match any variant of untagged enum OneOrMany"));
+    assert!(format!("{:?}", actual)
+        .contains("data did not match any variant of untagged enum OneOrMany"));
 }
 
 #[test]
@@ -92,8 +93,7 @@ fn json_missing_dir_merge_defaults_to_false() {
         original_tendril_json.replace(r#""dir-merge": false,"#, "");
     assert_ne!(&original_tendril_json, &partial_tendril_json);
 
-    let given =
-        SampleTendrils::build_tendrils_json(&[partial_tendril_json]);
+    let given = SampleTendrils::build_tendrils_json(&[partial_tendril_json]);
     let expected = SampleTendrils::raw_tendrils_1();
     assert_eq!(expected[0].mode, TendrilMode::CopyOverwrite);
 
@@ -109,8 +109,7 @@ fn json_missing_link_defaults_to_false() {
         original_tendril_json.replace(r#""link": false,"#, "");
     assert_ne!(&original_tendril_json, &partial_tendril_json);
 
-    let given =
-        SampleTendrils::build_tendrils_json(&[partial_tendril_json]);
+    let given = SampleTendrils::build_tendrils_json(&[partial_tendril_json]);
     let expected = SampleTendrils::raw_tendrils_1();
     assert_eq!(expected[0].mode, TendrilMode::CopyOverwrite);
 
@@ -128,8 +127,7 @@ fn json_missing_profiles_defaults_to_empty() {
         .replace(r#""profiles": []"#, "");
     assert_ne!(&original_tendril_json, &partial_tendril_json);
 
-    let given =
-        SampleTendrils::build_tendrils_json(&[partial_tendril_json]);
+    let given = SampleTendrils::build_tendrils_json(&[partial_tendril_json]);
     let expected = SampleTendrils::raw_tendrils_1();
     assert!(expected[0].profiles.is_empty());
 
@@ -141,12 +139,11 @@ fn json_missing_profiles_defaults_to_empty() {
 #[test]
 fn json_local_is_null_returns_error() {
     let original_tendril_json = SampleTendrils::tendril_1_json();
-    let partial_tendril_json = original_tendril_json
-        .replace(r#""settings.json": "#, r#"null: "#);
+    let partial_tendril_json =
+        original_tendril_json.replace(r#""settings.json": "#, r#"null: "#);
     assert_ne!(&original_tendril_json, &partial_tendril_json);
 
-    let given =
-        SampleTendrils::build_tendrils_json(&[partial_tendril_json]);
+    let given = SampleTendrils::build_tendrils_json(&[partial_tendril_json]);
 
     let actual = parse_config(&given);
 
@@ -157,17 +154,19 @@ fn json_local_is_null_returns_error() {
 #[test]
 fn json_remotes_is_null_returns_error() {
     let original_tendril_json = SampleTendrils::tendril_2_json();
-    let partial_tendril_json = original_tendril_json
-        .replace(r#""remotes": ["some/remote/path/settings2.json"],"#, r#""remotes": null,"#);
+    let partial_tendril_json = original_tendril_json.replace(
+        r#""remotes": ["some/remote/path/settings2.json"],"#,
+        r#""remotes": null,"#,
+    );
     assert_ne!(&original_tendril_json, &partial_tendril_json);
 
-    let given =
-        SampleTendrils::build_tendrils_json(&[partial_tendril_json]);
+    let given = SampleTendrils::build_tendrils_json(&[partial_tendril_json]);
 
     let actual = parse_config(&given);
 
     assert!(actual.is_err());
-    assert!(format!("{:?}", actual).contains("data did not match any variant of untagged enum OneOrMany"));
+    assert!(format!("{:?}", actual)
+        .contains("data did not match any variant of untagged enum OneOrMany"));
 }
 
 #[test]
@@ -179,13 +178,13 @@ fn json_individual_remote_is_null_returns_error() {
     );
     assert_ne!(&original_tendril_json, &partial_tendril_json);
 
-    let given =
-        SampleTendrils::build_tendrils_json(&[partial_tendril_json]);
+    let given = SampleTendrils::build_tendrils_json(&[partial_tendril_json]);
 
     let actual = parse_config(&given);
 
     assert!(actual.is_err());
-    assert!(format!("{:?}", actual).contains("data did not match any variant of untagged enum OneOrMany"));
+    assert!(format!("{:?}", actual)
+        .contains("data did not match any variant of untagged enum OneOrMany"));
 }
 
 #[test]
@@ -195,13 +194,13 @@ fn json_dir_merge_is_null_returns_error() {
         .replace(r#""dir-merge": false,"#, r#""dir-merge": null,"#);
     assert_ne!(&original_tendril_json, &partial_tendril_json);
 
-    let given =
-        SampleTendrils::build_tendrils_json(&[partial_tendril_json]);
+    let given = SampleTendrils::build_tendrils_json(&[partial_tendril_json]);
 
     let actual = parse_config(&given);
 
     assert!(actual.is_err());
-    assert!(format!("{:?}", actual).contains("data did not match any variant of untagged enum OneOrMany"));
+    assert!(format!("{:?}", actual)
+        .contains("data did not match any variant of untagged enum OneOrMany"));
 }
 
 #[test]
@@ -211,13 +210,13 @@ fn json_link_is_null_returns_error() {
         original_tendril_json.replace(r#""link": false,"#, r#""link": null,"#);
     assert_ne!(&original_tendril_json, &partial_tendril_json);
 
-    let given =
-        SampleTendrils::build_tendrils_json(&[partial_tendril_json]);
+    let given = SampleTendrils::build_tendrils_json(&[partial_tendril_json]);
 
     let actual = parse_config(&given);
 
     assert!(actual.is_err());
-    assert!(format!("{:?}", actual).contains("data did not match any variant of untagged enum OneOrMany"));
+    assert!(format!("{:?}", actual)
+        .contains("data did not match any variant of untagged enum OneOrMany"));
 }
 
 #[test]
@@ -227,13 +226,13 @@ fn json_profiles_is_null_returns_error() {
         .replace(r#""profiles": []"#, r#""profiles": null"#);
     assert_ne!(&original_tendril_json, &partial_tendril_json);
 
-    let given =
-        SampleTendrils::build_tendrils_json(&[partial_tendril_json]);
+    let given = SampleTendrils::build_tendrils_json(&[partial_tendril_json]);
 
     let actual = parse_config(&given);
 
     assert!(actual.is_err());
-    assert!(format!("{:?}", actual).contains("data did not match any variant of untagged enum OneOrMany"));
+    assert!(format!("{:?}", actual)
+        .contains("data did not match any variant of untagged enum OneOrMany"));
 }
 
 #[test]
@@ -243,20 +242,21 @@ fn json_individual_profile_is_null_returns_error() {
         .replace(r#""profiles": []"#, r#""profiles": ["mac", null]"#);
     assert_ne!(&original_tendril_json, &partial_tendril_json);
 
-    let given =
-        SampleTendrils::build_tendrils_json(&[partial_tendril_json]);
+    let given = SampleTendrils::build_tendrils_json(&[partial_tendril_json]);
 
     let actual = parse_config(&given);
 
     assert!(actual.is_err());
-    assert!(format!("{:?}", actual).contains("data did not match any variant of untagged enum OneOrMany"));
+    assert!(format!("{:?}", actual)
+        .contains("data did not match any variant of untagged enum OneOrMany"));
 }
 
 #[test]
 fn single_tendril_in_json_returns_tendril() {
-    let given = SampleTendrils::build_tendrils_json(
-        &[SampleTendrils::tendril_1_json()],
-    );
+    let given =
+        SampleTendrils::build_tendrils_json(
+            &[SampleTendrils::tendril_1_json()],
+        );
 
     let expected = SampleTendrils::raw_tendrils_1();
 
@@ -281,15 +281,12 @@ fn multiple_tendrils_in_json_returns_tendrils_in_given_order() {
 #[test]
 fn ignores_extra_tendril_json_field() {
     let original_tendril_json = SampleTendrils::tendril_1_json();
-    let extra_field_tendril_json = original_tendril_json.replace(
-        r#""link": false,"#,
-        r#""link": false, "extra-field": true,"#,
-    );
+    let extra_field_tendril_json = original_tendril_json
+        .replace(r#""link": false,"#, r#""link": false, "extra-field": true,"#);
     assert_ne!(original_tendril_json, extra_field_tendril_json);
 
-    let given = SampleTendrils::build_tendrils_json(
-        &[extra_field_tendril_json],
-    );
+    let given =
+        SampleTendrils::build_tendrils_json(&[extra_field_tendril_json]);
 
     let expected = SampleTendrils::raw_tendrils_1();
     let actual = parse_config(&given).unwrap().raw_tendrils;

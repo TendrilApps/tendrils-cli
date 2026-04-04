@@ -1,13 +1,15 @@
+use crate::config::Config;
+use crate::enums::GetConfigError;
 use crate::{
     symlink,
-    ActionMode,
     ActionLog,
+    ActionMode,
     FilterSpec,
     InitError,
     ListLog,
     PathExt,
-    SetupError,
     RawTendril,
+    SetupError,
     Tendril,
     TendrilMode,
     TendrilReport,
@@ -15,8 +17,6 @@ use crate::{
     UniPath,
     UpdateHandler,
 };
-use crate::config::Config;
-use crate::enums::GetConfigError;
 use std::env::var;
 use std::fs::{create_dir_all, read_to_string, write};
 use std::path::{Path, PathBuf};
@@ -130,11 +130,15 @@ fn get_username() -> String {
 /// Check if UAC is enabled. Useful when test are running in the context
 /// of a Github Action, as UAC is disabled here.
 pub fn uac_enabled() -> bool {
-    #[cfg(windows)] {
+    #[cfg(windows)]
+    {
         let mut cmd = std::process::Command::new("REG");
         let output = cmd
             .arg("QUERY")
-            .arg("HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\System\\")
+            .arg(
+                "HKEY_LOCAL_MACHINE\\Software\\Microsoft\\Windows\\\
+                 CurrentVersion\\Policies\\System\\",
+            )
             .arg("/v")
             .arg("ConsentPromptBehaviorAdmin")
             .output()
@@ -146,7 +150,8 @@ pub fn uac_enabled() -> bool {
         !String::from_utf8(output.stdout).unwrap().contains("0x0")
     }
 
-    #[cfg(not(windows))] {
+    #[cfg(not(windows))]
+    {
         true
     }
 }
@@ -170,10 +175,7 @@ pub fn set_ra(path: &Path, can_read: bool) {
         }
         else {
             let mut cmd = Command::new("ICACLS");
-            let output = cmd
-                .arg(path)
-                .arg("/inheritance:r")
-                .output().unwrap();
+            let output = cmd.arg(path).arg("/inheritance:r").output().unwrap();
             if !output.status.success() {
                 let err = format!("ICACLS command failed: {:?}", output);
                 println!("{err}");
@@ -196,10 +198,7 @@ pub fn set_ra(path: &Path, can_read: bool) {
     {
         if can_read {
             let mut cmd = Command::new("chmod");
-            let output = cmd
-                .arg("u+rw")
-                .arg(path)
-                .output().unwrap();
+            let output = cmd.arg("u+rw").arg(path).output().unwrap();
             if !output.status.success() {
                 let err = format!("chmod command failed: {:?}", output);
                 println!("{err}");
@@ -207,10 +206,7 @@ pub fn set_ra(path: &Path, can_read: bool) {
         }
         else {
             let mut cmd = Command::new("chmod");
-            let output = cmd
-                .arg("u-rw")
-                .arg(path)
-                .output().unwrap();
+            let output = cmd.arg("u-rw").arg(path).output().unwrap();
             if !output.status.success() {
                 let err = format!("chmod command failed: {:?}", output);
                 println!("{err}");
@@ -227,16 +223,26 @@ pub struct MockTendrilsApi<'a> {
     pub is_tendrils_repo_const_rt: bool,
     pub is_tendrils_repo_fn: Option<Box<dyn Fn(&UniPath) -> bool>>,
     pub get_default_repo_const_rt: Result<Option<PathBuf>, GetConfigError>,
-    pub get_default_repo_fn: Option<Box<dyn Fn() -> Result<Option<PathBuf>, GetConfigError>>>,
-    pub get_default_profiles_const_rt: Result<Option<Vec<String>>, GetConfigError>,
-    pub get_default_profiles_fn: Option<Box<dyn Fn() -> Result<Option<Vec<String>>, GetConfigError>>>,
+    pub get_default_repo_fn:
+        Option<Box<dyn Fn() -> Result<Option<PathBuf>, GetConfigError>>>,
+    pub get_default_profiles_const_rt:
+        Result<Option<Vec<String>>, GetConfigError>,
+    pub get_default_profiles_fn:
+        Option<Box<dyn Fn() -> Result<Option<Vec<String>>, GetConfigError>>>,
     pub tau_const_count_updater_rt: i32,
     pub tau_const_before_updater_rts: Vec<RawTendril>,
     pub tau_const_after_updater_rts: Vec<TendrilReport<ActionLog>>,
     pub tau_const_rt: Result<(), SetupError>,
     pub list_const_rt: Result<Vec<TendrilReport<ListLog>>, SetupError>,
-    pub list_fn: Option<Box<dyn Fn(Option<&UniPath>, FilterSpec)
-        -> Result<Vec<TendrilReport<ListLog>>, SetupError>>>,
+    pub list_fn: Option<
+        Box<
+            dyn Fn(
+                Option<&UniPath>,
+                FilterSpec,
+            )
+                -> Result<Vec<TendrilReport<ListLog>>, SetupError>,
+        >,
+    >,
     pub list_exp_path: Option<&'a Path>,
     pub list_exp_filter: FilterSpec,
     pub ta_const_rt: Result<Vec<TendrilReport<ActionLog>>, SetupError>,
@@ -326,7 +332,9 @@ impl TendrilsApi for MockTendrilsApi<'_> {
         }
     }
 
-    fn get_default_profiles(&self) -> Result<Option<Vec<String>>, GetConfigError> {
+    fn get_default_profiles(
+        &self,
+    ) -> Result<Option<Vec<String>>, GetConfigError> {
         if let Some(f) = self.get_default_profiles_fn.as_ref() {
             f()
         }
@@ -366,7 +374,7 @@ impl TendrilsApi for MockTendrilsApi<'_> {
         force: bool,
     ) -> Result<(), SetupError>
     where
-        U: UpdateHandler<ActionLog>
+        U: UpdateHandler<ActionLog>,
     {
         if self.tau_const_rt.is_err() {
             return self.tau_const_rt.clone();
@@ -395,7 +403,8 @@ impl TendrilsApi for MockTendrilsApi<'_> {
 
         updater.count(self.tau_const_count_updater_rt);
         for i in 0..self.tau_const_count_updater_rt {
-            updater.before(self.tau_const_before_updater_rts[i as usize].clone());
+            updater
+                .before(self.tau_const_before_updater_rts[i as usize].clone());
 
             // =========================
             // Action would be done here
@@ -766,7 +775,8 @@ impl Setup {
 
     pub fn make_remote_nested_nra_file(&self) {
         create_dir_all(&self.remote_nra_dir).unwrap();
-        write(&self.remote_nra_nested_file, "Remote nested file contents").unwrap();
+        write(&self.remote_nra_nested_file, "Remote nested file contents")
+            .unwrap();
         set_ra(&self.remote_nra_nested_file, false);
     }
 
@@ -783,7 +793,8 @@ impl Setup {
 
     pub fn make_local_nested_nra_file(&self) {
         create_dir_all(&self.local_nra_dir).unwrap();
-        write(&self.local_nra_nested_file, "Local nested file contents").unwrap();
+        write(&self.local_nra_nested_file, "Local nested file contents")
+            .unwrap();
         create_dir_all(&self.local_nra_nested_file).unwrap();
     }
 

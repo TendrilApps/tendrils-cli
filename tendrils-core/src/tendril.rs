@@ -32,37 +32,31 @@ impl Tendril {
 
         let mut local_sub_comps = local.components();
         if match local_sub_comps.next() {
-            Some(Component::Normal(c))
-                if Self::is_forbidden_dir(c) => true,
-            Some(Component::RootDir | Component::CurDir) => match local_sub_comps.next() {
-                Some(Component::Normal(c)) if Self::is_forbidden_dir(c) => true,
-                None => true,
-                _ => false,
+            Some(Component::Normal(c)) if Self::is_forbidden_dir(c) => true,
+            Some(Component::RootDir | Component::CurDir) => {
+                match local_sub_comps.next() {
+                    Some(Component::Normal(c)) if Self::is_forbidden_dir(c) => {
+                        true
+                    }
+                    None => true,
+                    _ => false,
+                }
             }
             None => true,
             _ => false,
-        }
-        {
+        } {
             return Err(InvalidTendrilError::InvalidLocal);
         }
 
         if Self::is_recursive(td_repo.as_ref().inner(), remote.inner()) {
-            return Err(InvalidTendrilError::Recursion)
+            return Err(InvalidTendrilError::Recursion);
         }
 
         #[cfg(not(windows))]
-        let local_abs = td_repo
-            .as_ref()
-            .inner()
-            .join_raw(&local)
-            .into();
+        let local_abs = td_repo.as_ref().inner().join_raw(&local).into();
         #[cfg(windows)]
-        let local_abs = td_repo
-            .as_ref()
-            .inner()
-            .join_raw(&local)
-            .replace_dir_seps()
-            .into();
+        let local_abs =
+            td_repo.as_ref().inner().join_raw(&local).replace_dir_seps().into();
 
         Ok(Tendril { local, local_abs, remote, mode })
     }

@@ -2,11 +2,7 @@
 //! tests see the similar [`super::batch_tendril_action_tests`] module
 
 use crate::path_ext::UniPath;
-use crate::test_utils::{
-    get_disposable_dir,
-    is_empty,
-    Setup,
-};
+use crate::test_utils::{get_disposable_dir, is_empty, Setup};
 use crate::{
     batch_tendril_action,
     ActionLog,
@@ -30,8 +26,7 @@ use tempdir::TempDir;
 
 #[rstest]
 fn given_empty_list_returns_empty(
-    #[values(ActionMode::Push, ActionMode::Pull)]
-    mode: ActionMode,
+    #[values(ActionMode::Push, ActionMode::Pull)] mode: ActionMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -57,8 +52,9 @@ fn given_empty_list_returns_empty(
         after_call_counter += 1;
         after_actual.push(report);
     };
-    let updater =
-        CallbackUpdater::<_, _, _, ActionLog>::new(count_fn, before_fn, after_fn);
+    let updater = CallbackUpdater::<_, _, _, ActionLog>::new(
+        count_fn, before_fn, after_fn,
+    );
 
     batch_tendril_action(updater, mode, &given_td_repo, vec![], dry_run, force);
 
@@ -157,8 +153,9 @@ fn returns_result_after_each_operation(
 
         after_actual.push(r);
     };
-    let updater =
-        CallbackUpdater::<_, _, _, ActionLog>::new(count_fn, before_fn, after_fn);
+    let updater = CallbackUpdater::<_, _, _, ActionLog>::new(
+        count_fn, before_fn, after_fn,
+    );
 
     batch_tendril_action(
         updater,
@@ -213,11 +210,16 @@ fn pull_returns_tendril_and_result_for_each_given(
         RawTendril::new("App3/I don't exist"),
     ];
 
-    given[0].remote = given_parent_dir_a.join("misc1.txt").to_string_lossy().to_string();
-    given[1].remote = given_parent_dir_a.join("misc2.txt").to_string_lossy().to_string();
-    given[2].remote = given_parent_dir_b.join("misc2.txt").to_string_lossy().to_string();
-    given[3].remote = given_parent_dir_a.join("App1 Dir").to_string_lossy().to_string();
-    given[4].remote = given_parent_dir_a.join("I don't exist").to_string_lossy().to_string();
+    given[0].remote =
+        given_parent_dir_a.join("misc1.txt").to_string_lossy().to_string();
+    given[1].remote =
+        given_parent_dir_a.join("misc2.txt").to_string_lossy().to_string();
+    given[2].remote =
+        given_parent_dir_b.join("misc2.txt").to_string_lossy().to_string();
+    given[3].remote =
+        given_parent_dir_a.join("App1 Dir").to_string_lossy().to_string();
+    given[4].remote =
+        given_parent_dir_a.join("I don't exist").to_string_lossy().to_string();
 
     let expected_success = match dry_run {
         true => Ok(TendrilActionSuccess::NewSkipped),
@@ -242,8 +244,8 @@ fn pull_returns_tendril_and_result_for_each_given(
                 expected_success.clone(),
             )),
         },
-        // TODO: This should eventually not be included once the most recently modified
-        // version is checked
+        // TODO: This should eventually not be included once the most recently
+        // modified version is checked
         TendrilReport {
             raw_tendril: given[2].clone(),
             log: Ok(ActionLog::new(
@@ -256,7 +258,7 @@ fn pull_returns_tendril_and_result_for_each_given(
                 match dry_run {
                     true => Ok(TendrilActionSuccess::NewSkipped),
                     false => Ok(TendrilActionSuccess::Overwrite),
-                }
+                },
             )),
         },
         TendrilReport {
@@ -288,8 +290,9 @@ fn pull_returns_tendril_and_result_for_each_given(
     let count_fn = |c| count_actual = c;
     let before_fn = |raw| before_actual.push(raw);
     let after_fn = |report| after_actual.push(report);
-    let updater =
-        CallbackUpdater::<_, _, _, ActionLog>::new(count_fn, before_fn, after_fn);
+    let updater = CallbackUpdater::<_, _, _, ActionLog>::new(
+        count_fn, before_fn, after_fn,
+    );
 
     batch_tendril_action(
         updater,
@@ -297,7 +300,7 @@ fn pull_returns_tendril_and_result_for_each_given(
         &UniPath::from(given_td_repo),
         given,
         dry_run,
-        force
+        force,
     );
 
     assert_eq!(after_actual, expected);
@@ -310,13 +313,15 @@ fn pull_returns_tendril_and_result_for_each_given(
     }
     else {
         let local_app1_file_contents = read_to_string(local_app1_file).unwrap();
-        let local_app2_file_contents = read_to_string(local_app2_file_ab).unwrap();
+        let local_app2_file_contents =
+            read_to_string(local_app2_file_ab).unwrap();
         let local_app1_nested_file_contents =
             read_to_string(local_app1_nested_file).unwrap();
 
         assert_eq!(local_app1_file_contents, "Remote app 1 file contents");
         assert!(local_app1_dir.exists());
-        // TODO: This should eventually only be the most recently modified file's contents
+        // TODO: This should eventually only be the most recently modified
+        // file's contents
         assert_eq!(local_app2_file_contents, "Remote app 2 file b contents");
         assert_eq!(
             local_app1_nested_file_contents,
@@ -363,11 +368,16 @@ fn push_returns_tendril_and_result_for_each_given_link_or_copy_type(
         RawTendril::new("App3/I don't exist"),
     ];
 
-    given[0].remote = given_parent_dir_a.join("misc1.txt").to_string_lossy().to_string();
-    given[1].remote = given_parent_dir_a.join("misc2.txt").to_string_lossy().to_string();
-    given[2].remote = given_parent_dir_b.join("misc2.txt").to_string_lossy().to_string();
-    given[3].remote = given_parent_dir_a.join("App1 Dir").to_string_lossy().to_string();
-    given[4].remote = given_parent_dir_a.join("I don't exist").to_string_lossy().to_string();
+    given[0].remote =
+        given_parent_dir_a.join("misc1.txt").to_string_lossy().to_string();
+    given[1].remote =
+        given_parent_dir_a.join("misc2.txt").to_string_lossy().to_string();
+    given[2].remote =
+        given_parent_dir_b.join("misc2.txt").to_string_lossy().to_string();
+    given[3].remote =
+        given_parent_dir_a.join("App1 Dir").to_string_lossy().to_string();
+    given[4].remote =
+        given_parent_dir_a.join("I don't exist").to_string_lossy().to_string();
 
     given[0].mode = TendrilMode::Link;
     given[1].mode = TendrilMode::CopyOverwrite;
@@ -436,8 +446,9 @@ fn push_returns_tendril_and_result_for_each_given_link_or_copy_type(
     let count_fn = |c| count_actual = c;
     let before_fn = |raw| before_actual.push(raw);
     let after_fn = |report| after_actual.push(report);
-    let updater =
-        CallbackUpdater::<_, _, _, ActionLog>::new(count_fn, before_fn, after_fn);
+    let updater = CallbackUpdater::<_, _, _, ActionLog>::new(
+        count_fn, before_fn, after_fn,
+    );
 
     batch_tendril_action(
         updater,
@@ -483,8 +494,7 @@ fn push_returns_tendril_and_result_for_each_given_link_or_copy_type(
 #[rstest]
 #[serial(SERIAL_MUT_ENV_VARS)]
 fn remote_path_vars_are_resolved(
-    #[values(ActionMode::Push, ActionMode::Pull)]
-    mode: ActionMode,
+    #[values(ActionMode::Push, ActionMode::Pull)] mode: ActionMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -497,9 +507,8 @@ fn remote_path_vars_are_resolved(
     std::env::set_var("var", "value");
 
     use std::path::MAIN_SEPARATOR as SEP;
-    let expected_resolved_path = format!(
-        "{SEP}My{SEP}Home{SEP}I_do_not_exist{SEP}value{SEP}misc.txt"
-    );
+    let expected_resolved_path =
+        format!("{SEP}My{SEP}Home{SEP}I_do_not_exist{SEP}value{SEP}misc.txt");
     let expected = vec![TendrilReport {
         raw_tendril: tendril,
         log: Ok(ActionLog::new(
@@ -519,8 +528,9 @@ fn remote_path_vars_are_resolved(
     let count_fn = |c| count_actual = c;
     let before_fn = |raw| before_actual.push(raw);
     let after_fn = |report| after_actual.push(report);
-    let updater =
-        CallbackUpdater::<_, _, _, ActionLog>::new(count_fn, before_fn, after_fn);
+    let updater = CallbackUpdater::<_, _, _, ActionLog>::new(
+        count_fn, before_fn, after_fn,
+    );
 
     batch_tendril_action(
         updater,
@@ -531,7 +541,8 @@ fn remote_path_vars_are_resolved(
         force,
     );
 
-    let actual_result_path = &after_actual[0].log.as_ref().unwrap().resolved_path();
+    let actual_result_path =
+        &after_actual[0].log.as_ref().unwrap().resolved_path();
 
     let actual_resolved_path_str = actual_result_path.to_string_lossy();
     assert_eq!(actual_resolved_path_str.into_owned(), expected_resolved_path);

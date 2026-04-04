@@ -17,8 +17,7 @@ use rstest::rstest;
 
 #[rstest]
 fn empty_tendrils_list_returns_empty(
-    #[values(ActionMode::Push, ActionMode::Pull)]
-    mode: ActionMode,
+    #[values(ActionMode::Push, ActionMode::Pull)] mode: ActionMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -33,8 +32,9 @@ fn empty_tendrils_list_returns_empty(
     let count_fn = |c| count_actual = c;
     let before_fn = |raw| before_actual.push(raw);
     let after_fn = |report| after_actual.push(report);
-    let updater =
-        CallbackUpdater::<_, _, _, ActionLog>::new(count_fn, before_fn, after_fn);
+    let updater = CallbackUpdater::<_, _, _, ActionLog>::new(
+        count_fn, before_fn, after_fn,
+    );
 
     api.tendril_action_updating(
         updater,
@@ -42,8 +42,9 @@ fn empty_tendrils_list_returns_empty(
         Some(&setup.uni_td_repo()),
         filter,
         dry_run,
-        force)
-        .unwrap();
+        force,
+    )
+    .unwrap();
 
     assert_eq!(count_actual, 0);
     assert!(before_actual.is_empty());
@@ -135,8 +136,9 @@ fn returns_result_after_each_operation(
 
         after_actual.push(report);
     };
-    let updater =
-        CallbackUpdater::<_, _, _, ActionLog>::new(count_fn, before_fn, after_fn);
+    let updater = CallbackUpdater::<_, _, _, ActionLog>::new(
+        count_fn, before_fn, after_fn,
+    );
 
     api.tendril_action_updating(
         updater,

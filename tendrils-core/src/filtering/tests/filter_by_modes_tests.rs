@@ -26,7 +26,10 @@ fn tendril_matches_if_mode_matches_any() {
     t4.mode = TendrilMode::Link;
     let tendrils = vec![t1.clone(), t2.clone(), t3.clone(), t4.clone()];
 
-    let actual = filter_by_modes(tendrils, &[TendrilMode::CopyOverwrite, TendrilMode::Link]);
+    let actual = filter_by_modes(tendrils, &[
+        TendrilMode::CopyOverwrite,
+        TendrilMode::Link,
+    ]);
 
     assert_eq!(actual, vec![t2, t3, t4]);
 }

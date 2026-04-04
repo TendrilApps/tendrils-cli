@@ -1,6 +1,7 @@
 #[cfg(windows)]
 fn main() {
-    #[cfg(feature = "metadata")] {
+    #[cfg(feature = "metadata")]
+    {
         let mut res = winresource::WindowsResource::new();
 
         #[cfg(feature = "logo")]

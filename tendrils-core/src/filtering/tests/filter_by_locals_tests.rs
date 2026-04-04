@@ -41,7 +41,9 @@ fn tendril_only_included_if_local_matches_any(
 }
 
 #[apply(string_filter_non_match_tests)]
-fn tendril_not_included_if_local_does_not_match_any(#[case] filters: &[String]) {
+fn tendril_not_included_if_local_does_not_match_any(
+    #[case] filters: &[String],
+) {
     let t1 = RawTendril::new("v1");
     let t2 = RawTendril::new("v2");
     let tendrils = vec![t1.clone(), t2.clone()];

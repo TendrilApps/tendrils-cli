@@ -5,8 +5,8 @@
 use crate::test_utils::{
     default_repo_path_as_json,
     global_cfg_file,
-    Setup,
     symlink_expose,
+    Setup,
 };
 use crate::{
     ActionLog,
@@ -30,12 +30,11 @@ use rstest_reuse::{apply, template};
 use serial_test::serial;
 use std::collections::HashMap;
 use std::fs::write;
-use std::path::{MAIN_SEPARATOR_STR as SEP, PathBuf};
+use std::path::{PathBuf, MAIN_SEPARATOR_STR as SEP};
 
 #[rstest]
 fn empty_tendrils_list_returns_empty(
-    #[values(ActionMode::Push, ActionMode::Pull)]
-    mode: ActionMode,
+    #[values(ActionMode::Push, ActionMode::Pull)] mode: ActionMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -44,14 +43,15 @@ fn empty_tendrils_list_returns_empty(
     setup.make_td_json_file(&[]);
     let filter = FilterSpec::new();
 
-    let actual = api.tendril_action(
-        mode,
-        Some(&setup.uni_td_repo()),
-        filter,
-        dry_run,
-        force
-    )
-    .unwrap();
+    let actual = api
+        .tendril_action(
+            mode,
+            Some(&setup.uni_td_repo()),
+            filter,
+            dry_run,
+            force,
+        )
+        .unwrap();
 
     assert!(actual.is_empty());
     assert!(!setup.local_file.exists());
@@ -59,8 +59,7 @@ fn empty_tendrils_list_returns_empty(
 
 #[rstest]
 fn empty_filtered_tendrils_list_returns_empty(
-    #[values(ActionMode::Push, ActionMode::Pull)]
-    mode: ActionMode,
+    #[values(ActionMode::Push, ActionMode::Pull)] mode: ActionMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -72,14 +71,15 @@ fn empty_filtered_tendrils_list_returns_empty(
     let locals_filter = vec!["I don't exist".to_string()];
     filter.locals = locals_filter;
 
-    let actual = api.tendril_action(
-        mode,
-        Some(&setup.uni_td_repo()),
-        filter,
-        dry_run,
-        force
-    )
-    .unwrap();
+    let actual = api
+        .tendril_action(
+            mode,
+            Some(&setup.uni_td_repo()),
+            filter,
+            dry_run,
+            force,
+        )
+        .unwrap();
 
     assert!(actual.is_empty());
     assert!(!setup.local_file.exists());
@@ -87,8 +87,7 @@ fn empty_filtered_tendrils_list_returns_empty(
 
 #[rstest]
 fn given_td_repo_is_invalid_returns_no_valid_td_repo_err(
-    #[values(ActionMode::Push, ActionMode::Pull)]
-    mode: ActionMode,
+    #[values(ActionMode::Push, ActionMode::Pull)] mode: ActionMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -102,54 +101,46 @@ fn given_td_repo_is_invalid_returns_no_valid_td_repo_err(
         Some(&setup.uni_td_repo()),
         filter,
         dry_run,
-        force
+        force,
     );
 
     assert_eq!(
         actual,
-        Err(SetupError::NoValidTendrilsRepo(GetTendrilsRepoError::GivenInvalid {
-            path: setup.td_repo
-        }))
+        Err(SetupError::NoValidTendrilsRepo(
+            GetTendrilsRepoError::GivenInvalid { path: setup.td_repo }
+        ))
     );
 }
 
 #[rstest]
 #[serial(SERIAL_MUT_ENV_VARS)]
 fn given_td_repo_is_none_default_td_repo_invalid_returns_no_valid_td_repo_err(
-    #[values(ActionMode::Push, ActionMode::Pull)]
-    mode: ActionMode,
+    #[values(ActionMode::Push, ActionMode::Pull)] mode: ActionMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
     let api = TendrilsActor {};
     let setup = Setup::new();
     let filter = FilterSpec::new();
-    setup.make_global_cfg_file(
-        default_repo_path_as_json("I DON'T EXIST"),
-    );
+    setup.make_global_cfg_file(default_repo_path_as_json("I DON'T EXIST"));
     assert!(!api.is_tendrils_repo(&setup.uni_td_repo()));
 
-    let actual = api.tendril_action(
-        mode,
-        None,
-        filter,
-        dry_run,
-        force
-    );
+    let actual = api.tendril_action(mode, None, filter, dry_run, force);
 
     assert_eq!(
         actual,
-        Err(SetupError::NoValidTendrilsRepo(GetTendrilsRepoError::DefaultInvalid {
-            path: PathBuf::from(SEP).join("I DON'T EXIST")
-        }))
+        Err(SetupError::NoValidTendrilsRepo(
+            GetTendrilsRepoError::DefaultInvalid {
+                path: PathBuf::from(SEP).join("I DON'T EXIST")
+            }
+        ))
     );
 }
 
 #[rstest]
 #[serial(SERIAL_MUT_ENV_VARS)]
 fn given_td_repo_is_none_default_td_repo_not_set_returns_no_valid_td_repo_err(
-    #[values(ActionMode::Push, ActionMode::Pull)]
-    mode: ActionMode,
+    #[values(ActionMode::Push, ActionMode::Pull)] mode: ActionMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -160,25 +151,20 @@ fn given_td_repo_is_none_default_td_repo_not_set_returns_no_valid_td_repo_err(
     assert!(!global_cfg_file().exists());
     assert!(!api.is_tendrils_repo(&setup.uni_td_repo()));
 
-    let actual = api.tendril_action(
-        mode,
-        None,
-        filter,
-        dry_run,
-        force
-    );
+    let actual = api.tendril_action(mode, None, filter, dry_run, force);
 
     assert_eq!(
         actual,
-        Err(SetupError::NoValidTendrilsRepo(GetTendrilsRepoError::DefaultNotSet))
+        Err(SetupError::NoValidTendrilsRepo(
+            GetTendrilsRepoError::DefaultNotSet
+        ))
     );
 }
 
 #[rstest]
 #[serial(SERIAL_MUT_ENV_VARS)]
 fn given_td_repo_is_none_default_td_repo_is_valid_uses_default_td_repo(
-    #[values(ActionMode::Push, ActionMode::Pull)]
-    mode: ActionMode,
+    #[values(ActionMode::Push, ActionMode::Pull)] mode: ActionMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -187,42 +173,30 @@ fn given_td_repo_is_none_default_td_repo_is_valid_uses_default_td_repo(
     let tendril = setup.file_tendril_raw();
     setup.make_td_json_file(&[tendril.clone()]);
     let json_path = setup.td_repo.to_string_lossy().replace("\\", "\\\\");
-    setup.make_global_cfg_file(
-        default_repo_path_as_json(&json_path),
-    );
+    setup.make_global_cfg_file(default_repo_path_as_json(&json_path));
     let filter = FilterSpec::new();
 
-    let actual = api.tendril_action(
-        mode,
-        None,
-        filter,
-        dry_run,
-        force
-    )
-    .unwrap();
+    let actual =
+        api.tendril_action(mode, None, filter, dry_run, force).unwrap();
 
-    assert_eq!(
-        actual,
-        vec![TendrilReport {
-            raw_tendril: tendril.clone(),
-            log: Ok(ActionLog::new(
-                None,
-                None,
-                setup.remote_file,
-                Err(TendrilActionError::IoError {
-                    kind: std::io::ErrorKind::NotFound,
-                    loc: Location::Source
-                })
-            ))
-        }]
-    );
+    assert_eq!(actual, vec![TendrilReport {
+        raw_tendril: tendril.clone(),
+        log: Ok(ActionLog::new(
+            None,
+            None,
+            setup.remote_file,
+            Err(TendrilActionError::IoError {
+                kind: std::io::ErrorKind::NotFound,
+                loc: Location::Source
+            })
+        ))
+    }]);
 }
 
 #[rstest]
 #[serial(SERIAL_MUT_ENV_VARS)]
 fn leading_tilde_or_env_vars_in_default_repo_path_are_resolved(
-    #[values(ActionMode::Push, ActionMode::Pull)]
-    mode: ActionMode,
+    #[values(ActionMode::Push, ActionMode::Pull)] mode: ActionMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -243,19 +217,11 @@ fn leading_tilde_or_env_vars_in_default_repo_path_are_resolved(
         exp_remote_type = None;
     }
     let filter = FilterSpec::new();
-    setup.make_global_cfg_file(
-        default_repo_path_as_json("~/<var>"),
-    );
+    setup.make_global_cfg_file(default_repo_path_as_json("~/<var>"));
     std::env::set_var("var", "TendrilsRepo");
 
-    let actual = api.tendril_action(
-        mode.clone(),
-        None,
-        filter,
-        dry_run,
-        force
-    )
-    .unwrap();
+    let actual =
+        api.tendril_action(mode.clone(), None, filter, dry_run, force).unwrap();
 
     let exp_success;
     if dry_run {
@@ -265,36 +231,26 @@ fn leading_tilde_or_env_vars_in_default_repo_path_are_resolved(
         exp_success = TendrilActionSuccess::New;
 
         if mode == ActionMode::Pull {
-            assert_eq!(
-                setup.local_file_contents(),
-                "Remote file contents",
-            );
+            assert_eq!(setup.local_file_contents(), "Remote file contents",);
         }
         else {
-            assert_eq!(
-                setup.remote_file_contents(),
-                "Local file contents"
-            );
+            assert_eq!(setup.remote_file_contents(), "Local file contents");
         }
     }
-    assert_eq!(
-        actual,
-        vec![TendrilReport {
-            raw_tendril: tendril.clone(),
-            log: Ok(ActionLog::new(
-                exp_local_type,
-                exp_remote_type,
-                setup.remote_file.clone(),
-                Ok(exp_success),
-            ))
-        }]
-    );
+    assert_eq!(actual, vec![TendrilReport {
+        raw_tendril: tendril.clone(),
+        log: Ok(ActionLog::new(
+            exp_local_type,
+            exp_remote_type,
+            setup.remote_file.clone(),
+            Ok(exp_success),
+        ))
+    }]);
 }
 
 #[rstest]
 fn tendrils_json_invalid_returns_config_error(
-    #[values(ActionMode::Push, ActionMode::Pull)]
-    mode: ActionMode,
+    #[values(ActionMode::Push, ActionMode::Pull)] mode: ActionMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -309,7 +265,7 @@ fn tendrils_json_invalid_returns_config_error(
         Some(&setup.uni_td_repo()),
         filter,
         dry_run,
-        force
+        force,
     );
 
     assert_eq!(
@@ -323,8 +279,7 @@ fn tendrils_json_invalid_returns_config_error(
 
 #[rstest]
 fn tendrils_are_filtered_before_action(
-    #[values(ActionMode::Push, ActionMode::Pull)]
-    mode: ActionMode,
+    #[values(ActionMode::Push, ActionMode::Pull)] mode: ActionMode,
     #[values(true, false)] dry_run: bool,
     #[values(true, false)] force: bool,
 ) {
@@ -338,30 +293,28 @@ fn tendrils_are_filtered_before_action(
     let remotes_filter = vec!["**/misc.txt".to_string()];
     filter.remotes = remotes_filter;
 
-    let actual = api.tendril_action(
-        mode,
-        Some(&setup.uni_td_repo()),
-        filter,
-        dry_run,
-        force
-    )
-    .unwrap();
+    let actual = api
+        .tendril_action(
+            mode,
+            Some(&setup.uni_td_repo()),
+            filter,
+            dry_run,
+            force,
+        )
+        .unwrap();
 
-    assert_eq!(
-        actual,
-        vec![TendrilReport {
-            raw_tendril: t1,
-            log: Ok(ActionLog::new(
-                None,
-                None,
-                setup.remote_file,
-                Err(TendrilActionError::IoError {
-                    kind: std::io::ErrorKind::NotFound,
-                    loc: Location::Source
-                })
-            ))
-        }]
-    );
+    assert_eq!(actual, vec![TendrilReport {
+        raw_tendril: t1,
+        log: Ok(ActionLog::new(
+            None,
+            None,
+            setup.remote_file,
+            Err(TendrilActionError::IoError {
+                kind: std::io::ErrorKind::NotFound,
+                loc: Location::Source
+            })
+        ))
+    }]);
 }
 
 /// This template is not exported (macros are finicky).
@@ -376,7 +329,8 @@ fn tendrils_are_filtered_before_action(
 fn compatible_action_and_tendril_modes(
     #[case] mode: ActionMode,
     #[case] tendril_mode: TendrilMode,
-) {}
+) {
+}
 
 #[apply(compatible_action_and_tendril_modes)]
 fn dry_run_does_not_modify(
@@ -400,7 +354,8 @@ fn dry_run_does_not_modify(
 
     let mut tendril = setup.file_tendril_raw();
     tendril.mode = tendril_mode;
-    tendril.remote = setup.parent_dir.join("misc.txt").to_string_lossy().to_string();
+    tendril.remote =
+        setup.parent_dir.join("misc.txt").to_string_lossy().to_string();
     setup.make_td_json_file(&[tendril]);
 
     let dry_run = true;
@@ -410,7 +365,7 @@ fn dry_run_does_not_modify(
         Some(&setup.uni_td_repo()),
         filter,
         dry_run,
-        force
+        force,
     )
     .unwrap();
 
@@ -454,13 +409,17 @@ fn tendrils_are_filtered_by_mode(
     t2.mode = TendrilMode::Link;
     t3.mode = TendrilMode::Link;
     t4.mode = TendrilMode::CopyMerge;
-    t1.remote = setup.parent_dir.join("misc1.txt").to_string_lossy().to_string();
-    t2.remote = setup.parent_dir.join("misc2.txt").to_string_lossy().to_string();
-    t3.remote = setup.parent_dir.join("misc3.txt").to_string_lossy().to_string();
-    t4.remote = setup.parent_dir.join("misc4.txt").to_string_lossy().to_string();
+    t1.remote =
+        setup.parent_dir.join("misc1.txt").to_string_lossy().to_string();
+    t2.remote =
+        setup.parent_dir.join("misc2.txt").to_string_lossy().to_string();
+    t3.remote =
+        setup.parent_dir.join("misc3.txt").to_string_lossy().to_string();
+    t4.remote =
+        setup.parent_dir.join("misc4.txt").to_string_lossy().to_string();
     let io_err = Err(TendrilActionError::IoError {
         kind: std::io::ErrorKind::NotFound,
-        loc: Location::Source
+        loc: Location::Source,
     });
     let t1_result = TendrilReport {
         raw_tendril: t1.clone(),
@@ -508,14 +467,15 @@ fn tendrils_are_filtered_by_mode(
     let mut filter = FilterSpec::new();
     filter.modes = given_mode_filter;
 
-    let actual = api.tendril_action(
-        mode.clone(),
-        Some(&setup.uni_td_repo()),
-        filter,
-        dry_run,
-        force
-    )
-    .unwrap();
+    let actual = api
+        .tendril_action(
+            mode.clone(),
+            Some(&setup.uni_td_repo()),
+            filter,
+            dry_run,
+            force,
+        )
+        .unwrap();
 
     for exp_incl_tendril in exp_incl_tendrils {
         let exp_incl_result = result_map.get(exp_incl_tendril).unwrap();
@@ -542,12 +502,15 @@ fn tendrils_are_filtered_by_local(
     t1.mode = tendril_mode;
     t2.mode = tendril_mode;
     t3.mode = tendril_mode;
-    t1.remote = setup.parent_dir.join("misc1.txt").to_string_lossy().to_string();
-    t2.remote = setup.parent_dir.join("misc2.txt").to_string_lossy().to_string();
-    t3.remote = setup.parent_dir.join("misc3.txt").to_string_lossy().to_string();
+    t1.remote =
+        setup.parent_dir.join("misc1.txt").to_string_lossy().to_string();
+    t2.remote =
+        setup.parent_dir.join("misc2.txt").to_string_lossy().to_string();
+    t3.remote =
+        setup.parent_dir.join("misc3.txt").to_string_lossy().to_string();
     let io_err = Err(TendrilActionError::IoError {
         kind: std::io::ErrorKind::NotFound,
-        loc: Location::Source
+        loc: Location::Source,
     });
     let t2_result = TendrilReport {
         raw_tendril: t2.clone(),
@@ -573,14 +536,15 @@ fn tendrils_are_filtered_by_local(
     let mut filter = FilterSpec::new();
     filter.locals = locals_filter;
 
-    let actual = api.tendril_action(
-        mode.clone(),
-        Some(&setup.uni_td_repo()),
-        filter,
-        dry_run,
-        force
-    )
-    .unwrap();
+    let actual = api
+        .tendril_action(
+            mode.clone(),
+            Some(&setup.uni_td_repo()),
+            filter,
+            dry_run,
+            force,
+        )
+        .unwrap();
 
     assert_eq!(actual, vec![t2_result, t3_result]);
 }
@@ -636,14 +600,15 @@ fn tendrils_are_filtered_by_remotes(
     let mut filter = FilterSpec::new();
     filter.remotes = remotes_filter;
 
-    let actual = api.tendril_action(
-        mode.clone(),
-        Some(&setup.uni_td_repo()),
-        filter,
-        dry_run,
-        force
-    )
-    .unwrap();
+    let actual = api
+        .tendril_action(
+            mode.clone(),
+            Some(&setup.uni_td_repo()),
+            filter,
+            dry_run,
+            force,
+        )
+        .unwrap();
 
     assert_eq!(actual, vec![t2_result, t3_result]);
 }
@@ -667,15 +632,18 @@ fn tendrils_are_filtered_by_profile(
     t1.local = "misc1.txt".to_string();
     t2.local = "misc2.txt".to_string();
     t3.local = "misc3.txt".to_string();
-    t1.remote = setup.parent_dir.join("misc1.txt").to_string_lossy().to_string();
-    t2.remote = setup.parent_dir.join("misc2.txt").to_string_lossy().to_string();
-    t3.remote = setup.parent_dir.join("misc3.txt").to_string_lossy().to_string();
+    t1.remote =
+        setup.parent_dir.join("misc1.txt").to_string_lossy().to_string();
+    t2.remote =
+        setup.parent_dir.join("misc2.txt").to_string_lossy().to_string();
+    t3.remote =
+        setup.parent_dir.join("misc3.txt").to_string_lossy().to_string();
     t1.profiles = vec!["ExcludeMe".to_string()];
     t2.profiles = vec!["p1".to_string()];
     t3.profiles = vec![];
     let io_err = Err(TendrilActionError::IoError {
         kind: std::io::ErrorKind::NotFound,
-        loc: Location::Source
+        loc: Location::Source,
     });
     let t2_result = TendrilReport {
         raw_tendril: t2.clone(),
@@ -701,14 +669,15 @@ fn tendrils_are_filtered_by_profile(
     let mut filter = FilterSpec::new();
     filter.profiles = profiles_filter;
 
-    let actual = api.tendril_action(
-        mode.clone(),
-        Some(&setup.uni_td_repo()),
-        filter,
-        dry_run,
-        force
-    )
-    .unwrap();
+    let actual = api
+        .tendril_action(
+            mode.clone(),
+            Some(&setup.uni_td_repo()),
+            filter,
+            dry_run,
+            force,
+        )
+        .unwrap();
 
     assert_eq!(actual, vec![t2_result, t3_result]);
 }

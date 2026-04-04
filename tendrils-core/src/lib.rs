@@ -1,4 +1,5 @@
-//! - Provides core functionality for the [`tendrils-cli`](https://crates.io/crates/tendrils-cli) crate and its `td` CLI tool
+//! - Provides core functionality for the [`tendrils-cli`](https://crates.io/crates/tendrils-cli)
+//!   crate and its `td` CLI tool
 //! - See documentation at <https://github.com/TendrilApps/tendrils-cli>
 
 mod config;
@@ -13,9 +14,9 @@ pub use enums::{
     InitError,
     InvalidTendrilError,
     Location,
+    SetupError,
     TendrilActionError,
     TendrilActionSuccess,
-    SetupError,
     TendrilMode,
 };
 mod env_ext;
@@ -29,8 +30,8 @@ pub use path_ext::UniPath;
 use std::fs::{create_dir_all, remove_dir_all, remove_file};
 use std::path::{Path, PathBuf};
 mod tendril;
-use tendril::Tendril;
 pub use tendril::RawTendril;
+use tendril::Tendril;
 mod tendril_report;
 pub use tendril_report::{
     ActionLog,
@@ -38,7 +39,7 @@ pub use tendril_report::{
     ListLog,
     TendrilLog,
     TendrilReport,
-    UpdateHandler
+    UpdateHandler,
 };
 
 #[cfg(test)]
@@ -63,7 +64,9 @@ pub trait TendrilsApi {
     /// `~/.tendrils/global-config.json` or any [errors](GetConfigError) that
     /// occur. Returns `None` if the value is blank or absent, or if the config
     /// file does not exist.
-    fn get_default_profiles(&self) -> Result<Option<Vec<String>>, GetConfigError>;
+    fn get_default_profiles(
+        &self,
+    ) -> Result<Option<Vec<String>>, GetConfigError>;
 
     /// Initializes a Tendrils repo with a `.tendrils` folder and a
     /// pre-populated `tendrils.json` file. This will fail if the folder is
@@ -73,13 +76,18 @@ pub trait TendrilsApi {
     /// # Arguments
     /// - `dir` - The folder to initialize
     /// - `force` - Ignores the [`InitError::NotEmpty`] error
-    fn init_tendrils_repo(&self, dir: &UniPath, force: bool) -> Result<(), InitError>;
+    fn init_tendrils_repo(
+        &self,
+        dir: &UniPath,
+        force: bool,
+    ) -> Result<(), InitError>;
 
     /// Returns `true` if the given folder is a Tendrils repo, otherwise
     /// `false`.
     /// - A Tendrils repo is defined by having a `.tendrils` subfolder with
     /// a `tendrils.json` file in it.
-    /// - Note: This does *not* check that the `tendrils.json` contents are valid.
+    /// - Note: This does *not* check that the `tendrils.json` contents are
+    ///   valid.
     fn is_tendrils_repo(&self, dir: &UniPath) -> bool;
 
     fn list_tendrils(
@@ -93,10 +101,10 @@ pub trait TendrilsApi {
     /// filter.
     ///
     /// The order of the actions maintains the order defined in
-    /// the `tendrils.json`, but each tendril set is expanded into individual tendrils for
-    /// each of its `remotes`. For example, for a
-    /// list of two tendril sets [t1, t2], each having multiple remotes [r1, r2], the
-    /// list will be expanded to:
+    /// the `tendrils.json`, but each tendril set is expanded into individual
+    /// tendrils for each of its `remotes`. For example, for a
+    /// list of two tendril sets [t1, t2], each having multiple remotes [r1,
+    /// r2], the list will be expanded to:
     /// - t1_r1
     /// - t1_r2
     /// - t2_r1
@@ -107,23 +115,26 @@ pub trait TendrilsApi {
     /// to the caller.
     /// - `mode` - The action mode to be performed.
     /// - `td_repo` - The Tendrils repo to perform the actions on. If given
-    /// `None`, the [default repo](`TendrilsApi::get_default_repo_path`) will be checked for a
-    /// valid Tendrils repo. If neither the given `td_repo` or the default
-    /// folder are valid Tendrils folders, a
+    /// `None`, the [default repo](`TendrilsApi::get_default_repo_path`) will be
+    /// checked for a valid Tendrils repo. If neither the given `td_repo` or
+    /// the default folder are valid Tendrils folders, a
     /// [`SetupError::NoValidTendrilsRepo`] is returned.
     /// - `filter` - Only tendrils matching this filter will be included.
     /// - `dry_run`
-    ///     - `true` will perform the internal checks for the action but does not
-    /// modify anything on the file system. If the action is expected to fail, the
-    /// expected [`TendrilActionError`] is returned. If it's expected to succeed,
-    /// it returns [`TendrilActionSuccess::NewSkipped`] or
+    ///     - `true` will perform the internal checks for the action but does
+    ///       not
+    /// modify anything on the file system. If the action is expected to fail,
+    /// the expected [`TendrilActionError`] is returned. If it's expected to
+    /// succeed, it returns [`TendrilActionSuccess::NewSkipped`] or
     /// [`TendrilActionSuccess::OverwriteSkipped`]. Note: It is still possible
     /// for a successful dry run to fail in an actual run.
-    ///     - `false` will perform the action normally (modifying the file system),
+    ///     - `false` will perform the action normally (modifying the file
+    ///       system),
     /// and will return [`TendrilActionSuccess::New`] or
     /// [`TendrilActionSuccess::Overwrite`] if successful.
     /// - `force`
-    ///     - `true` will ignore any type mismatches and will force the operation.
+    ///     - `true` will ignore any type mismatches and will force the
+    ///       operation.
     ///     - `false` will simply return [`TendrilActionError::TypeMismatch`] if
     /// there is a type mismatch.
     ///
@@ -131,7 +142,7 @@ pub trait TendrilsApi {
     /// A [`TendrilReport`] containing an [`ActionLog`] for each tendril action.
     /// Returns a [`SetupError`] if there are any issues in setting up the
     /// batch of actions.
-    fn tendril_action_updating<U> (
+    fn tendril_action_updating<U>(
         &self,
         updater: U,
         mode: ActionMode,
@@ -139,13 +150,13 @@ pub trait TendrilsApi {
         filter: FilterSpec,
         dry_run: bool,
         force: bool,
-    )
-    -> Result<(), SetupError>
+    ) -> Result<(), SetupError>
     where
         U: UpdateHandler<ActionLog>;
 
-    /// Same behaviour as [`tendril_action_updating`](`TendrilsApi::tendril_action_updating`) except reports are only
-    /// returned once all actions have completed.
+    /// Same behaviour as
+    /// [`tendril_action_updating`](`TendrilsApi::tendril_action_updating`)
+    /// except reports are only returned once all actions have completed.
     fn tendril_action(
         &self,
         mode: ActionMode,
@@ -163,13 +174,21 @@ impl TendrilsApi for TendrilsActor {
         Ok(config::get_global_config()?.default_repo_path)
     }
 
-    fn get_default_profiles(&self) -> Result<Option<Vec<String>>, GetConfigError> {
+    fn get_default_profiles(
+        &self,
+    ) -> Result<Option<Vec<String>>, GetConfigError> {
         Ok(config::get_global_config()?.default_profiles)
     }
 
-    fn init_tendrils_repo(&self, dir: &UniPath, force: bool) -> Result<(), InitError> {
+    fn init_tendrils_repo(
+        &self,
+        dir: &UniPath,
+        force: bool,
+    ) -> Result<(), InitError> {
         if !dir.inner().exists() {
-            return Err(InitError::IoError { kind: std::io::ErrorKind::NotFound });
+            return Err(InitError::IoError {
+                kind: std::io::ErrorKind::NotFound,
+            });
         }
         else if is_tendrils_repo(dir) {
             return Err(InitError::AlreadyInitialized);
@@ -196,7 +215,7 @@ impl TendrilsApi for TendrilsActor {
         filter: FilterSpec,
     ) -> Result<Vec<TendrilReport<ListLog>>, SetupError> {
         let mut global_cfg = LazyCachedGlobalConfig::new();
-        let td_repo= get_tendrils_repo(td_repo, &mut global_cfg)?;
+        let td_repo = get_tendrils_repo(td_repo, &mut global_cfg)?;
         let all_tendrils = get_config(&td_repo)?.raw_tendrils;
         let filtered_tendrils =
             filter_tendrils(all_tendrils, filter, &mut global_cfg);
@@ -218,7 +237,7 @@ impl TendrilsApi for TendrilsActor {
         U: UpdateHandler<ActionLog>,
     {
         let mut global_cfg = LazyCachedGlobalConfig::new();
-        let td_repo= get_tendrils_repo(td_repo, &mut global_cfg)?;
+        let td_repo = get_tendrils_repo(td_repo, &mut global_cfg)?;
         let config = config::get_config(&td_repo)?;
         let all_tendrils = config.raw_tendrils;
 
@@ -226,16 +245,27 @@ impl TendrilsApi for TendrilsActor {
             filter_tendrils(all_tendrils, filter, &mut global_cfg);
         if mode == ActionMode::Pull {
             // Do not attempt to pull link-style tendrils
-            filtered_tendrils = filtered_tendrils.into_iter().filter(|t| !t.mode.requires_symlink()).collect();
+            filtered_tendrils = filtered_tendrils
+                .into_iter()
+                .filter(|t| !t.mode.requires_symlink())
+                .collect();
         }
         if mode == ActionMode::Push
             && filtered_tendrils.iter().any(|t| t.mode.requires_symlink())
-            && !can_symlink() {
+            && !can_symlink()
+        {
             // Do not continue if any symlinks are expected to fail
             return Err(SetupError::CannotSymlink);
         }
 
-        batch_tendril_action(updater, mode, &td_repo, filtered_tendrils, dry_run, force);
+        batch_tendril_action(
+            updater,
+            mode,
+            &td_repo,
+            filtered_tendrils,
+            dry_run,
+            force,
+        );
         Ok(())
     }
 
@@ -257,7 +287,9 @@ impl TendrilsApi for TendrilsActor {
             after_action_fn,
         );
 
-        self.tendril_action_updating(updater, mode, td_repo, filter, dry_run, force)?;
+        self.tendril_action_updating(
+            updater, mode, td_repo, filter, dry_run, force,
+        )?;
         Ok(reports)
     }
 }
@@ -405,15 +437,19 @@ fn check_copy_types(
     force: bool,
 ) -> Result<(), TendrilActionError> {
     match (source, dest) {
-        (None | Some(FsoType::BrokenSym), _) => Err(TendrilActionError::IoError {
-            kind: std::io::ErrorKind::NotFound,
-            loc: Location::Source,
-        }),
+        (None | Some(FsoType::BrokenSym), _) => {
+            Err(TendrilActionError::IoError {
+                kind: std::io::ErrorKind::NotFound,
+                loc: Location::Source,
+            })
+        }
         (_, _) if force => Ok(()),
-        (Some(s), _) if s.is_symlink() => Err(TendrilActionError::TypeMismatch {
-            loc: Location::Source,
-            mistype: s.to_owned(),
-        }),
+        (Some(s), _) if s.is_symlink() => {
+            Err(TendrilActionError::TypeMismatch {
+                loc: Location::Source,
+                mistype: s.to_owned(),
+            })
+        }
         (Some(s), Some(d)) if s != d => Err(TendrilActionError::TypeMismatch {
             loc: Location::Dest,
             mistype: d.to_owned(),
@@ -447,7 +483,7 @@ fn prepare_dest(
             }
         }
         (Some(FsoType::BrokenSym), _) => remove_symlink(&dest)?,
-        (_, _) => {},
+        (_, _) => {}
     };
 
     match create_dir_all(dest.parent().unwrap_or(dest)) {
@@ -536,7 +572,7 @@ fn get_tendrils_repo(
                 }
             }
             None => Err(GetTendrilsRepoError::DefaultNotSet),
-        }
+        },
     }
 }
 
@@ -561,7 +597,8 @@ fn link_tendril(
 
     let local_type;
     if log.local_type().is_none()
-        || log.local_type() == &Some(FsoType::BrokenSym) {
+        || log.local_type() == &Some(FsoType::BrokenSym)
+    {
         if log.local_type() == &Some(FsoType::BrokenSym) {
             if force {
                 if !dry_run {
@@ -574,7 +611,7 @@ fn link_tendril(
             else {
                 log.result = Err(TendrilActionError::TypeMismatch {
                     mistype: FsoType::BrokenSym,
-                    loc: Location::Source
+                    loc: Location::Source,
                 });
                 return log;
             }
@@ -620,30 +657,21 @@ fn list_tendrils_inner(
 
     for raw_tendril in raw_tendrils {
         let log = match raw_tendril.resolve(&td_repo) {
-            Ok(v) => {
-                Ok(ListLog::new(
-                    v.local_abs().get_type(),
-                    v.remote().inner().get_type(),
-                    v.remote().inner().into()
-                ))
-            }
+            Ok(v) => Ok(ListLog::new(
+                v.local_abs().get_type(),
+                v.remote().inner().get_type(),
+                v.remote().inner().into(),
+            )),
             Err(e) => Err(e),
         };
 
-        reports.push(TendrilReport {
-            raw_tendril,
-            log,
-        });
+        reports.push(TendrilReport { raw_tendril, log });
     }
 
     reports
 }
 
-fn pull_tendril(
-    tendril: &Tendril,
-    dry_run: bool,
-    force: bool,
-) -> ActionLog {
+fn pull_tendril(tendril: &Tendril, dry_run: bool, force: bool) -> ActionLog {
     let dest = tendril.local_abs();
     let source = tendril.remote().inner();
 
@@ -673,11 +701,7 @@ fn pull_tendril(
     log
 }
 
-fn push_tendril(
-    tendril: &Tendril,
-    dry_run: bool,
-    force: bool,
-) -> ActionLog {
+fn push_tendril(tendril: &Tendril, dry_run: bool, force: bool) -> ActionLog {
     let source = tendril.local_abs();
     let dest = tendril.remote().inner();
 
@@ -771,9 +795,7 @@ fn symlink(
         (false, Some(FsoType::File | FsoType::SymFile)) => {
             remove_file(create_at)
         }
-        (false, Some(FsoType::BrokenSym)) => {
-            remove_symlink(create_at)
-        }
+        (false, Some(FsoType::BrokenSym)) => remove_symlink(create_at),
         (false, Some(FsoType::Dir | FsoType::SymDir)) => {
             remove_dir_all(create_at)
         }
@@ -847,8 +869,7 @@ fn batch_tendril_action<U>(
     raw_tendrils: Vec<RawTendril>,
     dry_run: bool,
     force: bool,
-)
-where
+) where
     U: UpdateHandler<ActionLog>,
 {
     updater.count(raw_tendrils.len() as i32);
@@ -858,9 +879,7 @@ where
         let tendril = raw_tendril.resolve(td_repo);
 
         let log = match (tendril, &mode) {
-            (Ok(v), ActionMode::Pull) => {
-                Ok(pull_tendril(&v, dry_run, force))
-            }
+            (Ok(v), ActionMode::Pull) => Ok(pull_tendril(&v, dry_run, force)),
             (Ok(v), ActionMode::Push) => match v.mode {
                 TendrilMode::Link if !can_symlink() => {
                     // Do not attempt to symlink if it has already been
@@ -878,21 +897,14 @@ where
                             loc: Location::Dest,
                         }),
                     ))
-                },
-                TendrilMode::Link => {
-                    Ok(link_tendril(&v, dry_run, force))
                 }
-                _ => {
-                    Ok(push_tendril(&v, dry_run, force))
-                },
-            }
+                TendrilMode::Link => Ok(link_tendril(&v, dry_run, force)),
+                _ => Ok(push_tendril(&v, dry_run, force)),
+            },
             (Err(e), _) => Err(e),
         };
 
-        let report = TendrilReport {
-            raw_tendril,
-            log,
-        };
+        let report = TendrilReport { raw_tendril, log };
 
         updater.after(report);
     }

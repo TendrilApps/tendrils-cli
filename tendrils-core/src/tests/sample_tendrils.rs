@@ -1,18 +1,16 @@
-use crate::RawTendril;
 use crate::enums::TendrilMode;
+use crate::RawTendril;
 
 pub struct SampleTendrils {}
 
 impl SampleTendrils {
     pub fn raw_tendrils_1() -> Vec<RawTendril> {
-        vec![
-            RawTendril {
-                local: "settings.json".to_string(),
-                remote: "C:\\Users\\MyName\\AppData\\settings.json".to_string(),
-                mode: TendrilMode::CopyOverwrite,
-                profiles: vec![],
-            }
-        ]
+        vec![RawTendril {
+            local: "settings.json".to_string(),
+            remote: "C:\\Users\\MyName\\AppData\\settings.json".to_string(),
+            mode: TendrilMode::CopyOverwrite,
+            profiles: vec![],
+        }]
     }
 
     pub fn tendril_1_json() -> String {
@@ -28,14 +26,12 @@ impl SampleTendrils {
     }
 
     pub fn raw_tendrils_2() -> Vec<RawTendril> {
-        vec![
-            RawTendril {
-                local: "SomeApp2/settings2.json".to_string(),
-                remote: "some/remote/path/settings2.json".to_string(),
-                mode: TendrilMode::CopyMerge,
-                profiles: vec!["win".to_string()],
-            }
-        ]
+        vec![RawTendril {
+            local: "SomeApp2/settings2.json".to_string(),
+            remote: "some/remote/path/settings2.json".to_string(),
+            mode: TendrilMode::CopyMerge,
+            profiles: vec!["win".to_string()],
+        }]
     }
 
     pub fn tendril_2_json() -> String {
@@ -49,14 +45,12 @@ impl SampleTendrils {
     }
 
     pub fn raw_tendrils_3() -> Vec<RawTendril> {
-        vec![
-            RawTendril {
-                local: "SomeApp/linkme.txt".to_string(),
-                remote: "some/remote/path3/linkme.txt".to_string(),
-                mode: TendrilMode::Link,
-                profiles: vec!["mac".to_string()],
-            }
-        ]
+        vec![RawTendril {
+            local: "SomeApp/linkme.txt".to_string(),
+            remote: "some/remote/path3/linkme.txt".to_string(),
+            mode: TendrilMode::Link,
+            profiles: vec!["mac".to_string()],
+        }]
     }
 
     pub fn tendril_3_json() -> String {
@@ -70,14 +64,12 @@ impl SampleTendrils {
     }
 
     pub fn raw_tendrils_4() -> Vec<RawTendril> {
-        vec![
-            RawTendril {
-                local: "SomeApp/localName.txt".to_string(),
-                remote: "some/remote/path4/remoteName.txt".to_string(),
-                mode: TendrilMode::CopyOverwrite,
-                profiles: vec!["mac".to_string(), "win".to_string()],
-            }
-        ]
+        vec![RawTendril {
+            local: "SomeApp/localName.txt".to_string(),
+            remote: "some/remote/path4/remoteName.txt".to_string(),
+            mode: TendrilMode::CopyOverwrite,
+            profiles: vec!["mac".to_string(), "win".to_string()],
+        }]
     }
 
     pub fn tendril_4_json() -> String {
@@ -91,14 +83,12 @@ impl SampleTendrils {
     }
 
     pub fn raw_tendrils_5() -> Vec<RawTendril> {
-        vec![
-            RawTendril {
-                local: "misc.txt".to_string(),
-                remote: "some/remote/path5/misc.txt".to_string(),
-                mode: TendrilMode::CopyOverwrite,
-                profiles: vec!["mac".to_string()],
-            }
-        ]
+        vec![RawTendril {
+            local: "misc.txt".to_string(),
+            remote: "some/remote/path5/misc.txt".to_string(),
+            mode: TendrilMode::CopyOverwrite,
+            profiles: vec!["mac".to_string()],
+        }]
     }
 
     /// Minimal schema with single values passed as strings
@@ -124,7 +114,7 @@ impl SampleTendrils {
                 remote: "some/remote/path6b/misc2.txt".to_string(),
                 mode: TendrilMode::CopyOverwrite,
                 profiles: vec!["mac".to_string(), "win".to_string()],
-            }
+            },
         ]
     }
 
@@ -152,7 +142,7 @@ impl SampleTendrils {
                 remote: "~/host2/specific/path/host2.txt".to_string(),
                 mode: TendrilMode::Link,
                 profiles: vec!["host2".to_string()],
-            }
+            },
         ]
     }
 
@@ -198,9 +188,12 @@ impl SampleTendrils {
     }
 
     pub fn build_tendrils_json(json_tendrils: &[String]) -> String {
-        let json_chunks: Vec<String> =
-            ["{\"tendrils\": {".to_string(), json_tendrils.join(","), "}}".to_string()]
-                .to_vec();
+        let json_chunks: Vec<String> = [
+            "{\"tendrils\": {".to_string(),
+            json_tendrils.join(","),
+            "}}".to_string(),
+        ]
+        .to_vec();
         json_chunks.join("")
     }
 }

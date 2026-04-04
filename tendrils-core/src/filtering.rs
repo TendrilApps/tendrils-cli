@@ -1,8 +1,7 @@
-use std::vec;
-
-use crate::{RawTendril, TendrilMode};
 use crate::config::LazyCachedGlobalConfig;
+use crate::{RawTendril, TendrilMode};
 use glob_match::glob_match;
+use std::vec;
 
 #[cfg(test)]
 mod tests;
@@ -75,10 +74,7 @@ fn filter_by_modes(
         return tendrils;
     }
 
-    tendrils
-        .into_iter()
-        .filter(|t| modes.contains(&t.mode))
-        .collect()
+    tendrils.into_iter().filter(|t| modes.contains(&t.mode)).collect()
 }
 
 fn filter_by_profiles(

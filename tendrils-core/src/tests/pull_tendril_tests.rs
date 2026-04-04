@@ -1,13 +1,7 @@
 //! Contains tests specific to pull actions.
 //! See also [`crate::tests::common_action_tests`].
 
-use crate::test_utils::{
-    is_empty,
-    set_ra,
-    symlink_expose,
-    Setup,
-    uac_enabled,
-};
+use crate::test_utils::{is_empty, set_ra, symlink_expose, uac_enabled, Setup};
 use crate::{
     pull_tendril,
     ActionLog,
@@ -131,14 +125,12 @@ fn remote_doesnt_exist_returns_io_error_not_found(
 
     let file_actual = pull_tendril(&file_tendril, dry_run, force);
     let dir_actual = pull_tendril(&dir_tendril, dry_run, force);
-    let subdir_file_actual =
-        pull_tendril(&subdir_file_tendril, dry_run, force);
-    let subdir_dir_actual =
-        pull_tendril(&subdir_dir_tendril, dry_run, force);
+    let subdir_file_actual = pull_tendril(&subdir_file_tendril, dry_run, force);
+    let subdir_dir_actual = pull_tendril(&subdir_dir_tendril, dry_run, force);
 
     let exp_result = Err(TendrilActionError::IoError {
         kind: std::io::ErrorKind::NotFound,
-        loc: Location::Source
+        loc: Location::Source,
     });
     assert_eq!(
         file_actual,
@@ -195,7 +187,6 @@ fn remote_doesnt_exist_returns_io_error_not_found(
     assert!(!setup.remote_subdir_dir.exists());
 }
 
-
 #[rstest]
 #[case(true)]
 #[case(false)]
@@ -214,10 +205,8 @@ fn remote_is_symlink_returns_type_mismatch_error_unless_forced_then_copies_symli
     let file_tendril = setup.file_tendril();
     let dir_tendril = setup.dir_tendril();
 
-    let file_actual =
-        pull_tendril(&file_tendril, dry_run, force);
-    let dir_actual =
-        pull_tendril(&dir_tendril, dry_run, force);
+    let file_actual = pull_tendril(&file_tendril, dry_run, force);
+    let dir_actual = pull_tendril(&dir_tendril, dry_run, force);
 
     let exp_file_result;
     let exp_dir_result;
@@ -297,10 +286,8 @@ fn local_is_symlink_returns_type_mismatch_error_unless_forced(
     let file_tendril = setup.file_tendril();
     let dir_tendril = setup.dir_tendril();
 
-    let file_actual =
-        pull_tendril(&file_tendril, dry_run, force);
-    let dir_actual =
-        pull_tendril(&dir_tendril, dry_run, force);
+    let file_actual = pull_tendril(&file_tendril, dry_run, force);
+    let dir_actual = pull_tendril(&dir_tendril, dry_run, force);
 
     let exp_file_result;
     let exp_dir_result;
@@ -825,8 +812,8 @@ fn no_write_access_at_local_file_returns_io_error_permission_denied_unless_dry_r
 #[case(true)]
 #[case(false)]
 #[cfg_attr(any(windows, target_os = "linux"), ignore)] // These permissions do not prevent write access on
-                             // Windows. This must be done through the Security
-                             // interface
+                                                       // Windows. This must be done through the Security
+                                                       // interface
 fn no_write_access_at_local_dir_returns_io_error_permission_denied_unless_dry_run(
     #[case] dry_run: bool,
     #[values(true, false)] force: bool,
@@ -934,20 +921,10 @@ fn group_dir_is_created_if_it_doesnt_exist(
     let subdir_file_tendril = subdir_file_setup.subdir_file_tendril();
     let subdir_dir_tendril = subdir_dir_setup.subdir_dir_tendril();
 
-    let file_actual =
-        pull_tendril(&file_tendril, dry_run, force);
-    let dir_actual =
-        pull_tendril(&dir_tendril, dry_run, force);
-    let subdir_file_actual = pull_tendril(
-        &subdir_file_tendril,
-        dry_run,
-        force,
-    );
-    let subdir_dir_actual = pull_tendril(
-        &subdir_dir_tendril,
-        dry_run,
-        force,
-    );
+    let file_actual = pull_tendril(&file_tendril, dry_run, force);
+    let dir_actual = pull_tendril(&dir_tendril, dry_run, force);
+    let subdir_file_actual = pull_tendril(&subdir_file_tendril, dry_run, force);
+    let subdir_dir_actual = pull_tendril(&subdir_dir_tendril, dry_run, force);
 
     let exp_result;
     if dry_run {

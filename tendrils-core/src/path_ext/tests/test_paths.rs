@@ -27,7 +27,6 @@ pub const fn cases() -> [&'static str; 115] {
         "\\\\.",
         "//..",
         "\\\\..",
-
         // Windows prefixes
         // https://learn.microsoft.com/en-us/windows/win32/fileio/naming-a-file
         // https://learn.microsoft.com/en-us/dotnet/standard/io/file-path-formats
@@ -118,7 +117,6 @@ pub const fn cases() -> [&'static str; 115] {
         "\\\\.\\Volume{12a34b56-78c9-012d-ef3g-45678hij9012}\\",
         "//./Volume{12a34b56-78c9-012d-ef3g-45678hij9012}/misc.txt",
         "\\\\.\\Volume{12a34b56-78c9-012d-ef3g-45678hij9012}\\misc.txt",
-
         // Other protocols
         "file:///../File/Protocol",
         "https://www.website.com",

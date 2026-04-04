@@ -1,5 +1,5 @@
-use crate::{InvalidTendrilError, Tendril, TendrilMode, UniPath};
 use crate::test_utils::non_utf_8_text;
+use crate::{InvalidTendrilError, Tendril, TendrilMode, UniPath};
 use rstest::rstest;
 use rstest_reuse::{self, apply, template};
 use serial_test::serial;
@@ -16,9 +16,10 @@ use std::path::{
 #[case("single.dot")]
 #[case("multi.sandwiched.dots")]
 #[case(".LeadingDot")]
-#[case("TrailingDot.")] // Trailing dots are dropped on Windows filesystems,
-                        // but a path with a trailing dot will still point to
-                        // its equivalent without the dot
+// Trailing dots are dropped on Windows filesystems,
+// but a path with a trailing dot will still point to
+// its equivalent without the dot
+#[case("TrailingDot.")]
 #[cfg_attr(not(windows), case("\\"))]
 #[cfg_attr(not(windows), case("\\\\"))]
 #[cfg_attr(not(windows), case(".\\"))]
@@ -177,22 +178,23 @@ fn remote_is_valid_returns_ok_or_recursive_2(#[case] remote: &str) {
 #[cfg_attr(not(windows), case("Plain", "\\Leading", "/Plain/\\Leading"))]
 #[cfg_attr(windows, case("Plain", "\\Leading", "\\Plain\\Leading"))]
 #[case("Trailing/", "/Leading", &format!("{SEP}Trailing{SEP}{SEP}Leading"))]
-#[cfg_attr(not(windows), case("Trailing\\", "\\Leading", "/Trailing\\/\\Leading"))]
+#[cfg_attr(
+    not(windows),
+    case("Trailing\\", "\\Leading", "/Trailing\\/\\Leading")
+)]
 #[cfg_attr(windows, case("Trailing\\", "\\Leading", "\\Trailing\\\\Leading"))]
 #[case(
     "Trailing//",
     "//Both//",
     &format!("{SEP}Trailing{SEP}{SEP}{SEP}{SEP}Both{SEP}{SEP}"),
 )]
-#[cfg_attr(not(windows), case(
-    "Trailing\\\\",
-    "\\\\Both\\\\",
-    "/Trailing\\\\/\\\\Both\\\\"),
+#[cfg_attr(
+    not(windows),
+    case("Trailing\\\\", "\\\\Both\\\\", "/Trailing\\\\/\\\\Both\\\\")
 )]
-#[cfg_attr(windows, case(
-    "Trailing\\\\",
-    "\\\\Both\\\\",
-    "\\Trailing\\\\\\\\Both\\\\"),
+#[cfg_attr(
+    windows,
+    case("Trailing\\\\", "\\\\Both\\\\", "\\Trailing\\\\\\\\Both\\\\")
 )]
 #[case(
     "Parent///Slashes\\\\././",
